@@ -1,6 +1,6 @@
 rm(list = ls())
-source('~/Documents/R Codes/Offsets/offsets_functions_multi.R')
-source('~/Documents/R Codes/Offsets/Params_multi.R')
+source('~/Documents/R_Codes/Offsets_Working_FEB_3/offsets_functions_multi.R')
+source('~/Documents/R_Codes/Offsets_Working_FEB_3/Params_multi.R')
 
 graphics.off()
 global_params <- initialise_global_params()
