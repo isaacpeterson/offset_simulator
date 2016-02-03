@@ -77,24 +77,32 @@ initialise_ecology_slice <- function(global_params, parcels){
   return(initial_ecology)
 }
 
+# 
 # initialise_ecology_by_parcel <- function(global_params, parcels){
 #   land_parcels = parcels$land_parcels
 #   land_parcel_num = parcels$land_parcel_num
 #   initial_ecology = vector('list', land_parcel_num)
+#   sc = global_params$max_initial_eco_vals - global_params$min_initial_eco_vals - global_params$initial_eco_noise
 #   
+#   min_parcel_vals = runif(2, min = global_params$min_eco_val, max = (global_params$max_eco_val - global_params$initial_eco_noise))
 #   for (parcel_ind in seq_len(land_parcel_num)){
 #     current_parcel = land_parcels[[parcel_ind]]
-#     initial_parcel_ecology = array(runif(length(current_parcel)*eco_dims), c(dim(current_parcel), eco_dims))
-#     rep(global_params$min_initial_eco_vals,length(current_parcel))
-#     min_parcel_vals = global_params$min_initial_eco_val[eco_ind] + runif(land_parcel_num)*(global_params$max_initial_eco_val[eco_ind] - global_params$min_initial_eco_val[eco_ind] - global_params$initial_eco_noise[eco_ind])
+#     parcel_length = length(current_parcel)
+#     current_eco_array = global_params$initial_eco_noise*array(runif(parcel_length*eco_dims), c(dim(current_parcel), eco_dims))
+#     sc_array = rep(global_params$min_initial_eco_vals, parcel_length)
+#     dim(sc_array) = c(eco_dims, parcel_length, 1)
+#     sc_array = aperm(sc_array, c(3, 2, 1))
+#     dim(sc_array) = dim(current_eco_array)
 #     
+#     for (eco_ind in 1:eco_dims){
+#       current_eco_slice = current_eco_array[, , eco_dim] * rep(global_params$min_initial_eco_vals[eco_ind], length(current_parcel))
+#        rep(global_params$min_initial_eco_vals[eco_ind], length(current_parcel))
+#   #  min_parcel_vals = global_params$min_initial_eco_val[eco_ind] + runif(land_parcel_num)*(global_params$max_initial_eco_val[eco_ind] - global_params$min_initial_eco_val[eco_ind] - global_params$initial_eco_noise[eco_ind])
 #     
-#       min_parcel_vals = global_params$min_initial_eco_val[eco_ind] + runif(land_parcel_num)*(global_params$max_initial_eco_val[eco_ind] - global_params$min_initial_eco_val[eco_ind] - global_params$initial_eco_noise[eco_ind])
 #       
-#       
-#       initial_parcel_ecology = min_parcel_vals[parcel_ind] + global_params$initial_eco_spread*runif(length(current_parcel))
-#       dim(initial_parcel_ecology) = dim(current_parcel)
-#       initial_ecology[[parcel_ind]][, , eco_ind] = initial_parcel_ecology
+#   #    initial_parcel_ecology = min_parcel_vals[parcel_ind] + global_params$initial_eco_spread*runif(length(current_parcel))
+#   #    dim(initial_parcel_ecology) = dim(current_parcel)
+#   #    initial_ecology[[parcel_ind]][, , eco_ind] = initial_parcel_ecology
 #   }
 #  # initial_ecology = initial_ecology + global_params$initial_eco_noise*matrix(runif(global_params$ecology_size*global_params$ecology_size),global_params$ecology_size,global_params$ecology_size)
 #   return(initial_ecology)
@@ -332,13 +340,6 @@ build_decline_rates_multi <- function(parcels, region_params, eco_dims){
   return(decline_rates)
 }
 
-initialise_outputs <- function(counterfactuals, global_params){
-  outputs = list()
-  outputs$trajectories = array(0, c(global_params$ecology_size, global_params$ecology_size, global_params$time_steps))
-
-  return(outputs)
-  
-}
 
 
 select_development_index <- function(ind_available, parcel_num){
