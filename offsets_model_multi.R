@@ -1,7 +1,10 @@
 rm(list = ls())
 source('~/Documents/R_Codes/Offsets_Working_FEB_3/offsets_functions_current.R')
 source('~/Documents/R_Codes/Offsets_Working_FEB_3/Global_Regional_Params.R')
-
+.libPaths('~/Library/R/3.2/library')
+library(foreach)
+library(doParallel)
+library(abind)
 graphics.off()
 global_params <- initialise_global_params()
 region_params <- initialise_region_params(global_params$region_num, restoration_rate = 0.03, mean_decline_rates = c(0.03, 0.01), global_params$time_steps, global_params$total_dev_num)
