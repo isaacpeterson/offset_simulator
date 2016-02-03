@@ -1,24 +1,17 @@
 rm(list = ls())
-source('~/Documents/R_Codes/Offsets_Working_FEB_3/offsets_functions_multi.R')
-source('~/Documents/R_Codes/Offsets_Working_FEB_3/Params_multi.R')
+source('~/Documents/R_Codes/Offsets_Working_FEB_3/offsets_functions_current.R')
+source('~/Documents/R_Codes/Offsets_Working_FEB_3/Global_Regional_Params.R')
 
 graphics.off()
 global_params <- initialise_global_params()
-region_params <- initialise_region_params(global_params$region_num, global_params$eco_dims, restoration_rate = 0.03, mean_decline_rates = c(0.03, 0.01))
+region_params <- initialise_region_params(global_params$region_num, restoration_rate = 0.03, mean_decline_rates = c(0.03, 0.01), global_params$time_steps, global_params$total_dev_num)
 parcels <- initialise_shape_parcels(global_params)
 index_object <- initialise_index_object(parcels, global_params)
-initial_ecologies <- initialise_ecologies(global_params, parcels)
+initial_ecology <- initialise_ecology(global_params, parcels)
 decline_rates_initial <- build_decline_rates_multi(parcels, region_params, global_params$eco_dims)
-
-trajectories <- initialise_trajectories(global_params$eco_dims, global_params$ecology_size, global_params$time_steps)
-
-outputs <- calc_trajectories_multi(trajectories, global_params, region_params, current_ecologies = initial_ecologies, decline_rates = decline_rates_initial, 
+outputs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
                                    parcels, index_object, perform_offsets = TRUE, record_parcel_sets = TRUE)
 
-assessed_offsets <- assess_parcel_sets_multi(outputs$offsets, parcels$land_parcels, outputs$trajectories, global_params$time_steps, decline_rates_initial)
-assessed_developments <- assess_parcel_sets_multi(outputs$developments, parcels$land_parcels, outputs$trajectories, global_params$time_steps, decline_rates_initial)
-
-plot_parcel_set_dimensional(assessed_offsets, assessed_developments, 5)
 
 #plot_net_parcel_sets(assess_object)
 #plot_parcel_sets(assess_object, assess_type = 'set', parcel_set_num = 10)
