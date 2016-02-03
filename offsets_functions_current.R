@@ -829,7 +829,10 @@ find_parcel_traj_from_trajectories <- function(land_parcels, parcel_ind, time_st
 }
 
 
-
+# land_parcels = parcels$land_parcels
+# parcel_indexes = 1:parcels$land_parcel_num
+# time_steps = global_params$time_steps
+# trajectories = outputs$trajectories[[1]]
 
 find_parcel_trajectories <- function(land_parcels, parcel_indexes, time_steps, trajectories){
 
@@ -1240,19 +1243,31 @@ plot_parcel_set_parcels <- function(current_set_object){
 }
 
 
-
-
-
-
-plot_parcel_set <- function(parcel_sets_object, assess_set_ind){
-  
+plot_single_net_regional <- function(collated_parcel_sets_object, assessed_set_index, global_params, cfac_parcel_trajs, parcel_trajs){
   graphics.off()
   par(mfrow = c(3, 3))
   par(cex = 0.6)
-  par(mar = c(0, 1, 1, 0), oma = c(4, 4, 0.5, 0.5))
+  par(mar = c(2, 1, 1, 0), oma = c(4, 4, 0.5, 0.5))
   par(tcl = -0.25)
   par(mgp = c(2, 0.6, 0))
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, assessed_set_indexes = assessed_set_index, global_params$time_steps, global_params$eco_dims)
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, assessed_set_indexes = (1:global_params$total_dev_num), global_params$time_steps, global_params$eco_dims)
+  two_plot(sum_cols(cfac_parcel_trajs, 1:dim(cfac_parcel_trajs)[2]), sum_cols(parcel_trajs, 1:dim(parcel_trajs)[2]), colours = c('red', 'black'))
+}
+
+
+setup_sub_plots <- function(nx, ny){
+ 
+  par(mfrow = c(ny, nx))
+  par(cex = 0.6)
+  par(mar = c(2, 1, 1, 0), oma = c(4, 4, 0.5, 0.5))
+  par(tcl = -0.25)
+  par(mgp = c(2, 0.6, 0))
+}
+
+plot_parcel_set <- function(parcel_sets_object, assess_set_ind){
   
+  set_up_sub_plots(1, 3)
   parcel_set_offset = parcel_sets_object$offsets[[assess_set_ind]]
   parcel_set_development = parcel_sets_object$developments[[assess_set_ind]]
   offset_parcel_num = length(parcel_set_offset$parcel_indexes)
@@ -1389,12 +1404,6 @@ parcel_traj_sum <- function(parcel_3D){
 # }
 
 
-setup_subplots <- function(sub_y, sub_x){
-  graphics.off()
-  sub_plots = 1:(sub_y*sub_x)
-  dim(sub_plots) = c(sub_y, sub_x)
-  layout(sub_plots)
-}
 
 plot_net_parcel_sets <- function(collated_object, time_steps, eco_dims, parcel_set_list){
   
@@ -1547,11 +1556,11 @@ collate_assessed_object <- function(current_assessed_object, time_steps, eco_dim
 # }
 
 
-two_plot <- function(plot_a, plot_b, cols){
+two_plot <- function(plot_a, plot_b, colours){
   mx = max(c(plot_a, plot_b))
   mn = min(c(plot_a, plot_b))
-  plot(plot_a, type = 'l', col = cols[1], ylim = c(mn, mx))
-  lines(plot_b, col = cols[2], ylim = c(mn, mx))
+  plot(plot_a, type = 'l', col = colours[1], ylim = c(mn, mx))
+  lines(plot_b, col = colours[2], ylim = c(mn, mx))
 }
 
 

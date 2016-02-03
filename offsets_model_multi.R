@@ -12,26 +12,11 @@ decline_rates_initial <- build_decline_rates_multi(parcels, region_params, globa
 outputs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
                                    parcels, index_object, perform_offsets = TRUE, record_parcel_sets = TRUE)
 
+parcel_sets_object <- find_parcel_sets(outputs, land_parcels, time_steps, decline_rates_initial)
+collated_parcel_sets_object <- collate_parcel_sets(parcel_sets_object, global_params$time_steps, global_params$eco_dims)
 
-#plot_net_parcel_sets(assess_object)
-#plot_parcel_sets(assess_object, assess_type = 'set', parcel_set_num = 10)
+cfacs <- build_counterfactuals_by_parcel_multi(global_params, decline_rates_initial, 1:(parcels$land_parcel_num), parcels$land_parcels, initial_ecology, time_steps = global_params$time_steps)
+cfac_parcel_trajs <- find_parcel_traj_by_list(cfacs[[1]])
+parcel_trajs <- find_parcel_trajectories(parcels$land_parcels, 1:(parcels$land_parcel_num), global_params$time_steps, outputs$trajectories[[1]])
+plot_single_net_regional(collated_parcel_sets_object, assessed_set_index = 1, global_params, cfac_parcel_trajs, parcel_trajs)
 
-# print(Sys.time()-strt)
-
-# offset_sums <- find_sums(outputs$offset_list, outputs$trajectories, parcels, global_params$time_steps)
-# dev_sums <- find_sums(outputs$development_list, outputs$trajectories, parcels, global_params$time_steps)
-# 
-# counter_sums <- find_sums(1:length(parcels$land_parcels), counterfactuals_object$counterfactuals, parcels, global_params$time_steps)
-# 
-# 
-# true_offset_sums <- true_sums(outputs$offset_list, offset_sums, counter_sums)
-# true_dev_sums <- true_sums(outputs$development_list, dev_sums, counter_sums)
-
-
-
-
-
-
-
-
-#plot_outs(traj_sums$parcel_sums[, 1:6], traj_sums$parcel_sums[, 1:6], c(2, 3))
