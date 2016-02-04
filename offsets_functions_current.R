@@ -1096,12 +1096,12 @@ plot_outs <- function(...){
 
 
 
-current_sets_object = outputs$offsets
-land_parcels = parcels$land_parcels
-trajectories = outputs$trajectories
-time_steps = global_params$time_steps
-parcel_set_ind = 2
-current_parcel_set = current_sets_object[[parcel_set_ind]]
+# current_sets_object = outputs$offsets
+# land_parcels = parcels$land_parcels
+# trajectories = outputs$trajectories
+# time_steps = global_params$time_steps
+# parcel_set_ind = 1
+# current_parcel_set = current_sets_object[[parcel_set_ind]]
 
 
 find_parcel_sets <- function(outputs, land_parcels, time_steps, decline_rates_initial){
@@ -1112,6 +1112,7 @@ find_parcel_sets <- function(outputs, land_parcels, time_steps, decline_rates_in
   
   return(parcel_sets_object)
 }
+
 
 parcel_set_offsets_devs <- function(current_sets_object, land_parcels, trajectories, time_steps, decline_rates_initial){
   
@@ -1152,20 +1153,19 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
     
     for (eco_ind in seq_len(global_params$eco_dims)){
       
-      current_parcel_trajectory = extract_3D_parcel(current_parcel, trajectories[[eco_ind]])
-      
+      current_parcel_trajectory = extract_3D_parcel(current_parcel, trajectories[[eco_ind]][, , yr:global_params$time_steps])
       parcel_ecology = initial_parcel_ecologies[[parcel_count_ind]][, , eco_ind] 
       
       loc_1 = ind2sub(dim(decline_rates_initial)[1], current_parcel_ind)
       current_dec_rate = decline_rates_initial[loc_1[1], loc_1[2], eco_ind] 
-      parcel_counterfactual = find_parcel_counterfactual(current_parcel_trajectory, parcel_ecology, current_dec_rate, global_params, yr)
+      parcel_counterfactual = predict_parcel_traj(parcel_ecology, global_params, decline_rate = current_dec_rate, (time_step = (time_steps - yr)))
       
       restoration_gains[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'trajectory', current_parcel, time_steps, current_parcel_trajectory, yr, parcel_ecology)
       avoided_degredation[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'counterfactual', current_parcel, time_steps, parcel_counterfactual, yr, parcel_ecology)
       
-      parcel_trajectory_sum[, parcel_count_ind, eco_ind] = apply(current_parcel_trajectory, 3, sum)
-      parcel_counter_sum[, parcel_count_ind, eco_ind] = apply(parcel_counterfactual, 3, sum)
-      initial_sum[parcel_count_ind, eco_ind]  = sum(parcel_ecology)
+  #    parcel_trajectory_sum[, parcel_count_ind, eco_ind] = apply(current_parcel_trajectory, 3, sum)
+  #    parcel_counter_sum[, parcel_count_ind, eco_ind] = apply(parcel_counterfactual, 3, sum)
+  #    initial_sum[parcel_count_ind, eco_ind]  = sum(parcel_ecology)
       
     }
 
@@ -1178,42 +1178,41 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
   parcel_set_element$parcel_counter_sum = parcel_counter_sum
   parcel_set_element$parcel_indexes = parcel_inds
   parcel_set_element$parcel_vals_used = current_parcel_set$parcel_vals_used
+  
   return(parcel_set_element)
   
 }
 
-
-
 calc_rel_intial <- function(trajectory_type, current_parcel, time_steps, parcel_trajectory, yr, parcel_ecology){
   rel_arr = array(0, c(dim(current_parcel), time_steps))
-  rel_arr[, , yr:time_steps] = parcel_trajectory[, , yr:time_steps] - as.vector(parcel_ecology)
+  rel_arr[, , yr:time_steps] = parcel_trajectory - as.vector(parcel_ecology)
   if (trajectory_type == 'counterfactual'){
     rel_arr = -rel_arr
   }
   rel_arr = apply(rel_arr, 3, sum)
 }
 
-find_parcel_counterfactual <- function(parcel_trajectory, parcel_ecology, current_dec_rate, global_params, yr){
-  parcel_counterfactual = array(0, dim(parcel_trajectory))
-  if (yr == 1){
-    parcel_counterfactual[, , 1] = parcel_ecology
-  } else {
-    parcel_counterfactual[, , 1:(yr-1)] = parcel_trajectory[, , 1:(yr - 1)]
-  }
-  parcel_counterfactual[, , yr:global_params$time_steps] = predict_parcel_trajectory(parcel_ecology, current_dec_rate, global_params$min_eco_val, global_params$max_eco_val, global_params$time_steps - (yr - 1)) 
-  return(parcel_counterfactual)                                                 
-}
-
-
-predict_parcel_trajectory <- function(parcel_ecology, current_dec_rate, min_eco_val, max_eco_val, time_steps){
-  predicted_parcel_trajectory = array(0, c(dim(parcel_ecology), time_steps))
-  predicted_parcel_trajectory[, , 1] = parcel_ecology
-  for (current_step in seq_len(time_steps)){
-    predicted_parcel_trajectory[, , current_step] = sapply(parcel_ecology, eco_shift, min_eco_val, max_eco_val, current_dec_rate, current_step)
-  }
-  return(predicted_parcel_trajectory)
-  
-}
+# find_parcel_counterfactual <- function(parcel_trajectory, parcel_ecology, current_dec_rate, global_params, yr){
+#   parcel_counterfactual = array(0, dim(parcel_trajectory))
+#   if (yr == 1){
+#     parcel_counterfactual[, , 1] = parcel_ecology
+#   } else {
+#     parcel_counterfactual[, , 1:(yr-1)] = parcel_trajectory[, , 1:(yr - 1)]
+#   }
+#   parcel_counterfactual[, , yr:global_params$time_steps] = predict_parcel_trajectory(parcel_ecology, current_dec_rate, global_params$min_eco_val, global_params$max_eco_val, global_params$time_steps - (yr - 1)) 
+#   return(parcel_counterfactual)                                                 
+# }
+# 
+# 
+# predict_parcel_trajectory <- function(parcel_ecology, current_dec_rate, min_eco_val, max_eco_val, time_steps){
+#   predicted_parcel_trajectory = array(0, c(dim(parcel_ecology), time_steps))
+#   predicted_parcel_trajectory[, , 1] = parcel_ecology
+#   for (current_step in seq_len(time_steps)){
+#     predicted_parcel_trajectory[, , current_step] = sapply(parcel_ecology, eco_shift, min_eco_val, max_eco_val, current_dec_rate, current_step)
+#   }
+#   return(predicted_parcel_trajectory)
+#   
+# }
 
 
 
