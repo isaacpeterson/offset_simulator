@@ -23,6 +23,7 @@ initialise_global_params <- function(){
   global_params$min_initial_eco_val = 30 #minimum allowable initial ecological value of smallest ecological element (pixel)
   global_params$max_initial_eco_val = 80 #maximum "   "     "           "
   global_params$initial_eco_noise = 10 #how much initial variation in pixels per land parcel 
+  global_params$dev_vec = split_vector(global_params$time_steps, global_params$total_dev_num, sd = 1, min_width = -1)   #number of developments that occur per region per development cycle
   global_params$blur = FALSE
   global_params$max_developments = 1 #maximum number of developments per year 
   global_params$develop_every = 1 #how often the policy is implemented
@@ -31,7 +32,7 @@ initialise_global_params <- function(){
 }
 
 
-populate_region_list <- function(parcel_selection_type, offset_calc_type, offset_action_type, apply_offset_to, time_steps, total_dev_num,
+populate_region_list <- function(parcel_selection_type, offset_calc_type, offset_action_type, apply_offset_to,
                                  offset_parcel_for_parcel, restoration_rate, offset_multiplier, dev_calc_type, max_region_dev_num, mean_decline_rate){
   region_params = list()
   region_params$restoration_rate = restoration_rate
@@ -42,18 +43,18 @@ populate_region_list <- function(parcel_selection_type, offset_calc_type, offset
   region_params$apply_offset_to = apply_offset_to
   region_params$offset_parcel_for_parcel = offset_parcel_for_parcel
   region_params$dev_calc_type = dev_calc_type         #'current' - use current value of development parcel to determine offset, 'predicted' - use predicted value (i.e. the value the parcel would attain if the parcel was NOT developed) to determine offset  
-  region_params$dev_vec = split_vector(time_steps, total_dev_num, sd = 1, min_width = -1)   #number of developments that occur per region per development cycle
   region_params$mean_decline_rate = - mean_decline_rate
   region_params$decline_rate_std = 0.5*abs(mean_decline_rate)
   return(region_params)
 }
 
-#offset_calc_type = 'current condition', 'restoration gains', 'avoided degredation', 'restoration from counterfactual'
+#offset_calc_type = 'avoided degredation', 'restoration from counterfactual', 'absolute counterfactual', 'restoration gains', 'absolute restoration'
 #dev_calc_type = 'future condition', 'current condition'
 
-initialise_region_params <- function(region_num, restoration_rate, mean_decline_rates, time_steps, total_dev_num){
+initialise_region_params <- function(region_num, restoration_rate, mean_decline_rates, offset_calc_type){
   region_params = vector('list', region_num)
-  region_params[[1]] = populate_region_list(parcel_selection_type = 'regional', offset_calc_type = 'restoration from counterfactual', offset_action_type = 'restore', apply_offset_to = 'all',
-                                            time_steps, total_dev_num, offset_parcel_for_parcel = TRUE, restoration_rate, offset_multiplier = 1, dev_calc_type = 'future condition', max_region_dev_num = 1, mean_decline_rates[1])
-   return(region_params)
+  region_params[[1]] = populate_region_list(parcel_selection_type = 'regional', offset_calc_type, offset_action_type = 'restore', apply_offset_to = 'all',
+                                            offset_parcel_for_parcel = TRUE, restoration_rate, offset_multiplier = 1, 
+                                            dev_calc_type = 'current condition', max_region_dev_num = 1, mean_decline_rates[1])
+  return(region_params)
 }
