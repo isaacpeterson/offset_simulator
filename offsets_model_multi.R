@@ -1,7 +1,10 @@
 rm(list = ls())
 source('~/Documents/R_Codes/Offsets_Working_FEB_3/offsets_functions_current.R')
 source('~/Documents/R_Codes/Offsets_Working_FEB_3/Global_Regional_Params.R')
-
+.libPaths('~/Library/R/3.2/library')
+library(foreach)
+library(doParallel)
+library(abind)
 graphics.off()
 global_params <- initialise_global_params()
 region_params <- initialise_region_params(global_params$region_num, restoration_rate = 0.03, mean_decline_rates = c(0.03, 0.01), global_params$time_steps, global_params$total_dev_num)
@@ -18,5 +21,5 @@ collated_parcel_sets_object <- collate_parcel_sets(parcel_sets_object, global_pa
 cfacs <- build_counterfactuals_by_parcel_multi(global_params, decline_rates_initial, 1:(parcels$land_parcel_num), parcels$land_parcels, initial_ecology, time_steps = global_params$time_steps)
 cfac_parcel_trajs <- find_parcel_traj_by_list(cfacs[[1]])
 parcel_trajs <- find_parcel_trajectories(parcels$land_parcels, 1:(parcels$land_parcel_num), global_params$time_steps, outputs$trajectories[[1]])
-plot_single_net_regional(collated_parcel_sets_object, assessed_set_index = 1, global_params, cfac_parcel_trajs, parcel_trajs)
+plot_single_net_regional(collated_parcel_sets_object, assessed_set_index = 5, global_params, cfac_parcel_trajs, parcel_trajs)
 
