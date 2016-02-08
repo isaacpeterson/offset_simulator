@@ -23,7 +23,7 @@ initialise_global_params <- function(){
   global_params$min_initial_eco_val = 30 #minimum allowable initial ecological value of smallest ecological element (pixel)
   global_params$max_initial_eco_val = 80 #maximum "   "     "           "
   global_params$initial_eco_noise = 10 #how much initial variation in pixels per land parcel 
-  global_params$dev_vec = split_vector(global_params$time_steps, global_params$total_dev_num, sd = 1, min_width = -1)   #number of developments that occur per region per development cycle
+  global_params$dev_vec = find_development_vector(global_params$time_steps, global_params$total_dev_num, sd = 1, min_width = -1)   #number of developments that occur per region per development cycle
   global_params$blur = FALSE
   global_params$max_developments = 1 #maximum number of developments per year 
   global_params$develop_every = 1 #how often the policy is implemented

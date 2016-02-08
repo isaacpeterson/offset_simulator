@@ -11,6 +11,12 @@ run_offsets_model <- function(global_params, region_params, parcels, index_objec
 }
 
 
+find_development_vector <- function(time_steps, total_dev_num, sd, min_width){
+  dev_vec = array(0, time_steps)
+  dev_vec[1:(time_steps - 1)] = split_vector((time_steps - 1), total_dev_num, sd, min_width)
+  return(dev_vec)
+}
+  
 split_vector <- function(N, M, sd, min_width) {
 
   vec <- rnorm(N, M/N, sd)
@@ -1185,6 +1191,7 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
 
   }
   
+  parcel_set_element$yr = yr
   parcel_set_element$restoration_gains = restoration_gains
   parcel_set_element$avoided_degredation = avoided_degredation
   parcel_set_element$parcel_trajectory_sum = parcel_trajectory_sum
@@ -1473,6 +1480,7 @@ collate_assessed_object <- function(current_assessed_object, time_steps, eco_dim
       parcel_set_counterfacs[, parcel_set_ind, eco_ind] = apply(current_assessed_object[[parcel_set_ind]]$parcel_counter_sum, MARGIN = 1, sum)
     }
   }
+  collated_object$yr = current_assessed_object$yr
   collated_object$rest_gains = rest_gains
   collated_object$avoided_degs = avoided_degs
   collated_object$parcel_set_trajs = parcel_set_trajs
