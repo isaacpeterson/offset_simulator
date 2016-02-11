@@ -1164,9 +1164,11 @@ plot_outs <- function(...){
 
 # outputs = outs$model_outputs
 # land_parcels = parcels$land_parcels
+
 # trajectories = outputs$trajectories
 # time_steps = global_params$time_steps
 # parcel_set_ind = 1
+
 # time_steps = global_params$time_steps
 # parcel_set_ind = 1
 # current_sets_object = outputs$offsets
@@ -1223,6 +1225,15 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
 
   parcel_counter_sum = rec_array
   parcel_trajectory_sum = rec_array
+
+
+  parcel_num = length(parcel_indexes)
+  rec_array = array(0, c(time_steps, parcel_num, global_params$eco_dims))
+  avoided_degredation = rec_array
+  restoration_gains = rec_array
+  
+  #parcel_counter_sum = rec_array
+  #parcel_trajectory_sum = rec_array
 
   initial_sum = array(0, c(parcel_num, global_params$eco_dims))
   
