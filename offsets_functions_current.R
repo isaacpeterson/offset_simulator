@@ -1164,7 +1164,6 @@ plot_outs <- function(...){
 
 # outputs = outs$model_outputs
 # land_parcels = parcels$land_parcels
-
 # trajectories = outputs$trajectories
 # time_steps = global_params$time_steps
 # parcel_set_ind = 1
