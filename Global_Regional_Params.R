@@ -7,7 +7,8 @@ initialise_global_params <- function(){
   global_params$offset_time_horizon = 20
   global_params$total_dev_num = 10
   global_params$use_offset_time_horizon = TRUE
-  global_params$adjust_counterfactual = FALSE
+  global_params$use_adjusted_counterfactual = FALSE
+  global_params$calc_adjusted_counterfactual = TRUE
   global_params$include_offsets_in_adjusted_counterfactual = FALSE
   global_params$apply_offset_to = 'singular'
   global_params$time_steps = 50 #number of timesteps simulation will be run
@@ -27,15 +28,15 @@ initialise_global_params <- function(){
   global_params$blur = FALSE
   global_params$max_developments = 1 #maximum number of developments per year 
   global_params$develop_every = 1 #how often the policy is implemented
+  global_params$restoration_rate = 0.03
   return(global_params)
   
 }
 
 
 populate_region_list <- function(parcel_selection_type, offset_calc_type, offset_action_type, apply_offset_to,
-                                 offset_parcel_for_parcel, restoration_rate, offset_multiplier, dev_calc_type, max_region_dev_num, mean_decline_rate){
+                                 offset_parcel_for_parcel, offset_multiplier, dev_calc_type, max_region_dev_num, mean_decline_rate){
   region_params = list()
-  region_params$restoration_rate = restoration_rate
   region_params$offset_multiplier = offset_multiplier #multiply developed parcel value by this value to determine value to offset
   region_params$parcel_selection_type = parcel_selection_type #'regional' or 'national' - offset into same/any region as developed parcel
   region_params$offset_calc_type = offset_calc_type #'current' ('predicted') - use current (predicted - i.e. the value the parcel would attain if the parcel was offset) value of offset parcel as offset metric
@@ -51,10 +52,10 @@ populate_region_list <- function(parcel_selection_type, offset_calc_type, offset
 #offset_calc_type = 'avoided degredation', 'restoration from counterfactual', 'absolute counterfactual', 'restoration gains', 'absolute restoration'
 #dev_calc_type = 'future condition', 'current condition'
 
-initialise_region_params <- function(region_num, restoration_rate, mean_decline_rates, offset_calc_type){
+initialise_region_params <- function(region_num, mean_decline_rates, offset_calc_type){
   region_params = vector('list', region_num)
   region_params[[1]] = populate_region_list(parcel_selection_type = 'regional', offset_calc_type, offset_action_type = 'restore', apply_offset_to = 'all',
-                                            offset_parcel_for_parcel = TRUE, restoration_rate, offset_multiplier = 1, 
+                                            offset_parcel_for_parcel = TRUE, offset_multiplier = 1, 
                                             dev_calc_type = 'current condition', max_region_dev_num = 1, mean_decline_rates[1])
   return(region_params)
 }
