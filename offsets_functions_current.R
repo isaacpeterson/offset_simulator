@@ -1164,6 +1164,10 @@ plot_outs <- function(...){
 
 # outputs = outs$model_outputs
 # land_parcels = parcels$land_parcels
+# trajectories = outputs$trajectories
+# time_steps = global_params$time_steps
+# parcel_set_ind = 1
+
 # time_steps = global_params$time_steps
 # parcel_set_ind = 1
 # current_sets_object = outputs$offsets
@@ -1184,6 +1188,7 @@ group_parcel_sets <- function(outputs, land_parcels, time_steps, decline_rates_i
   return(parcel_sets_object)
   
 }
+
 
 
 find_parcel_sets <- function(current_sets_object, land_parcels, trajectories, time_steps, decline_rates_initial){
@@ -1208,7 +1213,19 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
   parcel_set_element = list()
   parcel_indexes = current_parcel_set$parcel_indexes
   initial_parcel_ecologies = current_parcel_set$parcel_ecologies
+
+
+  parcel_num = length(parcel_indexes)
+
+  rec_array = array(0, c(time_steps, parcel_num, global_params$eco_dims))
+  avoided_degredation = rec_array
+  restoration_gains = rec_array
   
+
+  parcel_counter_sum = rec_array
+  parcel_trajectory_sum = rec_array
+
+
   parcel_num = length(parcel_indexes)
   rec_array = array(0, c(time_steps, parcel_num, global_params$eco_dims))
   avoided_degredation = rec_array
@@ -1216,6 +1233,7 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
   
   #parcel_counter_sum = rec_array
   #parcel_trajectory_sum = rec_array
+
   initial_sum = array(0, c(parcel_num, global_params$eco_dims))
   
   for (parcel_count_ind in seq_len(parcel_num)){
