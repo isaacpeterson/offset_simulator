@@ -392,7 +392,7 @@ update_development_object <- function(region_params, global_params, region_ind, 
   parcel_indexes = select_development_index(ind_available, 1)
   
   dev_calc_type = region_params[[region_ind]]$dev_calc_type
-  restoration_rate = region_params[[region_ind]]$restoration_rate
+  restoration_rate = global_params$restoration_rate
   
   parcel_sums_object = find_current_parcel_sums(land_parcels, current_ecology, parcel_indexes)
   
@@ -424,11 +424,17 @@ update_development_object <- function(region_params, global_params, region_ind, 
 }
 
 
+# predict_type = 'restore' 
+# parcel_eco_vals = parcel_sums_object$parcel_eco_vals 
+# parcel_indexes = current_offset_pool 
+# decline_rates = decline_rates_initial 
+# restoration_rate = global_params$restoration_rate
+# min_eco_val = global_params$min_eco_val
+# max_eco_val = global_params$max_eco_val
 
 predict_parcel_vals_multi <- function(predict_type, parcel_eco_vals, parcel_indexes, decline_rates, restoration_rate, min_eco_val, max_eco_val, eco_dims, time_horizon){
   
   parcel_num = length(parcel_indexes)
- 
   predicted_parcel_vals = array(0, c(parcel_num, eco_dims))
   
   for (parcel_count_ind in seq_len(parcel_num)){
@@ -522,7 +528,7 @@ find_offset_pool <- function(index_object, region_ind, decline_rates, global_par
   }
   
   if ( (offset_calc_type == 'restoration gains') || (offset_calc_type == 'restoration from counterfactual') || (offset_calc_type == 'absolute restoration')){
-      restoration_vals = predict_parcel_vals_multi(predict_type = 'restore', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, region_params[[region_ind]]$restoration_rate, 
+      restoration_vals = predict_parcel_vals_multi(predict_type = 'restore', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, global_params$restoration_rate, 
                                                           global_params$min_eco_val, global_params$max_eco_val, eco_dims, time_horizon)
   }
   
@@ -532,7 +538,7 @@ find_offset_pool <- function(index_object, region_ind, decline_rates, global_par
       counterfactual_vals = adjusted_counter_trajs[time_horizon, ]
       counterfactual_vals = t(t(counterfactual_vals))
     } else {
-    counterfactual_vals = predict_parcel_vals_multi(predict_type = 'protect', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, region_params[[region_ind]]$restoration_rate, 
+    counterfactual_vals = predict_parcel_vals_multi(predict_type = 'protect', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, global_params$restoration_rate, 
                                                          global_params$min_eco_val, global_params$max_eco_val, eco_dims, time_horizon)
     }
   }
@@ -624,13 +630,14 @@ test_cond <- function(vals_to_match, parcel_vals_pool, development_vals_used, ma
 adjust_counters <-function(cfacs, include_offsets, region_params, global_params, parcel_num, time_horizon, yr){
   
   eco_dims = global_params$eco_dims
-  summed_offset_projections = vector('list', eco_dims)
-  adjusted_counters = vector('list', eco_dims)
+  rec_list = vector('list', parcel_num)
   
-  for (eco_ind in 1:eco_dims){
-    summed_offset_projections[[eco_ind]] = vector('list', parcel_num)
-    adjusted_counters[[eco_ind]] = vector('list', parcel_num)
+  for (parcel_count_ind in 1:parcel_num){
+    rec_list[[parcel_count_ind]] = vector('list', eco_dims)
   }
+  
+  summed_offset_projections = rec_list
+  adjusted_counters = rec_list
   
   dev_vec = global_params$dev_vec
   dev_prob <- find_dev_probability(global_params$dev_vec, yr, time_horizon, parcel_num)
@@ -663,123 +670,6 @@ adjust_counters <-function(cfacs, include_offsets, region_params, global_params,
       current_summed_offset_projections = 0
     }
     
-    summed_offset_projections[[eco_ind]][[parcel_count_ind]] = current_summed_offset_projections
-    
-    c_probs = rep(counter_probs, projected_dims[1]*projected_dims[2])
-    dim(c_probs) = c(length(counter_probs), c(projected_dims[2], projected_dims[1]))
-    c_probs = aperm(c_probs, c(3, 2, 1))
-    adjusted_counters[[eco_ind]][[parcel_count_ind]] = c_probs*current_cfac + current_summed_offset_projections
-    
-  }
-  
-  return(adjusted_counters)
-  
-}
-
-
-# adjust_counterfactual <-function(cfacs, include_offsets, region_params, global_params, parcel_indexes, parcel_num_remaining, time_horizon, yr){
-#   
-#   parcel_num = length(parcel_indexes)
-#   eco_dims = global_params$eco_dims
-#   summed_offset_projections = vector('list', eco_dims)
-#   adjusted_counters = vector('list', eco_dims)
-#   
-#   for (eco_ind in 1:eco_dims){
-#     summed_offset_projections[[eco_ind]] = vector('list', parcel_num)
-#     adjusted_counters[[eco_ind]] = vector('list', parcel_num)
-#   }
-#   
-#   dev_vec = global_params$dev_vec
-#   dev_vec = dev_vec[yr:length(dev_vec)]
-#   dev_inds = which(dev_vec > 0)
-#   
-#   if (length(dev_vec) < time_horizon){
-#     dev_vec = c(dev_vec, array(0, (time_horizon - length(dev_vec))))
-#   }
-#   
-#   dev_vec = dev_vec[1:time_horizon]
-#   dev_prob = dev_vec/parcel_num_remaining
-#   
-#   if (include_offsets == TRUE){
-#     offset_prob = dev_prob
-#   } else {offset_prob = 0}
-#   
-#   counter_probs = 1 - (cumsum(dev_prob) + cumsum(offset_prob))
-#   eco_ind = 1
-#   
-#   for (parcel_count_ind in seq_len(parcel_num)){
-#     current_cfac = cfacs[[parcel_count_ind]][[eco_ind]]
-#     projected_dims = dim(current_cfac)
-#     
-#     if (include_offsets == TRUE){
-#       current_summed_offset_projections = array(0, projected_dims)
-#       
-#       for (proj_yr in which(dev_vec > 0)){
-#         
-#         current_parcel_ecology = current_cfac[, , proj_yr]
-#         current_offset_prob = offset_prob[proj_yr]
-#         current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr))
-#         current_summed_offset_projections[, , proj_yr:time_horizon] = current_summed_offset_projections[, , proj_yr:time_horizon] + current_offset_prob*current_offset_projection
-#       } 
-#       
-#     } else {
-#       current_summed_offset_projections = 0
-#     }
-#     
-#     summed_offset_projections[[eco_ind]][[parcel_count_ind]] = current_summed_offset_projections
-#     
-#     c_probs = rep(counter_probs, projected_dims[1]*projected_dims[2])
-#     dim(c_probs) = c(length(counter_probs), c(projected_dims[2], projected_dims[1]))
-#     c_probs = aperm(c_probs, c(3, 2, 1))
-#     adjusted_counters[[eco_ind]][[parcel_count_ind]] = c_probs*current_cfac + current_summed_offset_projections
-#     
-#   }
-#   
-#   return(adjusted_counters)
-#   
-# }
-
-
-adjust_counterfactual <-function(cfacs, include_offsets, region_params, global_params, parcel_indexes, parcel_num_remaining, time_horizon, yr){
-  
-  parcel_num = length(parcel_indexes)
-  eco_dims = global_params$eco_dims
-  summed_offset_projections = vector('list', parcel_num)
-  adjusted_counters = vector('list', parcel_num)
-  
-  for (parcel_ind in 1:parcel_num){
-    summed_offset_projections[[parcel_ind]] = vector('list', eco_dims)
-    adjusted_counters[[parcel_ind]] = vector('list', eco_dims)
-  }
-  
-  dev_prob <- find_dev_probability(global_params$dev_vec, yr, time_horizon, parcel_num_remaining)
-  
-  if (include_offsets == TRUE){
-    offset_prob = dev_prob
-  } else {offset_prob = 0}
-  
-  counter_probs = 1 - (cumsum(dev_prob) + cumsum(offset_prob))
-  eco_ind = 1
-  
-  for (parcel_count_ind in seq_len(parcel_num)){
-    current_cfac = cfacs[[parcel_count_ind]][[eco_ind]]
-    projected_dims = dim(current_cfac)
-    
-    if (include_offsets == TRUE){
-      current_summed_offset_projections = array(0, projected_dims)
-      
-      for (proj_yr in which(offset_prob > 0)){
-        
-        current_parcel_ecology = current_cfac[, , proj_yr]
-        current_offset_prob = offset_prob[proj_yr]
-        current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr))
-        current_summed_offset_projections[, , proj_yr:time_horizon] = current_summed_offset_projections[, , proj_yr:time_horizon] + current_offset_prob*current_offset_projection
-      } 
-      
-    } else {
-      current_summed_offset_projections = 0
-    }
-    
     summed_offset_projections[[parcel_count_ind]][[eco_ind]] = current_summed_offset_projections
     
     c_probs = rep(counter_probs, projected_dims[1]*projected_dims[2])
@@ -790,6 +680,65 @@ adjust_counterfactual <-function(cfacs, include_offsets, region_params, global_p
   }
   
   return(adjusted_counters)
+  
+}
+
+
+
+adjust_counterfactual <-function(cfacs, include_offsets, region_params, global_params, parcel_indexes, parcel_num_remaining, time_horizon, yr){
+  
+  parcel_num = length(parcel_indexes)
+  eco_dims = global_params$eco_dims
+  rec_list = vector('list', parcel_num)
+  
+  for (parcel_count_ind in 1:parcel_num){
+    rec_list[[parcel_count_ind]] = vector('list', eco_dims)
+  }
+  
+  weighted_offset_projections = rec_list
+  include_clearing = rec_list
+  include_clearing_and_offsets = rec_list
+  
+  rm(rec_list)
+  
+  dev_prob <- find_dev_probability(global_params$dev_vec, yr, time_horizon, parcel_num_remaining)
+  
+  if (include_offsets == TRUE){
+    offset_prob = dev_prob
+  } else {offset_prob = 0}
+  
+  counter_probs = 1 - (cumsum(dev_prob) + cumsum(offset_prob))
+  
+  for (parcel_count_ind in seq_len(parcel_num)){
+    
+    for (eco_ind in seq_len(eco_dims)){
+      current_cfac = cfacs[[parcel_count_ind]][[eco_ind]]
+      projected_dims = dim(current_cfac)
+      
+      if (include_offsets == TRUE){
+        current_weighted_offset_projections = find_summed_offset_projections(projected_dims, current_cfac, offset_prob, global_params,time_horizon)
+      } else {
+        current_weighted_offset_projections = 0
+      }
+
+      counter_prob_array = rep(counter_probs, projected_dims[1]*projected_dims[2])
+      dim(counter_prob_array) = c(length(counter_probs), c(projected_dims[2], projected_dims[1]))
+      counter_prob_array = aperm(counter_prob_array, c(3, 2, 1))
+     
+      weighted_counters = counter_prob_array*current_cfac
+      include_clearing[[parcel_count_ind]][[eco_ind]] = weighted_counters
+      weighted_offset_projections[[parcel_count_ind]][[eco_ind]] = current_weighted_offset_projections
+      include_clearing_and_offsets[[parcel_count_ind]][[eco_ind]] = weighted_counters + current_weighted_offset_projections
+      
+    } 
+  }
+  
+  adjusted_counters_object = list()
+  adjusted_counters_object$counterfactuals = cfacs
+  adjusted_counters_object$include_clearing = include_clearing
+  adjusted_counters_object$weighted_offset_projections = weighted_offset_projections
+  adjusted_counters_object$include_clearing_and_offsets = include_clearing_and_offsets
+  return(adjusted_counters_object)
   
 }
 
@@ -808,128 +757,20 @@ find_dev_probability <- function(dev_vec, yr, time_horizon, parcel_num_remaining
 }
 
 
-find_summed_offset_projections <- function(cfacs, include_offsets, offset_prob, region_params, global_params, parcel_indexes, parcel_num_remaining, time_horizon, yr){
-  
-  parcel_num = length(parcel_indexes)
-  eco_dims = global_params$eco_dims
-  summed_offset_projections = vector('list', eco_dims)
-  
-  for (eco_ind in 1:eco_dims){
-    summed_offset_projections[[eco_ind]] = vector('list', parcel_num)
-  }
-  
-  dev_vec = global_params$dev_vec
-  dev_vec = dev_vec[yr:length(dev_vec)]
-  dev_inds = which(dev_vec > 0)
-  
-  if (length(dev_vec) < time_horizon){
-    dev_vec = c(dev_vec, array(0, (time_horizon - length(dev_vec))))
-  }
-  
-  dev_vec = dev_vec[1:time_horizon]
-  dev_prob = dev_vec/parcel_num_remaining
-  
-  if (include_offsets == TRUE){
-    offset_prob = dev_prob
-  } else {offset_prob = 0}
-  
-  counter_probs = 1 - (cumsum(dev_prob) + cumsum(offset_prob))
-  eco_ind = 1
-  
-  for (parcel_count_ind in seq_len(parcel_num)){
-    current_cfac = cfacs[[parcel_count_ind]][[eco_ind]]
-    projected_dims = dim(current_cfac)
+find_summed_offset_projections <- function(projected_dims, current_cfac, offset_prob, global_params,time_horizon){
+
+    current_summed_offset_projections = array(0, projected_dims)
     
-    if (include_offsets == TRUE){
-      current_summed_offset_projections = array(0, projected_dims)
+    for (proj_yr in which(offset_prob > 0)){
       
-      for (proj_yr in which(dev_vec > 0)){
-        
-        current_parcel_ecology = current_cfac[, , proj_yr]
-        current_offset_prob = offset_prob[proj_yr]
-        current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr))
-        current_summed_offset_projections[, , proj_yr:time_horizon] = current_summed_offset_projections[, , proj_yr:time_horizon] + current_offset_prob*current_offset_projection
-      } 
-      
-    } else {
-      current_summed_offset_projections = 0
-    }
-    
-    summed_offset_projections[[eco_ind]][[parcel_count_ind]] = current_summed_offset_projections
-    
-    c_probs = rep(counter_probs, projected_dims[1]*projected_dims[2])
-    dim(c_probs) = c(length(counter_probs), c(projected_dims[2], projected_dims[1]))
-    c_probs = aperm(c_probs, c(3, 2, 1))
-    adjusted_counters[[eco_ind]][[parcel_count_ind]] = c_probs*current_cfac + current_summed_offset_projections
-    
-  }
-  
-  return(adjusted_counters)
-  
+      current_parcel_ecology = current_cfac[, , proj_yr]
+      current_offset_prob = offset_prob[proj_yr]
+      current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr))
+      current_summed_offset_projections[, , proj_yr:time_horizon] = current_summed_offset_projections[, , proj_yr:time_horizon] + current_offset_prob*current_offset_projection
+    } 
+    return(current_summed_offset_projections)
 }
 
-
-
-
-
-# 
-# decline_rates = decline_rates_initial
-# initial_ecology = initial_ecology[, , 1]
-# counter_parcel_trajs = find_parcel_trajectories(parcels$land_parcels, 1:(parcels$land_parcel_num), global_params$time_steps, cfacs)
-
-
-# 
-# 
-# 
-# adjust_counters <-function(cfacs, perform_offsets, region_params, global_params, decline_rates, parcels){
-#   
-#   dev_vec = region_params[[1]]$dev_nums
-#   dev_vec = c(0, dev_vec)
-#   dev_vec = dev_vec[1:(length(dev_vec) - 1)]
-#   
-#   dev_prob = dev_vec/parcel_num
-#   offset_vec = dev_vec
-#   offset_prob = offset_vec/parcel_num
-#   
-#   rest_rate = region_params[[1]]$restoration_rate
-#   time_steps = global_params$time_steps
-#   parcel_num = parcels$land_parcel_num
-#   
-#   current_parcel = parcels$land_parcels[[1]]
-#   parcel_trajs = array(0, c(time_steps, time_steps))
-#   
-#   if (perform_offsets == TRUE){
-#     off_prob = offset_vec/parcel_num
-#     
-#     summed_offset_projections = array(0, dim(cfacs))
-#     
-#     for (yr in seq_len(time_steps)){
-#       if (dev_vec[yr] > 0){
-#         current_ecology = cfacs[, , yr]
-#         current_off_prob = offset_prob[yr]
-#         current_offset_projection = array(0, dim(cfacs))
-#         current_offset_projection[, , yr:time_steps] = predict_parcel_traj(current_ecology, global_params, decline_rate = rest_rate, time_horizon = (time_steps - yr))
-#         summed_offset_projections = summed_offset_projections + current_off_prob*current_offset_projection
-#         
-#         parcel_trajs[, yr] = find_parcel_trajectory(parcels$land_parcels, 1, time_steps, current_offset_projection)
-#         
-#       }
-#     }
-#     
-#   } else {
-#     summed_offset_projections = 0
-#   }
-#   
-#   counter_probs = 1 - (cumsum(dev_prob) + cumsum(offset_prob))
-#   
-#   c_probs = rep(counter_probs, global_params$ecology_size*global_params$ecology_size)
-#   dim(c_probs) = c(length(counter_probs), c(global_params$ecology_size, global_params$ecology_size))
-#   c_probs = aperm(c_probs, c(3, 2, 1))
-#   adjusted_counters = c_probs*cfacs + summed_offset_projections
-#   return(adjusted_counters)
-#   
-# }
-# 
 
 
 
@@ -1304,8 +1145,8 @@ calc_trajectories_multi <- function(global_params, region_params, current_ecolog
 }
 
 
-select_land_parcel <- function(land_parcels, parcel_ind){
-  selected_land_parcel = land_parcels[[parcel_ind]]
+select_land_parcel <- function(land_parcels, current_parcel_ind){
+  selected_land_parcel = land_parcels[[current_parcel_ind]]
   return(selected_land_parcel)
 }
 
@@ -1371,38 +1212,82 @@ plot_outs <- function(...){
 # current_parcel_set = current_sets_object[[parcel_set_ind]]
 # decline_rates = decline_rates_initial
 # parcel_count_ind = 1
+# current_counterfactual_sets_object = parcel_sets_counterfactuals$offsets
+# counterfactual_type = 'counterfactual'
 
-group_parcel_sets <- function(outputs, land_parcels, global_params, decline_rates_initial){
-  
+group_parcel_sets <- function(outputs, parcel_sets_counterfactuals, counterfactual_type, land_parcels, global_params, decline_rates){
   parcel_sets_object = list()
-  parcel_sets_object$offsets = find_parcel_sets(outputs$offsets, land_parcels, outputs$trajectories, global_params, decline_rates_initial)
-  parcel_sets_object$developments = find_parcel_sets(outputs$developments, land_parcels, outputs$trajectories, global_params, decline_rates_initial)
-  
+  parcel_sets_object$offsets = find_parcel_sets(outputs$offsets, parcel_sets_counterfactuals$offsets, counterfactual_type, land_parcels, outputs$trajectories, global_params, decline_rates)
+  parcel_sets_object$developments = find_parcel_sets(outputs$developments, parcel_sets_counterfactuals$developments, counterfactual_type, land_parcels, outputs$trajectories, global_params, decline_rates)
   return(parcel_sets_object)
+}
+
+find_parcel_sets <- function(current_sets_object, current_counterfactual_sets_object, counterfactual_type, land_parcels, trajectories, global_params, decline_rates){
+  parcel_set_num = length(current_sets_object)
+  parcel_set_object = vector('list', parcel_set_num)
+  for (parcel_set_ind in seq_len(parcel_set_num)){
+    current_parcel_set = current_sets_object[[parcel_set_ind]]
+    current_counterfactual_object = current_counterfactual_sets_object[[parcel_set_ind]]
+    parcel_set_object[[parcel_set_ind]] = collate_parcel_set_element(global_params, region_params, counterfactual_type, current_parcel_set, current_counterfactual_object, land_parcels, trajectories, decline_rates)
+  }
+  return(parcel_set_object)
+}  
+
+
+collate_parcel_set_element <- function(global_params, region_params, counterfactual_type, current_parcel_set, current_counterfactual_object, land_parcels, trajectories, decline_rates){
+  
+  yr = current_parcel_set$yr
+  parcel_set_element = list()
+  parcel_indexes = current_parcel_set$parcel_indexes
+  parcel_ecologies_list = current_parcel_set$parcel_ecologies
+  parcel_num = length(parcel_indexes)
+  parcel_num_remaining = current_parcel_set$parcel_num_remaining
+  
+  rec_array = array(0, c(global_params$time_steps, parcel_num, global_params$eco_dims))
+  avoided_degredation = rec_array
+  restoration_gains = rec_array
+  
+  time_horizon = global_params$time_steps - yr 
+  
+  for (parcel_count_ind in seq_len(parcel_num)){
+
+    current_parcel = select_land_parcel(land_parcels, current_parcel_ind = parcel_indexes[parcel_count_ind])
+    
+    for (eco_ind in seq_len(global_params$eco_dims)){
+      
+      current_parcel_trajectory = extract_3D_parcel(current_parcel, trajectories[[eco_ind]][, , yr:global_params$time_steps])
+      parcel_ecology = parcel_ecologies_list[[parcel_count_ind]][, , eco_ind] 
+      restoration_gains[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'trajectory', global_params, current_parcel_trajectory, yr, parcel_ecology)
+      
+      if (counterfactual_type == 'standard'){
+        parcel_cfac = current_counterfactual_object$counterfactuals
+      } else if (counterfactual_type == 'include clearing'){
+        parcel_cfac = current_counterfactual_object$include_clearing
+      } else if (counterfactual_type == 'include clearing and offsets'){
+        parcel_cfac = current_counterfactual_object$include_clearing_and_offsets
+      }
+      
+      avoided_degredation[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'counterfactual', global_params, parcel_cfac[[parcel_count_ind]][[eco_ind]], yr, parcel_ecology)
+    }
+  }
+  
+  parcel_set_element$yr = yr
+  parcel_set_element$restoration_gains = restoration_gains
+  parcel_set_element$avoided_degredation = avoided_degredation
+  parcel_set_element$parcel_indexes = parcel_indexes
+  parcel_set_element$parcel_vals_used = current_parcel_set$parcel_vals_used
+  
+  return(parcel_set_element)
   
 }
 
 
 
-find_parcel_sets <- function(current_sets_object, land_parcels, trajectories, global_params, decline_rates_initial){
-  
-  parcel_set_num = length(current_sets_object)
-  parcel_set_object = vector('list', parcel_set_num)
-  
-  for (parcel_set_ind in seq_len(parcel_set_num)){
-    current_parcel_set = current_sets_object[[parcel_set_ind]]
-    parcel_set_object[[parcel_set_ind]] = find_parcel_set_element(global_params, region_params, current_parcel_set, land_parcels, trajectories, decline_rates_initial)
-  }
-  
-  return(parcel_set_object)
-  
-}  
 
 
-
-find_parcel_set_element <- function(global_params, region_params, current_parcel_set, land_parcels, trajectories, decline_rates){
+find_parcel_set_element <- function(global_params, region_params, counterfactual_type, current_parcel_set, current_counterfatual_object, land_parcels, trajectories, decline_rates){
+  
   yr = current_parcel_set$yr
-  
   parcel_set_element = list()
   parcel_indexes = current_parcel_set$parcel_indexes
   parcel_ecologies_list = current_parcel_set$parcel_ecologies
@@ -1428,27 +1313,23 @@ find_parcel_set_element <- function(global_params, region_params, current_parcel
       
       current_parcel_trajectory = extract_3D_parcel(current_parcel, trajectories[[eco_ind]][, , yr:global_params$time_steps])
       parcel_ecology = parcel_ecologies_list[[parcel_count_ind]][, , eco_ind] 
-      
-      parcel_cfac = build_counterfactuals_list(global_params, decline_rates, parcel_ecologies_list, current_parcel_ind, time_horizon, (eco_dims = global_params$eco_dims))
-      adjusted_counters = adjust_counterfactual(parcel_cfac, include_offsets = TRUE, region_params, global_params, parcel_indexes, parcel_num_remaining, time_horizon, yr)
-      
-      #parcel_counterfactual = predict_parcel_traj(current_ecology = parcel_ecology, global_params, decline_rate = current_dec_rate, (time_horizon = time_horizon))
-      
       restoration_gains[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'trajectory', global_params, current_parcel_trajectory, yr, parcel_ecology)
-      avoided_degredation[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'counterfactual', global_params, parcel_cfac[[1]][[1]], yr, parcel_ecology)
       
-      #parcel_trajectory_sum[, parcel_count_ind, eco_ind] = apply(current_parcel_trajectory, 3, sum)
-      #parcel_counter_sum[, parcel_count_ind, eco_ind] = apply(parcel_counterfactual, 3, sum)
-      initial_sum[parcel_count_ind, eco_ind]  = sum(parcel_ecology)
+      if (counterfactual_type == 'counterfactual'){
+        parcel_cfac = current_counterfactual_object$counterfactuals
+      } else if (counterfactual_type == 'include clearing'){
+        parcel_cfac = current_counterfactual_object$include_clearing
+      } else if (counterfactual_type == 'include clearing and offsets'){
+        parcel_cfac = current_counterfactual_object$include_clearing_and_offsets
+      }
+        
+      avoided_degredation[, parcel_count_ind, eco_ind] = calc_rel_intial(trajectory_type = 'counterfactual', global_params, parcel_cfac[[parcel_count_ind]][[eco_ind]], yr, parcel_ecology)
     }
   }
   
   parcel_set_element$yr = yr
   parcel_set_element$restoration_gains = restoration_gains
   parcel_set_element$avoided_degredation = avoided_degredation
-  parcel_set_element$adjusted_counters = adjusted_counters
-#  parcel_set_element$initial_sum = initial_sum
-#  parcel_set_element$parcel_counter_sum = parcel_counter_sum
   parcel_set_element$parcel_indexes = parcel_indexes
   parcel_set_element$parcel_vals_used = current_parcel_set$parcel_vals_used
   
@@ -1472,30 +1353,44 @@ calc_rel_intial <- function(trajectory_type, global_params, parcel_trajectory, y
   rel_arr = apply(rel_arr, 3, sum)
 }
 
-# find_parcel_counterfactual <- function(parcel_trajectory, parcel_ecology, current_dec_rate, global_params, yr){
-#   parcel_counterfactual = array(0, dim(parcel_trajectory))
-#   if (yr == 1){
-#     parcel_counterfactual[, , 1] = parcel_ecology
-#   } else {
-#     parcel_counterfactual[, , 1:(yr-1)] = parcel_trajectory[, , 1:(yr - 1)]
-#   }
-#   parcel_counterfactual[, , yr:global_params$time_steps] = predict_parcel_trajectory(parcel_ecology, current_dec_rate, global_params$min_eco_val, global_params$max_eco_val, tim_horizon = global_params$time_steps - yr) 
-#   return(parcel_counterfactual)                                                 
-# }
+
 # 
-# 
-# predict_parcel_trajectory <- function(parcel_ecology, current_dec_rate, min_eco_val, max_eco_val, time_steps){
-#   predicted_parcel_trajectory = array(0, c(dim(parcel_ecology), time_steps))
-#   predicted_parcel_trajectory[, , 1] = parcel_ecology
-#   for (current_step in seq_len(time_steps)){
-#     predicted_parcel_trajectory[, , current_step] = sapply(parcel_ecology, eco_shift, min_eco_val, max_eco_val, current_dec_rate, current_step)
-#   }
-#   return(predicted_parcel_trajectory)
-#   
-# }
+# outputs = outs$model_outputs
+# land_parcels = parcels$land_parcels
+# trajectories = outputs$trajectories
+# time_steps = global_params$time_steps
+# parcel_set_ind = 1
+# current_sets_object = outputs$offsets
+# current_parcel_set = current_sets_object[[parcel_set_ind]]
+# decline_rates = decline_rates_initial
+#parcel_count_ind = 1
 
+calc_parcel_set_counterfactuals <- function(outputs, global_params, decline_rates){
+  counterfactuals_object = list()
+  counterfactuals_object$offsets = calc_counters_post_facto(outputs$offsets, global_params, decline_rates)
+  counterfactuals_object$developments = calc_counters_post_facto(outputs$developments, global_params, decline_rates)
+  return(counterfactuals_object)
+}
 
-
+calc_counters_post_facto <- function(current_sets_object, global_params, decline_rates){
+  
+  parcel_set_num = length(current_sets_object)
+  adjusted_counters_object = vector('list', parcel_set_num)
+  
+  for (parcel_set_ind in seq_len(parcel_set_num)){
+    current_parcel_set = current_sets_object[[parcel_set_ind]]
+    yr = current_parcel_set$yr
+    time_horizon = global_params$time_steps - yr
+    parcel_indexes = current_parcel_set$parcel_indexes
+    cfacs = build_counterfactuals_list(global_params, decline_rates, (parcel_ecologies_list = current_parcel_set$parcel_ecologies), 
+                                       parcel_indexes, time_horizon, (eco_dims = global_params$eco_dims))
+   
+    adjusted_counters_object[[parcel_set_ind]] = adjust_counterfactual(cfacs, include_offsets = TRUE, region_params, global_params, parcel_indexes,
+                                                     (parcel_num_remaining = current_parcel_set$parcel_num_remaining), time_horizon, yr)
+  }
+  
+  return(adjusted_counters_object)
+}  
 
 
 

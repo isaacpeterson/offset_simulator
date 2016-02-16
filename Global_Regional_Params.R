@@ -6,9 +6,9 @@ initialise_global_params <- function(){
   global_params$display_object = FALSE
   global_params$offset_time_horizon = 20
   global_params$total_dev_num = 10
-  global_params$use_offset_time_horizon = TRUE
+  global_params$use_offset_time_horizon = FALSE
   global_params$use_adjusted_counterfactual = FALSE
-  global_params$calc_adjusted_counterfactual = TRUE
+  global_params$calc_adjusted_counterfactual = FALSE
   global_params$include_offsets_in_adjusted_counterfactual = FALSE
   global_params$apply_offset_to = 'singular'
   global_params$time_steps = 50 #number of timesteps simulation will be run
@@ -52,10 +52,10 @@ populate_region_list <- function(parcel_selection_type, offset_calc_type, offset
 #offset_calc_type = 'avoided degredation', 'restoration from counterfactual', 'absolute counterfactual', 'restoration gains', 'absolute restoration'
 #dev_calc_type = 'future condition', 'current condition'
 
-initialise_region_params <- function(region_num, mean_decline_rates, offset_calc_type){
+initialise_region_params <- function(region_num, mean_decline_rates, offset_calc_type, dev_calc_type){
   region_params = vector('list', region_num)
   region_params[[1]] = populate_region_list(parcel_selection_type = 'regional', offset_calc_type, offset_action_type = 'restore', apply_offset_to = 'all',
                                             offset_parcel_for_parcel = TRUE, offset_multiplier = 1, 
-                                            dev_calc_type = 'current condition', max_region_dev_num = 1, mean_decline_rates[1])
+                                            dev_calc_type, max_region_dev_num = 1, mean_decline_rates[1])
   return(region_params)
 }
