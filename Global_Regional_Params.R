@@ -1,14 +1,14 @@
 initialise_global_params <- function(){
   
   global_params = list()
+  global_params$total_dev_num = 10
   global_params$eco_dims = 1
   global_params$randomise_dev_nums = FALSE
   global_params$display_object = FALSE
   global_params$offset_time_horizon = 20
-  global_params$total_dev_num = 10
-  global_params$use_offset_time_horizon = FALSE
-  global_params$use_adjusted_counterfactual = FALSE
-  global_params$calc_adjusted_counterfactual = FALSE
+  global_params$use_offset_time_horizon = TRUE
+  global_params$use_adjusted_counterfactual = TRUE
+  global_params$calc_adjusted_counterfactual = TRUE
   global_params$include_offsets_in_adjusted_counterfactual = FALSE
   global_params$apply_offset_to = 'singular'
   global_params$time_steps = 50 #number of timesteps simulation will be run

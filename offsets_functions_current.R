@@ -403,9 +403,9 @@ update_development_object <- function(region_params, global_params, region_ind, 
   }
   current_parcel_val = parcel_sums_object$parcel_sums
   
-  if (dev_calc_type == 'current condition'){
+  if (dev_calc_type == 'current_condition'){
     parcel_vals_used = current_parcel_val[1:eco_dims]
-  } else if (dev_calc_type == 'future condition'){
+  } else if (dev_calc_type == 'future_condition'){
     parcel_vals_used = predict_parcel_vals_multi(predict_type = 'protect', parcel_sums_object$parcel_eco_vals, parcel_indexes, decline_rates, restoration_rate, 
                                                  global_params$min_eco_val, global_params$max_eco_val, eco_dims, time_horizon = (global_params$time_steps - yr))
   }
@@ -522,20 +522,19 @@ find_offset_pool <- function(index_object, region_ind, decline_rates, global_par
     parcel_indexes = current_offset_pool
     cfacs = build_counterfactuals_by_parcel_multi(global_params, decline_rates_initial, parcel_indexes, land_parcels, current_ecology, time_horizon)
     adjusted_counters = adjust_counters(cfacs, (include_offsets = global_params$include_offsets_in_adjusted_counterfactual), region_params, global_params, length(parcel_indexes), time_horizon, yr)
-    eco_ind = 1
-    adjusted_counter_trajs = find_parcel_traj_by_list(adjusted_counters[[eco_ind]])
+    adjusted_counter_trajs = find_parcel_traj_by_list(adjusted_counters, (time_horizon + 1))
     
   }
   
-  if ( (offset_calc_type == 'restoration gains') || (offset_calc_type == 'restoration from counterfactual') || (offset_calc_type == 'absolute restoration')){
+  if ( (offset_calc_type == 'restoration_gains') || (offset_calc_type == 'restoration_from_counterfactual') || (offset_calc_type == 'absolute_restoration')){
       restoration_vals = predict_parcel_vals_multi(predict_type = 'restore', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, global_params$restoration_rate, 
                                                           global_params$min_eco_val, global_params$max_eco_val, eco_dims, time_horizon)
   }
   
-  if ((offset_calc_type == 'avoided degredation') || (offset_calc_type == 'restoration from counterfactual') || (offset_calc_type == 'absolute counterfactual') ){
+  if ((offset_calc_type == 'avoided_degredation') || (offset_calc_type == 'restoration_from_counterfactual') || (offset_calc_type == 'absolute_counterfactual') ){
 
     if (global_params$use_adjusted_counterfactual == TRUE){
-      counterfactual_vals = adjusted_counter_trajs[time_horizon, ]
+      counterfactual_vals = adjusted_counter_trajs[(time_horizon + 1), ]
       counterfactual_vals = t(t(counterfactual_vals))
     } else {
     counterfactual_vals = predict_parcel_vals_multi(predict_type = 'protect', parcel_sums_object$parcel_eco_vals, parcel_indexes = current_offset_pool, decline_rates, global_params$restoration_rate, 
@@ -545,17 +544,17 @@ find_offset_pool <- function(index_object, region_ind, decline_rates, global_par
   
   
   
-  if (offset_calc_type == 'current condition'){
+  if (offset_calc_type == 'current_condition'){
     parcel_vals_pool = current_parcel_sums
-  } else if (offset_calc_type == 'restoration gains'){
+  } else if (offset_calc_type == 'restoration_gains'){
     parcel_vals_pool = restoration_vals - current_parcel_sums
-  } else if (offset_calc_type == 'restoration from counterfactual'){
+  } else if (offset_calc_type == 'restoration_from_counterfactual'){
     parcel_vals_pool = restoration_vals - counterfactual_vals
-  } else if (offset_calc_type == 'absolute restoration'){
+  } else if (offset_calc_type == 'absolute_restoration'){
     parcel_vals_pool = restoration_vals
-  } else if (offset_calc_type == 'avoided degredation'){
+  } else if (offset_calc_type == 'avoided_degredation'){
     parcel_vals_pool = current_parcel_sums - counterfactual_vals
-  } else if (offset_calc_type == 'absolute counterfactual'){
+  } else if (offset_calc_type == 'absolute_counterfactual'){
     parcel_vals_pool = counterfactual_vals 
   } 
   
@@ -716,7 +715,7 @@ adjust_counterfactual <-function(cfacs, include_offsets, region_params, global_p
       projected_dims = dim(current_cfac)
       
       if (include_offsets == TRUE){
-        current_weighted_offset_projections = find_summed_offset_projections(projected_dims, current_cfac, offset_prob, global_params,time_horizon)
+        current_weighted_offset_projections = find_summed_offset_projections(projected_dims, current_cfac, offset_prob, global_params, time_horizon)
       } else {
         current_weighted_offset_projections = 0
       }
@@ -757,7 +756,7 @@ find_dev_probability <- function(dev_vec, yr, time_horizon, parcel_num_remaining
 }
 
 
-find_summed_offset_projections <- function(projected_dims, current_cfac, offset_prob, global_params,time_horizon){
+find_summed_offset_projections <- function(projected_dims, current_cfac, offset_prob, global_params, time_horizon){
 
     current_summed_offset_projections = array(0, projected_dims)
     
@@ -765,8 +764,8 @@ find_summed_offset_projections <- function(projected_dims, current_cfac, offset_
       
       current_parcel_ecology = current_cfac[, , proj_yr]
       current_offset_prob = offset_prob[proj_yr]
-      current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr))
-      current_summed_offset_projections[, , proj_yr:time_horizon] = current_summed_offset_projections[, , proj_yr:time_horizon] + current_offset_prob*current_offset_projection
+      current_offset_projection = predict_parcel_traj(current_parcel_ecology, global_params, decline_rate = global_params$restoration_rate, time_horizon = (time_horizon - proj_yr + 1))
+      current_summed_offset_projections[, , proj_yr:(time_horizon + 1)] = current_summed_offset_projections[, , proj_yr:(time_horizon + 1)] + current_offset_prob*current_offset_projection
     } 
     return(current_summed_offset_projections)
 }
@@ -922,14 +921,13 @@ find_current_parcel_sums <- function(land_parcels, current_ecology, parcel_index
 
 
 
-find_parcel_traj_by_list <- function(trajectories_list){
+find_parcel_traj_by_list <- function(trajectories_list, time_horizon){
   
   parcel_num = length(trajectories_list)
-  time_horizon = dim(trajectories_list[[1]])[3]
   parcel_trajs = array(0, c(time_horizon, parcel_num))
   eco_ind = 1
   for (parcel_ind in seq_len(parcel_num)){
-    parcel_trajs[, parcel_ind] =  apply(trajectories_list[[parcel_ind]], MARGIN=3, sum)
+    parcel_trajs[, parcel_ind] =  apply(trajectories_list[[parcel_ind]][[eco_ind]], MARGIN=3, sum)
   }
   
   return(parcel_trajs)
@@ -1354,6 +1352,22 @@ calc_rel_intial <- function(trajectory_type, global_params, parcel_trajectory, y
 }
 
 
+
+
+
+
+
+
+# parcel_set_ind = 1
+# graphics.off()
+# ctraj = find_parcel_traj_by_list(adjusted_counters_object[[parcel_set_ind]]$counterfactuals[[1]])
+# clearing_traj = find_parcel_traj_by_list(adjusted_counters_object[[parcel_set_ind]]$include_clearing[[1]])
+# o_traj = find_parcel_traj_by_list(adjusted_counters_object[[parcel_set_ind]]$include_clearing_and_offsets[[1]])
+# plot(ctraj, ylim = c(0, max(ctraj)), type = 'l')
+# lines(o_traj, ylim = c(0, max(ctraj)))
+# lines(clearing_traj, ylim = c(0, max(ctraj)))
+
+
 # 
 # outputs = outs$model_outputs
 # land_parcels = parcels$land_parcels
@@ -1363,7 +1377,8 @@ calc_rel_intial <- function(trajectory_type, global_params, parcel_trajectory, y
 # current_sets_object = outputs$offsets
 # current_parcel_set = current_sets_object[[parcel_set_ind]]
 # decline_rates = decline_rates_initial
-#parcel_count_ind = 1
+# parcel_count_ind = 1
+
 
 calc_parcel_set_counterfactuals <- function(outputs, global_params, decline_rates){
   counterfactuals_object = list()
@@ -1391,6 +1406,9 @@ calc_counters_post_facto <- function(current_sets_object, global_params, decline
   
   return(adjusted_counters_object)
 }  
+
+
+
 
 
 
@@ -1423,6 +1441,21 @@ plot_parcel_set_parcels <- function(current_set_object){
 # parcel_trajs = outs$parcel_trajs
 # assessed_set_index = 5
 
+plot_all_parcel_sets <- function(collated_parcel_sets_object, parcel_trajs, assessed_set_indexes, global_params, cfac_parcel_trajs){
+  
+  par(mfrow = c(3, 3))
+  par(cex = 0.6)
+  par(mar = c(2, 1, 1, 0), oma = c(4, 4, 0.5, 0.5))
+  par(tcl = -0.25)
+  par(mgp = c(2, 0.6, 0))
+  assessed_ind_num = length(assessed_set_indexes)
+  for (assessed_set_index in seq_len(assessed_ind_num)){
+    plot_parcel_set_from_collated_object(collated_parcel_sets_object, assessed_set_index, global_params, global_params$eco_dims)
+  }
+}
+
+
+
 
 plot_single_net_regional <- function(collated_parcel_sets_object, parcel_trajs, assessed_set_index, global_params, cfac_parcel_trajs){
   
@@ -1449,35 +1482,35 @@ setup_sub_plots <- function(nx, ny){
 }
 
 
-plot_parcel_set <- function(parcel_sets_object, assess_set_ind){
-  
-  set_up_sub_plots(1, 3)
-  parcel_set_offset = parcel_sets_object$offsets[[assess_set_ind]]
-  parcel_set_development = parcel_sets_object$developments[[assess_set_ind]]
-  offset_parcel_num = length(parcel_set_offset$parcel_indexes)
-  
-  plot_list = vector('list', 3)
-  d_rest_gains = parcel_traj_sum(parcel_set_development$restoration_gains)
-  d_avoided_degs = parcel_traj_sum(parcel_set_development$avoided_degredation)
-  d_net = d_rest_gains + d_avoided_degs
-  plot_list[[1]] = cbind(d_rest_gains, d_avoided_degs, d_net)
-  
-  o_rest_gains = parcel_traj_sum(parcel_set_offset$restoration_gains)
-  o_avoided_degs = parcel_traj_sum(parcel_set_offset$avoided_degredation)
-  o_net = o_rest_gains + o_avoided_degs
-  
-  plot_list[[2]] = cbind(o_rest_gains, o_avoided_degs, o_net)
-  
-  plot_list[[3]] = cbind(o_net, d_net, (o_net + d_net))
-  lim_vec = cbind(plot_list[[1]], plot_list[[2]], plot_list[[3]])
-  
-  mx = max(lim_vec)
-  mn = min(lim_vec)
-  
-  overlay_plots(plot_list[[1]], yticks = 'y', axis_lab = TRUE, ylim = c(mn, mx), (heading = "developments"), ylab = '', col_vec = c('black', 'black', 'red'))
-  overlay_plots(plot_list[[2]], yticks = 'n', axis_lab = TRUE, ylim = c(mn, mx), (heading = "offsets"), ylab = '', col_vec = c('black', 'black', 'blue'))
-  overlay_plots(plot_list[[3]], yticks = 'n', axis_lab = TRUE, ylim = c(mn, mx), (heading = "net outcome"), ylab = '', col_vec = c('blue', 'red', 'black'))
-}
+# plot_parcel_set <- function(parcel_sets_object, assess_set_ind){
+#   
+#   set_up_sub_plots(1, 3)
+#   parcel_set_offset = parcel_sets_object$offsets[[assess_set_ind]]
+#   parcel_set_development = parcel_sets_object$developments[[assess_set_ind]]
+#   offset_parcel_num = length(parcel_set_offset$parcel_indexes)
+#   
+#   plot_list = vector('list', 3)
+#   d_rest_gains = parcel_traj_sum(parcel_set_development$restoration_gains)
+#   d_avoided_degs = parcel_traj_sum(parcel_set_development$avoided_degredation)
+#   d_net = d_rest_gains + d_avoided_degs
+#   plot_list[[1]] = cbind(d_rest_gains, d_avoided_degs, d_net)
+#   
+#   o_rest_gains = parcel_traj_sum(parcel_set_offset$restoration_gains)
+#   o_avoided_degs = parcel_traj_sum(parcel_set_offset$avoided_degredation)
+#   o_net = o_rest_gains + o_avoided_degs
+#   
+#   plot_list[[2]] = cbind(o_rest_gains, o_avoided_degs, o_net)
+#   
+#   plot_list[[3]] = cbind(o_net, d_net, (o_net + d_net))
+#   lim_vec = cbind(plot_list[[1]], plot_list[[2]], plot_list[[3]])
+#   
+#   mx = max(lim_vec)
+#   mn = min(lim_vec)
+#   
+#   overlay_plots(plot_list[[1]], yticks = 'y', axis_lab = TRUE, ylim = c(mn, mx), (heading = "developments"), ylab = '', col_vec = c('black', 'black', 'red'))
+#   overlay_plots(plot_list[[2]], yticks = 'n', axis_lab = TRUE, ylim = c(mn, mx), (heading = "offsets"), ylab = '', col_vec = c('black', 'black', 'blue'))
+#   overlay_plots(plot_list[[3]], yticks = 'n', axis_lab = TRUE, ylim = c(mn, mx), (heading = "net outcome"), ylab = '', col_vec = c('blue', 'red', 'black'))
+# }
 
 # collated_object = outs$collated_parcel_sets_object
 # assessed_set_indexes = 1
@@ -1501,18 +1534,21 @@ plot_parcel_set_from_collated_object <- function(collated_object, assessed_set_i
   lim_vec = abind(plot_list[[1]][, , 1], plot_list[[2]][, , 1], plot_list[[3]][, , 1])
   mx = max(lim_vec)
   mn = min(lim_vec)
-  overlay_plots(plot_list[[1]][, , 1], yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), (heading = "developments"), ylab = '', col_vec = c('red', 'red', 'red'), lty_vec = c(1, 2, 1), lwd_vec = c(1, 1, 3), legend_vec = c('Avoided Degredation', 'Restoration Gains', 'Net Losses'))
-  overlay_plots(plot_list[[2]][, , 1], yticks = 'n', axis_lab = TRUE, ylims = c(mn, mx), (heading = "offsets"), ylab = '', col_vec = c('blue', 'blue', 'blue'), lty_vec = c(1, 2, 1), lwd_vec = c(1, 1, 3), legend_vec = c('Avoided Degredation', 'Restoration Gains', 'Net Gains'))
-  overlay_plots(plot_list[[3]][, , 1], yticks = 'n', axis_lab = TRUE, ylims = c(mn, mx), (heading = "net outcome"), ylab = '', col_vec = c('red', 'blue', 'black'), lty_vec = c(1, 1, 1), lwd_vec = c(1, 1, 3), legend_vec = c('Development Losses', 'Offset Gains', 'Net Gains'))
+  overlay_plots(plot_list[[1]][, , 1], yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), (heading = "developments"), ylab = '', col_vec = c('red', 'red', 'red'), lty_vec = c(1, 2, 1), 
+                lwd_vec = c(1, 1, 3), legend_vec = c('Avoided Degredation', 'Restoration Gains', 'Net Losses'), legend_loc = 'topleft')
+  overlay_plots(plot_list[[2]][, , 1], yticks = 'n', axis_lab = TRUE, ylims = c(mn, mx), (heading = "offsets"), ylab = '', col_vec = c('blue', 'blue', 'blue'), lty_vec = c(1, 2, 1), 
+                lwd_vec = c(1, 1, 3), legend_vec = c('Avoided Degredation', 'Restoration Gains', 'Net Gains'), legend_loc = 'topleft')
+  overlay_plots(plot_list[[3]][, , 1], yticks = 'n', axis_lab = TRUE, ylims = c(mn, mx), (heading = "net outcome"), ylab = '', col_vec = c('red', 'blue', 'black'), lty_vec = c(1, 1, 1), 
+                lwd_vec = c(1, 1, 3), legend_vec = c('Development Losses', 'Offset Gains', 'Net Gains'), legend_loc = 'topleft')
   
 }
 
 
-build_plot_list <- function(coll_object, parcel_set_indexes, global_params, eco_dims){
+build_plot_list <- function(collated_object, parcel_set_indexes, global_params, eco_dims){
   plot_list = array(0, c(global_params$time_steps, 3, eco_dims))
   for (eco_ind in 1:eco_dims){
-    plot_list[, 1, eco_ind] = sum_cols(coll_object$rest_gains[, , eco_ind], parcel_set_indexes)
-    plot_list[, 2, eco_ind] = sum_cols(coll_object$avoided_degs[, , eco_ind], parcel_set_indexes)
+    plot_list[, 1, eco_ind] = sum_cols(collated_object$rest_gains[, , eco_ind], parcel_set_indexes)
+    plot_list[, 2, eco_ind] = sum_cols(collated_object$avoided_degs[, , eco_ind], parcel_set_indexes)
     plot_list[, 3, eco_ind] = sum_cols(plot_list[, , eco_ind], c(1, 2))
   }
   return(plot_list)
@@ -1893,7 +1929,7 @@ find_sums <- function(trajectories, parcels_inds, parcels, global_params){
 
 
 
-overlay_plots <- function(plot_array, yticks, axis_lab, ylims, heading, ylab, col_vec, lty_vec, lwd_vec, legend_vec){
+overlay_plots <- function(plot_array, yticks, axis_lab, ylims, heading, ylab, col_vec, lty_vec, lwd_vec, legend_vec, legend_loc){
   
   if (yticks == 'y'){
     plot(plot_array[, 1], axes = axis_lab, type = 'l', main = heading, ylim = ylims, ylab = ylab, col = col_vec[1], lty = lty_vec[1])
@@ -1903,8 +1939,8 @@ overlay_plots <- function(plot_array, yticks, axis_lab, ylims, heading, ylab, co
   for (plot_ind in 2:dim(plot_array)[2]){
     lines(plot_array[, plot_ind],  ylim = ylims, col = col_vec[plot_ind], lwd = lwd_vec[plot_ind], lty = lty_vec[plot_ind])
   }
-  abline(h = 0)
-  legend('topleft', legend_vec, bty="n", lty = lty_vec, lwd = lwd_vec, col = col_vec)
+  abline(h = 0, lty = 2)
+  legend(legend_loc, legend_vec, bty="n", lty = lty_vec, lwd = lwd_vec, col = col_vec)
 }
 
 
