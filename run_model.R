@@ -9,12 +9,11 @@ library(foreach)
 library(doParallel)
 library(abind)
 
-offset_calc_type = 'restoration_from_counterfactual'
-if (offset_calc_type == 'current_condition'){
-  dev_calc_type = 'current_condition'
-} else {dev_calc_type = 'future_condition'}
+offset_calc_type = 'current_condition'
+dev_calc_type = 'current_condition'
 
 global_params <- initialise_global_params()
+
 region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
 parcels <- initialise_shape_parcels(global_params)
 land_parcels <- parcels$land_parcels
@@ -28,38 +27,54 @@ cfac_parcel_trajs <- find_parcel_traj_by_list(cfacs, global_params$time_steps)
 outs = list()
 eco_ind = 1
 
-outs$model_outputs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
-                                              parcels, index_object, perform_offsets = TRUE, record_parcel_sets = TRUE)
+outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
+  
 
-parcel_sets_counterfactuals <- calc_parcel_set_counterfactuals(outs$model_outputs, global_params, decline_rates_initial)
-                                                              
-outs$parcel_sets_object <- group_parcel_sets(outs$model_outputs, parcel_sets_counterfactuals, counterfactual_type = 'standard', land_parcels, global_params, decline_rates_initial)
+dev_calc_type = 'future_condition'
+offset_calc_type = 'restoration_gains'
 
-outs$collated_parcel_sets_object <- collate_parcel_sets(outs$parcel_sets_object, global_params, global_params$eco_dims)
-outs$parcel_trajs <- find_parcel_trajectories(land_parcels, 1:(parcels$land_parcel_num), outs$model_outputs$trajectories[[eco_ind]])
-#plot_single_net_regional(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_index = 3, global_params, cfac_parcel_trajs)
+region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
+outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
+
+offset_calc_type = 'restoration_from_counterfactual'
+region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
+outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
 
 
-filename = paste('~/Documents/', offset_calc_type , '_time_horizon_', global_params$offset_time_horizon, '_', 
-                 global_params$use_offset_time_horizon, '_include_avoided_clearing_', global_params$use_adjusted_counterfactual,
-                 '.pdf', sep = '', collapse = '')
-pdf(filename)
-plot_all_parcel_sets(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_indexes = (1:10), global_params, cfac_parcel_trajs)
-plot_parcel_set_from_collated_object(outs$collated_parcel_sets_object, assessed_set_indexes = (1:global_params$total_dev_num), global_params, global_params$eco_dims)
 
-setup_sub_plots(nx = 1, ny = 2)
-total_parcel_sums = apply(outs$parcel_trajs, MARGIN = 1, sum)
-total_counter_sums = apply(cfac_parcel_trajs, MARGIN = 1, sum)
-plot_array = cbind(t(t(total_parcel_sums)), t(t(total_counter_sums)))
-mx = max(plot_array)
-mn = min(plot_array)
-overlay_plots(plot_array, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), (heading = "Net Ecological Value"), ylab = '', col_vec = c('black', 'black'), 
-              lty_vec = c(1, 2), lwd_vec = c(1, 1), legend_vec = c('Offset Policy Assessment', 'Landscape Decline'), legend_loc = 'topright')
 
-plot((total_parcel_sums - total_counter_sums), type = 'l', main = "Net NNL Assessment", ylab = '')
-abline(h = 0, lty = 2)
-
-dev.off()
+# outs$model_outputs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
+#                                               parcels, index_object, perform_offsets = TRUE, record_parcel_sets = TRUE)
+# 
+# parcel_sets_counterfactuals <- calc_parcel_set_counterfactuals(outs$model_outputs, global_params, decline_rates_initial)
+#                                                               
+# outs$parcel_sets_object <- group_parcel_sets(outs$model_outputs, parcel_sets_counterfactuals, counterfactual_type = 'standard', land_parcels, global_params, decline_rates_initial)
+# 
+# outs$collated_parcel_sets_object <- collate_parcel_sets(outs$parcel_sets_object, global_params, global_params$eco_dims)
+# outs$parcel_trajs <- find_parcel_trajectories(land_parcels, 1:(parcels$land_parcel_num), outs$model_outputs$trajectories[[eco_ind]])
+# #plot_single_net_regional(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_index = 3, global_params, cfac_parcel_trajs)
+# 
+# 
+# filename = paste('~/Documents/', offset_calc_type , '_time_horizon_', global_params$offset_time_horizon, '_', 
+#                  global_params$use_offset_time_horizon, '_include_avoided_clearing_', global_params$use_adjusted_counterfactual,
+#                  '.pdf', sep = '', collapse = '')
+# pdf(filename)
+# plot_all_parcel_sets(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_indexes = (1:10), global_params, cfac_parcel_trajs)
+# plot_parcel_set_from_collated_object(outs$collated_parcel_sets_object, assessed_set_indexes = (1:global_params$total_dev_num), global_params, global_params$eco_dims)
+# 
+# setup_sub_plots(nx = 1, ny = 2)
+# total_parcel_sums = apply(outs$parcel_trajs, MARGIN = 1, sum)
+# total_counter_sums = apply(cfac_parcel_trajs, MARGIN = 1, sum)
+# plot_array = cbind(t(t(total_parcel_sums)), t(t(total_counter_sums)))
+# mx = max(plot_array)
+# mn = min(plot_array)
+# overlay_plots(plot_array, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), (heading = "Net Ecological Value"), ylab = '', col_vec = c('black', 'black'), 
+#               lty_vec = c(1, 2), lwd_vec = c(1, 1), legend_vec = c('Offset Policy Assessment', 'Landscape Decline'), legend_loc = 'topright')
+# 
+# plot((total_parcel_sums - total_counter_sums), type = 'l', main = "Net NNL Assessment", ylab = '')
+# abline(h = 0, lty = 2)
+# 
+# dev.off()
 
 # graphics.off()
 # parcel_set_ind = 2
