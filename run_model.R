@@ -9,52 +9,75 @@ library(foreach)
 library(doParallel)
 library(abind)
 
-offset_calc_type = 'current_condition'
-dev_calc_type = 'current_condition'
+
+#offset_calc_type = 'avoided degredation', 'restoration_from_counterfactual', 'parcel_condition_value', 'restoration_gains', 'restoration_condition_value'
+#dev_calc_type = 'future_condition', 'current_condition'
+
+offset_calc_type = 'restoration_from_counterfactual'
+dev_calc_type = 'future_condition'
+offset_action_type = 'restore'
 
 global_params <- initialise_global_params()
-
-region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
 parcels <- initialise_shape_parcels(global_params)
 land_parcels <- parcels$land_parcels
 index_object <- initialise_index_object(parcels, global_params)
 initial_ecology <- initialise_ecology(global_params, land_parcels)
-
-decline_rates_initial <- build_decline_rates_multi(parcels, region_params, global_params$eco_dims)
+decline_rates_initial <- build_decline_rates_multi(parcels, condition_change = 'decline', mean_decline_rate = 0.03, decline_rate_std = 0.01, global_params$eco_dims)
 cfacs <- build_counterfactuals_by_parcel_multi(global_params, decline_rates_initial, 1:(parcels$land_parcel_num), land_parcels, initial_ecology, (time_horizon = global_params$time_steps - 1))
 cfac_parcel_trajs <- find_parcel_traj_by_list(cfacs, global_params$time_steps)
 
-outs = list()
-eco_ind = 1
+region_params = list()
+region_params[[1]] <- populate_region_list(offset_parcel_selection_type = 'regional', offset_calc_type, offset_action_type, 
+                                 offset_parcel_for_parcel = TRUE, offset_multiplier = 1, dev_calc_type)
 
-outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
-  
-
-dev_calc_type = 'future_condition'
-offset_calc_type = 'restoration_gains'
-
-region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
-outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
-
-offset_calc_type = 'restoration_from_counterfactual'
-region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
-outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE)
+outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, 
+                          decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE, set_seed = TRUE)
 
 
+# outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, 
+#                           decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE, set_seed = FALSE)
 
+# offset_calc_type = 'restoration_from_counterfactual'
+# region_params <- initialise_region_params(global_params$region_num, mean_decline_rates = c(0.03, 0.01), offset_calc_type, dev_calc_type)
+# outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, 
+#                           decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE, set_seed = TRUE)
+# 
+# 
+#
 
+# outs = list()
+# eco_ind = 1
 # outs$model_outputs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
 #                                               parcels, index_object, perform_offsets = TRUE, record_parcel_sets = TRUE)
 # 
 # parcel_sets_counterfactuals <- calc_parcel_set_counterfactuals(outs$model_outputs, global_params, decline_rates_initial)
 #                                                               
-# outs$parcel_sets_object <- group_parcel_sets(outs$model_outputs, parcel_sets_counterfactuals, counterfactual_type = 'standard', land_parcels, global_params, decline_rates_initial)
+# outs$parcel_sets_object <- group_parcel_sets(outs$model_outputs, parcel_sets_counterfactuals, counterfactual_type = 'counterfactual', land_parcels, global_params, decline_rates_initial)
 # 
 # outs$collated_parcel_sets_object <- collate_parcel_sets(outs$parcel_sets_object, global_params, global_params$eco_dims)
+# 
+# plot_all_parcel_sets(outs$collated_parcel_sets_object, assessed_set_indexes = (1:10), global_params)
+# 
+# 
+# 
 # outs$parcel_trajs <- find_parcel_trajectories(land_parcels, 1:(parcels$land_parcel_num), outs$model_outputs$trajectories[[eco_ind]])
-# #plot_single_net_regional(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_index = 3, global_params, cfac_parcel_trajs)
 # 
+# par(mfrow = c(2, 1))
+# par(mar = c(6, 4, 2, 0), oma = c(0, 0, 0, 0))
+# NNL_object = outs$collated_parcel_sets_object$NNL_object
+# xl = t(cbind(paste('mean = ', round(mean(NNL_object$NNL_dist))), paste('success = ', NNL_object$success )))
+# hist(NNL_object$NNL_dist, main = '', xlab = xl)
 # 
+# hist(outs$collated_parcel_sets_object$offsets$initial_parcel_sums, main = '', xlab = 'selected parcel value')
+# 
+
+
+
+
+
+#plot_single_net_regional(outs$collated_parcel_sets_object, outs$parcel_trajs, assessed_set_index = 3, global_params, cfac_parcel_trajs)
+
+
 # filename = paste('~/Documents/', offset_calc_type , '_time_horizon_', global_params$offset_time_horizon, '_', 
 #                  global_params$use_offset_time_horizon, '_include_avoided_clearing_', global_params$use_adjusted_counterfactual,
 #                  '.pdf', sep = '', collapse = '')
