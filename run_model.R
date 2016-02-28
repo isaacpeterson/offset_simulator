@@ -13,7 +13,7 @@ library(abind)
 #offset_calc_type = 'avoided degredation', 'restoration_from_counterfactual', 'parcel_condition_value', 'restoration_gains', 'restoration_condition_value'
 #dev_calc_type = 'future_condition', 'current_condition'
 #offset_action_type = 'protect', 'maintain', 'restore'
-offset_calc_type = 'restoration_gains'
+offset_calc_type = 'restoration_from_counterfactual'
 dev_calc_type = 'future_condition'
 offset_action_type = 'restore'
 
@@ -30,10 +30,32 @@ region_params = list()
 region_params[[1]] <- populate_region_list(offset_parcel_selection_type = 'regional', offset_calc_type, offset_action_type, 
                                  offset_parcel_for_parcel = TRUE, offset_multiplier = 1, dev_calc_type)
 
+
 outs <- run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, 
                           decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE, set_seed = FALSE)
 
 generate_all_plots(print_folder = '~/Documents/', write_pdf = TRUE, offset_calc_type, global_params, outs, eco_ind = 1)
+
+# 
+# cl<-makeCluster(4)
+# registerDoParallel(cl)
+# 
+# strt<-Sys.time()
+# run_num = 1
+# record_parcel_sets = TRUE
+# 
+# realisations <- foreach(run_ind = 1:run_num) %dopar%{
+#   run_offsets_model(global_params, region_params, cfacs, cfac_parcel_trajs, offset_calc_type, current_ecology = initial_ecology, 
+#                     decline_rates = decline_rates_initial, parcels, perform_offsets = TRUE, set_seed = FALSE)
+# }
+# 
+# stopCluster(cl)
+# parcel_ind = 1
+# 
+# collated_parcel_realisations <- collate_parcel_realisations(realisations, parcel_ind, parcels$land_parcels, global_params$time_steps, global_params$eco_dims)
+# 
+
+
 # outs <- calc_trajectories_multi(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, 
 #                                               parcels, index_object, perform_offsets = FALSE, record_parcel_sets = TRUE)
 # 
