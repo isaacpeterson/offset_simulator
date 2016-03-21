@@ -1,16 +1,16 @@
-initialise_global_params <- function(offset_calc_type, dev_calc_type, offset_action_type, cfac_type, offset_time_horizon){
+initialise_global_params <- function(offset_calc_type, dev_calc_type, offset_action_type, cfac_type_in_offset_calc, offset_time_horizon){
   
   global_params = list()
   global_params$offset_calc_type = offset_calc_type
   global_params$dev_calc_type = dev_calc_type
   global_params$offset_action_type = offset_action_type
-  global_params$cfac_type = cfac_type
+  global_params$cfac_type_in_offset_calc = cfac_type_in_offset_calc
   global_params$offset_time_horizon = offset_time_horizon
-  global_params$adjust_cfacs_flag = ((cfac_type == 'include_clearing') || (cfac_type == 'include_clearing_offsets'))
+  global_params$adjust_cfacs_flag = ((cfac_type_in_offset_calc == 'include_clearing') || (cfac_type_in_offset_calc == 'include_clearing_offsets'))
   global_params$post_facto_cfac_type = 'include_clearing_offsets'
   global_params$adjust_counters_post_facto = ((global_params$post_facto_cfac_type == 'include_clearing') 
                                               || (global_params$post_facto_cfac_type == 'include_clearing_offsets'))
-  global_params$total_dev_num = 50
+  global_params$total_dev_num = 20
   global_params$eco_dims = 1
   global_params$randomise_dev_nums = FALSE
   global_params$display_object = FALSE
