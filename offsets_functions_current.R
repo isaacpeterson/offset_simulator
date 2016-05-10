@@ -1,29 +1,456 @@
 # run the model and return outputs
-run_offsets_model <- function(global_params, region_params, initial_ecology, cfac_parcel_trajs, decline_rates_initial, parcels){
+
+run_offsets_model <- function(global_params, region_params, initial_ecology, decline_rates_initial, parcels){
   
   if (global_params$set_seed == TRUE){
     set.seed(123)
   }
-  outs = list()
+  model_outputs = list()
 
-  outs$model_outputs <- run_system(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, index_object)                   # run the model
-  parcel_sets_cfacs <- calc_parcel_set_cfacs(outs$model_outputs, global_params, decline_rates_initial)
-  outs$collated_parcel_sets_object <- collate_parcel_sets_object(outs$model_outputs, parcel_sets_cfacs, land_parcels, global_params, decline_rates_initial)             
+  model_outputs <- run_system(global_params, region_params, current_ecology = initial_ecology, decline_rates = decline_rates_initial, parcels, index_object)  # run the model, select and record parcel sets, calculate landscape condition time series
+  model_outputs$traj_list = build_traj_list(model_outputs$trajectories, land_parcels, parcel_indexes = 1:length(land_parcels), global_params$eco_dims)
+  model_outputs$offsets$traj_list = extract_parcel_set_trajs(model_outputs$traj_list, parcel_set_indexes = model_outputs$offsets$parcel_indexes)
+  model_outputs$developments$traj_list = extract_parcel_set_trajs(model_outputs$traj_list, parcel_set_indexes = model_outputs$developments$parcel_indexes)
   
-  outs$program_cfacs <- write_program_cfacs(cfac_parcel_trajs, offset_parcel_indexes = outs$model_outputs$offset_list, dev_parcel_indexes = outs$model_outputs$development_list)
-  
-  return(outs)
+  return(model_outputs)
 }  
+
+
+
+collate_realisations <- function(realisations, global_params, decline_rates_initial, land_parcels, initial_ecology, eco_dims){
   
-write_program_cfacs <- function(cfac_parcel_trajs, offset_parcel_indexes, dev_parcel_indexes){
+  realisation_num = length(realisations)
+  collated_offset_realisations = collate_realisations_parcel_sets(realisations, parcel_set_type = 'offsets', global_params, decline_rates_initial, land_parcels, initial_ecology)
+  collated_dev_realisations = collate_realisations_parcel_sets(realisations, parcel_set_type = 'developments', global_params, decline_rates_initial, land_parcels, initial_ecology)
+  
+  cfacs <- build_cfacs_by_parcel_multi(global_params, decline_rates_initial, parcel_indexes = seq_len(length(land_parcels)), land_parcels, initial_ecology, (time_horizon = global_params$time_steps - 1))
+  cfac_trajs <- sum_parcel_trajectories(cfacs, global_params$eco_dims, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon = global_params$time_steps)
+  
+  collated_program_sums <- collate_program_sum_realisations(traj_type = 'trajectory', realisations, cfacs, time_horizon = global_params$time_steps, eco_dims)    #group individual net realisation counterfactual values
+  collated_program_cfac_sums <- collate_program_sum_realisations(traj_type = 'cfac', realisations, cfacs, time_horizon = global_params$time_steps, eco_dims)
+  
+  summed_offset_realisations <- group_degs_gains(current_collated_reals = collated_offset_realisations, time_horizon = global_params$time_steps, eco_dims = global_params$eco_dims)
+  summed_dev_realisations <- group_degs_gains(current_collated_reals = collated_dev_realisations, time_horizon = global_params$time_steps, eco_dims = global_params$eco_dims)                                              
+  
+  net_realisation_gains <- assess_net_gains(summed_offset_realisations$net_outcome, summed_dev_realisations$net_outcome)
+ 
+  offset_yrs = realisations[[1]]$offsets$yr
+  system_NNLs <- assess_NNL(net_realisation_gains$standard, assess_NNL_type = 'system', eco_dims, assess_num = realisation_num, time_horizon = global_params$time_steps, offset_yrs)
+     
+  parcel_set_NNL_yrs <- assess_parcel_set_NNL_yrs(collated_offset_realisations, collated_dev_realisations, time_horizon = global_params$time_steps, realisation_num, 
+                                                  parcel_set_num = global_params$total_dev_num, eco_dims = global_params$eco_dims, offset_yrs)
+  
+  landscape_vals = assess_landscape_realisations_vals(realisations, eco_dims = global_params$eco_dims, parcel_indexes = 1:length(land_parcels), 
+                                                      time_horizon = global_params$time_steps)
+  
+  collated_realisations = list()
+  collated_realisations$net_realisation_gains = net_realisation_gains
+  collated_realisations$system_NNLs = system_NNLs
+  collated_realisations$offsets = collated_offset_realisations
+  collated_realisations$devs = collated_dev_realisations
+  collated_realisations$collated_program_sums = collated_program_sums
+  collated_realisations$collated_program_cfac_sums = collated_program_cfac_sums
+  collated_realisations$cfac_trajs = cfac_trajs
+  collated_realisations$summed_offset_realisations = summed_offset_realisations
+  collated_realisations$summed_dev_realisations = summed_dev_realisations
+  collated_realisations$parcel_set_NNL_yrs = parcel_set_NNL_yrs
+  collated_realisations$landscape_vals = landscape_vals
+  return(collated_realisations)
+  
+}
+
+
+assess_landscape_loss <- function(landscape_vals, system_NNLs, realisation_num){
+  landscape_loss = array(0, c(realisation_num, eco_dims))
+  NNL_yrs = system_NNLs$NNL_yrs
+  for (realisation_ind in seq_len(realisation_num)){
+    landscape_loss[realisation_ind, ] = landscape_vals[NNL_yrs[realisation_ind], realisation_ind, ]
+  }
+  landscape_loss = 1 - landscape_loss/landscape_vals[1, , ]
+  max(landscape_loss)
+  min(landscape_loss)
+  mean(landscape_loss)
+  
+} 
+
+
+assess_landscape_realisations_vals <- function(realisations, eco_dims, parcel_indexes, time_horizon){
+  realisation_num = length(realisations)
+  landscape_vals = array(0, c(time_horizon, realisation_num, eco_dims))
+  for (realisation_ind in 1:realisation_num){
+    current_landscape_trajs = sum_parcel_trajectories(realisations[[realisation_ind]]$traj_list, eco_dims, parcel_indexes, time_horizon)
+    landscape_vals[, realisation_ind, ] = sum_cols_multi(current_landscape_trajs)
+  }
+  return(landscape_vals)
+}
+  
+  
+assess_net_gains <- function(offset_outcome, dev_outcome){
+  net_gains = list()
+  net_gains$standard = offset_outcome$standard + dev_outcome$standard
+  net_gains$include_clearing = offset_outcome$include_clearing + dev_outcome$standard
+  net_gains$include_clearing_offsets = offset_outcome$include_clearing_offsets + dev_outcome$standard
+  return(net_gains)
+}
+  
+
+assess_parcel_set_NNL_yrs <- function(collated_offset_realisations, collated_dev_realisations, time_horizon, realisation_num, parcel_set_num, eco_dims, offset_yrs){
+  
+  parcel_set_NNL_yrs = array(0, c(parcel_set_num, realisation_num, eco_dims))
+  net_offset_outcomes = simplify2array(collated_offset_realisations$rest_gains) + simplify2array(collated_offset_realisations$avoided_degs)
+  net_dev_outcomes = simplify2array(collated_dev_realisations$rest_gains) + simplify2array(collated_dev_realisations$avoided_degs)
+  net_outcomes = net_offset_outcomes + net_dev_outcomes
+  
+  for (realisation_ind in seq_len(realisation_num)){
+      current_net_outcome = net_outcomes[, , , realisation_ind]
+      if (eco_dims == 1){
+        dim(current_net_outcome) = c(dim(current_net_outcome), 1)
+      }
+      parcel_set_NNL = assess_NNL(current_net_outcome, assess_NNL_type = 'parcel_set', eco_dims, assess_num = parcel_set_num, time_horizon, offset_yrs)
+      parcel_set_NNL_yrs[, realisation_ind, ] = parcel_set_NNL$NNL_yrs
+  }
+  
+  return(parcel_set_NNL_yrs)
+
+}
+
+
+assess_NNL <- function(net_gains, assess_NNL_type, eco_dims, assess_num, time_horizon, offset_yrs){
+  
+  collate_array = array(0, c(assess_num, eco_dims))
+  NNL_yrs = collate_array
+  failed_parcel_sets = collate_array
+  thresh = 0
+  for (parcel_set_ind in seq_len(assess_num)){
+    if (assess_NNL_type == 'parcel_set'){
+      offset_yr = offset_yrs[[parcel_set_ind]]
+    }
+    for (eco_ind in 1:eco_dims){
+      current_net_gain = net_gains[, parcel_set_ind, eco_ind]
+      current_NNL_yr = which(current_net_gain > thresh)
+      if (length(current_NNL_yr) > 0){
+        NNL_yrs[parcel_set_ind, eco_ind] = min(current_NNL_yr) 
+        if (assess_NNL_type == 'parcel_set'){
+          NNL_yrs[parcel_set_ind, eco_ind] = NNL_yrs[parcel_set_ind, eco_ind] - offset_yr
+        }
+      } 
+    }
+  }
+  
+  failed_parcel_sets = which(NNL_yrs == 0)
+  NNL_object = list()
+  NNL_object$NNL_yrs = NNL_yrs
+  NNL_object$failed_parcel_sets = failed_parcel_sets
+  NNL_object$success = 1 - length(failed_parcel_sets)/assess_num
+  
+  return(NNL_object)
+  
+}
+
+
+
+
+initialise_collated_realisations_object <- function(realisation_num){
+  collated_realisations = list()
+  collate_list = vector('list', realisation_num)
+  collated_realisations$initial_parcel_sums = collate_list
+  collated_realisations$rest_gains = collate_list
+  collated_realisations$avoided_degs = collate_list
+  collated_realisations$avoided_degs_include_clearing = collate_list
+  collated_realisations$avoided_degs_include_clearing_offsets = collate_list
+  return(collated_realisations)
+}
+  
+collate_realisations_parcel_sets <- function(realisations, parcel_set_type, global_params, decline_rates_initial, land_parcels, initial_ecology){
+  
+  realisation_num = length(realisations)
+  collated_realisation_parcel_sets = initialise_collated_realisations_object(realisation_num)
+  
+  for (realisation_ind in seq_len(realisation_num)){
+    model_outputs = realisations[[realisation_ind]]
+    if (parcel_set_type == 'offsets'){
+      current_model_outputs = model_outputs$offsets
+    } else {current_model_outputs = model_outputs$developments}
+    parcel_sets_cfacs = calc_cfacs_post_facto(current_model_outputs, global_params, decline_rates_initial, parcel_num_remaining = model_outputs$parcel_num_remaining)
+    collated_realisation_parcel_sets <- collate_realisations_object(collated_realisation_parcel_sets, realisation_ind, current_model_outputs, current_parcel_sets_cfacs = parcel_sets_cfacs, 
+                                                                current_traj_list = current_model_outputs$traj_list, land_parcels, global_params, decline_rates_initial) 
+  }
+  return(collated_realisation_parcel_sets)
+}
+
+
+
+collate_realisations_object <- function(current_collated_realisations, realisation_ind, current_model_outputs, current_parcel_sets_cfacs, current_traj_list, land_parcels, global_params, decline_rates_initial){
+  
+  parcel_set_num = global_params$total_dev_num
+  time_horizon = global_params$time_steps
+  eco_dims = global_params$eco_dims
+  current_parcel_sets_object = collate_parcel_sets(current_model_outputs, current_traj_list, current_parcel_sets_cfacs, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates_initial)
+  current_collated_realisations$initial_parcel_sums[[realisation_ind]] = current_parcel_sets_object$initial_parcel_sums
+  current_collated_realisations$rest_gains[[realisation_ind]] = current_parcel_sets_object$rest_gains
+  current_collated_realisations$avoided_degs[[realisation_ind]] = current_parcel_sets_object$avoided_degs
+  current_collated_realisations$avoided_degs_include_clearing[[realisation_ind]] = current_parcel_sets_object$avoided_degs_include_clearing
+  current_collated_realisations$avoided_degs_include_clearing_offsets[[realisation_ind]] = current_parcel_sets_object$avoided_degs_include_clearing_offsets
+  return(current_collated_realisations)
+}
+
+
+  
+  
+
+collate_program_sum_realisations <- function(traj_type, realisations, cfacs, eco_dims, time_horizon){
+  realisation_num = length(realisations)
+  summed_program_realisations = list()
+  collate_list = vector('list', realisation_num) 
+  summed_program_realisations$offset_trajs = collate_list
+  summed_program_realisations$dev_trajs = collate_list
+  summed_program_realisations$net_trajs = collate_list
+  
+  for (realisation_ind in seq_len(realisation_num)){
+    model_outputs = realisations[[realisation_ind]]
+    if (traj_type == 'cfac'){
+      traj_list = cfacs
+    } else {traj_list = model_outputs$traj_list}
+    
+    offset_parcel_indexes = model_outputs$offset_list
+    dev_parcel_indexes = model_outputs$development_list
+    current_program_sums = sum_program_parcels(traj_list, eco_dims, offset_parcel_indexes, dev_parcel_indexes, time_horizon)
+    summed_program_realisations$net_trajs[[realisation_ind]] = current_program_sums$net_trajs
+    summed_program_realisations$offset_trajs[[realisation_ind]] = current_program_sums$offset_trajs
+    summed_program_realisations$dev_trajs[[realisation_ind]] = current_program_sums$dev_trajs
+  }
+  
+  return(summed_program_realisations)
+}
+
+sum_program_parcels <- function(traj_list, eco_dims, offset_parcel_indexes, dev_parcel_indexes, time_horizon){
+  summed_program_parcels = list()
+  offset_trajs = sum_parcel_trajectories(traj_list, eco_dims, parcel_indexes = offset_parcel_indexes, time_horizon) 
+  dev_trajs = sum_parcel_trajectories(traj_list, eco_dims, parcel_indexes = dev_parcel_indexes, time_horizon)
+  net_trajs = offset_trajs + dev_trajs
+  
+  summed_program_parcels$offset_trajs = sum_cols_multi(offset_trajs)
+  summed_program_parcels$dev_trajs = sum_cols_multi(dev_trajs)
+  summed_program_parcels$net_trajs = sum_cols_multi(net_trajs)
+  return(summed_program_parcels)
+}
+
+
+sum_parcel_trajectories <- function(traj_list, eco_dims, parcel_indexes, time_horizon){
+  
+  parcel_num = length(parcel_indexes)
+  parcel_trajs = array(0, c(time_horizon, parcel_num, eco_dims))
+  for (parcel_count_ind in seq_len(parcel_num)){
+    parcel_ind = parcel_indexes[parcel_count_ind]
+    for (eco_ind in seq_len(eco_dims)){
+      parcel_trajs[, parcel_count_ind, ] = apply(traj_list[[parcel_ind]][[eco_ind]], MARGIN=3, sum)
+    }  
+  }
+  
+  return(parcel_trajs)
+  
+}
+
+
+
+
+
+
+collate_program_cfacs <- function(parcel_cfac_trajs, offset_parcel_indexes, dev_parcel_indexes){
   program_cfacs = list()
-  program_cfacs$offsets = sum_program_cfacs(cfac_parcel_trajs, offset_parcel_indexes)
-  program_cfacs$devs =  sum_program_cfacs(cfac_parcel_trajs, dev_parcel_indexes)
-  program_cfacs$net = sum_program_cfacs(cfac_parcel_trajs, c(offset_parcel_indexes, dev_parcel_indexes))
+  program_cfacs$offsets = sum_program_cfacs(parcel_cfac_trajs, offset_parcel_indexes)
+  program_cfacs$devs =  sum_program_cfacs(parcel_cfac_trajs, dev_parcel_indexes)
+  program_cfacs$net = sum_program_cfacs(parcel_cfac_trajs, c(offset_parcel_indexes, dev_parcel_indexes))
   return(program_cfacs)
 }
 
+
+
+collate_parcel_sets <- function(current_sets_object, parcel_sets_traj_list, cfac_sets_object, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates){
+  
+  rest_gains = find_gains_degs(current_sets_object, current_traj_list = parcel_sets_traj_list, trajectory_type = 'traj', parcel_set_num, time_horizon, eco_dims)
+  avoided_degs = find_gains_degs(current_sets_object, current_traj_list = cfac_sets_object$cfacs, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
+  
+  avoided_degs_include_clearing = find_gains_degs(current_sets_object, current_traj_list = cfac_sets_object$cfacs_include_clearing, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
+  avoided_degs_include_clearing_offsets = find_gains_degs(current_sets_object, current_traj_list = cfac_sets_object$cfacs_include_clearing_offsets, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
+  initial_parcel_sums = collate_initial_sums(current_sets_object$parcel_sums, parcel_set_num)
+  
+  parcel_sets_object = list()
+  parcel_sets_object$initial_parcel_sums = initial_parcel_sums
+  parcel_sets_object$rest_gains = rest_gains
+  parcel_sets_object$avoided_degs = avoided_degs
+  parcel_sets_object$avoided_degs_include_clearing = avoided_degs_include_clearing
+  parcel_sets_object$avoided_degs_include_clearing_offsets = avoided_degs_include_clearing_offsets
+  
+  return(parcel_sets_object)
+  
+}  
+
+
+
+collate_initial_sums <- function(initial_sums_list, parcel_set_num){
+  initial_sums_array = vector()
+  
+  for (parcel_set_ind in 1:parcel_set_num){
+    initial_sums_array = c(initial_sums_array, initial_sums_list[[parcel_set_ind]])
+  }
+  
+  return(initial_sums_array)
+  
+}
+
+
+
+find_gains_degs <- function(current_sets_object, current_traj_list, trajectory_type, parcel_set_num, time_horizon, eco_dims){
+  
+  gains_degs = array(0, c(time_horizon, parcel_set_num, eco_dims))
+  
+  for (parcel_set_ind in seq_len(parcel_set_num)){
+    
+    parcel_ecologies = current_sets_object$parcel_ecologies[[parcel_set_ind]]
+    parcel_indexes = current_sets_object$parcel_indexes[[parcel_set_ind]]
+    parcel_num = length(parcel_indexes)
+    yr = current_sets_object$yr[[parcel_set_ind]]
+    current_set_element = array(0, c(time_horizon, eco_dims))
+    
+    for (parcel_count_ind in seq_len(parcel_num)){
+      
+      for (eco_ind in seq_len(global_params$eco_dims)){
+        
+        current_parcel_ecology = parcel_ecologies[[parcel_count_ind]][, , eco_ind]
+        current_parcel_traj = current_traj_list[[parcel_set_ind]][[parcel_count_ind]][[eco_ind]]
+        current_set_element[, eco_ind] = current_set_element[, eco_ind] + sum_rel_intial(current_parcel_traj, current_parcel_ecology, trajectory_type, time_horizon, yr)
+        
+      }
+    }
+    
+    gains_degs[, parcel_set_ind, eco_ind] = current_set_element
+  }  
+  
+  return(gains_degs)
+}
+
+
+sum_rel_intial <- function(current_parcel_traj, current_parcel_ecology, trajectory_type, time_horizon, yr){
+  rel_arr = array(0, c(dim(current_parcel_ecology), time_horizon))
+  
+  if (trajectory_type == 'cfac'){
+    rel_arr[, , yr:time_horizon] = as.vector(current_parcel_ecology) - current_parcel_traj
+  } else if(trajectory_type == 'traj'){
+    rel_arr[, , yr:time_horizon] = current_parcel_traj[, , yr:time_horizon] - as.vector(current_parcel_ecology)
+  }
+  
+  rel_arr = apply(rel_arr, 3, sum)
+  return(rel_arr)
+}
+
+
+
+#   collated_realisation_parcel_set_sums <- collate_realisation_parcel_set_sums(realisations, rest_gains, avoided_degs, net_gains, parcel_set_indexes, time_horizon, eco_dims)
+#   
+#   outs = list()
+#   summed_dev_realisations = list()
+#   
+#   realisation_num = length(realisations)
+#   collate_array = array(0, c(time_horizon, realisation_num, eco_dims))
+#   summed_dev_realisations$net_gains = collate_array
+#   summed_dev_realisations$avoided_degs = collate_array
+#   summed_dev_realisations$rest_gains = collate_array
+#   net_realisations = collate_array
+#   net_parcel_set_realisations = collate_array
+#   
+#   summed_offset_realisations = summed_dev_realisations
+#   
+#   summed_program_realisations = list()
+#   summed_program_realisations$net_program_value = collate_array
+#   summed_program_realisations$net_offset_value = collate_array
+#   summed_program_realisations$net_development_value = collate_array
+#   
+#   program_cfac_realisations = collate_array
+#   
+#   rm(collate_array)
+#   
+#   
+#   
+#   
+#   system_NNLs = array(0, c(realisation_num, eco_dims))
+#   collate_array = array(0, c(length(parcel_set_indexes), realisation_num))
+#   ALL_parcel_set_NNLs = collate_array
+#   ALL_offset_initial_parcel_sums = collate_array
+#   rm(collate_array)
+#   
+#   
+#   for (realisation_ind in seq_len(realisation_num)){
+#     current_realisation = realisations[[realisation_ind]]
+#     collated_object = current_realisation$collated_parcel_sets_object
+#     current_summed_devs = sum_parcel_sets_as_list(rest_gains, avoided_degs, net_dev_gains, parcel_set_indexes, time_horizon)
+#     summed_realisations = write_realisation_sums(summed_realisations, realisation_ind, current_summed_devs)
+#     
+#   }
+#   
+#   system_NNL_fails = which(system_NNLs == 0)
+#   
+#   outs$collated_net_cfacs = collated_net_cfacs
+#   outs$system_NNL_fails = system_NNL_fails
+#   outs$ALL_offset_initial_parcel_sums = ALL_offset_initial_parcel_sums
+#   outs$ALL_parcel_set_NNLs = ALL_parcel_set_NNLs
+#   outs$system_NNLs = system_NNLs
+#   outs$summed_dev_realisations = summed_dev_realisations
+#   outs$summed_offset_realisations = summed_offset_realisations
+#   outs$net_parcel_set_realisations = net_parcel_set_realisations
+#   outs$net_realisations = net_realisations
+#   outs$summed_program_realisations = summed_program_realisations
+#  return(outs)
+#  
+# }
+
+
+
+
+
+
+
+
+
+
+
+# 
+# 
+# 
+# collate_parcel_sets_object <- function(collated_realisations, realisation_ind, model_outputs, parcel_sets_cfacs, land_parcels, global_params, decline_rates_initial){
+#   
+#   parcel_set_num = global_params$total_dev_num
+#   time_horizon = global_params$time_steps
+#   eco_dims = global_params$eco_dims
+#   
+#   traj_list = model_outputs$traj_list
+#   offset_traj_list = model_outputs$offset_traj_list
+#   dev_traj_list = model_outputs$dev_traj_list
+#   offset_yrs = model_outputs$offsets$yr
+#   
+#   collated_parcel_sets_object = list()
+# 
+#   collated_parcel_sets_object$offsets = collate_parcel_sets(model_outputs$offsets, offset_traj_list, parcel_sets_cfacs$offsets, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates_initial)
+#   collated_parcel_sets_object$devs = collate_parcel_sets(model_outputs$developments, dev_traj_list, parcel_sets_cfacs$developments, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates_initial)
+#   
+#   collated_parcel_sets_object$NNL_object = assess_NNL(collated_parcel_sets_object$offsets$rest_gains, collated_parcel_sets_object$offsets$avoided_degs, 
+#                                                       collated_parcel_sets_object$devs$rest_gains, collated_parcel_sets_object$devs$avoided_degs, eco_dims, parcel_set_num, time_horizon, offset_yrs)
+#   collated_parcel_sets_object$summed_program_parcels = sum_program_parcels(traj_list, eco_dims, offset_parcel_indexes = (model_outputs$offset_list), 
+#                                                                            dev_parcel_indexes = (model_outputs$development_list), time_horizon)
+#   
+#   return(collated_parcel_sets_object)
+# }
+# 
+
+
+
+
+
+
+
+
 assess_failed_NNL <- function(NNLs){
+  
   NNL_fails = which(NNLs == 0)
   if (length(NNL_fails) > 0){
     failed_frac = length(NNL_fails)/length(NNLs)
@@ -54,38 +481,78 @@ plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lab, x_lim){
 
 
 #plot all realisations in restorations gains/avoided degredation form split into offsets and developments
-plot_split_realisations <- function(collated_realisations, eco_ind, lwd_vec, outer_title, col_vec_1, col_vec_2){
+
+plot_mean_gains_degs <- function(summed_realisations, outer_title, realisation_num){
+  
+  rest_gains = sum_cols_multi(summed_realisations$rest_gains)/realisation_num
+  net_degs = sum_cols_multi(summed_realisations$avoided_degs)/realisation_num
+  net_degs_including_clearing = sum_cols_multi(summed_realisations$avoided_degs_include_clearing)/realisation_num
+  net_degs_including_clearing_offsets = sum_cols_multi(summed_realisations$avoided_degs_include_clearing_offsets)/realisation_num
+  
+  net_gains = net_degs + rest_gains
+  net_gains_including_clearing = net_degs_including_clearing + rest_gains
+  net_gains_including_clearing_offsets = net_degs_including_clearing_offsets + rest_gains
+  clearing_contribution = net_degs_including_clearing - net_degs
+  clearing_offsets_contribution = net_degs_including_clearing_offsets - net_degs
+  
+  plot_list = list(net_gains, net_gains_including_clearing, net_gains_including_clearing_offsets, net_degs, clearing_contribution,
+                   clearing_offsets_contribution, rest_gains)
+  
+  plot_array = simplify2array(plot_list)
+  mx = max(plot_array)
+  mn = min(plot_array)
+  
+  col_vec = c('red', 'red', 'red', 'blue', 'black', 'darkgreen', 'mediumorchid4')
+  lty_vec = c(1, 2, 3, 1, 2, 3, 1)
+  
+  for (plot_ind in 1:length(plot_list)){
+    if (plot_ind == 1){
+      plot(plot_list[[plot_ind]], type = 'l', lty = lty_vec[plot_ind], lwd = 2, col = col_vec[plot_ind], ylim = c(mn, mx))
+    } else {
+      lines(plot_list[[plot_ind]], lty = lty_vec[plot_ind], lwd = 2, col = col_vec[plot_ind], ylim = c(mn, mx))
+    }
+  }
+  legend_vec = c('net outcome', 'net outcome including clearing', 'net outcome including clearing and offsets', 'avoided degredation', 
+                 'clearing contribution', 'clearing and offsets contribution', 'restoration gains')
+  legend('topleft', legend_vec, bty="n", lty = lty_vec, col = col_vec, lwd = 2)
+  
+}
+
+
+plot_split_realisations <- function(summed_offset_realisations, offset_cfac_type, summed_dev_realisations, dev_cfac_type, eco_ind, lwd_vec, outer_title, col_vec_1, col_vec_2, realisation_num){
   setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
-  plot_summed_realisations(collated_realisations$summed_offset_realisations, plot_title = 'Offset Realisations (Program Scale)', eco_ind, 
-                         lwd_vec, col_vec = col_vec_1, legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Gains'))
-  plot_summed_realisations(collated_realisations$summed_dev_realisations, plot_title = 'Development Realisations (Program Scale)', eco_ind, 
-                         lwd_vec, col_vec = col_vec_2, legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Losses'))
+  plot_summed_realisations(summed_offset_realisations, cfac_type = offset_cfac_type, plot_title = 'Offset Realisations (Program Scale)', eco_ind, 
+                           lwd_vec, col_vec = col_vec_1, legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Gains'), realisation_num)
+  plot_summed_realisations(summed_dev_realisations, cfac_type = dev_cfac_type, plot_title = 'Development Realisations (Program Scale)', eco_ind, 
+                           lwd_vec, col_vec = col_vec_2, legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Losses'), realisation_num)
+  setup_sub_plots(nx = 1, ny = 1, x_tit = TRUE)
+  plot_mean_gains_degs(summed_realisations = summed_offset_realisations, outer_title, realisation_num)
   title(outer_title, outer = TRUE)
 }
 
 
-plot_realisations_hists <- function(system_NNL_plot_object, collated_realisations, parcel_sum_lims, outer_title){
+
+
+
+plot_realisation_hists <- function(system_NNL_plot_object, parcel_set_NNL_yrs, initial_parcel_sums_array, parcel_sum_lims, outer_title){
   
   setup_sub_plots(nx = 1, ny = 3, x_tit = TRUE)
   
   plot_NNL_hist(system_NNL_plot_object, plot_tit = 'System NNL Assessment', x_lim = c(0, 100))
   
-  parcel_set_NNL_plot_object = assess_failed_NNL(collated_realisations$ALL_parcel_set_NNLs)
+  parcel_set_NNL_plot_object = assess_failed_NNL(parcel_set_NNL_yrs)
   plot_NNL_hist(parcel_set_NNL_plot_object, plot_tit = 'Parcel Set NNL Assessment', x_lim = c(0, 100)) 
-  
-  hist(collated_realisations$ALL_offset_initial_parcel_sums, main = 'selected offset parcel values', xlab = 'selected offset parcel values', 
-       xlim = parcel_sum_lims)
+
+  hist(initial_parcel_sums_array, main = 'selected offset parcel values', xlab = 'selected offset parcel values', xlim = parcel_sum_lims)
+       
   title(outer_title, outer = TRUE)
   
 }
 
-plot_realisation_outcomes <- function(collated_realisations, plot_title, x_lab, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
+plot_realisation_outcomes <- function(dev_losses, offset_gains, net_outcome, plot_title, x_lab, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
   
   setup_sub_plots(nx = 1, ny = 1, x_tit = TRUE)
 
-  dev_losses = collated_realisations$summed_dev_realisations$net_gains
-  offset_gains = collated_realisations$summed_offset_realisations$net_gains
-  net_outcome = collated_realisations$net_parcel_set_realisations
   plot_lims = c(min(cbind(net_outcome, dev_losses, offset_gains)), max(cbind(net_outcome, dev_losses, offset_gains)))
 
   plot_collated_realisation_set(net_outcome, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
@@ -101,17 +568,22 @@ plot_realisation_outcomes <- function(collated_realisations, plot_title, x_lab, 
 }
 
 
-plot_landscape_outcomes <- function(net_realisations, system_NNL_plot_object, net_cfac_sum, eco_ind, lwd_vec, col_vec,  legend_vec, outer_title){
+plot_landscape_outcomes <- function(landscape_realisations, system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, eco_ind, lwd_vec, col_vec,  legend_vec, outer_title){
   
   setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
   
-  plot_collated_realisation_set(net_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = system_NNL_plot_object$x_lab, plot_title = 'Landscape Scale Value', plot_lims = c(0, max(net_realisations)))
+  landscape_tit = assess_landscape_loss(landscape_realisations, system_NNL_yrs, realisation_num, eco_dims)
+  landscape_tit = paste('Landscape Scale Value (', landscape_tit, ')' )
+  
+  plot_collated_realisation_set(landscape_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
+                                x_lab = system_NNL_plot_object$x_lab, plot_title = landscape_tit, plot_lims = c(0, max(landscape_realisations)))
   lines(net_cfac_sum, col = col_vec[2], lwd = 2)
+  
+  abline(h = mean(landscape_realisations[1, , ]), lty = 2)
   
   legend('topright', legend_vec, bty="n", lty = c(2, 1), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   
-  plot_collated_realisation_set( (net_realisations - net_cfac_sum), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind, lwd_vec, 
+  plot_collated_realisation_set( (landscape_realisations - net_cfac_sum), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind, lwd_vec, 
                                  x_lab = system_NNL_plot_object$x_lab, plot_title = 'Landscape Value Relative to Counterfactual', plot_lims = vector())
  
 
@@ -121,67 +593,153 @@ plot_landscape_outcomes <- function(net_realisations, system_NNL_plot_object, ne
 
 
 
-plot_summed_program_realisations <- function(summed_program_realisations, collated_net_cfacs, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
+plot_summed_program_realisations <- function(summed_program_realisations, summed_program_cfacs, system_NNL_yrs, eco_dims, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
   
   setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
-  
-  plot_collated_realisation_set(summed_program_realisations$net_program_value, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = '', plot_title = 'Net Program Scale Value', plot_lims = c(0, max(summed_program_realisations$net_program_value)))
-  plot_collated_realisation_set(collated_net_cfacs, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = '', plot_title = 'Net Program Scale Value', plot_lims = vector())
+  program_scale_tit = assess_landscape_loss(summed_program_cfacs, system_NNL_yrs, realisation_num, eco_dims)
+  program_scale_tit = paste('Net Value (', program_scale_tit, ')')
+  plot_collated_realisation_set(summed_program_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
+                                x_lab = '', plot_title = program_scale_tit, plot_lims = c(0, max(summed_program_realisations)))
+  plot_collated_realisation_set(summed_program_cfacs, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, eco_ind, lwd_vec, 
+                                x_lab = '', plot_title = '', plot_lims = vector())
   
   legend('topright', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   
   
-  plot_collated_realisation_set( (collated_realisations$summed_program_realisations$net_program_value - collated_net_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind = 1, lwd_vec, 
-                                 x_lab = '', plot_title = 'Net Program Value Relative to Counterfactual', plot_lims = vector() )
-  
+  plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind = 1, lwd_vec, 
+                                 x_lab = '', plot_title = 'Net Value Rel. to Counterfactual', plot_lims = vector() )
   
   title(outer_title, outer = TRUE)
   
 }
 
-# eco_ind = 1
-# lwd_vec = c(2, 0.3)
-# outer_title = plot_characteristics
-# parcel_sum_lims = c(0, 20000)
 
-plot_collated_realisations <- function(collated_realisations, realisation_num, parcel_sum_lims, eco_ind, lwd_vec, outer_title){
+group_degs_gains <- function(current_collated_reals, time_horizon, eco_dims){
   
-  plot_split_realisations(collated_realisations, eco_ind, lwd_vec, outer_title, col_vec_1 = c('blue', 'mediumorchid4', 'darkgreen'), 
-                          col_vec_2 = c('blue', 'mediumorchid4', 'red'))  #plot all realisations in restorations gains/avoided degredation form split into offsets and developments
+  summed_realisations = list()
+  summed_realisations$rest_gains = sum_collated_realisations(current_collated_reals$rest_gains, time_horizon, eco_dims)
+  summed_realisations$avoided_degs = sum_collated_realisations(current_collated_reals$avoided_degs, time_horizon, eco_dims)
+  summed_realisations$avoided_degs_include_clearing = sum_collated_realisations(current_collated_reals$avoided_degs_include_clearing, time_horizon, eco_dims)
+  summed_realisations$avoided_degs_include_clearing_offsets = sum_collated_realisations(current_collated_reals$avoided_degs_include_clearing_offsets, time_horizon, eco_dims)
+  summed_realisations$net_outcome <- collate_net_realisation_outcome(summed_realisations)
+  return(summed_realisations)
   
-  system_NNL_plot_object = assess_failed_NNL(collated_realisations$system_NNLs)
+}
   
-  plot_realisation_outcomes(collated_realisations, plot_title = 'All Realisation Program Outcomes', x_lab = system_NNL_plot_object$x_lab, eco_ind, lwd_vec, 
-                            col_vec = c('black', 'red', 'darkgreen'), legend_vec = c('net offset gains', 'net development losses', 'net program outcomes'), outer_title)
-  
-  
-  plot_realisations_hists(system_NNL_plot_object, collated_realisations, parcel_sum_lims, outer_title)
-  
-   
-  net_cfac_sum = apply(cfac_parcel_trajs, MARGIN = 1, sum)
-  
-  plot_landscape_outcomes(collated_realisations$net_realisations, system_NNL_plot_object, net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'red'), 
-                          legend_vec = c('landscape value', 'counterfactual value'), outer_title)
 
-  plot_summed_program_realisations(collated_realisations$summed_program_realisations, collated_realisations$collated_net_cfacs, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'black'),
-                                    legend_vec = c('program scale value', 'program scale counterfactual value'), outer_title)
-    
-  
-  #   if (length(NNL_object$NNL_yrs > 0)){
-  #     xl = t(cbind(paste('parcel set mean years to NNL = ', round(mean(NNL_object$NNL_yrs))), paste('NNL success = ', NNL_object$success*100, '%' )))
-  #     hist(NNL_object$NNL_yrs, main = '', xlab = xl)
-  #   }
-  
+sum_collated_realisations <- function(reals, time_horizon, eco_dims){
+  realisation_num = length(realisations)
+  summed_collated_realisations = array(0, c(time_horizon, realisation_num, eco_dims))
+  for (realisation_ind in seq_len(realisation_num)){
+    summed_collated_realisations[, realisation_ind, ] = sum_cols_multi(reals[[realisation_ind]])
+  }
+  return(summed_collated_realisations)
 }
 
 
-plot_summed_realisations <- function(collated_summed_reals, plot_title, eco_ind, lwd_vec, col_vec, legend_vec){
+collate_net_realisation_outcome <- function(current_summed_reals){
+  net_outcome = list()
+  net_outcome$standard = current_summed_reals$rest_gains + current_summed_reals$avoided_degs
+  net_outcome$include_clearing = current_summed_reals$rest_gains + current_summed_reals$avoided_degs_include_clearing
+  net_outcome$include_clearing_offsets = current_summed_reals$rest_gains + current_summed_reals$avoided_degs_include_clearing_offsets
+  return(net_outcome)
+}
+
+
+
+
+
+# lwd_vec = c(3, 0.2)
+# eco_ind = 1
+# outer_title = ''
+# offset_cfac_type = 'include_clearing'
+# summed_offset_realisations = collated_realisations$summed_offset_realisations
+# summed_dev_realisations = collated_realisations$summed_dev_realisations
+# col_vec_1 = c('blue', 'mediumorchid4', 'darkgreen')
+# col_vec_2 = c('blue', 'mediumorchid4', 'red')
+
+plot_collated_realisations <- function(collated_realisations, realisation_num, global_params, parcel_sum_lims, eco_ind, lwd_vec, outer_title){
   
-  degs = collated_summed_reals$avoided_degs
+  time_horizon = global_params$time_steps
+  eco_dims = global_params$eco_dims
+ 
+  plot_split_realisations(collated_realisations$summed_offset_realisations, offset_cfac_type = 'include_clearing', collated_realisations$summed_dev_realisations, dev_cfac_type = 'standard',
+                          eco_ind, lwd_vec, outer_title, col_vec_1 = c('blue', 'mediumorchid4', 'darkgreen'), 
+                          col_vec_2 = c('blue', 'mediumorchid4', 'red'), realisation_num)  #plot all realisations in restorations gains/avoided degredation form split into offsets and developments
+  
+  system_NNL_yrs = collated_realisations$system_NNLs$NNL_yrs
+  system_NNL_plot_object = assess_failed_NNL(system_NNL_yrs)
+  
+  plot_realisation_outcomes(dev_losses = collated_realisations$summed_dev_realisations$net_outcome$standard, offset_gains = collated_realisations$summed_offset_realisations$net_outcome$standard, 
+                            net_outcome = collated_realisations$net_realisation_gains$standard, plot_title = 'All Realisation Program Outcomes', x_lab = system_NNL_plot_object$x_lab, eco_ind, lwd_vec, 
+                            col_vec = c('black', 'red', 'darkgreen'), legend_vec = c('net offset gains', 'net development losses', 'net program outcomes'), outer_title)
+  
+  initial_parcel_sums_array = simplify2array(collated_realisations$offsets$initial_parcel_sums)
+  
+  plot_realisation_hists(system_NNL_plot_object, collated_realisations$parcel_set_NNL_yrs, initial_parcel_sums_array, parcel_sum_lims = c(0, 20000), outer_title)
+  
+  
+  summed_program_realisations = simplify_list_to_array(collated_realisations$collated_program_sums$net_trajs)
+  summed_program_cfacs = simplify_list_to_array(collated_realisations$collated_program_cfac_sums$net_trajs)
+  
+  plot_summed_program_realisations(summed_program_realisations, summed_program_cfacs, system_NNL_yrs, eco_dims = global_params$eco_dims, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'black'),
+                                   legend_vec = c('Net Value', 'Net Counterfactual Value'), outer_title)
+  
+  net_cfac_sum = apply(collated_realisations$cfac_trajs, MARGIN = 1, sum)
+
+  plot_landscape_outcomes(collated_realisations$landscape_vals, system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'red'), 
+                          legend_vec = c('landscape value', 'counterfactual value'), outer_title)
+
+}
+
+
+assess_landscape_loss <- function(landscape_vals, NNL_yrs, realisation_num, eco_dims){
+  
+  landscape_loss = array(0, c(realisation_num, eco_dims))
+  
+  for (realisation_ind in seq_len(realisation_num)){
+    current_NNL_yr = NNL_yrs[realisation_ind]
+    if (current_NNL_yr != 0){
+      landscape_loss[realisation_ind, ] = landscape_vals[current_NNL_yr, realisation_ind, ]
+    }
+  }
+
+  success_inds = which(rowSums(landscape_loss) != 0)
+  landscape_loss = landscape_loss[success_inds]
+  landscape_loss = 100*(1 - landscape_loss/landscape_vals[1, success_inds, ])
+  
+  if (length(success_inds) > 0){
+    landscape_title = paste('NNL at ', round(mean(landscape_loss)), '\U00b1', round(max(range(landscape_loss) - (mean(landscape_loss))), 1), ' % loss of landscape')
+  } else landscape_title = 'All realisations failed NNL'
+  
+  return(landscape_title)
+} 
+
+
+
+simplify_list_to_array <- function(collated_list){
+  collated_array = simplify2array(collated_list)
+  collated_dims = dim(collated_array)
+  dim(collated_array) = c(collated_dims[1], collated_dims[4], 1)
+  return(collated_array)
+}
+
+
+plot_summed_realisations <- function(collated_summed_reals, cfac_type, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, realisation_num){
+  
   rest_gains = collated_summed_reals$rest_gains
-  nets = collated_summed_reals$net_gains
+  
+  if (cfac_type == 'standard'){
+    degs = collated_summed_reals$avoided_degs
+    nets = collated_summed_reals$net_outcome$standard
+  } else if (cfac_type == 'include_clearing'){
+    degs = collated_summed_reals$avoided_degs_include_clearing
+    nets = collated_summed_reals$net_outcome$include_clearing
+  } else if (cfac_type =='include_clearing_offsets'){
+    degs = collated_summed_reals$avoided_degs_include_clearing_offsets
+    nets = collated_summed_reals$net_outcome$include_clearing_offsets
+  }
+
   mx = max(cbind(degs, rest_gains, nets))
   mn = min(cbind(degs, rest_gains, nets))
   
@@ -223,9 +781,10 @@ plot_collated_realisation_set <- function(collated_realisations, overlay_plots, 
   } else { lines(collated_realisations[, 1, eco_ind], lwd = lwd_vec[2], col = back_plot_col)
   }
   
-  
-  for (realisation_ind in 2:realisation_num){
-    lines(collated_realisations[, realisation_ind, eco_ind], col = back_plot_col, lwd = lwd_vec[2])
+  if (realisation_num > 1){
+    for (realisation_ind in 2:realisation_num){
+      lines(collated_realisations[, realisation_ind, eco_ind], col = back_plot_col, lwd = lwd_vec[2])
+    }
   }
   lines(realisation_mean, ylim = c(mn, mx), col = plot_col, lwd = lwd_vec[1], lty = 2)
   abline(h = 0, lty = 2)
@@ -242,8 +801,6 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
  # plot_sample_parcel_sets(collated_parcel_sets_object, plot_num = 9, global_params)
   
   setup_sub_plots(nx = 1, ny = 3, x_tit = FALSE)
-  
-  
   
   plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_indexes = (1:global_params$total_dev_num), time_horizon, global_params$eco_dims, 
                                        headings = c('Single Realisation Net Program Developments', 'Single Realisation Net Program Offsets', 'Single Realisation Net Program Outcomes'))
@@ -265,7 +822,7 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
   hist(collated_parcel_sets_object$offsets$initial_parcel_sums, main = 'Single Realisation Selected Parcel Values', xlab = 'Selected offset parcel values')
   setup_sub_plots(nx = 3, ny = 1, x_tit = FALSE)
   total_parcel_sums = apply(parcel_trajs, MARGIN = 1, sum)
-  total_counter_sums = apply(cfac_parcel_trajs, MARGIN = 1, sum)
+  total_counter_sums = apply(parcel_cfac_trajs, MARGIN = 1, sum)
   plot_array = cbind(t(t(total_parcel_sums)), t(t(total_counter_sums)))
   mx = max(plot_array)
   mn = min(plot_array)
@@ -284,15 +841,14 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
 
 }
 
-
-find_development_vector <- function(time_steps, total_dev_num, sd, min_width, last_dev){
+find_prog_vector <- function(time_steps, prog_start, prog_end, total_prog_num, sd){
   dev_vec = array(0, time_steps)
-  dev_vec[1:(time_steps - last_dev)] = split_vector((time_steps - last_dev), total_dev_num, sd, min_width)
+  dev_vec[prog_start:prog_end] = split_vector((prog_end - prog_start + 1), total_prog_num, sd, min_width = -1)
   return(dev_vec)
 }
-  
-split_vector <- function(N, M, sd, min_width) {
 
+split_vector <- function(N, M, sd, min_width) {
+  
   vec <- rnorm(N, M/N, sd)
   if (abs(sum(vec)) < 0.01) vec <- vec + 1
   vec <- round(vec / sum(vec) * M)
@@ -308,6 +864,9 @@ split_vector <- function(N, M, sd, min_width) {
   }
   vec
 }
+
+
+
 
 
 initialise_shape_parcels <- function(global_params){
@@ -622,9 +1181,9 @@ update_development_object <- function(global_params, ind_available, current_ecol
   
   parcel_sums_object = find_current_parcel_sums(land_parcels, current_ecology, parcel_indexes)
   
-  if (offset_dims == 'singular'){
+  if (offset_dims == 1){
     eco_dims = 1
-  } else if (offset_dims == 'all'){
+  } else {
     eco_dims = global_params$eco_dims
   }
   current_parcel_val = parcel_sums_object$parcel_sums
@@ -711,7 +1270,7 @@ find_offset_pool <- function(index_object, region_ind, decline_rates, global_par
   current_offset_pool = index_object$ind_available[[region_ind]]
   parcel_sums_object = find_current_parcel_sums(land_parcels, current_ecology, current_offset_pool)
   
-  if (global_params$offset_dims == 'singular'){
+  if (global_params$offset_dims == 1){
     eco_dims = 1
   } else {
     eco_dims = global_params$eco_dims
@@ -867,7 +1426,6 @@ adjust_cfac <- function(cfacs, region_params, global_params, parcel_indexes, par
   
   adjusted_counters_object = list()
   adjusted_counters_object$include_clearing = include_clearing
-#  adjusted_counters_object$weighted_offset_projections = weighted_offset_projections
   adjusted_counters_object$include_clearing_offsets = include_clearing_offsets
   
   return(adjusted_counters_object)
@@ -1073,11 +1631,12 @@ update_decline_rates <- function(decline_rates, restoration_rate, decline_rate_t
         offset_rate = restoration_rate
       }
       
-      if (offset_dims == 'all'){
-        decline_rates[loc[1], loc[2], ] = offset_rate
-      } else if (offset_dims == 'singular'){
+      if (offset_dims == 1){
         decline_rates[loc[1], loc[2], 1] = offset_rate[1]
-      }
+      } else {
+        decline_rates[loc[1], loc[2], ] = offset_rate
+      } 
+        
     }
   }
   
@@ -1115,15 +1674,10 @@ find_parcel_set <- function(region_ind, global_params, region_params, current_ec
   index_object <- update_ind_available(update_type = 'development', index_object, development_object$parcel_indexes, region_ind)
   decline_rates <- update_decline_rates(decline_rates, global_params$restoration_rate, decline_rate_type = 'development', offset_action_type = global_params$offset_action_type, development_object$parcel_indexes, global_params$offset_dims)
   
-  if (global_params$perform_offsets == TRUE){
-                                          
-    offset_pool_object <- find_offset_pool(index_object, region_ind, decline_rates, global_params, region_params, parcels$land_parcels, current_ecology, time_horizon, yr)
-    offset_object <- update_offset_object(offset_pool_object, region_params[[region_ind]]$offset_multiplier, development_object$parcel_vals_used, region_params[[region_ind]]$offset_parcel_for_parcel, global_params$eco_dims, yr)                  
-    index_object <- update_ind_available(update_type = 'offset', index_object, offset_object$parcel_indexes, region_ind)              
-    decline_rates <- update_decline_rates(decline_rates, global_params$restoration_rate, decline_rate_type = 'offset', offset_action_type = global_params$offset_action_type, offset_object$parcel_indexes, global_params$offset_dims)
-    
-  } else {offset_object <- write_null_offset_object() }
-  
+  offset_pool_object <- find_offset_pool(index_object, region_ind, decline_rates, global_params, region_params, parcels$land_parcels, current_ecology, time_horizon, yr)
+  offset_object <- update_offset_object(offset_pool_object, global_params$offset_multiplier, development_object$parcel_vals_used, global_params$offset_parcel_for_parcel, global_params$eco_dims, yr)                  
+  index_object <- update_ind_available(update_type = 'offset', index_object, offset_object$parcel_indexes, region_ind)              
+  decline_rates <- update_decline_rates(decline_rates, global_params$restoration_rate, decline_rate_type = 'offset', offset_action_type = global_params$offset_action_type, offset_object$parcel_indexes, global_params$offset_dims)
   
   offset_devs_object$index_object = index_object
   offset_devs_object$decline_rates = decline_rates
@@ -1341,44 +1895,6 @@ build_traj_list <- function(trajectories, land_parcels, parcel_indexes, eco_dims
   
 
 
-# outputs = outs$model_outputs
-# land_parcels = parcels$land_parcels
-# parcel_sets_cfacs = outs$parcel_sets_cfacs
-# decline_rates = decline_rates_initial
-# trajectories = outputs$trajectories
-# time_steps = global_params$time_steps
-# parcel_set_ind = 1
-# current_sets_object = outputs$offsets
-# current_parcel_set = current_sets_object[[parcel_set_ind]]
-
-# parcel_count_ind = 1
-
-# current_cfac_sets_object = parcel_sets_cfacs$offsets
-
-
-collate_parcel_sets_object <- function(outputs, parcel_sets_cfacs, land_parcels, global_params, decline_rates){
-  parcel_set_num = global_params$total_dev_num
-  time_horizon = global_params$time_steps
-  eco_dims = global_params$eco_dims
-  
-  traj_list = build_traj_list(outputs$trajectories, land_parcels, parcel_indexes = 1:length(land_parcels), eco_dims)
-  offset_traj_list = extract_parcel_set_trajs(traj_list, parcel_set_indexes = outputs$offsets$parcel_indexes)
-  dev_traj_list = extract_parcel_set_trajs(traj_list, parcel_set_indexes = outputs$developments$parcel_indexes)
-  
-  offset_yrs = outputs$offsets$yr
-  
-  collated_parcel_sets_object = list()
-  collated_parcel_sets_object$traj_list = traj_list
-  collated_parcel_sets_object$offsets = collate_parcel_sets(outputs$offsets, offset_traj_list, parcel_sets_cfacs$offsets, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates)
-  collated_parcel_sets_object$devs = collate_parcel_sets(outputs$developments, dev_traj_list, parcel_sets_cfacs$developments, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates)
-  
-  collated_parcel_sets_object$NNL_object = assess_NNL(collated_parcel_sets_object$offsets$rest_gains, collated_parcel_sets_object$offsets$avoided_degs, 
-                                                      collated_parcel_sets_object$devs$rest_gains, collated_parcel_sets_object$devs$avoided_degs, eco_dims, parcel_set_num, time_horizon, offset_yrs)
-  collated_parcel_sets_object$summed_program_parcels = sum_program_parcels(traj_list, eco_dims, offset_parcel_indexes = (outputs$offset_list), 
-                                                                          dev_parcel_indexes = (outputs$development_list), time_horizon)
-  
-  return(collated_parcel_sets_object)
-}
 
 
 #offset_parcel_indexes = (outs$model_outputs$offset_list)
@@ -1396,86 +1912,10 @@ sum_program_parcels <- function(traj_list, eco_dims, offset_parcel_indexes, dev_
   return(summed_program_parcels)
 }
 
-sum_program_cfacs <- function(cfac_parcel_trajs, parcel_indexes){
-  program_cfacs = cfac_parcel_trajs[, parcel_indexes, ]
+sum_program_cfacs <- function(parcel_cfac_trajs, parcel_indexes){
+  program_cfacs = parcel_cfac_trajs[, parcel_indexes, ]
   program_cfac_sum = sum_cols_multi(program_cfacs)
   return(program_cfac_sum)
-}
-
-collate_parcel_sets <- function(current_sets_object, current_parcel_sets_traj_list, current_cfac_sets_object, land_parcels, parcel_set_num, time_horizon, eco_dims, decline_rates){
-
-
-  rest_gains = find_gains_degs(current_sets_object, current_traj_list = current_parcel_sets_traj_list, trajectory_type = 'traj', parcel_set_num, time_horizon, eco_dims)
-  avoided_degs = find_gains_degs(current_sets_object, current_traj_list = current_cfac_sets_object$cfacs, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
-  avoided_degs_including_clearing = find_gains_degs(current_sets_object, current_traj_list = current_cfac_sets_object$cfacs_include_clearing, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
-  avoided_degs_including_clearing_offsets = find_gains_degs(current_sets_object, current_traj_list = current_cfac_sets_object$cfacs_include_clearing_offsets, trajectory_type = 'cfac', parcel_set_num, time_horizon, eco_dims)
-  initial_parcel_sums = collate_initial_sums(current_sets_object$parcel_sums, parcel_set_num)
-  
-  parcel_sets_object = list()
-  parcel_sets_object$initial_parcel_sums = initial_parcel_sums
-  parcel_sets_object$rest_gains = rest_gains
-  parcel_sets_object$avoided_degs = avoided_degs
-  parcel_sets_object$avoided_degs_including_clearing = avoided_degs_including_clearing
-  parcel_sets_object$avoided_degs_including_clearing_offsets = avoided_degs_including_clearing_offsets
-  
-  return(parcel_sets_object)
-    
-}  
-
-
-collate_initial_sums <- function(initial_sums_list, parcel_set_num){
-  initial_sums_array = vector()
-  
-  for (parcel_set_ind in 1:parcel_set_num){
-    initial_sums_array = c(initial_sums_array, initial_sums_list[[parcel_set_ind]])
-  }
-  
-  return(initial_sums_array)
-  
-}
-
-find_gains_degs <- function(current_sets_object, current_traj_list, trajectory_type, parcel_set_num, time_horizon, eco_dims){
-  
-  gains_degs = array(0, c(time_horizon, parcel_set_num, eco_dims))
-  
-  for (parcel_set_ind in seq_len(parcel_set_num)){
-    
-    parcel_ecologies = current_sets_object$parcel_ecologies[[parcel_set_ind]]
-    parcel_indexes = current_sets_object$parcel_indexes[[parcel_set_ind]]
-    parcel_num = length(parcel_indexes)
-    yr = current_sets_object$yr[[parcel_set_ind]]
-    current_set_element = array(0, c(time_horizon, eco_dims))
-    
-    for (parcel_count_ind in seq_len(parcel_num)){
-      
-      for (eco_ind in seq_len(global_params$eco_dims)){
-        
-        current_parcel_ecology = parcel_ecologies[[parcel_count_ind]][, , eco_ind]
-        current_parcel_traj = current_traj_list[[parcel_set_ind]][[parcel_count_ind]][[eco_ind]]
-        current_set_element[, eco_ind] = current_set_element[, eco_ind] + sum_rel_intial(current_parcel_traj, current_parcel_ecology, trajectory_type, time_horizon, yr)
-        
-      }
-    }
-    
-    gains_degs[, parcel_set_ind, eco_ind] = current_set_element
-  }  
-  
-  return(gains_degs)
-}
-
-
-sum_rel_intial <- function(current_parcel_traj, current_parcel_ecology, trajectory_type, time_horizon, yr){
-  rel_arr = array(0, c(dim(current_parcel_ecology), time_horizon))
-  
-  if (trajectory_type == 'cfac'){
-    rel_arr[, , yr:time_horizon] = current_parcel_traj - as.vector(current_parcel_ecology)
-    rel_arr = -rel_arr
-  } else if(trajectory_type == 'traj'){
-    rel_arr[, , yr:time_horizon] = current_parcel_traj[, , yr:time_horizon] - as.vector(current_parcel_ecology)
-  }
-  
-  rel_arr = apply(rel_arr, 3, sum)
-  return(rel_arr)
 }
 
 
@@ -1485,55 +1925,6 @@ sum_rel_intial <- function(current_parcel_traj, current_parcel_ecology, trajecto
 # collated_offsets = collated_parcel_sets$offsets
 # collated_developments = collated_parcel_sets$developments
 # parcel_set_num = length(parcel_sets_object$offsets)
-
-assess_NNL <- function(offset_rest_gains, offset_avoided_degs, dev_rest_gains, dev_avoided_degs, eco_dims, parcel_set_num, time_horizon, offset_yrs){
-  
-  net_offset_gains = offset_rest_gains + offset_avoided_degs
-  net_dev_gains = dev_rest_gains + dev_avoided_degs
-    
-  net_gains = net_offset_gains + net_dev_gains
-  system_gains = sum_cols_multi(net_gains)
-  if (any(system_gains >0)){
-    system_NNL = min(which(system_gains > 0))
-  } else {
-    system_NNL = 0
-  }
-  
-  rec_array = array(0, c(parcel_set_num, eco_dims))
-  NNL_yrs = rec_array
-  failed_parcel_sets = rec_array
-  thresh = 0
-  for (parcel_set_ind in 1:parcel_set_num){
-    offset_yr = offset_yrs[[parcel_set_ind]]
-    for (eco_ind in 1:eco_dims){
-      current_net_gain = net_gains[, parcel_set_ind, eco_ind]
-      current_NNL_yr = which(current_net_gain > thresh)
-      if (length(current_NNL_yr) > 0){
-        NNL_yrs[parcel_set_ind, eco_ind] = min(current_NNL_yr) - offset_yr
-      } 
-    }
-  }
-  
-  failed_parcel_sets = which(NNL_yrs == 0)
-  
-  #   if (length(failed_parcel_sets) > 0){
-  #     NNL_success_yrs = NNL_yrs[-failed_parcel_sets]
-  #   }
-  
-  NNL_object = list()
-  NNL_object$net_offset_gains = net_offset_gains
-  NNL_object$net_dev_gains = net_dev_gains
-  NNL_object$net_gains = net_gains
-  NNL_object$system_gains = system_gains
-  NNL_object$system_NNL = system_NNL
-  
-  NNL_object$NNL_yrs = NNL_yrs
-  NNL_object$failed_parcel_sets = failed_parcel_sets
-  NNL_object$success = 1 - length(failed_parcel_sets)/parcel_set_num
-  return(NNL_object)
-  
-}
-
 
 
 # parcel_sets_object = outs$parcel_sets_object
@@ -1888,20 +2279,7 @@ sum_cols_multi <- function(arr_to_use){
 
 
 
-sum_parcel_trajectories <- function(traj_list, eco_dims, parcel_indexes, time_horizon){
-  
-  parcel_num = length(parcel_indexes)
-  parcel_trajs = array(0, c(time_horizon, parcel_num, eco_dims))
-  for (parcel_count_ind in seq_len(parcel_num)){
-    parcel_ind = parcel_indexes[parcel_count_ind]
-    for (eco_ind in seq_len(eco_dims)){
-      parcel_trajs[, parcel_count_ind, ] = apply(traj_list[[parcel_ind]][[eco_ind]], MARGIN=3, sum)
-    }  
-  }
-  
-  return(parcel_trajs)
-  
-}
+
 
 
 # find_parcel_traj_by_list <- function(trajectories_list, time_horizon, parcel_indexes){
@@ -2030,91 +2408,114 @@ write_summed_programs <- function(summed_program_realisations, realisation_ind, 
 }
 
 
-collate_program_cfacs <- function(realisations, time_horizon, eco_dims){
-  rec_array = array(0, c(time_horizon, realisation_num, eco_dims))
+collate_program_cfac_sum <- function(realisations, time_horizon, eco_dims){
   realisation_num = length(realisations)
-  eco_ind = 1
+  collate_array = array(0, c(time_horizon, realisation_num, eco_dims))
   for (realisation_ind in 1:realisation_num){
-    rec_array[, realisation_ind, eco_ind] = realisations[[realisation_ind]]$program_cfacs$net
+    collate_array[, realisation_ind, ] = realisations[[realisation_ind]]$summed_program_cfacs$net
   }
-  return(rec_array)
+  return(collate_array)
 }
 
 
 
 #wrap realisations up into usable form for plotting
-collate_realisations <- function(realisations, parcel_set_indexes, time_horizon, eco_dims){
 
-  collated_net_cfacs <- collate_program_cfacs(realisations, time_horizon, eco_dims)    #group individual net realisation counterfactual values
-  
-  outs = list()
-  summed_dev_realisations = list()
+collate_realisation_parcel_set_sums <- function(realisations, rest_gains, avoided_degs, net_gains, parcel_set_indexes, time_horizon, eco_dims){
   
   realisation_num = length(realisations)
-  rec_array = array(0, c(time_horizon, realisation_num, eco_dims))
-  summed_dev_realisations$net_gains = rec_array
-  summed_dev_realisations$avoided_degs = rec_array
-  summed_dev_realisations$rest_gains = rec_array
-  net_realisations = rec_array
-  net_parcel_set_realisations = rec_array
+  collate_array = array(0, c(time_horizon, realisation_num, eco_dims))
+  summed_realisations = list()
+  summed_realisations$net_gains = collate_array
+  summed_realisations$avoided_degs = collate_array
+  summed_realisations$rest_gains = collate_array
   
-  summed_offset_realisations = summed_dev_realisations
+  rm(collate_array)
 
-  summed_program_realisations = list()
-  summed_program_realisations$net_program_value = rec_array
-  summed_program_realisations$net_offset_value = rec_array
-  summed_program_realisations$net_development_value = rec_array
-  
-  program_cfac_realisations = rec_array
-  
-  rm(rec_array)
-  
-  
-  
-  
-  system_NNLs = array(0, c(realisation_num, eco_dims))
-  rec_array = array(0, c(length(parcel_set_indexes), realisation_num))
-  ALL_parcel_set_NNLs = rec_array
-  ALL_offset_initial_parcel_sums = rec_array
-  rm(rec_array)
-  
-  eco_ind = 1
-  
   for (realisation_ind in seq_len(realisation_num)){
     current_realisation = realisations[[realisation_ind]]
-    collated_object = current_realisation$collated_parcel_sets_object
-    
-    current_summed_devs = sum_parcel_sets_as_list(collated_object$devs$rest_gains, collated_object$devs$avoided_degs, collated_object$NNL_object$net_dev_gains, parcel_set_indexes, time_horizon)
-    current_summed_offsets = sum_parcel_sets_as_list(collated_object$offsets$rest_gains, collated_object$offsets$avoided_degs, collated_object$NNL_object$net_offset_gains, parcel_set_indexes, time_horizon)
-    summed_dev_realisations = write_realisation_sums(summed_dev_realisations, realisation_ind, current_summed_devs)
-    summed_offset_realisations = write_realisation_sums(summed_offset_realisations, realisation_ind, current_summed_offsets)
-    summed_program_realisations = write_summed_programs(summed_program_realisations, realisation_ind, collated_object$summed_program_parcels)
-
-    net_parcel_set_realisations[, realisation_ind, ] = sum_cols_multi(collated_object$NNL_object$net_gains[, parcel_set_indexes, ])
-    net_realisations[, realisation_ind, ] = apply(current_realisation$model_outputs$trajectories[[eco_ind]], MARGIN = 3, sum)
-    if (length(collated_object$NNL_object$system_NNL) > 0){
-      system_NNLs[realisation_ind, ] = collated_object$NNL_object$system_NNL
-    }
-    ALL_parcel_set_NNLs[, realisation_ind] = collated_object$NNL_object$NNL_yrs
-    ALL_offset_initial_parcel_sums[, realisation_ind] = collated_object$offsets$initial_parcel_sums
+    collated_parcel_sets_object = current_realisation$collated_parcel_sets_object
+    current_sum = sum_parcel_sets_as_list(rest_gains, avoided_degs, net_gains, parcel_set_indexes, time_horizon)
+    summed_realisations = write_realisation_sums(summed_realisations, realisation_ind, current_sum)
   }
-  
-  system_NNL_fails = which(system_NNLs == 0)
-  
-  outs$collated_net_cfacs = collated_net_cfacs
-  outs$system_NNL_fails = system_NNL_fails
-  outs$ALL_offset_initial_parcel_sums = ALL_offset_initial_parcel_sums
-  outs$ALL_parcel_set_NNLs = ALL_parcel_set_NNLs
-  outs$system_NNLs = system_NNLs
-  outs$summed_dev_realisations = summed_dev_realisations
-  outs$summed_offset_realisations = summed_offset_realisations
-  outs$net_parcel_set_realisations = net_parcel_set_realisations
-  outs$net_realisations = net_realisations
-  outs$summed_program_realisations = summed_program_realisations
-  return(outs)
   
 }
 
+
+
+# 
+# 
+# collate_realisations <- function(realisations, parcel_set_indexes, time_horizon, eco_dims){
+#   
+#   collated_program_cfacs <- collate_program_cfac_sum(realisations, time_horizon, eco_dims)    #group individual net realisation counterfactual values
+#   
+#   outs = list()
+#   summed_dev_realisations = list()
+#   
+#   realisation_num = length(realisations)
+#   collate_array = array(0, c(time_horizon, realisation_num, eco_dims))
+#   summed_dev_realisations$net_gains = collate_array
+#   summed_dev_realisations$avoided_degs = collate_array
+#   summed_dev_realisations$rest_gains = collate_array
+#   net_realisations = collate_array
+#   net_parcel_set_realisations = collate_array
+#   
+#   summed_offset_realisations = summed_dev_realisations
+#   
+#   summed_program_realisations = list()
+#   summed_program_realisations$net_program_value = collate_array
+#   summed_program_realisations$net_offset_value = collate_array
+#   summed_program_realisations$net_development_value = collate_array
+#   
+#   program_cfac_realisations = collate_array
+#   
+#   rm(collate_array)
+#   
+#   
+#   
+#   
+#   system_NNLs = array(0, c(realisation_num, eco_dims))
+#   collate_array = array(0, c(length(parcel_set_indexes), realisation_num))
+#   ALL_parcel_set_NNLs = collate_array
+#   ALL_offset_initial_parcel_sums = collate_array
+#   rm(collate_array)
+#   
+#   eco_ind = 1
+#   
+#   for (realisation_ind in seq_len(realisation_num)){
+#     current_realisation = realisations[[realisation_ind]]
+#     collated_object = current_realisation$collated_parcel_sets_object
+#     
+#     current_summed_devs = sum_parcel_sets_as_list(collated_object$devs$rest_gains, collated_object$devs$avoided_degs, collated_object$NNL_object$net_dev_gains, parcel_set_indexes, time_horizon)
+#     current_summed_offsets = sum_parcel_sets_as_list(collated_object$offsets$rest_gains, collated_object$offsets$avoided_degs, collated_object$NNL_object$net_offset_gains, parcel_set_indexes, time_horizon)
+#     summed_dev_realisations = write_realisation_sums(summed_dev_realisations, realisation_ind, current_summed_devs)
+#     summed_offset_realisations = write_realisation_sums(summed_offset_realisations, realisation_ind, current_summed_offsets)
+#     summed_program_realisations = write_summed_programs(summed_program_realisations, realisation_ind, collated_object$summed_program_parcels)
+#     
+#     net_parcel_set_realisations[, realisation_ind, ] = sum_cols_multi(collated_object$NNL_object$net_gains[, parcel_set_indexes, ])
+#     net_realisations[, realisation_ind, ] = apply(current_realisation$model_outputs$trajectories[[eco_ind]], MARGIN = 3, sum)
+#     if (length(collated_object$NNL_object$system_NNL) > 0){
+#       system_NNLs[realisation_ind, ] = collated_object$NNL_object$system_NNL
+#     }
+#     ALL_parcel_set_NNLs[, realisation_ind] = collated_object$NNL_object$NNL_yrs
+#     ALL_offset_initial_parcel_sums[, realisation_ind] = collated_object$offsets$initial_parcel_sums
+#   }
+#   
+#   system_NNL_fails = which(system_NNLs == 0)
+#   
+#   outs$collated_net_cfacs = collated_net_cfacs
+#   outs$system_NNL_fails = system_NNL_fails
+#   outs$ALL_offset_initial_parcel_sums = ALL_offset_initial_parcel_sums
+#   outs$ALL_parcel_set_NNLs = ALL_parcel_set_NNLs
+#   outs$system_NNLs = system_NNLs
+#   outs$summed_dev_realisations = summed_dev_realisations
+#   outs$summed_offset_realisations = summed_offset_realisations
+#   outs$net_parcel_set_realisations = net_parcel_set_realisations
+#   outs$net_realisations = net_realisations
+#   outs$summed_program_realisations = summed_program_realisations
+#   return(outs)
+#   
+# }
 
 # collate_parcel_realisations_multi <- function(record_parcel_sets, realisations, parcel_ind, land_parcels, global_params, eco_dims){
 #   realisation_num = length(realisations)
@@ -2372,11 +2773,11 @@ Blur_2D <- function(A, sig_x, sig_y){
 #   parcel_ecologies_list = current_parcel_set$parcel_ecologies
 #   parcel_num = length(parcel_indexes)
 #   
-#   rec_array = array(0, c(global_params$time_steps, parcel_num, global_params$eco_dims))
-#   avoided_degs = rec_array
-#   avoided_degs_include_clearing = rec_array
-#   avoided_degs_include_clearing_offsets = rec_array
-#   rest_gains = rec_array
+#   collate_array = array(0, c(global_params$time_steps, parcel_num, global_params$eco_dims))
+#   avoided_degs = collate_array
+#   avoided_degs_include_clearing = collate_array
+#   avoided_degs_include_clearing_offsets = collate_array
+#   rest_gains = collate_array
 #   
 #   initial_parcel_sums = array(0, c(parcel_num, global_params$eco_dims))
 #   
