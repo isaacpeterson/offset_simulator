@@ -177,20 +177,6 @@ run_system <- function(trajectories, offsets_object, developments_object, banked
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 simplify_list_to_array <- function(collated_list){
   collated_array = simplify2array(collated_list)
   collated_dims = dim(collated_array)
@@ -207,11 +193,10 @@ find_prog_vector <- function(time_steps, prog_start, prog_end, total_prog_num, s
   return(dev_vec)
 }
 
-split_vector <- function(N, M, sd, min_width) {
+split_vector <- function(N, M, sd, min_width) {               # make a vector of length N where the elements sum to M and with values normally distributed about M/N with std dev "sd"
   
-  vec <- rnorm(N, M/N, sd)
-  if (abs(sum(vec)) < 0.01) vec <- vec + 1
-  vec <- round(vec / sum(vec) * M)
+  vec <- rnorm(N, M/N, sd)                                    # select vector from normal distribution
+  vec <- round(vec / sum(vec) * M)                             
   deviation <- M - sum(vec)
   for (. in seq_len(abs(deviation))) {
     vec[i] <- vec[i <- sample(N, 1)] + sign(deviation)
@@ -228,23 +213,24 @@ split_vector <- function(N, M, sd, min_width) {
 
 initialise_shape_parcels <- function(global_params){
   parcels = list()
-  parcel_num_x = global_params$parcel_num_x
-  parcel_num_y = global_params$parcel_num_y
-  parcel_vx = split_vector(parcel_num_x, global_params$ecology_size, sd = 5, min_width = 3)
-  parcel_vy = split_vector(parcel_num_y, global_params$ecology_size, sd = 5, min_width = 3)
+  parcel_num_x = global_params$parcel_num_x   #length in parcels of array in x 
+  parcel_num_y = global_params$parcel_num_y #length in parcels of array in y 
+  parcel_vx = split_vector(parcel_num_x, global_params$ecology_size, sd = 5, min_width = 3) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
+  parcel_vy = split_vector(parcel_num_y, global_params$ecology_size, sd = 5, min_width = 3) # as above for y
   
-  pixel_indexes = 1:(global_params$ecology_size*global_params$ecology_size)
-  dim(pixel_indexes) = c(global_params$ecology_size, global_params$ecology_size)
-  land_parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #lit the ecology array into a series of subarrays with dimensions sz_x by sz_y
+  pixel_indexes = 1:(global_params$ecology_size*global_params$ecology_size)     #index all elements of ecology array
+  dim(pixel_indexes) = c(global_params$ecology_size, global_params$ecology_size)  # arrange ecology array index vector into array of landscape dimensions 
+  land_parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
   land_parcel_num = length(land_parcels$elements) #total number of parcels
   parcel_indexes = 1:land_parcel_num #index all parcels
   dim(parcel_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
-  region_vx = split_vector(global_params$region_num_x, parcel_num_x, 1, min_width = 3) 
+  region_vx = split_vector(global_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
   region_vy = split_vector(global_params$region_num_y, parcel_num_y, 1, min_width = 3)
   
-  regions = mcell(parcel_indexes, region_vx, region_vy)
+  regions = mcell(parcel_indexes, region_vx, region_vy)   # split land parcel indexes into regions
   
   region_num = length(regions$elements)
+  
   parcels$parcel_indexes = parcel_indexes
   parcels$land_parcel_num = land_parcel_num
   parcels$land_parcels = land_parcels$elements
@@ -273,26 +259,26 @@ initialise_index_object <- function(parcels, global_params){
 }
 
 
-initialise_ecology_slice <- function(global_params, land_parcels){
+initialise_ecology_slice <- function(global_params, land_parcels){ #generate initial "slice" of ecology to be used for each separate ecological dimension
   
   land_parcel_num = length(land_parcels)
-  initial_ecology = matrix(1,global_params$ecology_size,global_params$ecology_size)
+  initial_ecology = matrix(1,global_params$ecology_size,global_params$ecology_size)     #initialise ecology array into unitary array
   
-  for (parcel_ind in seq_len(land_parcel_num)){
-    initial_parcel_value = global_params$min_initial_eco_val + (global_params$max_initial_eco_val - global_params$min_initial_eco_val - global_params$initial_eco_noise)*runif(1) 
+  for (parcel_ind in seq_len(land_parcel_num)){   #loop through land parcels assigning the same (randomly distributed) value to all elements within land parcel - with max and min values controlled by user controlled max/min eco_vals
+    initial_parcel_value = global_params$min_initial_eco_val + (global_params$max_initial_eco_val - global_params$min_initial_eco_val - global_params$initial_eco_noise)*runif(1) #determine scaled random multiplier
     current_parcel = select_land_parcel(land_parcels, parcel_ind)
-    initial_ecology[current_parcel] = initial_ecology[current_parcel]*initial_parcel_value
+    initial_ecology[current_parcel] = initial_ecology[current_parcel]*initial_parcel_value #multiply all elements of current land parcel by scaled random multiplier
   }
-  initial_ecology = initial_ecology + global_params$initial_eco_noise*matrix(runif(global_params$ecology_size*global_params$ecology_size),global_params$ecology_size,global_params$ecology_size)
+  initial_ecology = initial_ecology + global_params$initial_eco_noise*matrix(runif(global_params$ecology_size*global_params$ecology_size),global_params$ecology_size,global_params$ecology_size) #add noise to ecology, yielding land parcels with variation across parcel
   return(initial_ecology)
 }
 
 
 
 
-initialise_ecology <- function(global_params, land_parcels){
-  initial_ecology = array(0, c(global_params$ecology_size, global_params$ecology_size, global_params$eco_dims))
-  for (eco_ind in seq_len(global_params$eco_dims)){
+initialise_ecology <- function(global_params, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+  initial_ecology = array(0, c(global_params$ecology_size, global_params$ecology_size, global_params$eco_dims))     #initialise with array of zeros of landscape dimensions, and number of ecological dimension deep
+  for (eco_ind in seq_len(global_params$eco_dims)){     #generate initial ecology for each ecological dimension
     initial_ecology[, , eco_ind]  = initialise_ecology_slice(global_params, land_parcels)
   }
   return(initial_ecology)
@@ -301,7 +287,7 @@ initialise_ecology <- function(global_params, land_parcels){
 
 
 
-mcell <- function(x, vx, vy){
+mcell <- function(x, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
   
   rowsizes = vy;
   colsizes = vx;
@@ -309,11 +295,11 @@ mcell <- function(x, vx, vy){
   cols = length(colsizes);
   
   a = 1
-  B = vector('list', rows*cols)
+  B = vector('list', rows*cols)   # make an array composed of lists with dimenisons that define the land parcels/regions. The list format allows arrays of different sizes to be stored
   colStart = 0
-  for (i in seq_len(cols)){
+  for (i in seq_len(cols)){       # run down through the columns of input array 
     rowStart = 0
-    for (j in seq_len(rows)){
+    for (j in seq_len(rows)){ #group elements of input array into sub arrays and assign to B
       B[[a]] = x[rowStart+(1:rowsizes[j]), colStart+(1:colsizes[i])]
       rowStart = rowStart + rowsizes[j]
       a = a + 1
@@ -328,9 +314,12 @@ mcell <- function(x, vx, vy){
   
 }  
 
-ind2sub <- function(rows, ind){
-  rw = ((ind-1) %% rows) + 1 
-  cl = floor((ind-1) / rows) + 1
+
+
+
+ind2sub <- function(rows, ind){       # give an array with N rows, return location of array element "ind" in loc = [x, y] format
+  rw = ((ind-1) %% rows) + 1          # identify row of current element using mod format
+  cl = floor((ind-1) / rows) + 1      
   loc = c(rw, cl)
   return(loc)
 }
@@ -338,7 +327,6 @@ ind2sub <- function(rows, ind){
 
 project_ecology <- function(parcel_vals, min_eco_val, max_eco_val, decline_rate, time_horizon, time_fill){
   if (time_fill == 'all'){
-    #time_vec = seq_len(time_horizon)
     time_vec = 0:time_horizon
   } else {time_vec = time_horizon}
   t_sh = -1/decline_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
