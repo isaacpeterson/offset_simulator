@@ -31,7 +31,7 @@ offset_bank_params = c(1, 10, 50) # parameters for offset banking in format (sta
 offset_parcel_for_parcel = TRUE
 restoration_rate = 0.03
 offset_multiplier = 1
-offset_time_horizon_type = 'current'                #'future' - project from time of development to offset time horizon, or 'current' - used for banking only - determein accrued offset gains till current year.
+offset_time_horizon_type = 'current'                #'future' - project from time of development to offset time horizon, or 'current' - used for banking only - determine accrued offset gains till current year.
 offset_calc_type = 'future_condition'   #'current_condition', 'avoided_degredation', 'restoration_from_cfac', 'future_condition', 'restoration_gains', 'restoration_condition_value'
 offset_action_type = 'protect'                         #'protect', 'maintain', 'restore'
 
