@@ -30,7 +30,7 @@ collate_realisations <- function(realisations, global_params, decline_rates_init
   collated_realisations$collated_program_sums <- collate_program_sum_realisations(traj_type = 'trajectory', realisations, cfacs, time_steps = global_params$time_steps, eco_dims = global_params$eco_dims)    #group individual net realisation counterfactual values
   collated_realisations$collated_program_cfac_sums <- collate_program_sum_realisations(traj_type = 'cfac', realisations, cfacs, time_steps = global_params$time_steps, eco_dims = global_params$eco_dims)
   
-  if (global_params$match_type == 'parcel_set'){  
+  if (global_params$use_parcel_sets == TRUE){  
     collated_realisations$parcel_set_NNL_yrs <- assess_parcel_set_NNL_yrs(collated_offset_realisations, collated_dev_realisations, parcel_set_nums = collated_offset_realisations$parcel_set_nums,
                                                                           time_steps = global_params$time_steps, realisation_num,  eco_dims = global_params$eco_dims)
   }
@@ -94,6 +94,11 @@ assess_parcel_set_NNL_yrs <- function(collated_offset_realisations, collated_dev
 }
 
 
+assess_allowed_devs <- function(realisations){
+  dev_nums = unlist(lapply(seq_along(realisations), function(i) (realisations[[i]]$developments$parcel_set_count)))
+  dev_characteristics = c(mean(dev_nums))
+  return(dev_characteristics)
+}
 
 assess_NNL <- function(net_gains, assess_NNL_type, eco_dims, assess_num, time_steps, offset_yrs){
   
@@ -168,13 +173,17 @@ collate_realisations_parcel_sets <- function(realisations, parcel_set_type, glob
     if (parcel_set_type == 'offsets'){
       current_model_outputs = model_outputs$offsets
       cfac_type = global_params$cfac_type_in_offset_calc
-      parcel_set_indexes = unlist(model_outputs$offsets$parcel_indexes)
     } else {
-      current_model_outputs = model_outputs$developments
-      parcel_set_indexes = unlist(model_outputs$developments$parcel_indexes)
+      if ((global_params$use_offset_bank == TRUE) & (global_params$offset_bank_type == 'credit')){
+        current_model_outputs = model_outputs$credited_developments_object
+      } else{
+        current_model_outputs = model_outputs$developments
+      }
+      
       cfac_type = global_params$cfac_type_in_dev_calc
     }
     
+    parcel_set_indexes = unlist(current_model_outputs$parcel_indexes)
     parcel_set_num = current_model_outputs$parcel_set_count
     
     current_model_outputs$traj_list = model_outputs$traj_list[parcel_set_indexes]

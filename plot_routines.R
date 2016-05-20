@@ -1,7 +1,4 @@
 
-
-
-
 plot_collated_realisations <- function(collated_realisations, realisation_num, global_params, parcel_sum_lims, eco_ind, lwd_vec, outer_title){
   
   lwd_vec = c(3, 0.2)
@@ -37,32 +34,37 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
                             col_vec = c('darkgreen', 'red', 'black'), legend_vec = c('net offset gains', 'net development losses', 'net program outcomes'), outer_title)
   
   plot_realisation_hists(system_NNL_plot_object, unlist(collated_realisations$parcel_set_NNL_yrs), 
-                         unlist(collated_realisations$offsets$parcel_sums_at_offset), parcel_sum_lims = c(0, 20000), match_type = global_params$match_type, outer_title)
+                         unlist(collated_realisations$offsets$parcel_sums_at_offset), parcel_sum_lims = c(0, 20000), use_parcel_sets = global_params$use_parcel_sets, outer_title)
   
   summed_program_realisations = simplify_list_to_array(collated_realisations$collated_program_sums$net_trajs)
   summed_program_cfacs = simplify_list_to_array(collated_realisations$collated_program_cfac_sums$net_trajs)
   
-  plot_summed_program_realisations(summed_program_realisations, summed_program_cfacs, system_NNL_yrs, eco_dims = global_params$eco_dims, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'black'),
-                                   legend_vec = c('Net Value', 'Net Counterfactual Value'), outer_title)
+  plot_summed_program_realisations(summed_program_realisations, summed_program_cfacs, loss_type = 'final_year', system_NNL_yrs, eco_dims = global_params$eco_dims, time_steps = global_params$time_steps, 
+                                   eco_ind, lwd_vec, col_vec = c('red', 'blue', 'black'), legend_vec = c('Net Value', 'Net Counterfactual Value'), outer_title)
   
   cfac_trajs = simplify2array(unlist(collated_realisations$cfac_trajs, recursive = FALSE))
   net_cfac_sum = apply(cfac_trajs, MARGIN = 1, sum)
   
-  plot_landscape_outcomes(collated_realisations$landscape_vals, system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'red'), 
+  plot_landscape_outcomes(collated_realisations$landscape_vals, loss_type = 'final_year', system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, time_steps = global_params$time_steps, eco_ind, lwd_vec, col_vec = c('red', 'blue', 'red'), 
                           legend_vec = c('landscape value', 'counterfactual value'), outer_title)
   
 }
 
 
 
-assess_landscape_loss <- function(landscape_vals, NNL_yrs, realisation_num, eco_dims){
+assess_landscape_loss <- function(landscape_vals, loss_type, NNL_yrs, realisation_num, eco_dims, time_steps){
   
   landscape_loss = array(0, c(realisation_num, eco_dims))
   
   for (realisation_ind in seq_len(realisation_num)){
     current_NNL_yr = NNL_yrs[realisation_ind]
     if (current_NNL_yr != 0){
-      landscape_loss[realisation_ind, ] = landscape_vals[current_NNL_yr, realisation_ind, ]
+      if (loss_type == 'NNL_yr'){
+        yr_to_use = current_NNL_yr
+      } else{
+        yr_to_use = time_steps
+      }
+      landscape_loss[realisation_ind, ] = landscape_vals[yr_to_use, realisation_ind, ]
     }
   }
   
@@ -251,13 +253,13 @@ plot_split_realisations <- function(collated_summed_reals, cfac_type, legend_vec
 
 
 
-plot_realisation_hists <- function(system_NNL_plot_object, parcel_set_NNL_yrs, parcel_sums_at_offset_array, parcel_sum_lims, match_type, outer_title){
+plot_realisation_hists <- function(system_NNL_plot_object, parcel_set_NNL_yrs, parcel_sums_at_offset_array, parcel_sum_lims, use_parcel_sets, outer_title){
   
   setup_sub_plots(nx = 1, ny = 3, x_tit = TRUE)
   
   hist(parcel_sums_at_offset_array, main = 'selected offset parcel values', xlab = 'selected offset parcel values', xlim = parcel_sum_lims)
   plot_NNL_hist(system_NNL_plot_object, plot_tit = 'System NNL Assessment', x_lim = c(0, 100))
-  if (match_type == 'parcel_set'){
+  if (use_parcel_sets == TRUE){
     parcel_set_NNL_plot_object = assess_failed_NNL(parcel_set_NNL_yrs)
     plot_NNL_hist(parcel_set_NNL_plot_object, plot_tit = 'Parcel Set NNL Assessment', x_lim = c(0, 100)) 
   }
@@ -284,11 +286,11 @@ plot_realisation_outcomes <- function(offset_gains, dev_losses, net_outcome, plo
 }
 
 
-plot_landscape_outcomes <- function(landscape_realisations, system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, eco_ind, lwd_vec, col_vec,  legend_vec, outer_title){
+plot_landscape_outcomes <- function(landscape_realisations, loss_type, system_NNL_yrs, realisation_num, system_NNL_plot_object, net_cfac_sum, eco_dims, eco_ind, time_steps, lwd_vec, col_vec,  legend_vec, outer_title){
   
   setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
   
-  landscape_tit = assess_landscape_loss(landscape_realisations, system_NNL_yrs, realisation_num, eco_dims)
+  landscape_tit = assess_landscape_loss(landscape_realisations, loss_type, system_NNL_yrs, realisation_num, eco_dims, time_steps)
   landscape_tit = paste('Landscape Scale Value (', landscape_tit, ')' )
   
   plot_collated_realisation_set(landscape_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
@@ -309,10 +311,10 @@ plot_landscape_outcomes <- function(landscape_realisations, system_NNL_yrs, real
 
 
 
-plot_summed_program_realisations <- function(summed_program_realisations, summed_program_cfacs, system_NNL_yrs, eco_dims, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
+plot_summed_program_realisations <- function(summed_program_realisations, summed_program_cfacs, loss_type, system_NNL_yrs, eco_dims, time_steps, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
   
   setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
-  program_scale_tit = assess_landscape_loss(summed_program_cfacs, system_NNL_yrs, realisation_num, eco_dims)
+  program_scale_tit = assess_landscape_loss(summed_program_cfacs, loss_type, system_NNL_yrs, realisation_num, eco_dims, time_steps)
   
   program_scale_tit = paste('Net Program Value (', program_scale_tit, ')')
   plot_collated_realisation_set(summed_program_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
