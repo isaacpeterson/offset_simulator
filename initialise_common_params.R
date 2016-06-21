@@ -3,8 +3,8 @@ initialise_common_params <- function(){
   global_params = list()
   global_params$time_steps = 50 #number of timesteps simulation will be run
   global_params$total_dev_num = 50
-  dev_start = 10
-  dev_end = global_params$time_steps - 1
+  global_params$dev_start = 10
+  global_params$dev_end = global_params$time_steps - 1
   global_params$eco_dims = 1
   global_params$randomise_dev_nums = FALSE
   global_params$display_object = FALSE
@@ -13,7 +13,6 @@ initialise_common_params <- function(){
   global_params$offset_dims = 1
   global_params$match_threshold = 50 # acceptable level above which to accept parcel match
   global_params$ecology_size = 100 #ecology array size (square dimension) to be broken up into regions and land parcels  
-  global_params$parcel_size_dist_kind = 'same' #'same' = choose parcels of the same size 
   global_params$region_num_x = 1 #numnber of regions in x
   global_params$region_num_y = 1 #numnber of regions in y
   global_params$region_num = global_params$region_num_x*global_params$region_num_y
@@ -27,10 +26,6 @@ initialise_common_params <- function(){
   global_params$blur = FALSE
   global_params$max_developments = 1 #maximum number of developments per year 
   global_params$develop_every = 1 #how often the policy is implemented
-  
-  global_params$dev_vec = find_prog_vector(time_steps = global_params$time_steps, prog_start = dev_start, prog_end = dev_end, 
-                                           total_prog_num = global_params$total_dev_num, sd = 1)
-  
   return(global_params)
   
 }
