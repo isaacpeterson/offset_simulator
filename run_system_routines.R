@@ -175,8 +175,8 @@ run_system <- function(trajectories, offsets_object, developments_object, banked
         trajectories[[eco_ind]][, , yr] = current_ecology[, , eco_ind] # record current ecology in trajectories list for each eco dimension
       }
       
-      current_ecology <- project_current_system(current_ecology, parcels$land_parcels, decline_rates, global_params$min_eco_val, 
-                                                global_params$max_eco_val, time_horizon = 1, global_params$eco_dims)     # update ecology for subsequent time step using current decline rates
+      current_ecology <- project_current_system(current_ecology, parcels$land_parcels, decline_rates, global_params$min_eco_val, global_params$max_eco_val,
+                                                global_params$max_restoration_eco_val, time_horizon = 1, global_params$eco_dims)     # update ecology for subsequent time step using current decline rates
       
       
     }
@@ -413,8 +413,13 @@ predict_parcel_traj <- function(current_parcel_ecology, current_parcel_ind, eco_
   
   # current_predicted_ecology = apply(current_slice, MARGIN = c(1, 2), FUN = project_ecology, min_eco_val = global_params$min_eco_val, max_eco_val = global_params$max_eco_val, dec_rate, time_horizon, time_fill)
   if (time_horizon > 0){
-    current_predicted_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = global_params$min_eco_val, max_eco_val = global_params$max_eco_val, decline_rate = dec_rate, time_horizon = time_horizon, time_fill)  # update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
-    dim(current_predicted_ecology) = c(dim(current_predicted_ecology), 1)
+    if (dec_rate < 0){
+      current_predicted_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = global_params$min_eco_val, max_eco_val = global_params$max_eco_val, decline_rate = dec_rate, time_horizon = time_horizon, time_fill)  # update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
+    } else if ( dec_rate > 0){
+      current_predicted_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = global_params$min_eco_val, max_eco_val = global_params$max_restoration_eco_val, decline_rate = dec_rate, time_horizon = time_horizon, time_fill)  # update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
+      
+    }
+      dim(current_predicted_ecology) = c(dim(current_predicted_ecology), 1)
     current_predicted_ecology = aperm(current_predicted_ecology, c(3, 2, 1))
     dim(current_predicted_ecology) = c(dim(current_parcel_ecology), (time_horizon + 1))
   } else{
@@ -718,13 +723,13 @@ evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, restoration_v
   if (calc_type == 'current_condition'){
     parcel_vals_pool = parcel_sums_at_offset
   } else if (calc_type == 'restoration_gains'){
-    parcel_vals_pool = list_subtract(restoration_vals, parcel_sums_at_offset)
+    parcel_vals_pool = subtract_lists(restoration_vals, parcel_sums_at_offset)
   } else if (calc_type == 'restoration_from_cfac'){
-    parcel_vals_pool = list_subtract(restoration_vals, cfac_vals)
+    parcel_vals_pool = subtract_lists(restoration_vals, cfac_vals)
   } else if (calc_type == 'restoration_condition_value'){
     parcel_vals_pool = restoration_vals
   } else if (calc_type == 'avoided_degredation'){
-    parcel_vals_pool = list_subtract(parcel_sums_at_offset, cfac_vals)
+    parcel_vals_pool = subtract_lists(parcel_sums_at_offset, cfac_vals)
   } else if (calc_type == 'future_condition'){
     parcel_vals_pool = cfac_vals 
   } else{
@@ -734,12 +739,12 @@ evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, restoration_v
 }
 
 
-list_subtract <- function(list_a, list_b){
+subtract_lists <- function(list_a, list_b){
   list_c = mapply('-', list_a, list_b, SIMPLIFY = FALSE)
   return(list_c)
 }
 
-list_add <- function(list_a, list_b){
+sum_lists <- function(list_a, list_b){
   list_c = mapply('+', list_a, list_b, SIMPLIFY = FALSE)
   return(list_c)
 }
@@ -1324,7 +1329,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     
     if (global_params$offset_restoration_flag == TRUE){
       pool_object$restoration_vals = predict_parcel_vals_multi(predict_type = 'restore', pool_object$parcel_ecologies, parcel_indexes = current_pool, decline_rates_initial, 
-                                                               global_params$restoration_rate, global_params$min_eco_val, global_params$max_eco_val, eco_dims = global_params$eco_dims, time_horizons)
+                                                               global_params$restoration_rate, global_params$min_eco_val, global_params$max_restoration_eco_val, eco_dims = global_params$eco_dims, time_horizons)
     } else {
       pool_object$restoration_vals = list()
     }
@@ -1346,9 +1351,9 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                               time_horizons, offset_yrs, cfac_type, adjust_cfacs_flag)
     
     if (adjust_cfacs_flag == TRUE){
-      cfac_trajs = sum_trajectories_as_list(cfacs_object$adjusted_cfacs, eco_dims = global_params$eco_dims)
+      cfac_trajs = sum_trajectories_as_list(cfacs_object$adjusted_cfacs, eco_dims = global_params$eco_dims, parcel_indexes = seq(cfacs_object$adjusted_cfacs))
     } else {
-      cfac_trajs = sum_trajectories_as_list(cfacs_object$cfacs, eco_dims = global_params$eco_dims)
+      cfac_trajs = sum_trajectories_as_list(cfacs_object$cfacs, eco_dims = global_params$eco_dims, parcel_indexes = seq(cfacs_object$cfacs))
     }
     
     pool_object$cfac_vals = lapply(seq_along(cfac_trajs), function(i) tail(cfac_trajs[[i]][[1]], 1))
@@ -1502,7 +1507,7 @@ select_land_parcel <- function(land_parcels, current_parcel_ind){
 
 
 
-project_current_system <- function(current_ecology, land_parcels, decline_rates, min_eco_val, max_eco_val, time_horizon, eco_dims){
+project_current_system <- function(current_ecology, land_parcels, decline_rates, min_eco_val, max_eco_val, max_restoration_eco_val, time_horizon, eco_dims){
   
   parcel_num = length(land_parcels)
   
@@ -1517,8 +1522,15 @@ project_current_system <- function(current_ecology, land_parcels, decline_rates,
         updated_parcel_ecology = array(0, length(current_parcel_ecology))   # if the parcel is to be developed (i.e. decline rate = 0), set parcel value to zeros
       } else if (decline_rate == 1){
         updated_parcel_ecology = current_parcel_ecology      # if the parcel is to be maintained (i.e. decline rate = 1), set parcel values to current values
-      } else {updated_parcel_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = min_eco_val, 
-                                              max_eco_val = max_eco_val, decline_rate = decline_rate, time_horizon = time_horizon, time_fill = FALSE)}  # update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
+      } else { 
+        if (decline_rate < 0){
+          updated_parcel_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = min_eco_val, 
+                                              max_eco_val = max_eco_val, decline_rate = decline_rate, time_horizon = time_horizon, time_fill = FALSE)
+        } else if (decline_rate > 0){
+          updated_parcel_ecology = sapply(current_parcel_ecology, project_ecology, min_eco_val = min_eco_val, 
+                                          max_eco_val = max_restoration_eco_val, decline_rate = decline_rate, time_horizon = time_horizon, time_fill = FALSE)
+        }
+      }# update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
       
       current_ecology_slice[current_parcel] = updated_parcel_ecology 
     }
@@ -2106,14 +2118,14 @@ sum_parcel_trajectories <- function(traj_list, eco_dims, parcel_indexes, time_st
 }
 
 
-sum_trajectories_as_list <- function(traj_list, eco_dims){
-  
-  parcel_num = length(traj_list)
+sum_trajectories_as_list <- function(traj_list, eco_dims, parcel_indexes){
+  parcel_indexes = unlist(parcel_indexes)
+  parcel_num = length(parcel_indexes)
   parcel_traj_list = vector('list', parcel_num)
   for (parcel_count_ind in seq_len(parcel_num)){
     
     for (eco_ind in seq_len(eco_dims)){
-      parcel_traj_list[[parcel_count_ind]][[eco_ind]] = apply(traj_list[[parcel_count_ind]][[eco_ind]], MARGIN=3, sum)
+      parcel_traj_list[[parcel_count_ind]][[eco_ind]] = apply(traj_list[[parcel_indexes[parcel_count_ind] ]][[eco_ind]], MARGIN=3, sum)
     }  
   }
   

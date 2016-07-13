@@ -3,17 +3,41 @@
 
 initialise_program_param_combs <- function(){
   program_params = list()
-  program_params$offset_bank_type = c('parcel_set','continuous_credit') #c('parcel_set', 'continuous_credit')       #'parcel_set' or 'continuous_credit'
+  program_params$offset_bank_type = c('parcel_set') #c('parcel_set', 'continuous_credit')       #'parcel_set' or 'continuous_credit'
+  program_params$use_offset_bank = c(FALSE)
+  program_params$offset_parcel_for_parcel = c(TRUE)
+  program_params$restoration_rate = c(0.002)
+  program_params$offset_time_horizon = 30
+  program_params$offset_calc_type = c('avoided_degredation') #, 'protected_condition', 'restoration_gains')   #'current_condition', 'avoided_degredation', 'restoration_from_cfac', 'future_condition', 'restoration_gains', 'restoration_condition_value'
+  program_params$dev_calc_type = c('current_condition')                     #'future_condition', 'current_condition' 
+  program_params$offset_bank_start = 1
+  program_params$offset_bank_end = 40
+  program_params$offset_bank_num = 100
+  program_params$cfac_type_in_offset_calc = c('standard') #, 'include_clearing', 'include_clearing_offsets')
+  program_params$cfac_type_in_dev_calc = program_params$cfac_type_in_offset_calc        
+  program_params$offset_multiplier = 1
+  program_params$offset_time_horizon_type = 'current'                #'future' - project from time of development to offset time horizon, or 'current' - used for banking only - determine accrued offset gains till current year.
+  program_params$offset_action_type = c('maintain')
+  program_params$use_parcel_set_dev_credit = FALSE
+  program_params$post_facto_cfac_type = 'include_clearing_offsets'
+  return(program_params)
+}
+
+
+
+initialise_program_param_single <- function(){
+  program_params = list()
+  program_params$offset_bank_type = c('parcel_set') #c('parcel_set', 'continuous_credit')       #'parcel_set' or 'continuous_credit'
   program_params$use_offset_bank = c(TRUE, FALSE)
   program_params$offset_parcel_for_parcel = c(TRUE, FALSE)
-  program_params$restoration_rate = c(0.01, 0.03)
+  program_params$restoration_rate = 0.05
   program_params$offset_time_horizon = c(20)
-  program_params$offset_calc_type = c('current_condition', 'avoided_degredation', 'restoration_from_cfac', 'protected_condition', 'restoration_gains')   #'current_condition', 'avoided_degredation', 'restoration_from_cfac', 'future_condition', 'restoration_gains', 'restoration_condition_value'
-  program_params$dev_calc_type = c('current_condition', 'future_condition')                     #'future_condition', 'current_condition' 
+  program_params$offset_calc_type = c('current_condition', 'future_condition')  #'current_condition', 'avoided_degredation', 'restoration_from_cfac', 'future_condition', 'restoration_gains', 'restoration_condition_value'
+  program_params$dev_calc_type ='current_condition'                    #'future_condition', 'current_condition' 
   program_params$offset_bank_start = 1
   program_params$offset_bank_end = 10
   program_params$offset_bank_num = 50
-  program_params$cfac_type_in_offset_calc = c('standard', 'include_clearing', 'include_clearing_offsets')
+  program_params$cfac_type_in_offset_calc = 'standard'
   program_params$cfac_type_in_dev_calc = program_params$cfac_type_in_offset_calc        
   program_params$offset_multiplier = 1
   program_params$offset_time_horizon_type = 'current'                #'future' - project from time of development to offset time horizon, or 'current' - used for banking only - determine accrued offset gains till current year.

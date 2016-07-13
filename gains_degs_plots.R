@@ -50,7 +50,6 @@ time_horizons = (global_params$time_steps - global_params$offset_yr)
 
 legend_buffer  = 30
 
-
 cfac <- project_ecology(global_params$initial_parcel_value, global_params$min_eco_val, global_params$max_eco_val, global_params$decline_rate, time_horizon = (global_params$time_steps - 1), time_fill = TRUE)
 restoration_curve <- project_ecology(cfac[global_params$offset_yr], global_params$min_eco_val, global_params$max_eco_val, global_params$restoration_rate, 
                                      time_horizon = (global_params$time_steps - global_params$offset_yr), time_fill = TRUE)

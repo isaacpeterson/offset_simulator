@@ -23,9 +23,9 @@ write_params_to_table = FALSE
 overwrite_table = FALSE
 
 table_file = '~/Documents/run_summary.csv'
-print_folder = '~/Documents/offset_plots'
+print_folder = '~/Documents/offset_plots/'
 
-realisation_num = 4
+realisation_num = 25
 
 if (run_from_saved == TRUE){
   parcels <-readRDS('parcels.rds')
@@ -43,7 +43,6 @@ if (run_from_saved == TRUE){
   decline_rates_initial <- build_decline_rates_multi(parcels, condition_change = 'decline', mean_decline_rate = 0.02, decline_rate_std = 0.005, common_params$eco_dims)
   dev_vec = find_prog_vector(time_steps = common_params$time_steps, prog_start = common_params$dev_start, prog_end = common_params$dev_end, 
                              total_prog_num = common_params$total_dev_num, sd = 1)
-  
 }
 
 if (save_initial_conditions == TRUE){
@@ -59,12 +58,11 @@ program_params <- initialise_program_param_combs() # list all program combinatio
 program_combs <- generate_program_combs(program_params)  #generate all combinations of offset programs
 prog_num = dim(program_combs)[1] #how many combinations there are in total
 
-
 cl<-makeCluster(4)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
-#for (comb_ind in seq_len(prog_num)){
-for (comb_ind in 1911:prog_num){
+for (comb_ind in 1:prog_num){
+#for (comb_ind in 1911:1911){
   strt<-Sys.time()
   current_program_param_inds = unlist(program_combs[comb_ind, ])
   current_program <- generate_current_program(program_params, current_program_param_inds) #write current program as a list
@@ -91,7 +89,7 @@ for (comb_ind in 1911:prog_num){
     
     if (write_pdf == TRUE){
       filename = paste(print_folder, plot_characteristics, '.pdf', sep = '', collapse = '')
-      pdf(filename)
+      pdf(filename, width = 8.3, height = 11.7)
     }
     
     plot_collated_realisations(collated_realisations, realisation_num = length(realisations), global_params, parcel_sum_lims = c(0, 20000), eco_ind = 1, lwd_vec = c(3, 0.15), outer_title = plot_characteristics)
