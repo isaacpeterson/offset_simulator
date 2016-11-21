@@ -2,58 +2,43 @@ setwd('~/Documents/R_Codes/Offsets_Working_Feb_3/')
 rm(list = ls())
 WD = getwd()
 
-source('initialise_common_params.R')
-
-source('run_system_routines_multidim.R')
-source('collate_routines.R')
-source('plot_routines.R')
-source('initialise_program_params.R')
-source('generate_program_params.R')
-source('~/Documents/R_Codes/make_movie.R')
-#.libPaths('~/Library/R/3.2/library')
 library(foreach)
 library(doParallel)
 library(abind)
 library(pixmap)
 
+source('initialise_params.R')                               # functions to collate simulation outputs
+source('run_system_routines_modularised.R')                 # functions to run simulation
+source('collate_routines.R')                                # functions to collate simulation outputs
+source('plot_routines.R')                                   # functions to plot collated outputs
+
 run_from_saved = FALSE
 save_initial_conditions = FALSE
-write_pdf = FALSE
+write_pdf = TRUE
 load_from_data = FALSE
 write_params_to_table = FALSE
 overwrite_table = FALSE
+write_sim_movie = FALSE
 
 table_file = '~/Documents/run_summary.csv'
 print_folder = '~/Documents/offset_plots/'
 
-realisation_num = 1
-
 if (run_from_saved == TRUE){
-  parcels <-readRDS('parcels.rds')
+  parcels <- readRDS('parcels.rds')
   index_object <- readRDS('index_object.rds')
   initial_ecology <- readRDS('initial_ecology.rds')
   decline_rates_initial <- readRDS('decline_rates_initial.rds')
-  common_params <- readRDS('common_params.rds')
-  dev_vec <- readRDS('dev_vec.rds')
-  
+  global_params <- readRDS('global_params.rds')
 } else {
-  common_params <- initialise_common_params()
-  
+  global_params <- initialise_global_params()
   if (load_from_data == TRUE){
     parcels <- initialise_parcels_from_data(filename = "~/Desktop/grassland_data/planning.units.uid_20ha.pgm")
-    initial_ecology <- initialise_ecology_from_data(filename =  "~/Desktop/grassland_data/hab.map.master.zo1.pgm", land_parcels = parcels$land_parcels, eco_dims = common_params$eco_dims)
+    initial_ecology <- initialise_ecology_from_data(filename =  "~/Desktop/grassland_data/hab.map.master.zo1.pgm", land_parcels = parcels$land_parcels, eco_dims = global_params$eco_dims)
   } else {
-    parcels <- initialise_shape_parcels(common_params)
-    initial_ecology <- initialise_ecology(common_params, land_parcels = parcels$land_parcels)
+    parcels <- initialise_shape_parcels(global_params)
+    initial_ecology <- initialise_ecology(global_params, land_parcels = parcels$land_parcels)
   }
-    
-  index_object <- initialise_index_object(parcels, common_params)
-  mean_decline_rates = vector('list', common_params$eco_dims)
-  mean_decline_rates[[1]] = list(-0.01, -0.005, -0.02)
-  mean_decline_rates[[2]] = list(0.01, 0.005, 0.02)
-  decline_rates_initial <- initialise_decline_rates(parcels, mean_decline_rates, decline_rate_std = 0.005, eco_dims = common_params$eco_dims)
-  dev_vec = find_prog_vector(time_steps = common_params$time_steps, prog_start = common_params$dev_start, prog_end = common_params$dev_end, 
-                             total_prog_num = common_params$total_dev_num, sd = 1)
+  decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)
 }
 
 if (save_initial_conditions == TRUE){
@@ -61,62 +46,66 @@ if (save_initial_conditions == TRUE){
   saveRDS(index_object, 'index_object.rds')
   saveRDS(initial_ecology, 'initial_ecology.rds')
   saveRDS(decline_rates_initial, 'decline_rates_initial.rds')
-  saveRDS(common_params, 'common_params.rds')
+  saveRDS(global_params, 'global_params.rds')
   saveRDS(dev_vec, 'dev_vec.rds')
 }
 
-program_params <- initialise_program_param_combs() # list all program combinations to test
-program_combs <- generate_program_combs(program_params)  #generate all combinations of offset programs
+program_params = vector('list', 2)
+program_params[[2]] <- initialise_program_params() # list all program combinations to test
+program_combs <- generate_program_combs(program_params[[2]])  #generate all combinations of offset programs
 prog_num = dim(program_combs)[1] #how many combinations there are in total
 print(paste('combinations = ', prog_num))
 cl<-makeCluster(4)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
+
 for (comb_ind in seq(prog_num)){
 
   strt<-Sys.time()
-  
+
   current_program_param_inds = unlist(program_combs[comb_ind, ])
-  current_program <- generate_current_program(program_params, current_program_param_inds) #write current program as a list
-  current_program_params <- collate_current_program(current_program)  #setup flags for cfacs, cfac adjustment etc.
-  global_params = append(common_params, current_program_params) # add program specific parameters to common parameters
+  current_program <- generate_current_program(program_params[[2]], current_program_param_inds) #write current program as a list
+  current_program_params <- collate_current_program(current_program, global_params)  #setup flags for cfacs, cfac adjustment etc.
+  program_params[[1]] = current_program_params
   
-  if (global_params$use_offset_bank == TRUE){
-    banked_offset_vec = find_prog_vector(time_steps = global_params$time_steps, prog_start = global_params$offset_bank_start, 
-                                         prog_end = global_params$offset_bank_end, total_prog_num = global_params$offset_bank_num, sd = 2)
-  } else {
-    banked_offset_vec = list()
+  realisations <- foreach(run_ind = seq_len(global_params$realisation_num)) %dopar%{
+    run_offsets_simulation(global_params, program_params, initial_ecology, decline_rates_initial, parcels, banked_offset_vec)
   }
-  
-  
-#   realisations = list()
-#   realisations[[1]] <- run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
-#   
-    realisations <- foreach(run_ind = 1:realisation_num) %dopar%{
-      run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
-      
-    }
   
   realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
   
   if (length(realisations) > 0){
-    print(paste('offset scheme success on ', length(realisations)/realisation_num*100, '%'))
     
-    collated_realisations <- collate_realisations(realisations, global_params, dev_vec, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology)
-    plot_characteristics <- get_plot_characteristics(global_params, realisations)
+    collated_realisations <- collate_realisations(realisations, global_params, use_cfac_type_in_sim = TRUE, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology)
+    plot_characteristics <- get_plot_characteristics(program_params, realisations)
     
     if (write_pdf == TRUE){
       filename = paste(print_folder, plot_characteristics, '.pdf', sep = '', collapse = '')
       pdf(filename, width = 8.3, height = 11.7)
-    }
+      plot_collated_realisations(collated_realisations, 
+                                 realisation_num = length(realisations), 
+                                 global_params, 
+                                 program_params, 
+                                 parcel_sum_lims = c(0, 20000), 
+                                 eco_ind = 1, 
+                                 lwd_vec = c(3, 0.15), 
+                                 edge_title = plot_characteristics)
+      
+      if (write_pdf == TRUE){
+        dev.off()
+      }
+    } 
     
-    plot_collated_realisations(collated_realisations, realisation_num = length(realisations), global_params, parcel_sum_lims = c(0, 20000), eco_ind = 1, lwd_vec = c(3, 0.15), outer_title = plot_characteristics)
-    
-    if (write_pdf == TRUE){
-      dev.off()
-    }
+    plot_collated_realisations(collated_realisations, 
+                               realisation_num = length(realisations), 
+                               global_params, 
+                               program_params, 
+                               parcel_sum_lims = c(0, 20000), 
+                               eco_ind = 1, 
+                               lwd_vec = c(3, 0.5), 
+                               edge_title = plot_characteristics)
   } else {
-    print('offset scheme failed')
+    print('no parcel sets found')
     collated_realisations = list()
   }
 
@@ -139,9 +128,12 @@ for (comb_ind in seq(prog_num)){
   
 }
 
-# net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-#                                 time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
-#make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
-
 stopCluster(cl)
-# 
+
+if (write_sim_movie == TRUE){
+  source('~/Documents/R_Codes/make_movie.R')
+  net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+                                  time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+  make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
+}
+

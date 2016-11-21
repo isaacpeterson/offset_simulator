@@ -19,7 +19,7 @@ library(pixmap)
 run_from_saved = FALSE
 save_initial_conditions = FALSE
 write_pdf = FALSE
-load_from_data = FALSE
+load_from_data = TRUE
 write_params_to_table = FALSE
 overwrite_table = FALSE
 
@@ -52,7 +52,7 @@ if (run_from_saved == TRUE){
   mean_decline_rates[[1]] = list(-0.01, -0.005, -0.02)
   mean_decline_rates[[2]] = list(0.01, 0.005, 0.02)
   decline_rates_initial <- initialise_decline_rates(parcels, mean_decline_rates, decline_rate_std = 0.005, eco_dims = common_params$eco_dims)
-  dev_vec = find_prog_vector(time_steps = common_params$time_steps, prog_start = common_params$dev_start, prog_end = common_params$dev_end, 
+  dev_vec = generate_dev_vec(time_steps = common_params$time_steps, prog_start = common_params$dev_start, prog_end = common_params$dev_end, 
                              total_prog_num = common_params$total_dev_num, sd = 1)
 }
 
@@ -78,24 +78,26 @@ for (comb_ind in seq(prog_num)){
   
   current_program_param_inds = unlist(program_combs[comb_ind, ])
   current_program <- generate_current_program(program_params, current_program_param_inds) #write current program as a list
-  current_program_params <- collate_current_program(current_program)  #setup flags for cfacs, cfac adjustment etc.
+  
+  current_program_params <- collate_current_program(current_program, common_params)  #setup flags for cfacs, cfac adjustment etc.
+  
   global_params = append(common_params, current_program_params) # add program specific parameters to common parameters
   
   if (global_params$use_offset_bank == TRUE){
-    banked_offset_vec = find_prog_vector(time_steps = global_params$time_steps, prog_start = global_params$offset_bank_start, 
+    banked_offset_vec = generate_dev_vec(time_steps = global_params$time_steps, prog_start = global_params$offset_bank_start, 
                                          prog_end = global_params$offset_bank_end, total_prog_num = global_params$offset_bank_num, sd = 2)
   } else {
     banked_offset_vec = list()
   }
   
   
-#   realisations = list()
-#   realisations[[1]] <- run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
-#   
-    realisations <- foreach(run_ind = 1:realisation_num) %dopar%{
-      run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
-      
-    }
+  realisations = list()
+  realisations[[1]] <- run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
+  
+#     realisations <- foreach(run_ind = 1:realisation_num) %dopar%{
+#       run_offsets_simulation(global_params, initial_ecology, decline_rates_initial, parcels, dev_vec, banked_offset_vec)
+#       
+#     }
   
   realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
   
@@ -139,9 +141,10 @@ for (comb_ind in seq(prog_num)){
   
 }
 
-# net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-#                                 time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
-#make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
+net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+                                time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+
+make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_banked/')
 
 stopCluster(cl)
 # 

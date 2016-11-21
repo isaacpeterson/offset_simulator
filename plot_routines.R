@@ -1,105 +1,168 @@
-plot_collated_realisations <- function(collated_realisations, realisation_num, global_params, parcel_sum_lims, eco_ind, lwd_vec, outer_title){
+# parcel_sum_lims = c(0, 20000) 
+# eco_ind = 1 
+# lwd_vec = c(3, 0.15) 
+# edge_title = plot_characteristics
+# realisation_num = length(realisations)
 
-  eco_ind = 1
-  parcel_sum_lims = c(0, 20000)
-  lwd_vec = c(3, 0.15)
-  outer_title = plot_characteristics
-  
-  col_vec_1 = c('blue', 'mediumorchid4', 'darkgreen')
-  col_vec_2 = c('blue', 'mediumorchid4', 'red')
-  col_vec_3 = c('darkgreen', 'red', 'black')
+plot_collated_realisations <- function(collated_realisations, realisation_num, global_params, program_params, 
+                                       parcel_sum_lims, eco_ind, lwd_vec, edge_title){
+
+  offset_col_vec = c('blue', 'red', 'mediumorchid4', 'darkgreen')
+  dev_col_vec = c('blue', 'red')
+  net_col_vec = c('darkgreen', 'red', 'mediumorchid4', 'black')
   
   time_horizon = global_params$time_steps
   eco_dims = global_params$eco_dims
   
-  if (global_params$use_parcel_sets == TRUE){
+  if (program_params[[1]]$use_parcel_sets == TRUE){
     setup_sub_plots(nx = 3, ny = 3, x_tit = TRUE)
-    plot_parcel_sets(collated_realisations, realisation_ind = 1, eco_ind, col_list = list(col_vec_1, col_vec_2, col_vec_3), legend_loc = 'topleft')
+    plot_parcel_sets(collated_realisations, 
+                     realisation_ind = 1, 
+                     eco_ind, 
+                     col_list = list(offset_col_vec, dev_col_vec, net_col_vec), 
+                     legend_loc = 'topleft')
   }
   
   setup_sub_plots(nx = 3, ny = 3, x_tit = TRUE)
   
-  system_NNL_object = collated_realisations$system_NNL_object
-  system_NNL_yrs = collated_realisations$system_NNLs$NNL_yrs
-  parcel_set_NNL_object = collated_realisations$parcel_set_set_NNL_object
+  system_NNL = collated_realisations$system_NNL
   
-  split_list = list(collated_realisations$summed_offset_realisations, collated_realisations$summed_dev_realisations, collated_realisations$net_realisation_gains$standard)
-  net_mx = max(unlist(split_list))
-  net_mn = min(unlist(split_list))
+  parcel_set_NNL = collated_realisations$parcel_set_NNL
   
-  plot_split_realisations(split_list[[1]], cfac_type = global_params$cfac_type_in_offset_calc, plot_type = 'offsets',
-                          legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Gains'), legend_pos = 'topleft', eco_ind, lwd_vec, plot_title = 'Net Offsets',
-                          outer_title,  col_vec = c('blue', 'mediumorchid4', 'darkgreen'), realisation_num, ylim = c(net_mn, net_mx))
+  plot_lims <- find_plot_lims(plot_list = list(collated_realisations$net_offset_gains$net_outcome, 
+                                               collated_realisations$net_dev_losses$net_outcome,
+                                               collated_realisations$net_program_outcomes,
+                                               collated_realisations$net_offset_gains$losses))
+ 
+  overlay_realisations(plot_list = list(collated_realisations$net_offset_gains$rest_gains,
+                                        collated_realisations$net_offset_gains$avoided_degs,
+                                        collated_realisations$net_offset_gains$losses,
+                                        collated_realisations$net_offset_gains$net_outcome),
+                       plot_title = 'Net Offset Outcomes', 
+                       x_lab = '',
+                       realisation_num,
+                       eco_ind, 
+                       lwd_vec, 
+                       col_vec = offset_col_vec, 
+                       legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Illegal Clearing', 'Net Offset Gains'), 
+                       edge_title, 
+                       plot_lims = plot_lims) 
   
-  plot_split_realisations(split_list[[2]], cfac_type = global_params$cfac_type_in_dev_calc, plot_type = 'developments',
-                          legend_vec = c('Absolute Loss', 'Relative Loss'), legend_pos = 'bottomleft', eco_ind, lwd_vec, plot_title = 'Net Developments',
-                          outer_title,   col_vec = c('blue', 'red'), realisation_num, ylim = c(net_mn, net_mx))
+  overlay_realisations(plot_list = list(collated_realisations$net_dev_losses$rest_gains,
+                                        collated_realisations$net_dev_losses$net_outcome),
+                       plot_title = 'Net Development Outcomes', 
+                       x_lab = '',
+                       realisation_num,
+                       eco_ind, 
+                       lwd_vec, 
+                       col_vec = dev_col_vec, 
+                       legend_vec = c('Absolute Losses', 'Relative Losses'), 
+                       edge_title, 
+                       plot_lims = plot_lims) 
+
+  overlay_realisations(plot_list = list(collated_realisations$net_offset_gains$net_outcome, 
+                            collated_realisations$net_dev_losses$net_outcome,
+                            collated_realisations$net_offset_gains$losses,
+                            collated_realisations$net_program_outcomes),
+                            plot_title = 'Net Outcomes', 
+                            x_lab = system_NNL$x_lab,
+                            realisation_num,
+                            eco_ind, 
+                            lwd_vec, 
+                            col_vec = net_col_vec, 
+                            legend_vec = c('Offset Gains', 'Development Losses', 'Illegal Clearing', 'Program Outcomes'), 
+                            edge_title, 
+                            plot_lims = plot_lims)
   
-  
-  plot_realisation_outcomes(offset_gains = collated_realisations$summed_offset_realisations$net_outcome$standard, 
-                            dev_losses = collated_realisations$summed_dev_realisations$net_outcome$standard, 
-                            net_outcome = collated_realisations$net_realisation_gains$standard, 
-                            plot_title = 'Net Outcomes', x_lab = system_NNL_object$x_lab, eco_ind, lwd_vec, 
-                            col_vec = c('darkgreen', 'red', 'black'), legend_vec = c('Offset Gains', 'Development Losses', 'Program Outcomes'), outer_title, 
-                            plot_lims = c(net_mn, net_mx))
-  
-  plot_realisation_hists(collated_realisations$system_NNL_object, collated_realisations$parcel_set_NNL_object, 
+  plot_realisation_hists(collated_realisations$system_NNL, collated_realisations$parcel_set_NNL, 
                          collated_realisations$offsets$parcel_sums_at_offset, parcel_sum_lims = c(0, 20000), 
-                         use_parcel_sets = global_params$use_parcel_sets, eco_ind, outer_title)
+                         use_parcel_sets = program_params[[1]]$use_parcel_sets, eco_ind, edge_title)
   
-  plot_landscape_outcomes(collated_realisations$program_sums$net, plot_type = 'program', plot_title = 'Program Evaluation', loss_object = collated_realisations$program_loss, realisation_num, 
-                          collated_realisations$program_cfac_sums$net, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Program Value', 'Program Counterfactual'), outer_title, time_steps = global_params$time_steps)
+  plot_landscape_outcomes(collated_realisations$program_sums$outcome_rel_initial, 
+                          plot_type = 'program', 
+                          plot_title = 'Program Evaluation', 
+                          loss_object = collated_realisations$net_program_loss, 
+                          realisation_num, 
+                          collated_realisations$program_cfac_sum_rel_initial,
+                          eco_ind, 
+                          lwd_vec, 
+                          col_vec = c('red', 'blue'), 
+                          legend_vec = c('Program Value', 'Program Counterfactual'), 
+                          edge_title, 
+                          time_steps = global_params$time_steps)
 
-  plot_collated_realisation_set(collated_realisations$landscape_outcome, overlay_plots = FALSE, plot_col = 'black', realisation_num, eco_ind, lwd_vec, 
-                                 x_lab = '', plot_title = 'Program Outcome', plot_lims = vector())
+
+#   plot_collated_realisation_set(collated_realisations$landscape_rel_to_counter, overlay_plots = FALSE, plot_col = 'black', realisation_num, eco_ind, lwd_vec, 
+#                                 x_lab = '', plot_title = 'Program Outcome', plot_lims = vector())
+# 
+  plot_landscape_outcomes(collated_realisations$net_landscape, plot_type = 'landscape', plot_title = 'Landscape Outcome', loss_object = collated_realisations$landscape_loss, realisation_num, 
+                          collated_realisations$net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Landscape Value', 'Landscape Counterfactual'), edge_title, time_steps = global_params$time_steps)
   
-  plot_landscape_outcomes(collated_realisations$landscape_vals, plot_type = 'landscape', plot_title = 'Landscape Evaluation', loss_object = collated_realisations$landscape_loss, realisation_num, 
-                          collated_realisations$net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Landscape Value', 'Landscape Counterfactual'), outer_title, time_steps = global_params$time_steps)
-
+  plot_list = list(collated_realisations$illegal_sum_rel_to_counter, collated_realisations$landscape_rel_to_counter)
+  
+  plot_split_realisations(plot_type = 'developments', 
+                          rest_gains = plot_list[[1]], 
+                          avoided_degs = vector(), 
+                          nets = plot_list[[2]],  
+                          plot_title = 'Landscape Evaluation', 
+                          edge_title, 
+                          eco_ind, 
+                          lwd_vec, 
+                          col_vec = c('blue', 'red'),
+                          legend_vec = c('Illegal Ilearing Losses', 'Relative Landscape Losses'), 
+                          legend_pos = 'topleft', 
+                          realisation_num = realisation_num, 
+                          ylim = c(min(unlist(plot_list)), max(unlist(plot_list))) )
+  
+ 
 }
 
 
 
-# plot_realisation_outcomes(offset_gains = collated_realisations$summed_offset_realisations$net_outcome$standard, 
-#                           dev_losses = collated_realisations$summed_dev_realisations$net_outcome$standard, 
-#                           net_outcome = collated_realisations$net_realisation_gains$standard, 
-#                           plot_title = 'Net Outcomes', x_lab = system_NNL_object$x_lab, eco_ind, lwd_vec, 
-#                           col_vec = c('darkgreen', 'red', 'black'), legend_vec = c('', '', ''), outer_title = '', 
-#                           plot_lims = c(net_mn, net_mx))
-# 
-# plot_landscape_outcomes(collated_realisations$landscape_vals, plot_type = 'landscape', plot_title = 'Landscape Evaluation', loss_object = collated_realisations$landscape_loss, realisation_num, 
-#                         collated_realisations$net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('', ''), outer_title = '', time_steps = global_params$time_steps)
-
-
-get_plot_characteristics <- function(global_params, realisations){
-  plot_characteristics = paste(global_params$offset_calc_type, '_', global_params$dev_calc_type, '_', global_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-                               global_params$use_offset_bank, '_', sep = '', collapse = '')
+get_plot_characteristics <- function(program_params, realisations){
+#   plot_characteristics = paste(program_params[[1]]$offset_calc_type, '_', program_params[[1]]$dev_calc_type, '_', program_params[[1]]$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
+#                                program_params[[1]]$use_offset_bank, '_', sep = '', collapse = '')
+#   
+#   if (program_params[[1]]$use_offset_bank == TRUE){                                   
+#     plot_characteristics = paste(plot_characteristics, program_params[[1]]$offset_bank_start, '_', program_params[[1]]$offset_bank_end, '_', 
+#                                  program_params[[1]]$offset_bank_num, '_', program_params[[1]]$match_type, sep = '', collapse = '')
+#   }
+#   
+#   plot_characteristics = paste(plot_characteristics, '_', program_params[[1]]$offset_action_type, '_', sep = '', collapse = '')
+#   if (program_params[[1]]$offset_action_type == 'restore'){
+#     plot_characteristics = paste(plot_characteristics, program_params[[1]]$restoration_rate, '_', sep = '', collapse = '')
+#   }
+#   
+#   if (program_params[[1]]$use_offset_time_horizon == TRUE){                                   
+#     plot_characteristics = paste(plot_characteristics, '_time_horizon_', program_params[[1]]$offset_time_horizon, sep = '', collapse = '')
+#   }
   
-  if (global_params$use_offset_bank == TRUE){                                   
-    plot_characteristics = paste(plot_characteristics, global_params$offset_bank_start, '_', global_params$offset_bank_end, '_', 
-                                 global_params$offset_bank_num, '_', global_params$match_type, sep = '', collapse = '')
-  }
+                
+  plot_characteristics = vector()                 
+  plot_characteristics = paste(plot_characteristics, '_offsets_illegal_clearing_', program_params[[1]]$include_illegal_clearing_in_offset_calc, sep = '', collapse = '')
   
-  plot_characteristics = paste(plot_characteristics, '_', global_params$offset_action_type, '_', sep = '', collapse = '')
-  if (global_params$offset_action_type == 'restore'){
-    plot_characteristics = paste(plot_characteristics, global_params$restoration_rate, '_', sep = '', collapse = '')
-  }
+  plot_characteristics = paste(plot_characteristics, '_offsets_potential_developments_', program_params[[1]]$include_potential_developments_in_offset_calc, sep = '', collapse = '')
   
-  if (global_params$use_offset_time_horizon == TRUE){                                   
-    plot_characteristics = paste(plot_characteristics, '_time_horizon_', global_params$offset_time_horizon, sep = '', collapse = '')
-  }
+  plot_characteristics = paste(plot_characteristics, '_offsets_potential_offsets_', program_params[[1]]$include_potential_offsets_in_offset_calc, sep = '', collapse = '')
+  
+  plot_characteristics = paste(plot_characteristics, '_devs_illegal_clearing_', program_params[[1]]$include_illegal_clearing_in_dev_calc, sep = '', collapse = '')
+  
+  plot_characteristics = paste(plot_characteristics, '_devs_potential_developments_', program_params[[1]]$include_potential_developments_in_dev_calc, sep = '', collapse = '')
+  
+  plot_characteristics = paste(plot_characteristics, '_devs_potential_offsets_', program_params[[1]]$include_potential_offsets_in_dev_calc, sep = '', collapse = '')
+  
   
   mean_dev_num = assess_allowed_devs(realisations)
   
   plot_characteristics = paste(plot_characteristics, '_mean_dev_num_', mean_dev_num, sep = '', collapse = '')
+  
   return(plot_characteristics)
 }
 
 
 
 
-
-plot_summed_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
+plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, edge_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
 
   plot_num = length(col_vec)
   plot_collated_realisation_set(rest_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
@@ -108,7 +171,7 @@ plot_summed_realisations <- function(plot_type, rest_gains, avoided_degs, nets, 
   }
   plot_collated_realisation_set(nets, overlay_plots = TRUE, plot_col = col_vec[plot_num], realisation_num, eco_ind, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)  
   legend(legend_pos, legend_vec, bty="n", lty = rep(2, plot_num), lwd = array(lwd_vec[1], plot_num), col = col_vec)
-  
+  title(edge_title, outer = TRUE)
 }
 
 
@@ -193,7 +256,7 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
   net_cond = total_parcel_sums - total_counter_sums
   
   if (length(NNL_object$system_NNL) > 0 ){
-    x_lab = paste('System NNL at', round(NNL_object$system_NNL), 'years')
+    x_lab = paste('Mean System NNL = ', round(NNL_object$system_NNL), 'years')
   } else {x_lab = 'NNL fail'}
   
   plot((net_cond), type = 'l', main = 'Landscape Condition Relative to cfac', xlab = x_lab, ylab = '', col = 'red', lwd = 3)
@@ -202,12 +265,15 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
 }
 
 
+# NNL_plot_object = parcel_set_NNL
+# plot_tit = 'Parcel Set NNL Assessment'
+# x_lim = c(0, 100)
 
 
 plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, eco_ind){
   
   if (NNL_plot_object$NNL_success[[eco_ind]] > 0){
-    x_lab = t(cbind( paste('NNL at', round(NNL_plot_object$NNL_mean[[eco_ind]]), 'years'), paste('NNL success = ', round(NNL_plot_object$NNL_success[[eco_ind]]*100), '%' )))
+    x_lab = t(cbind( paste('Mean NNL at  ', round(NNL_plot_object$NNL_mean[[eco_ind]]), 'years'), paste('NNL success = ', round(NNL_plot_object$NNL_success[[eco_ind]]*100), '%' )))
     NNL_yrs = unlist(NNL_plot_object$NNL_yrs)
     NNL_yrs <- NNL_yrs[which(NNL_yrs > 0)]
     hist(NNL_yrs, main = plot_tit, xlab = x_lab, xlim = x_lim, breaks=seq(min(NNL_yrs),max(NNL_yrs),by=1))
@@ -221,13 +287,13 @@ plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, eco_ind){
 
 
 
-plot_mean_gains_degs <- function(summed_realisations, outer_title, realisation_num){
+plot_mean_gains_degs <- function(summed_realisations, program_params, edge_title, realisation_num){
   
   rest_gains = sum_cols_multi(summed_realisations$rest_gains)/realisation_num
   net_degs = sum_cols_multi(summed_realisations$avoided_degs)/realisation_num
   net_gains = net_degs + rest_gains
   
-  if (global_params$adjust_cfacs_flag == TRUE){
+  if (program_params[[1]]$adjust_cfacs_flag == TRUE){
     net_degs_adjusted = sum_cols_multi(summed_realisations$avoided_degs_adjusted)/realisation_num
     net_gains_adjusted = net_degs_adjusted + rest_gains
     adjusted_contribution = net_degs_adjusted - net_degs
@@ -264,48 +330,48 @@ plot_mean_gains_degs <- function(summed_realisations, outer_title, realisation_n
 
 
 # collated_summed_reals = split_list[[1]]
-# cfac_type = global_params$cfac_type_in_offset_calc
+# cfac_type = program_params[[1]]$cfac_type_in_offset_calc
 # plot_type = 'offsets'
 # legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Gains')
 # legend_pos = 'topleft'
 # plot_title = 'Net Offsets'
 # lwd_vec = c(3, 0.15)
-# outer_title = plot_characteristics
+# edge_title = plot_characteristics
 # col_vec = c('blue', 'mediumorchid4', 'darkgreen')
 # ylim = c(net_mn, net_mx)
 
 
-plot_split_realisations <- function(collated_summed_reals, cfac_type, plot_type, legend_vec, legend_pos, eco_ind, lwd_vec, plot_title, outer_title, col_vec, realisation_num, ylim){
-  
-  rest_gains = collated_summed_reals$rest_gains
-  
-  if (cfac_type == 'standard'){
-    avoided_degs = collated_summed_reals$avoided_degs
-    nets = collated_summed_reals$net_outcome$standard
-  } else if ((cfac_type == 'include_clearing') || (cfac_type == 'include_clearing_offsets')){
-    avoided_degs = collated_summed_reals$avoided_degs_adjusted
-    nets = collated_summed_reals$net_outcome$adjusted
-  } 
-  
-  plot_summed_realisations(plot_type, rest_gains, avoided_degs, nets, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
-  title(outer_title, outer = TRUE)
-}
+# plot_split_realisations <- function(collated_summed_reals, cfac_type, plot_type, legend_vec, legend_pos, eco_ind, lwd_vec, plot_title, edge_title, col_vec, realisation_num, ylim){
+#   
+#   rest_gains = collated_summed_reals$rest_gains
+#   
+#   if (cfac_type == 'standard'){
+#     avoided_degs = collated_summed_reals$avoided_degs
+#     nets = collated_summed_reals$net_outcome$standard
+#   } else if ((cfac_type == 'include_clearing') || (cfac_type == 'include_clearing_offsets')){
+#     avoided_degs = collated_summed_reals$avoided_degs_adjusted
+#     nets = collated_summed_reals$net_outcome$adjusted
+#   } 
+#   
+#   plot_summed_realisations(plot_type, rest_gains, avoided_degs, nets, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
+#   title(edge_title, outer = TRUE)
+# }
 
 null_plot <- function(){
   plot(NULL, type= 'n', xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, ann = FALSE)
 }
-
-# system_NNL_object = collated_realisations$system_NNL_object
-# parcel_set_NNL_object = collated_realisations$parcel_set_NNL_object 
+# 
+# system_NNL = collated_realisations$system_NNL
+# parcel_set_NNL = collated_realisations$parcel_set_NNL 
 # parcel_sums_at_offset = collated_realisations$offsets$parcel_sums_at_offset
 # parcel_sum_lims = c(0, 20000)
-# use_parcel_sets = global_params$use_parcel_sets
+# use_parcel_sets = program_params[[1]]$use_parcel_sets
 
 
 
-# plot_realisation_hists(collated_realisations$system_NNL_object, collated_realisations$parcel_set_NNL_object, 
+# plot_realisation_hists(collated_realisations$system_NNL, collated_realisations$parcel_set_NNL, 
 #                        collated_realisations$offsets$parcel_sums_at_offset, parcel_sum_lims = c(0, 20000), 
-#                        use_parcel_sets = global_params$use_parcel_sets, parcel_set_set_NNL_object, eco_ind, outer_title)
+#                        use_parcel_sets = program_params[[1]]$use_parcel_sets, parcel_set_set_NNL_object, eco_ind, edge_title)
 
 plot_parcel_sums_hist <- function(parcel_sums_at_offset, eco_ind, parcel_sum_lims){
   current_parcel_sums_at_offset = unlist(parcel_sums_at_offset, recursive = FALSE)
@@ -313,50 +379,90 @@ plot_parcel_sums_hist <- function(parcel_sums_at_offset, eco_ind, parcel_sum_lim
   hist(parcel_sums_at_offset_array, main = 'offset parcel values', xlab = 'selected offset parcel values', xlim = parcel_sum_lims)
 }
 
-plot_realisation_hists <- function(system_NNL_object, parcel_set_NNL_object, parcel_sums_at_offset, parcel_sum_lims, 
-                                   use_parcel_sets, eco_ind, outer_title){
+plot_realisation_hists <- function(system_NNL, parcel_set_NNL, parcel_sums_at_offset, parcel_sum_lims, 
+                                   use_parcel_sets, eco_ind, edge_title){
   
   plot_parcel_sums_hist(parcel_sums_at_offset, eco_ind, parcel_sum_lims)
-  plot_NNL_hist(system_NNL_object, plot_tit = 'System NNL Assessment', x_lim = c(0, 100), eco_ind)
+  plot_NNL_hist(system_NNL, plot_tit = 'System NNL Assessment', x_lim = c(0, 100), eco_ind)
   
   if (use_parcel_sets == TRUE){
-    plot_NNL_hist(parcel_set_NNL_object, plot_tit = 'Parcel Set NNL Assessment', x_lim = c(0, 100), eco_ind) 
+    plot_NNL_hist(parcel_set_NNL, plot_tit = 'Parcel Set NNL Assessment', x_lim = c(0, 100), eco_ind) 
   } else {
     null_plot()
   }
-  title(outer_title, outer = TRUE)
+  title(edge_title, outer = TRUE)
   
 }
 
 
-plot_realisation_outcomes <- function(offset_gains, dev_losses, net_outcome, plot_title, x_lab, eco_ind, lwd_vec, col_vec, legend_vec, outer_title, plot_lims){
+# offset_gains = collated_realisations$net_offset_gains
+# dev_losses = collated_realisations$net_dev_losses
+# net_outcome = collated_realisations$net_program_outcomes
+# plot_title = 'Net Outcomes' 
+# x_lab = system_NNL$x_lab
+# col_vec = c('darkgreen', 'red', 'black') 
+# legend_vec = c('Offset Gains', 'Development Losses', 'Program Outcomes') 
+# plot_lims = c(net_mn, net_mx)
+
+# plot_list = list(collated_realisations$net_offset_gains$net_outcome, 
+#                   collated_realisations$net_dev_losses$net_outcome,
+#                   collated_realisations$illegal_sum_rel_to_counter,
+#                   collated_realisations$net_program_outcomes)
+# plot_title = 'Net Outcomes' 
+# x_lab = system_NNL$x_lab
+# realisation_num
+# col_vec = net_col_vec
+# legend_vec = c('Offset Gains', 'Development Losses', 'Illegal Clearing', 'Program Outcomes') 
+# edge_title 
+# plot_lims = plot_lims
+
+overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, eco_ind, lwd_vec, col_vec, legend_vec, edge_title, plot_lims){
   
-  #setup_sub_plots(nx = 1, ny = 1, x_tit = TRUE)
   if (length(plot_lims) == 0){
-    plot_lims = c(min(cbind(net_outcome, dev_losses, offset_gains)), max(cbind(net_outcome, dev_losses, offset_gains)))
+    plot_lims = find_plot_lims(plot_list)
   }
-  plot_collated_realisation_set(offset_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = '', plot_title = '', plot_lims = plot_lims)
   
-  plot_collated_realisation_set(dev_losses, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = '', plot_title = '', plot_lims = plot_lims)
-  plot_collated_realisation_set(net_outcome, overlay_plots = TRUE, plot_col = col_vec[3], realisation_num, eco_ind, lwd_vec, 
-                                x_lab = x_lab, plot_title = plot_title, plot_lims = plot_lims)
-  
-  legend('topleft', legend_vec, bty="n", lty = c(2, 2, 2), lwd = array(lwd_vec[1], 3), col = col_vec)
-  
-  title(outer_title, outer = TRUE)
+  for (plot_ind in seq_along(plot_list)){
+    if (plot_ind == 1){
+      overlay_plots = FALSE
+    } else {
+      overlay_plots = TRUE
+    }
+    plot_collated_realisation_set(plot_list[[plot_ind]], overlay_plots, plot_col = col_vec[plot_ind], realisation_num, eco_ind, lwd_vec, 
+                                  x_lab = '', plot_title, plot_lims = plot_lims)
+  }
+
+  legend('bottomleft', legend_vec, bty="n", lty = c(2, 2, 2, 2), lwd = array(lwd_vec[1], 4), col = col_vec)
+  title(edge_title, outer = TRUE)
 }
 
+# plot_realisation_outcomes <- function(offset_gains, dev_losses, net_outcome, plot_title, x_lab, realisation_num, eco_ind, lwd_vec, col_vec, legend_vec, edge_title, plot_lims){
+#   
+#   #setup_sub_plots(nx = 1, ny = 1, x_tit = TRUE)
+#   if (length(plot_lims) == 0){
+#     plot_lims = c(min(cbind(net_outcome, dev_losses, offset_gains)), max(cbind(net_outcome, dev_losses, offset_gains)))
+#   }
+# 
+#   plot_collated_realisation_set(offset_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, eco_ind, lwd_vec, 
+#                                 x_lab = '', plot_title = '', plot_lims = plot_lims)
+#   
+#   plot_collated_realisation_set(dev_losses, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, eco_ind, lwd_vec, 
+#                                 x_lab = '', plot_title = '', plot_lims = plot_lims)
+#   plot_collated_realisation_set(net_outcome, overlay_plots = TRUE, plot_col = col_vec[3], realisation_num, eco_ind, lwd_vec, 
+#                                 x_lab = x_lab, plot_title = plot_title, plot_lims = plot_lims)
+#   
+#   legend('topleft', legend_vec, bty="n", lty = c(2, 2, 2), lwd = array(lwd_vec[1], 3), col = col_vec)
+#   
+#   title(edge_title, outer = TRUE)
+# }
 
-
-# plot_landscape_outcomes(collated_realisations$summed_program_realisations, plot_type = 'program', plot_title = 'Program Evaluation', loss_object = collated_realisations$program_loss, realisation_num, 
-#                         collated_realisations$summed_program_cfacs, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Program Value', 'Program Counterfactual'), outer_title, time_steps = global_params$time_steps)
+# plot_landscape_outcomes(collated_realisations$summed_program_realisations, plot_type = 'program', plot_title = 'Program Evaluation', loss_object = collated_realisations$net_program_loss, realisation_num, 
+#                         collated_realisations$summed_program_cfacs, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Program Value', 'Program Counterfactual'), edge_title, time_steps = global_params$time_steps)
 # 
 # landscape_realisations = collated_realisations$program_sums$net
 # plot_type = 'program'
 # plot_title = 'Program Evaluation'
-# loss_object = collated_realisations$program_loss
+# loss_object = collated_realisations$net_program_loss
 # 
 # cfacs = collated_realisations$program_cfac_sums$net
 # col_vec = c('red', 'blue')
@@ -365,7 +471,7 @@ plot_realisation_outcomes <- function(offset_gains, dev_losses, net_outcome, plo
 
 
 # plot_landscape_outcomes(collated_realisations$landscape_vals, plot_type = 'landscape', plot_title = 'Landscape Evaluation', loss_object = collated_realisations$landscape_loss, realisation_num, 
-#                         net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Landscape Value', 'Landscape Counterfactual'), outer_title, time_steps = global_params$time_steps)
+#                         net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Landscape Value', 'Landscape Counterfactual'), edge_title, time_steps = global_params$time_steps)
 
 
 # landscape_realisations = collated_realisations$landscape_vals
@@ -378,14 +484,14 @@ plot_realisation_outcomes <- function(offset_gains, dev_losses, net_outcome, plo
 # time_steps = global_params$time_steps
 # net_cfac_sum = collated_realisations$net_cfac_sum
 
-plot_landscape_outcomes <- function(landscape_realisations, plot_type, plot_title, loss_object, realisation_num, cfacs, eco_ind, lwd_vec, col_vec, legend_vec, outer_title, time_steps){
+plot_landscape_outcomes <- function(landscape_realisations, plot_type, plot_title, loss_object, realisation_num, cfacs, eco_ind, lwd_vec, col_vec, legend_vec, edge_title, time_steps){
   
   current_total_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_object$total_loss[[i]][[eco_ind]]))
   loss_tit = paste('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
   
   current_NNL_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_object$NNL_loss[[i]][[eco_ind]]))
   if (length(current_NNL_loss) > 0){
-    NNL_tit = paste('NNL at ', round(mean(current_NNL_loss*100)), '% landscape loss')
+    NNL_tit = paste('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
   } else {
     NNL_tit = 'All realisations failed NNL'
   }
@@ -413,13 +519,13 @@ plot_landscape_outcomes <- function(landscape_realisations, plot_type, plot_titl
   
   legend('topright', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   
-  title(outer_title, outer = TRUE) 
+  title(edge_title, outer = TRUE) 
 }
 
 
 
 
-plot_program_evaluation <- function(summed_program_realisations, loss_object, realisation_num, summed_program_cfacs, eco_ind, lwd_vec, col_vec, legend_vec, outer_title){
+plot_program_evaluation <- function(summed_program_realisations, loss_object, realisation_num, summed_program_cfacs, eco_ind, lwd_vec, col_vec, legend_vec, edge_title){
   
   #setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
   
@@ -427,7 +533,7 @@ plot_program_evaluation <- function(summed_program_realisations, loss_object, re
   
   if (length(loss_object$NNL_loss) > 0){
     #landscape_title = paste('NNL at ', round(mean(loss)), '\U00b1', round(max(range(loss) - (mean(loss))), 1), '% loss of landscape')
-    NNL_tit = paste('NNL at ', round(mean(loss_object$NNL_loss*100)), '% program loss')
+    NNL_tit = paste('Mean NNL at  ', round(mean(loss_object$NNL_loss*100)), '% program loss')
   } else NNL_tit = 'All realisations failed NNL'
   
   sub_tit = cbind(NNL_tit, loss_tit)
@@ -443,7 +549,7 @@ plot_program_evaluation <- function(summed_program_realisations, loss_object, re
 #   plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind = 1, lwd_vec, 
 #                                  x_lab = '', plot_title = 'Net Value Rel. to Counterfactual', plot_lims = vector() )
 #   
-  title(outer_title, outer = TRUE)
+  title(edge_title, outer = TRUE)
   
 }
 
@@ -480,9 +586,9 @@ plot_parcel_set_parcels <- function(current_set_object){
 
 
 
-plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, global_params){
+plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, global_params, program_params){
   
-  parcel_set_indexes = sample(global_params$total_dev_num, plot_num)
+  parcel_set_indexes = sample(program_params[[1]]$total_dev_num, plot_num)
   setup_sub_plots(nx = 3, ny = 3, x_tit = TRUE)
   for (parcel_set_index in parcel_set_indexes){
     plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = global_params$time_steps, global_params$eco_dims, 
@@ -509,45 +615,92 @@ setup_sub_plots <- function(nx, ny, x_tit){
 
 
 # 
-# plot_parcel_set(collated_offsets = collated_realisations$offset_parcel_sets, collated_devs = collated_realisations$development_parcel_sets, parcel_set_num = collated_realisations$devs$parcel_set_nums[[1]], eco_ind = 1, 
+# plot_parcel_set(collated_offsets = collated_realisations$current_offsets, collated_devs = collated_realisations$development_parcel_sets, parcel_set_num = collated_realisations$devs$parcel_set_nums[[1]], eco_ind = 1, 
 #                 headings = c('Developments', 'Offsets', 'Net Parcel Set Outcome'))
 
 
-collate_parcel_set_element <- function(gains, degs){
+collate_parcel_set_element <- function(rest_gains, avoided_degs){
   collated_outs = list()
-  collated_outs$gains = gains
-  collated_outs$degs = degs
-  collated_outs$nets = gains + degs
+  collated_outs$rest_gains = rest_gains
+  collated_outs$avoided_degs = avoided_degs
+  collated_outs$nets = rest_gains + avoided_degs
   return(collated_outs)
 }
 
 
-# offset_parcel_set = list(gains, degs, gains + degs)
-# dev_parcel_set = list()
+
+# current_offset = list(rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+#                       losses[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+# 
+# 
 
 plot_parcel_sets <- function(collated_realisations, realisation_ind, eco_ind, col_list, legend_loc){
-
+  
   parcel_set_num = collated_realisations$devs$parcel_set_num[[realisation_ind]]
   parcel_sets_to_plot = sample(parcel_set_num, min(parcel_set_num, 3))
-  for (parcel_set_ind in parcel_sets_to_plot){
-    offset_parcel_set = collate_parcel_set_element(gains = collated_realisations$offsets$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
-                                                   degs = collated_realisations$offsets$avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind])
-    dev_parcel_set = collate_parcel_set_element(gains = collated_realisations$devs$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
-                                                degs = collated_realisations$devs$avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind])
-    net_parcel_set = collate_parcel_set_element(gains = offset_parcel_set$nets, degs = dev_parcel_set$nets)
-    
-    mn = min(unlist(list(offset_parcel_set, dev_parcel_set)))
-    mx = max(unlist(list(offset_parcel_set, dev_parcel_set)))
-    
-    overlay_plot_list(plot_list = offset_parcel_set, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Offset', ylab = '', col_vec = col_list[[1]], lty_vec = c(1, 1, 2), 
-                      lwd_vec = c(3, 3, 5), legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Relative Gains'), legend_loc)
-    overlay_plot_list(plot_list = dev_parcel_set[c(1, 3)], yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Development', ylab = '', col_vec = col_list[[2]][c(1, 3)], lty_vec = c(1, 2), 
-                      lwd_vec = c(1, 2), legend_vec = c('Absolute Loss', 'Relative Loss'), legend_loc)
-    overlay_plot_list(plot_list = net_parcel_set, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Net Outcome', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 1), 
-                      lwd_vec= c(2, 2, 3), legend_vec = c('Relative Offset Gains', 'Relative Development Losses', 'Net Outcomes'), legend_loc)
   
+  for (parcel_set_ind in parcel_sets_to_plot){
+    parcel_set_traj_list = list()
+    offset_plot_list = list(collated_realisations$offsets$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+                                    collated_realisations$offsets$avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind],
+                                    collated_realisations$offsets$losses[[realisation_ind]][[eco_ind]][, parcel_set_ind],
+                                    collated_realisations$offsets$nets[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+
+    dev_plot_list = list(collated_realisations$devs$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+                       collated_realisations$devs$nets[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+    
+    net_plot_list = list(collated_realisations$offsets$nets[[realisation_ind]][[eco_ind]][, parcel_set_ind],
+                       collated_realisations$devs$nets[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+                       collated_realisations$offsets$losses[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+                       collated_realisations$parcel_set_outcomes[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+    #net_plot_list <- append(net_plot_list, list(Reduce('+', net_plot_list)))
+    
+    plot_lims <- find_plot_lims(list(offset_plot_list, dev_plot_list, net_plot_list))
+     
+    overlay_plot_list(plot_list = offset_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Offset', ylab = '', col_vec = col_list[[1]], lty_vec = c(1, 1, 1, 2), 
+                      lwd_vec = c(1, 1, 1, 2), legend_vec = c('Restoration Gains', 'Avoided Degredation', 'losses', 'Relative Gains'), legend_loc)
+    overlay_plot_list(plot_list = dev_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Development', ylab = '', col_vec = col_list[[2]], lty_vec = c(1, 2), 
+                      lwd_vec = c(1, 2), legend_vec = c('Absolute Loss', 'Relative Loss'), legend_loc)
+    overlay_plot_list(plot_list = net_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Net Outcome', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 2, 1), 
+                      lwd_vec= c(2, 2, 2, 3), legend_vec = c('Relative Offset Gains', 'Relative Development Losses', 'Illegal Clearing losses', 'Net Outcomes'), legend_loc)
+    
   }
 }
+
+find_plot_lims <- function(plot_list){
+      mn = min(unlist(plot_list))
+      mx = max(unlist(plot_list))
+      plot_lims = c(mn, mx)
+      return(plot_lims)
+}
+
+# current_offset = list(rest_gains, avoided_degs, rest_gains + avoided_degs)
+# current_dev = list()
+# 
+# plot_parcel_sets <- function(collated_realisations, realisation_ind, eco_ind, col_list, legend_loc){
+# 
+#   parcel_set_num = collated_realisations$devs$parcel_set_num[[realisation_ind]]
+#   parcel_sets_to_plot = sample(parcel_set_num, min(parcel_set_num, 3))
+#   
+#   for (parcel_set_ind in parcel_sets_to_plot){
+#     current_offset = collate_parcel_set_element(rest_gains = collated_realisations$offsets$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+#                                                    avoided_degs = collated_realisations$offsets$avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+#     current_dev = collate_parcel_set_element(rest_gains = collated_realisations$devs$rest_gains[[realisation_ind]][[eco_ind]][, parcel_set_ind], 
+#                                                 avoided_degs = collated_realisations$devs$avoided_degs[[realisation_ind]][[eco_ind]][, parcel_set_ind])
+#     current_net = collate_parcel_set_element(rest_gains = current_offset$nets, avoided_degs = current_dev$nets)
+#     
+#     mn = min(unlist(list(current_offset, current_dev)))
+#     mx = max(unlist(list(current_offset, current_dev)))
+#     
+#     overlay_plot_list(plot_list = current_offset, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Offset', ylab = '', col_vec = col_list[[1]], lty_vec = c(1, 1, 2), 
+#                       lwd_vec = c(3, 3, 5), legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Relative Gains'), legend_loc)
+#     overlay_plot_list(plot_list = current_dev[c(1, 3)], yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Development', ylab = '', col_vec = col_list[[2]][c(1, 3)], lty_vec = c(1, 2), 
+#                       lwd_vec = c(1, 2), legend_vec = c('Absolute Loss', 'Relative Loss'), legend_loc)
+#     overlay_plot_list(plot_list = current_net, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Net Outcome', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 1), 
+#                       lwd_vec= c(2, 2, 3), legend_vec = c('Relative Offset Gains', 'Relative Development Losses', 'Net Outcomes'), legend_loc)
+#   
+#   }
+# }
 
 # overlay_plot_list(plot_list = net_parcel_set, yticks = 'y', axis_lab = TRUE, ylims = c(mn, mx), heading = 'Net Outcome', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 1), 
 #                   lwd_vec= c(5, 5, 5), legend_vec = c('', '', ''), legend_loc)
