@@ -6,6 +6,7 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
 }
 
 
+#use_cfac_type_in_sim = TRUE
 collate_realisations <- function(realisations, global_params, use_cfac_type_in_sim, decline_rates_initial, land_parcels, initial_ecology){
   
   land_parcels = parcels$land_parcels
@@ -60,32 +61,6 @@ collate_realisations <- function(realisations, global_params, use_cfac_type_in_s
                                 parcel_indexes = 1:length(land_parcels), 
                                 time_horizon = global_params$time_steps)
   
-  
- 
-  illegally_cleared_trajs <- sum_parcel_sets(traj_type = 'trajectory', 
-                                             collate_type = 'illegal_clearing', 
-                                             sum_type = 'individual', 
-                                             realisations, 
-                                             trajectory_object = realisations, 
-                                             time_steps = global_params$time_steps, 
-                                             eco_dims= global_params$eco_dims)
-  
-  illegally_cleared_sum <-  sum_parcel_sets(traj_type = 'trajectory', 
-                                            collate_type = 'illegal_clearing', 
-                                            sum_type = 'net', 
-                                            realisations, 
-                                            trajectory_object = realisations,
-                                            time_steps = global_params$time_steps, 
-                                            eco_dims = global_params$eco_dims)
-  
-  program_trajs <- sum_parcel_sets(traj_type = 'trajectory', 
-                                   collate_type = 'illegal_clearing', 
-                                   sum_type = 'individual', 
-                                   realisations, 
-                                   trajectory_object = realisations, 
-                                   time_steps = global_params$time_steps, 
-                                   eco_dims = global_params$eco_dims)
-  
   program_sums <- collate_program(traj_type = 'trajectory', 
                                   realisations,
                                   trajectory_object = realisations,
@@ -121,9 +96,30 @@ collate_realisations <- function(realisations, global_params, use_cfac_type_in_s
                                          eco_dims = global_params$eco_dims, 
                                          time_steps = global_params$time_steps)
 
-  illegal_sum_rel_to_counter <- subtract_nested_lists(illegally_cleared_sum, cfacs_object$net_illegal_cfac_sum)
-  illegal_sum_rel_initial <- nested_list_rel_initial(list_in = illegally_cleared_sum, global_params$eco_dims)
-
+  if (global_params$perform_illegal_clearing == TRUE){
+    illegally_cleared_trajs <- sum_parcel_sets(traj_type = 'trajectory', 
+                                               collate_type = 'illegal_clearing', 
+                                               sum_type = 'individual', 
+                                               realisations, 
+                                               trajectory_object = realisations, 
+                                               time_steps = global_params$time_steps, 
+                                               eco_dims= global_params$eco_dims)
+    
+    illegally_cleared_sum <-  sum_parcel_sets(traj_type = 'trajectory', 
+                                              collate_type = 'illegal_clearing', 
+                                              sum_type = 'net', 
+                                              realisations, 
+                                              trajectory_object = realisations,
+                                              time_steps = global_params$time_steps, 
+                                              eco_dims = global_params$eco_dims)
+    illegal_sum_rel_to_counter <- subtract_nested_lists(illegally_cleared_sum, cfacs_object$net_illegal_cfac_sum)
+    illegal_sum_rel_initial <- nested_list_rel_initial(list_in = illegally_cleared_sum, global_params$eco_dims)
+  } else{
+    illegal_sum_rel_to_counter = list()
+    illegal_sum_rel_initial = list()
+    illegally_cleared_trajs = list()
+    illegally_cleared_sum = list()
+  }
   
   collated_realisations$parcel_set_outcomes = parcel_set_outcomes
   collated_realisations$landscape_loss = landscape_loss
@@ -173,6 +169,11 @@ merge_vectors <- function(vec_a, start_ind, vec_b){
 
 
 
+# collated_offset_cfacs = collated_offsets$collated_cfacs 
+# collated_dev_cfacs = collated_devs$collated_cfacs
+# eco_dims = global_params$eco_dims
+
+
 collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rates_initial, global_params, collated_offset_cfacs, collated_dev_cfacs, eco_dims){
   
   time_horizons <- generate_time_horizons(time_horizon_type = 'offsets', 
@@ -192,35 +193,44 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
   
   decline_cfac_trajs = sum_trajectories(cfacs_decline, eco_dims = global_params$eco_dims)
   
-  illegal_cfacs <- collate_cfacs(realisations, 
-                                 realisation_num = length(realisations), 
-                                 collate_type = 'illegal_clearing', 
-                                 global_params, 
-                                 program_params, 
-                                 use_cfac_type_in_sim = TRUE, 
-                                 decline_rates_initial, 
-                                 initial_ecology)
   
-  all_cfacs <- collate_cfacs(realisations, 
-                             realisation_num = length(realisations), 
-                             collate_type = 'all', 
-                             global_params, 
-                             program_params, 
-                             use_cfac_type_in_sim = TRUE, 
-                             decline_rates_initial, 
-                             initial_ecology)
+  
+#   all_cfacs <- collate_cfacs(realisations, 
+#                              realisation_num = length(realisations), 
+#                              collate_type = 'all', 
+#                              global_params, 
+#                              program_params, 
+#                              use_cfac_type_in_sim = TRUE, 
+#                              decline_rates_initial, 
+#                              initial_ecology)
   
   offset_cfacs <- form_cfacs(realisations, collate_type = 'offsets', use_cfac_type_in_sim, collated_cfac_object = collated_offset_cfacs, decline_cfac_trajs, eco_dims)
   dev_cfacs <- form_cfacs(realisations, collate_type = 'developments', use_cfac_type_in_sim, collated_cfac_object = collated_dev_cfacs, decline_cfac_trajs, eco_dims)
-  illegal_cfacs <- form_cfacs(realisations, collate_type = 'illegal_clearing', use_cfac_type_in_sim, collated_cfac_object = illegal_cfacs, decline_cfac_trajs, eco_dims)
   
-  offset_cfac_sum <- lapply(seq(offset_cfacs), function(i) nested_list_sum(offset_cfacs[[i]]))
-  dev_cfac_sum <- lapply(seq(dev_cfacs), function(i) nested_list_sum(dev_cfacs[[i]]))
-  illegal_cfac_sum <- lapply(seq(illegal_cfacs), function(i) nested_list_sum(illegal_cfacs[[i]]))
-  
+    
+  offset_cfac_sum <- sum_cfacs(offset_cfacs)
+  dev_cfac_sum <- sum_cfacs(dev_cfacs)
   program_cfac_sum <- sum_nested_lists(list(offset_cfac_sum, dev_cfac_sum))
   program_cfac_sum_rel_initial <- nested_list_rel_initial(list_in = program_cfac_sum, eco_dims)
   net_cfac_decline_sum <- nested_list_sum(decline_cfac_trajs)
+  
+  if (global_params$perform_illegal_clearing == TRUE){
+    collated_illegal_cfacs <- collate_cfacs(realisations, 
+                                   realisation_num = length(realisations), 
+                                   collate_type = 'illegal_clearing', 
+                                   global_params, 
+                                   program_params, 
+                                   use_cfac_type_in_sim = TRUE, 
+                                   decline_rates_initial, 
+                                   initial_ecology)
+    illegal_cfacs <- form_cfacs(realisations, collate_type = 'illegal_clearing', use_cfac_type_in_sim, collated_cfac_object = collated_illegal_cfacs, decline_cfac_trajs, eco_dims)
+    
+    illegal_cfac_sum <- sum_cfacs(illegal_cfacs)
+    
+  } else {
+    illegal_cfac_sum = list()
+  }
+  
   
   cfacs_object = list()
   cfacs_object$program_cfac_sum <- program_cfac_sum
@@ -231,6 +241,15 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
   return(cfacs_object)
 }
 
+sum_cfacs <- function(cfac_list){
+  if (length(unlist(cfac_list)) > 0){
+    cfac_sum <- lapply(seq(cfac_list), function(i) nested_list_sum(cfac_list[[i]]))
+  } else {
+    cfac_sum = list()
+  }
+  return(cfac_sum)
+}
+  
 sum_collated_cfacs <- function(merged_cfacs){
   collate_list = vector('list', realisation_num)
   for (realisation_ind in seq(realisation_num)){
@@ -238,6 +257,12 @@ sum_collated_cfacs <- function(merged_cfacs){
   }
   return(collate_list)
 }
+
+
+
+# collate_type = 'illegal_clearing'
+# collated_cfac_object = illegal_cfacs
+
 
 form_cfacs <- function(realisations, collate_type, use_cfac_type_in_sim, collated_cfac_object, decline_cfac_trajs, eco_dims){
   realisation_num = length(realisations)
@@ -519,6 +544,10 @@ select_cfac_type <- function(collate_type, use_cfac_type_in_sim, current_program
 
 
 
+
+# realisation_num = length(realisations) 
+# collate_type = 'illegal_clearing' 
+
 collate_cfacs <- function(realisations, realisation_num, collate_type, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial, initial_ecology){
   
   collated_cfacs = vector('list', realisation_num)
@@ -553,7 +582,7 @@ collate_cfacs <- function(realisations, realisation_num, collate_type, global_pa
                                  cfac_params$adjust_cfacs_flag)
       
       collated_cfacs[[realisation_ind]] <- current_cfacs
-      names(collated_cfacs[[realisation_ind]]) <- names(current_cfacs)
+     
     } 
   }
   return(collated_cfacs)
@@ -597,9 +626,14 @@ collate_parcel_sets <- function(realisations, realisation_num, collate_type, glo
                                                     global_params$eco_dims, 
                                                     time_steps = global_params$time_steps)
     
-    collated_gains_degs_object <- lapply(seq_along(current_gains_degs_object), function (i) combine_to_parcel_set(current_gains_degs_object[[i]], parcel_set_indexes, parcel_set_num, global_params$time_steps, global_params$eco_dims))
-    collated_parcel_sets <- lapply(seq_along(collated_gains_degs_object), function(i) append(collated_parcel_sets[[i]], collated_gains_degs_object[i]))
+   # collated_gains_degs_object <- lapply(seq_along(current_gains_degs_object), function (i) combine_to_parcel_set(current_gains_degs_object[[i]], parcel_set_indexes, parcel_set_num, global_params$time_steps, global_params$eco_dims))
       
+    
+    collated_gains_degs_object <- lapply(seq_along(current_gains_degs_object), function (i) arrange_to_parcel_set_list(current_gains_degs_object[[i]], parcel_set_indexes))
+    collated_gains_degs_object <- lapply(seq_along(collated_gains_degs_object), function (i) combine_to_parcel_set_array(collated_gains_degs_object[[i]], global_params$time_steps, global_params$eco_dims))
+    collated_parcel_sets <- lapply(seq_along(collated_gains_degs_object), function(i) append(collated_parcel_sets[[i]], collated_gains_degs_object[i]))
+    
+    
     parcel_set_nums[[realisation_ind]] = parcel_set_num
     offset_yrs[[realisation_ind]] = current_model_outputs$offset_yrs
     parcel_sums_at_offset[[realisation_ind]] = current_model_outputs$parcel_sums_at_offset
@@ -686,6 +720,40 @@ collate_program_cfacs <- function(parcel_cfac_trajs, offset_parcel_indexes, dev_
   program_cfacs$devs =  sum_program_cfacs(parcel_cfac_trajs, dev_parcel_indexes)
   program_cfacs$net = sum_program_cfacs(parcel_cfac_trajs, c(offset_parcel_indexes, dev_parcel_indexes))
   return(program_cfacs)
+}
+
+
+# list_to_collate = current_gains_degs_object[[1]]
+# parcel_indexes = parcel_set_indexes
+# time_steps = global_params$time_steps
+# eco_dims = global_params$eco_dims
+#list_to_collate = collated_gains_degs_object[[1]]
+arrange_to_parcel_set_list <- function(list_to_collate, parcel_set_indexes){
+  parcel_set_num = length(parcel_set_indexes)
+  collate_list = vector('list', length(parcel_set_num))
+  parcel_inds_to_collate = unlist(parcel_set_indexes)
+  
+  for (parcel_set_ind in seq_len(parcel_set_num)){
+    match_inds <- list_intersect(parcel_inds_to_collate, parcel_set_indexes[[parcel_set_ind]])
+    match_inds <- match_inds$match_ind
+    collate_list[[parcel_set_ind]] = list_to_collate[match_inds]
+  }
+  
+  return(collate_list)
+}
+
+
+
+combine_to_parcel_set_array <- function(list_to_collate, time_steps, eco_dims){
+  parcel_set_num = length(list_to_collate)
+  collate_list = list_of_zeros(list_dims = eco_dims, array_dims = c(time_steps, parcel_set_num))
+   for (parcel_set_ind in seq_along(list_to_collate)){
+     current_list = list_to_collate[[parcel_set_ind]]
+      for (eco_ind in seq(eco_dims)){
+        collate_list[[eco_ind]][, parcel_set_ind] = Reduce('+', lapply(seq_along(current_list), function(i) current_list[[i]][[eco_ind]]))
+      }
+  }
+  return(collate_list)
 }
 
 

@@ -37,7 +37,7 @@ run_system <- function(global_object, global_params, program_params, current_eco
   dev_credit = 0
   
   for (yr in seq_len(global_params$time_steps)){          #run through main time loop
-  #for (yr in seq_len(5)){
+  #for (yr in seq_len(25)){
     
     for (region_ind in seq_len(parcels$region_num)){            #cycle through each region
       # print(length(global_object$index_object$ind_available[[region_ind]]))
@@ -121,16 +121,20 @@ run_system <- function(global_object, global_params, program_params, current_eco
     
     if (length(unlist(global_object$offsets_object$parcel_indexes)) > 0){
       # remove already assessed indexes from gains_calculations
-      assessed_offsets <- assess_offset_gains(global_object$offsets_object, 
-                                              global_object$dev_object,
+      
+      assessed_offsets <- assess_offset_gains(current_ecology, 
+                                              global_object$offsets_object, 
                                               offset_indexes = global_object$index_object$offsets,
                                               global_params, 
                                               current_program_params,
                                               decline_rates_initial,
-                                              decline_rates = global_object$decline_rates,
                                               time_horizon, 
                                               yr)
-      #print(assessed_offsets$success_inds)
+#         
+#       if (length(unlist(assessed_offsets$success_inds)) > 0){
+#         break
+#       }
+      
       global_object$decline_rates <- update_decline_rates(global_object$decline_rates, 
                                                           restoration_rate = current_program_params$restoration_rate, 
                                                           offset_dims_to_use = global_params$offset_dims_to_use, 
@@ -522,13 +526,14 @@ find_region <- function(parcel_index, regions){
   return(region_match)
 }
 
-
+# 
 # offsets_object = global_object$offsets_object 
 # dev_object = global_object$dev_object 
 # decline_rates = global_object$decline_rates
 # offset_indexes = global_object$index_object$offsets
 
-assess_offset_gains <- function(offsets_object, dev_object, offset_indexes, global_params, current_program_params, decline_rates_initial, decline_rates, time_horizon, yr){
+
+assess_offset_gains <- function(current_ecology, offsets_object, offset_indexes, global_params, current_program_params, decline_rates_initial, time_horizon, yr){
   
   assessed_offsets_object <- list()
   eco_dims = global_params$eco_dims
@@ -542,25 +547,24 @@ assess_offset_gains <- function(offsets_object, dev_object, offset_indexes, glob
     current_offset_object <- lapply(seq_along(offsets_object), function(i) offsets_object[[i]][current_parcel_set])
     names(current_offset_object) <- names(offsets_object)
     
-    offset_pool_object <- assess_current_pool(pool_object = current_offset_object, 
-                                              pool_type = "offset_bank", 
-                                              calc_type = current_program_params$offset_calc_type, 
-                                              cfacs_flag = current_program_params$offset_cfacs_flag, 
-                                              adjust_cfacs_flag = current_program_params$adjust_offset_cfacs_flag, 
-                                              include_potential_developments = current_program_params$include_potential_developments_in_offset_calc,
-                                              include_potential_offsets = current_program_params$include_potential_offsets_in_offset_calc,
-                                              include_illegal_clearing = current_program_params$include_illegal_clearing_in_offset_calc,
-                                              offset_restoration_flag = current_program_params$offset_restoration_flag,
-                                              time_horizon_type = current_program_params$offset_time_horizon_type,
-                                              global_params, 
-                                              current_program_params, 
-                                              decline_rates,
-                                              decline_rates_initial, 
-                                              time_horizon, 
-                                              yr)      #determine available parcel values, depending on what particular offset policy is in use using counterfactuals etc.
+    parcel_vals_achieved <- assess_current_gain_pool(current_ecology, 
+                                                     pool_object = current_offset_object, 
+                                                     pool_type = "offset_bank", 
+                                                     calc_type = current_program_params$offset_calc_type, 
+                                                     cfacs_flag = current_program_params$offset_cfacs_flag, 
+                                                     adjust_cfacs_flag = current_program_params$adjust_offset_cfacs_flag, 
+                                                     include_potential_developments = current_program_params$include_potential_developments_in_offset_calc,
+                                                     include_potential_offsets = current_program_params$include_potential_offsets_in_offset_calc,
+                                                     include_illegal_clearing = current_program_params$include_illegal_clearing_in_offset_calc,
+                                                     time_horizon_type = current_program_params$offset_time_horizon_type,
+                                                     global_params, 
+                                                     current_program_params, 
+                                                     decline_rates_initial, 
+                                                     time_horizon, 
+                                                     yr)      
     
     for (eco_ind in seq_len(eco_dims)){
-      assessed_offsets[[parcel_set_ind]] = nested_list_sum(subtract_nested_lists(offset_pool_object$parcel_vals_used, current_offset_object$parcel_vals_used))
+      assessed_offsets[[parcel_set_ind]] = nested_list_sum(subtract_nested_lists(parcel_vals_achieved, current_offset_object$parcel_vals_used))
     }
   }
   
@@ -571,7 +575,58 @@ assess_offset_gains <- function(offsets_object, dev_object, offset_indexes, glob
   return(assessed_offsets_object)
 }
 
+
+# pool_object = current_offset_object 
+# pool_type = "offset_bank" 
+# calc_type = current_program_params$offset_calc_type 
+# cfacs_flag = current_program_params$offset_cfacs_flag 
+# adjust_cfacs_flag = current_program_params$adjust_offset_cfacs_flag 
+# include_potential_developments = current_program_params$include_potential_developments_in_offset_calc
+# include_potential_offsets = current_program_params$include_potential_offsets_in_offset_calc
+# include_illegal_clearing = current_program_params$include_illegal_clearing_in_offset_calc
+# offset_restoration_flag = current_program_params$offset_restoration_flag
+# time_horizon_type = current_program_params$offset_time_horizon_type
+                         
+
+
+assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, 
+                                include_potential_developments,include_potential_offsets,include_illegal_clearing,
+                                time_horizon_type, global_params, current_program_params, decline_rates_initial, time_horizon, yr){
   
+  current_pool = unlist(pool_object$parcel_indexes)
+  parcel_count = length(current_pool)
+  offset_yrs = unlist(pool_object$offset_yrs)
+
+  time_horizons <- generate_time_horizons(time_horizon_type = pool_type, project_type = 'current', yr, offset_yrs, time_horizon, parcel_count)
+    
+  if (cfacs_flag == TRUE){
+    
+    cfacs_object = calc_cfacs(parcel_ecologies = pool_object$parcel_ecologies, 
+                              parcel_num_remaining = pool_object$parcel_num_remaining, 
+                              global_params, 
+                              current_program_params, 
+                              decline_rates = decline_rates_initial[current_pool], 
+                              time_horizons, 
+                              offset_yrs, 
+                              include_potential_developments,
+                              include_potential_offsets,
+                              include_illegal_clearing, 
+                              adjust_cfacs_flag)
+    
+    cfac_vals = nested_list_tail(cfacs_object$cfac_trajs)
+    
+  }
+  restoration_vals = current_ecology[current_pool]
+  restoration_vals = lapply(seq_along(restoration_vals), function(i) lapply(seq_along(restoration_vals[[i]]), function(j) sum(restoration_vals[[i]][[j]] )))
+  
+  parcel_vals_achieved = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, restoration_vals, cfac_vals)
+  
+  return(parcel_vals_achieved)
+}
+
+
+
+
 simplify_list_to_array <- function(collated_list){
   collated_array = simplify2array(collated_list)
   collated_dims = dim(collated_array)
@@ -1562,7 +1617,16 @@ prepare_offset_bank <- function(current_banked_offsets_object, current_offset_po
 }
 
 
-
+# pool_object = current_offset_object 
+# pool_type = "offset_bank" 
+# calc_type = current_program_params$offset_calc_type 
+# cfacs_flag = current_program_params$offset_cfacs_flag 
+# adjust_cfacs_flag = current_program_params$adjust_offset_cfacs_flag 
+# include_potential_developments = current_program_params$include_potential_developments_in_offset_calc
+# include_potential_offsets = current_program_params$include_potential_offsets_in_offset_calc
+# include_illegal_clearing = current_program_params$include_illegal_clearing_in_offset_calc
+# offset_restoration_flag = current_program_params$offset_restoration_flag
+# time_horizon_type = current_program_params$offset_time_horizon_type
 
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, offset_restoration_flag, 

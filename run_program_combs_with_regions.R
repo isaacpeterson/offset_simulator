@@ -12,16 +12,20 @@ source('run_system_routines_modularised.R')                 # functions to run s
 source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
 
-run_from_saved = FALSE
-save_initial_conditions = FALSE
-write_pdf = TRUE
-load_from_data = FALSE
+run_from_saved = FALSE                                      # run from previous data or run from newly generated ecology etc.
+save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
+write_pdf = FALSE                                           # write graphical outputs to pdf (TRUE)
+load_from_data = FALSE                                      # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
+
 write_params_to_table = FALSE
 overwrite_table = FALSE
-write_sim_movie = FALSE
+write_movie = FALSE                                      # write evolving ecology to movie
+show_movie = FALSE                                      # show output in movie form of evolving ecology
+write_offset_layer = TRUE                                      # write layer containing all offset parcels to pdf
 
 table_file = '~/Documents/run_summary.csv'
 print_folder = '~/Documents/offset_plots/'
+
 
 if (run_from_saved == TRUE){
   parcels <- readRDS('parcels.rds')
@@ -38,7 +42,7 @@ if (run_from_saved == TRUE){
     parcels <- initialise_shape_parcels(global_params)
     initial_ecology <- initialise_ecology(global_params, land_parcels = parcels$land_parcels)
   }
-  decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)
+  decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
 }
 
 if (save_initial_conditions == TRUE){
@@ -130,10 +134,50 @@ for (comb_ind in seq(prog_num)){
 
 stopCluster(cl)
 
-if (write_sim_movie == TRUE){
-  source('~/Documents/R_Codes/make_movie.R')
+if (show_movie == TRUE){
   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+  graphics.off()
+  for (yr in seq_len(global_params$time_steps)){
+    image(net_traj[[1]][, , yr], zlim = c(global_params$min_eco_val, global_params$max_eco_val))
+    Sys.sleep(0.1)
+    print(paste('year = ', yr))
+  }
+}
+
+
+if (write_movie == TRUE){
+  net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+                                  time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+  
+  source('~/Documents/R_Codes/make_movie.R')
   make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
 }
 
+if (write_offset_layer == TRUE){
+  rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
+  offset_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
+                                        layer_type = 'offset', 
+                                        program_parcels = unlist(realisations[[1]]$index_object$offsets),
+                                        land_parcels = parcels$land_parcels, 
+                                        time_steps = global_params$time_steps, 
+                                        landscape_dims = parcels$landscape_dims, 
+                                        eco_dims = global_params$eco_dims)
+  
+  png(filename = '~/Documents/offset_plots/offset_layer.png', height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
+  image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+  dev.off()
+  
+  rgb.palette <- colorRampPalette(c("black", "red"), space = "rgb")
+  dev_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
+                                        layer_type = 'development', 
+                                        program_parcels = unlist(realisations[[1]]$index_object$developments),
+                                        land_parcels = parcels$land_parcels, 
+                                        time_steps = global_params$time_steps, 
+                                        landscape_dims = parcels$landscape_dims, 
+                                        eco_dims = global_params$eco_dims)
+  
+  png(filename = '~/Documents/offset_plots/dev_layer.png', height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
+  image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+  dev.off()
+}
