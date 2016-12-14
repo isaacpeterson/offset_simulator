@@ -40,7 +40,7 @@ if (run_from_saved == TRUE){
     initial_ecology <- initialise_ecology_from_data(filename =  "~/Desktop/grassland_data/hab.map.master.zo1.pgm", land_parcels = parcels$land_parcels, eco_dims = global_params$eco_dims)
   } else {
     parcels <- initialise_shape_parcels(global_params)
-    initial_ecology <- initialise_ecology(global_params, land_parcels = parcels$land_parcels)
+    initial_ecology <- initialise_ecology(global_params, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   }
   decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
 }
@@ -80,20 +80,20 @@ for (comb_ind in seq(prog_num)){
   
   if (length(realisations) > 0){
     
-    collated_realisations <- collate_realisations(realisations, global_params, use_cfac_type_in_sim = TRUE, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology)
+    collated_realisations <- collate_realisations(realisations, global_params, use_cfac_type_in_sim = TRUE, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology) #take simulation ouputs and calculate gains and losses
     plot_characteristics <- get_plot_characteristics(program_params, realisations)
     
     if (write_pdf == TRUE){
       filename = paste(print_folder, plot_characteristics, '.pdf', sep = '', collapse = '')
       pdf(filename, width = 8.3, height = 11.7)
-      plot_collated_realisations(collated_realisations, 
+      plot_collated_realisations(collated_realisations,                                
                                  realisation_num = length(realisations), 
                                  global_params, 
                                  program_params, 
                                  parcel_sum_lims = c(0, 20000), 
                                  eco_ind = 1, 
                                  lwd_vec = c(3, 0.15), 
-                                 edge_title = plot_characteristics)
+                                 edge_title = plot_characteristics)              #write plot outputs from collated results to pdf
       
       if (write_pdf == TRUE){
         dev.off()
@@ -107,7 +107,7 @@ for (comb_ind in seq(prog_num)){
                                parcel_sum_lims = c(0, 20000), 
                                eco_ind = 1, 
                                lwd_vec = c(3, 0.5), 
-                               edge_title = plot_characteristics)
+                               edge_title = plot_characteristics)             #plot outputs from collated results in local window
   } else {
     print('no parcel sets found')
     collated_realisations = list()
@@ -134,12 +134,12 @@ for (comb_ind in seq(prog_num)){
 
 stopCluster(cl)
 
-if (show_movie == TRUE){
+if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
   graphics.off()
   for (yr in seq_len(global_params$time_steps)){
-    image(net_traj[[1]][, , yr], zlim = c(global_params$min_eco_val, global_params$max_eco_val))
+    image(net_traj[[1]][, , yr], zlim = c(global_params$min_eco_val, global_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
     Sys.sleep(0.1)
     print(paste('year = ', yr))
   }
@@ -154,7 +154,7 @@ if (write_movie == TRUE){
   make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
 }
 
-if (write_offset_layer == TRUE){
+if (write_offset_layer == TRUE){ #write all offset parcels to single layer to output as image
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
   offset_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
                                         layer_type = 'offset', 
@@ -175,7 +175,7 @@ if (write_offset_layer == TRUE){
                                         land_parcels = parcels$land_parcels, 
                                         time_steps = global_params$time_steps, 
                                         landscape_dims = parcels$landscape_dims, 
-                                        eco_dims = global_params$eco_dims)
+                                        eco_dims = global_params$eco_dims) #write all developed parcels to single layer to output as image
   
   png(filename = '~/Documents/offset_plots/dev_layer.png', height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
   image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
