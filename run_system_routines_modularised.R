@@ -137,7 +137,7 @@ run_system <- function(global_object, global_params, program_params, current_eco
       
       global_object$decline_rates <- update_decline_rates(global_object$decline_rates, 
                                                           restoration_rate = current_program_params$restoration_rate, 
-                                                          offset_dims_to_use = global_params$offset_dims_to_use, 
+                                                          dims_to_use = global_params$dims_to_use, 
                                                           eco_dims = global_params$eco_dims, 
                                                           decline_rate_type = 'offset', 
                                                           offset_action_type = 'maintain', 
@@ -249,7 +249,7 @@ perform_offset_routine <- function(global_object, match_object, current_program_
     index_object <- update_ind_available(index_object, current_offset_indexes, region_ind)         # determine parcels used in matching routine and remove from available pool
     decline_rates <- update_decline_rates(decline_rates, 
                                           restoration_rate = current_program_params$restoration_rate, 
-                                          offset_dims_to_use = global_params$offset_dims_to_use, 
+                                          dims_to_use = global_params$dims_to_use, 
                                           eco_dims = global_params$eco_dims, 
                                           decline_rate_type = 'offset', 
                                           offset_action_type = current_program_params$offset_action_type, 
@@ -295,7 +295,7 @@ perform_clearing_routine <- function(global_object, clearing_type, current_devel
 
   decline_rates <- update_decline_rates(decline_rates, 
                                         restoration_rate = vector(), 
-                                        offset_dims_to_use = global_params$offset_dims_to_use, 
+                                        dims_to_use = global_params$dims_to_use, 
                                         eco_dims = global_params$eco_dims, 
                                         decline_rate_type = 'development', 
                                         offset_action_type = vector(), 
@@ -343,7 +343,7 @@ perform_development_from_credit_routine <- function(global_object, current_progr
     index_object <- record_parcel_index(update_type = 'development', index_object, parcel_indexes = current_dev_indexes, region_ind)
     decline_rates <- update_decline_rates(decline_rates, 
                                           restoration_rate = current_program_params$restoration_rate, 
-                                          offset_dims_to_use = global_params$offset_dims_to_use, 
+                                          dims_to_use = global_params$dims_to_use, 
                                           eco_dims = global_params$eco_dims, 
                                           decline_rate_type = 'development', 
                                           offset_action_type = vector(), 
@@ -363,7 +363,7 @@ perform_development_from_credit_routine <- function(global_object, current_progr
 #   index_object <- record_parcel_index(update_type = 'development', index_object, parcel_indexes = current_dev_indexes, region_ind)
 #   decline_rates <- update_decline_rates(decline_rates, 
 #                                         restoration_rate = current_program_params$restoration_rate, 
-#                                         offset_dims_to_use = global_params$offset_dims_to_use, 
+#                                         dims_to_use = global_params$dims_to_use, 
 #                                         eco_dims = global_params$eco_dims, 
 #                                         decline_rate_type = 'development', 
 #                                         offset_action_type = vector(), 
@@ -485,7 +485,7 @@ add_to_bank <- function(global_object, offset_bank_num, current_program_params, 
   
   decline_rates <- update_decline_rates(decline_rates,     # set decline rate parameters to offset
                                         restoration_rate = current_program_params$restoration_rate, 
-                                        offset_dims_to_use = global_params$offset_dims_to_use, 
+                                        dims_to_use = global_params$dims_to_use, 
                                         eco_dims = global_params$eco_dims, 
                                         decline_rate_type = 'offset', 
                                         offset_action_type = current_program_params$offset_action_type, 
@@ -568,7 +568,7 @@ assess_offset_gains <- function(current_ecology, offsets_object, offset_indexes,
     }
   }
   
-  success_inds <- unlist(lapply(seq_along(assessed_offsets), function(i) (all(unlist(assessed_offsets[[i]][global_params$offset_dims_to_use]) > 0))))
+  success_inds <- unlist(lapply(seq_along(assessed_offsets), function(i) (all(unlist(assessed_offsets[[i]][global_params$dims_to_use]) > 0))))
   
   assessed_offsets_object$success_inds <- offsets_object$parcel_indexes[success_inds]
   assessed_offsets_object$assessed_offsets <- assessed_offsets
@@ -1068,7 +1068,7 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
                                        match_threshold = global_params$match_threshold, 
                                        vals_to_match_initial = vals_to_match, 
                                        current_program_params$offset_parcel_for_parcel, 
-                                       dims_to_use = global_params$offset_dims_to_use,
+                                       dims_to_use = global_params$dims_to_use,
                                        max_offset_parcel_num = global_params$max_offset_parcel_num,
                                        yr) #perform matching routine
     } else{
@@ -1530,7 +1530,7 @@ record_parcel_index <- function(update_type, index_object, parcel_indexes, regio
 }
 
 
-update_decline_rates <- function(decline_rates, restoration_rate, offset_dims_to_use, eco_dims, decline_rate_type, offset_action_type, parcel_indexes){
+update_decline_rates <- function(decline_rates, restoration_rate, dims_to_use, eco_dims, decline_rate_type, offset_action_type, parcel_indexes){
   
   parcel_indexes = unlist(parcel_indexes)
   
@@ -1541,9 +1541,9 @@ update_decline_rates <- function(decline_rates, restoration_rate, offset_dims_to
     } else if (decline_rate_type == 'offset'){
       
       if (offset_action_type == 'maintain'){
-        decline_rates[[current_parcel_ind]][offset_dims_to_use] = rep(list(1), length(offset_dims_to_use))
+        decline_rates[[current_parcel_ind]][dims_to_use] = rep(list(1), length(dims_to_use))
       } else if (offset_action_type == 'restore'){
-        decline_rates[[current_parcel_ind]][offset_dims_to_use] = rep(list(restoration_rate), length(offset_dims_to_use))
+        decline_rates[[current_parcel_ind]][dims_to_use] = rep(list(restoration_rate), length(dims_to_use))
       } else if (offset_action_type == 'protect'){
         
       }
@@ -2274,7 +2274,6 @@ form_net_trajectory <- function(trajectories_list, land_parcels, time_steps, lan
   }
   return(net_trajectories)
 }
-
 
 
 

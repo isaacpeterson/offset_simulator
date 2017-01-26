@@ -10,7 +10,7 @@ initialise_global_params <- function(){
   global_params$mean_decline_rates = -1e-2 #set parameter for rate of decline according to logistic curve
   global_params$time_steps = 50 #number of timesteps simulation will be run
   global_params$max_offset_parcel_num = 2 #how many parcels can be selected to offset a single development
-  global_params$offset_dims_to_use = seq_len(global_params$eco_dims) #what dimensions to use in offset calculations
+  global_params$dims_to_use = seq_len(global_params$eco_dims) #what dimensions to consider in claculations e.g. keep many layers running while just optimisaing for layer 1 or 2 or 1:2
   global_params$perform_illegal_clearing = TRUE # switch on/off illegal clearing (this can occur in offset regions or in available regions)
   global_params$offset_thresh = 50
   global_params$parcel_size_lim = 50 #set min parcel size limits if using global_params$screen_parcel_size
@@ -47,12 +47,10 @@ initialise_program_params<- function(){
   program_params$offset_time_horizon = c(15, 30)
   program_params$offset_calc_type = c('restoration_from_cfac')  #'current_condition', 'avoided_degs', 'restoration_from_cfac', 'future_condition', 'restoration_gains', 'restoration_condition_value'
   program_params$dev_calc_type = c('future_condition')                    #'future_condition', 'current_condition' 
-
-
+  
   program_params$include_potential_developments_in_offset_calc = c(FALSE)
   program_params$include_potential_offsets_in_offset_calc = c(FALSE)
   program_params$include_illegal_clearing_in_offset_calc = c(TRUE)
-  
   program_params$include_potential_developments_in_dev_calc = program_params$include_potential_developments_in_offset_calc
   program_params$include_potential_offsets_in_dev_calc = program_params$include_potential_offsets_in_offset_calc
   program_params$include_illegal_clearing_in_dev_calc = program_params$include_illegal_clearing_in_offset_calc

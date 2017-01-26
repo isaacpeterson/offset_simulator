@@ -8,7 +8,7 @@ library(abind)
 library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
-output_folder = '~/Documents/offset_plots_new/'
+output_folder = '~/Documents/offset_plots_new_2/'
 
 if (!file.exists(output_folder)){
   dir.create(output_folder)
@@ -20,15 +20,15 @@ source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))      
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
 run_from_saved = FALSE                                      # run from previous data or run from newly generated ecology etc.
-save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
+save_initial_conditions = TRUE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
 write_pdf = TRUE                                           # write graphical outputs to pdf (TRUE)
-load_from_data = FALSE                                      # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
+load_from_data = FALSE                                      # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
 
-write_params_to_table = FALSE
-overwrite_table = FALSE
-write_movie = FALSE                                      # write evolving ecology to movie
+write_params_to_table = TRUE
+overwrite_table = TRUE
+write_movie = TRUE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
-write_offset_layer = FALSE                                    # write layer containing all offset parcels to pdf
+write_offset_layer = TRUE                                    # write layer containing all offset parcels to pdf
 
 
 table_file =paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
@@ -36,7 +36,6 @@ table_file =paste(output_folder, 'run_summary.csv', sep = '', collapse = '')
 
 if (run_from_saved == TRUE){
   parcels <- readRDS(paste(source_folder, 'parcels.rds', sep = '', collapse = '')) 
-  index_object <- readRDS(paste(source_folder, 'index_object.rds', sep = '', collapse = '')) 
   initial_ecology <- readRDS(paste(source_folder, 'initial_ecology.rds', sep = '', collapse = '')) 
   decline_rates_initial <- readRDS(paste(source_folder, 'decline_rates_initial.rds', sep = '', collapse = ''))
   global_params <- readRDS(paste(source_folder, 'global_params.rds', sep = '', collapse = '')) 
@@ -52,20 +51,23 @@ if (run_from_saved == TRUE){
   decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
 }
 
-if (save_initial_conditions == TRUE){
-  saveRDS(parcels, paste('parcels.rds', sep = '', collapse = '')) 
-  saveRDS(index_object, paste('index_object.rds', sep = '', collapse = '')) 
-  saveRDS(initial_ecology, paste('initial_ecology.rds', sep = '', collapse = '')) 
-  saveRDS(decline_rates_initial, paste('decline_rates_initial.rds', sep = '', collapse = '')) 
-  saveRDS(global_params, paste('global_params.rds', sep = '', collapse = '')) 
-  saveRDS(dev_vec, paste('dev_vec.rds', sep = '', collapse = '')) 
-}
 
 program_params = vector('list', 2)
 program_params[[2]] <- initialise_program_params() # list all program combinations to test
 program_combs <- generate_program_combs(program_params[[2]])  #generate all combinations of offset programs
 prog_num = dim(program_combs)[1] #how many combinations there are in total
 print(paste('combinations = ', prog_num))
+
+if (save_initial_conditions == TRUE){
+  saveRDS(parcels, paste('parcels.rds', sep = '', collapse = '')) 
+  saveRDS(initial_ecology, paste('initial_ecology.rds', sep = '', collapse = '')) 
+  saveRDS(decline_rates_initial, paste('decline_rates_initial.rds', sep = '', collapse = '')) 
+  saveRDS(global_params, paste('global_params.rds', sep = '', collapse = '')) 
+  saveRDS(program_params, paste('program_params.rds', sep = '', collapse = '')) 
+}
+
+
+
 cl<-makeCluster(4)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
