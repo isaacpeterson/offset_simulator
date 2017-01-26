@@ -38,24 +38,26 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
                                         collated_realisations$net_offset_gains$avoided_degs,
                                         collated_realisations$net_offset_gains$losses,
                                         collated_realisations$net_offset_gains$net_outcome),
-                       plot_title = 'Net Offset Outcomes', 
+                       plot_title = 'Offset Evaluation', 
                        x_lab = '',
                        realisation_num,
                        eco_ind, 
                        lwd_vec, 
                        col_vec = offset_col_vec, 
+                       legend_loc = 'topleft',
                        legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Illegal Clearing', 'Net Offset Gains'), 
                        edge_title, 
                        plot_lims = plot_lims) 
   
   overlay_realisations(plot_list = list(collated_realisations$net_dev_losses$rest_gains,
                                         collated_realisations$net_dev_losses$net_outcome),
-                       plot_title = 'Net Development Outcomes', 
+                       plot_title = 'Development Evaluation', 
                        x_lab = '',
                        realisation_num,
                        eco_ind, 
                        lwd_vec, 
                        col_vec = dev_col_vec, 
+                       legend_loc = 'topleft',
                        legend_vec = c('Absolute Losses', 'Relative Losses'), 
                        edge_title, 
                        plot_lims = plot_lims) 
@@ -64,13 +66,14 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
                             collated_realisations$net_dev_losses$net_outcome,
                             collated_realisations$net_offset_gains$losses,
                             collated_realisations$net_program_outcomes),
-                            plot_title = 'Net Outcomes', 
+                            plot_title = 'Net Program Evaluation', 
                             x_lab = system_NNL$x_lab,
                             realisation_num,
                             eco_ind, 
                             lwd_vec, 
                             col_vec = net_col_vec, 
-                            legend_vec = c('Offset Gains', 'Development Losses', 'Illegal Clearing', 'Program Outcomes'), 
+                            legend_loc = 'topleft',
+                            legend_vec = c('Offset Gains', 'Development Losses', 'Illegal Clearing', 'Program Evaluation'), 
                             edge_title, 
                             plot_lims = plot_lims)
   
@@ -80,14 +83,14 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
   
   plot_landscape_outcomes(collated_realisations$program_sums$outcome_rel_initial, 
                           plot_type = 'program', 
-                          plot_title = 'Program Evaluation', 
+                          plot_title = 'Program Outcome', 
                           loss_object = collated_realisations$net_program_loss, 
                           realisation_num, 
                           collated_realisations$program_cfac_sum_rel_initial,
                           eco_ind, 
                           lwd_vec, 
                           col_vec = c('red', 'blue'), 
-                          legend_vec = c('Program Value', 'Program Counterfactual'), 
+                          legend_vec = c('Program Outcome', 'Program Counterfactual'), 
                           edge_title, 
                           time_steps = global_params$time_steps)
 
@@ -95,8 +98,17 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
 #   plot_collated_realisation_set(collated_realisations$landscape_rel_to_counter, overlay_plots = FALSE, plot_col = 'black', realisation_num, eco_ind, lwd_vec, 
 #                                 x_lab = '', plot_title = 'Program Outcome', plot_lims = vector())
 # 
-  plot_landscape_outcomes(collated_realisations$net_landscape, plot_type = 'landscape', plot_title = 'Landscape Outcome', loss_object = collated_realisations$landscape_loss, realisation_num, 
-                          collated_realisations$net_cfac_sum, eco_ind, lwd_vec, col_vec = c('red', 'blue'), legend_vec = c('Landscape Value', 'Landscape Counterfactual'), edge_title, time_steps = global_params$time_steps)
+  plot_landscape_outcomes(collated_realisations$net_landscape, 
+                          plot_type = 'landscape', 
+                          plot_title = 'Landscape Outcome', 
+                          loss_object = collated_realisations$landscape_loss, 
+                          realisation_num, 
+                          collated_realisations$net_cfac_sum, 
+                          eco_ind, lwd_vec, 
+                          col_vec = c('red', 'blue'), 
+                          legend_vec = c('Landscape Outcome', 'Landscape Counterfactual'), 
+                          edge_title, 
+                          time_steps = global_params$time_steps)
   
   if (global_params$perform_illegal_clearing == TRUE){
     plot_list = list(collated_realisations$illegal_sum_rel_to_counter, collated_realisations$landscape_rel_to_counter)
@@ -106,17 +118,17 @@ plot_collated_realisations <- function(collated_realisations, realisation_num, g
     legend_vec = c('Relative Landscape Losses')
   }
 
-  
   overlay_realisations(plot_list,
                        plot_title = 'Landscape Evaluation', 
                        x_lab = '',
                        realisation_num,
                        eco_ind, 
                        lwd_vec, 
-                       col_vec = c('blue', 'red'), 
+                       col_vec = c('blue', 'red'),
+                       legend_loc = 'topright',
                        legend_vec, 
                        edge_title, 
-                       plot_lims = c(min(unlist(plot_list)), max(unlist(plot_list))) ) 
+                       plot_lims = c(min(unlist(plot_list)), (max(unlist(plot_list))) + 0.25*max(abs(unlist(plot_list))))) 
   
 }
 
@@ -141,7 +153,10 @@ get_plot_characteristics <- function(program_params, realisations){
 #   }
   
                 
-  plot_characteristics = vector()                 
+  plot_characteristics = vector()     
+  if (program_params[[1]]$use_offset_time_horizon == TRUE){                                   
+    plot_characteristics = paste(plot_characteristics, 'time_horizon_', program_params[[1]]$offset_time_horizon, sep = '', collapse = '')
+  }
   plot_characteristics = paste(plot_characteristics, '_offsets_illegal_clearing_', program_params[[1]]$include_illegal_clearing_in_offset_calc, sep = '', collapse = '')
   
   plot_characteristics = paste(plot_characteristics, '_offsets_potential_developments_', program_params[[1]]$include_potential_developments_in_offset_calc, sep = '', collapse = '')
@@ -399,7 +414,7 @@ plot_realisation_hists <- function(system_NNL, parcel_set_NNL, parcel_sums_at_of
 
 
 
-overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, eco_ind, lwd_vec, col_vec, legend_vec, edge_title, plot_lims){
+overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, eco_ind, lwd_vec, col_vec, legend_vec, legend_loc, edge_title, plot_lims){
   
   if (length(plot_lims) == 0){
     plot_lims = find_plot_lims(plot_list)
@@ -415,7 +430,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
                                   x_lab = '', plot_title, plot_lims = plot_lims)
   }
 
-  legend('bottomleft', legend_vec, bty="n", lty = c(2, 2, 2, 2), lwd = array(lwd_vec[1], 4), col = col_vec)
+  legend(legend_loc, legend_vec, bty="n", lty = c(2, 2, 2, 2), lwd = array(lwd_vec[1], 4), col = col_vec)
   title(edge_title, outer = TRUE)
 }
 
@@ -639,12 +654,12 @@ plot_parcel_sets <- function(collated_realisations, realisation_ind, eco_ind, co
     
     plot_lims <- find_plot_lims(list(offset_plot_list, dev_plot_list, net_plot_list))
      
-    overlay_plot_list(plot_list = offset_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Offset', ylab = '', col_vec = col_list[[1]], lty_vec = c(1, 1, 1, 2), 
+    overlay_plot_list(plot_list = offset_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Offset Evaluation', ylab = '', col_vec = col_list[[1]], lty_vec = c(1, 1, 1, 2), 
                       lwd_vec = c(1, 1, 1, 2), legend_vec = c('Restoration Gains', 'Avoided Degredation', 'losses', 'Relative Gains'), legend_loc)
-    overlay_plot_list(plot_list = dev_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Development', ylab = '', col_vec = col_list[[2]], lty_vec = c(1, 2), 
+    overlay_plot_list(plot_list = dev_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Development Evaluation', ylab = '', col_vec = col_list[[2]], lty_vec = c(1, 2), 
                       lwd_vec = c(1, 2), legend_vec = c('Absolute Loss', 'Relative Loss'), legend_loc)
-    overlay_plot_list(plot_list = net_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Net Outcome', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 2, 1), 
-                      lwd_vec= c(2, 2, 2, 3), legend_vec = c('Relative Offset Gains', 'Relative Development Losses', 'Illegal Clearing losses', 'Net Outcomes'), legend_loc)
+    overlay_plot_list(plot_list = net_plot_list, yticks = 'y', axis_lab = TRUE, ylims = plot_lims, heading = 'Net Parcel Evaluation', ylab = '', col_vec = col_list[[3]], lty_vec = c(2, 2, 2, 1), 
+                      lwd_vec= c(2, 2, 2, 3), legend_vec = c('Relative Offset Gains', 'Relative Development Losses', 'Illegal Clearing losses', 'Net Parcel Evaluation'), legend_loc)
     
   }
 }
@@ -827,3 +842,31 @@ generate_offset_layer <- function(trajectories, layer_type, program_parcels, lan
   
 }
 
+make_mov <- function(img_stack, filetype, mov_name, mov_folder){
+  # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
+  graphics.off()
+  rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
+  
+  
+  if (!dir.exists(mov_folder)){
+    dir.create(mov_folder)
+  }
+  filename = paste(mov_folder, "tmp%03d.", filetype, sep = '')
+  mov_name_to_use = paste(mov_folder, mov_name, '.mpg', sep = '')
+  if (filetype == 'png'){
+    png(filename, height = dim(img_stack)[1], width = dim(img_stack)[2])
+  } else if (filetype == 'jpg'){
+    jpeg(filename, height = dim(img_stack)[1], width = dim(img_stack)[2])
+  }
+  
+  im_num = dim(img_stack)[3]
+  library(pixmap)
+  for (i in seq(im_num)){
+    
+    image(img_stack[, , i], zlim = c(0, 100), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+    
+    print(paste(i, ' of ', im_num))
+  }
+  dev.off()
+  
+}

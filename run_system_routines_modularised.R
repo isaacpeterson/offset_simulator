@@ -829,20 +829,20 @@ project_ecology <- function(parcel_vals, min_eco_val, max_eco_val, decline_rate,
 
 
 
-predict_parcel_traj <- function(current_parcel_ecology, parcel_traj_type, global_params, eco_dims, restoration_rate, current_dec_rate, time_horizon, time_fill){
+predict_parcel_traj <- function(current_parcel_ecology, action_type, min_eco_val, max_eco_val, eco_dims, restoration_rate, current_dec_rate, time_horizon, time_fill){
   
   projected_ecology = vector('list', eco_dims)
   
-  if (parcel_traj_type == 'maintain'){
+  if (action_type == 'maintain'){
     current_dec_rate = rep(list(1e-10), eco_dims)
-  } else if (parcel_traj_type == 'restore'){
+  } else if (action_type == 'restore'){
     current_dec_rate = rep(list(restoration_rate), eco_dims)
   }
   
   for (eco_ind in seq_len(eco_dims)){
     current_ecology_slice = current_parcel_ecology[[eco_ind]]
     
-    current_predicted_ecology = sapply(current_ecology_slice, project_ecology, min_eco_val = global_params$min_eco_val, max_eco_val = global_params$max_eco_val, 
+    current_predicted_ecology = sapply(current_ecology_slice, project_ecology, min_eco_val, max_eco_val, 
                                        decline_rate = current_dec_rate[[eco_ind]], time_horizon = time_horizon, time_fill)  # update ecology according to ecological curve in project_ecology function (currently logistic) - curve parameters are contained in decline_rates array
     if (time_horizon == 0){
       dim(current_predicted_ecology) = c(1, length(current_predicted_ecology))
@@ -865,7 +865,7 @@ ecology_to_parcels <- function(current_ecology, land_parcels){
 }
 
 
-calc_parcel_trajs <- function(current_parcel_ecologies, parcel_traj_type, current_decline_rates, current_time_horizons, global_params, restoration_rate, time_fill){
+calc_parcel_trajs <- function(current_parcel_ecologies, action_type, current_decline_rates, current_time_horizons, global_params, restoration_rate, time_fill){
   parcel_num = length(current_parcel_ecologies)
   parcel_trajs <- generate_nested_list(outer_dim = parcel_num, inner_dim = global_params$eco_dims)
   
@@ -875,8 +875,9 @@ calc_parcel_trajs <- function(current_parcel_ecologies, parcel_traj_type, curren
   for (parcel_count_ind in seq_len(parcel_num)){
     current_parcel_ecology = current_parcel_ecologies[[parcel_count_ind]]
     parcel_trajs[[parcel_count_ind]] = predict_parcel_traj(current_parcel_ecology, 
-                                                           parcel_traj_type, 
-                                                           global_params,
+                                                           action_type, 
+                                                           global_params$min_eco_val, 
+                                                           global_params$max_eco_val,
                                                            eco_dims = global_params$eco_dims,
                                                            restoration_rate,
                                                            current_dec_rate = current_decline_rates[[parcel_count_ind]], 
@@ -1653,7 +1654,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     
     if (offset_restoration_flag == TRUE){
       restoration_vals = calc_parcel_trajs(current_parcel_ecologies = pool_object$parcel_ecologies, 
-                                           parcel_traj_type = 'restore', 
+                                           action_type = 'restore', 
                                            current_decline_rates = decline_rates[current_pool], 
                                            time_horizons, 
                                            global_params, 
@@ -1858,7 +1859,7 @@ calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, global_params, cu
   }
   
   cfacs_object$cfacs = calc_parcel_trajs(parcel_ecologies, 
-                                         parcel_traj_type = 'protect', 
+                                         action_type = 'protect', 
                                          decline_rates, 
                                          time_horizons, 
                                          global_params, 
@@ -1916,10 +1917,13 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
     
     offset_projections <- calc_offset_projections(current_cfacs, 
                                                   weighted_counters_object$offset_intervention_probs, 
-                                                  global_params, 
-                                                  current_program_params, 
+                                                  current_program_params$restoration_rate, 
+                                                  current_program_params$offset_action_type,
                                                   decline_rates, 
-                                                  time_horizons)
+                                                  time_horizons, 
+                                                  global_params$eco_dims, 
+                                                  global_params$min_eco_val, 
+                                                  global_params$max_eco_val)
     
     summed_offset_projections <- sum_offset_projs(offset_projections,
                                                   offset_probs = weighted_counters_object$offset_intervention_probs, 
@@ -1942,9 +1946,9 @@ remove_neg_probs <- function(weight_list, inds_to_accept){
 }
 
 
-generate_weights <- function(weight_object, calc_type, offset_intervention_scale, intervention_vec, offset_yrs, time_horizons, 
+generate_weights <- function(perform_weight, calc_type, offset_intervention_scale, intervention_vec, offset_yrs, time_horizons, 
                              parcel_num, parcel_num_remaining, time_steps, illegal_clearing_prob){
-  if (weight_object == TRUE){
+  if (perform_weight == TRUE){
     if (calc_type == 'illegal_clearing'){
       weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(illegal_clearing_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_program_params$illegal_clearing_prob)
     } else {
@@ -1969,6 +1973,33 @@ generate_weights <- function(weight_object, calc_type, offset_intervention_scale
 }
 
 
+# current_cfacs 
+# include_illegal_clearing = FALSE
+# include_potential_developments = FALSE 
+# include_potential_offsets = TRUE  
+# intervention_vec = dev_vec 
+# illegal_clearing_prob = 0
+# offset_intervention_scale = 1
+# eco_dims = global_params$eco_dims 
+# parcel_num_remaining = length(global_params$parcel_indexes) 
+# parcel_num = length(current_cfacs) 
+# time_horizons 
+# offset_yrs = global_params$offset_yr 
+# time_steps = global_params$time_steps
+
+
+# current_cfacs 
+# include_illegal_clearing = FALSE 
+# include_potential_developments = FALSE 
+# include_potential_offsets = TRUE  
+# intervention_vec = dev_vec 
+# illegal_clearing_prob = 0
+# offset_intervention_scale = 1
+# eco_dims = global_params$eco_dims
+# parcel_num_remaining = global_params$parcel_num_remaining 
+# parcel_num = global_params$dev_num 
+# offset_yrs = rep(list(global_params$offset_yr), global_params$dev_num)
+# time_steps = global_params$time_steps
 
 find_weighted_counters <- function(current_cfacs, include_illegal_clearing, include_potential_developments, include_potential_offsets, 
                                    intervention_vec, illegal_clearing_prob, offset_intervention_scale, eco_dims, parcel_num_remaining, parcel_num, time_horizons, offset_yrs, time_steps){
@@ -2027,13 +2058,14 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
 
 
 
-calc_offset_projections <- function(current_cfacs, offset_probs, global_params, current_program_params, decline_rates, time_horizons){
+
+
+calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate, action_type, decline_rates, time_horizons, eco_dims, min_eco_val, max_eco_val){
   
   if (length(decline_rates) != length(current_cfacs)){
     print('length error')
   }
   parcel_num = length(current_cfacs)
-  eco_dims = global_params$eco_dims
   offset_projections = vector('list', parcel_num)
   
   for (parcel_count_ind in seq_len(parcel_num)){
@@ -2054,10 +2086,11 @@ calc_offset_projections <- function(current_cfacs, offset_probs, global_params, 
           current_parcel_ecology = list(current_cfac[proj_yr, ])
           
           current_offset_proj = predict_parcel_traj(current_parcel_ecology, 
-                                                    parcel_traj_type = current_program_params$offset_action_type, 
-                                                    global_params, 
+                                                    action_type, 
+                                                    min_eco_val, 
+                                                    max_eco_val,
                                                     eco_dims = length(current_parcel_ecology),
-                                                    current_program_params$restoration_rate, 
+                                                    restoration_rate, 
                                                     current_dec_rate, 
                                                     (time_horizon - proj_yr), 
                                                     time_fill = TRUE)

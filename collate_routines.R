@@ -184,7 +184,7 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
                                           parcel_count = length(initial_ecology) )
   
   cfacs_decline <- calc_parcel_trajs(current_parcel_ecologies = initial_ecology, 
-                                     parcel_traj_type = 'protect', 
+                                     action_type = 'protect', 
                                      current_decline_rates = decline_rates_initial, 
                                      time_horizons, 
                                      global_params,

@@ -1,4 +1,4 @@
-setwd('~/Documents/R_Codes/Offsets_Working_Feb_3/')
+
 rm(list = ls())
 WD = getwd()
 
@@ -7,32 +7,39 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source('initialise_params.R')                               # functions to collate simulation outputs
-source('run_system_routines_modularised.R')                 # functions to run simulation
-source('collate_routines.R')                                # functions to collate simulation outputs
-source('plot_routines.R')                                   # functions to plot collated outputs
+source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
+output_folder = '~/Documents/offset_plots_new/'
+
+if (!file.exists(output_folder)){
+  dir.create(output_folder)
+}
+
+source(paste(source_folder, 'initialise_params.R', sep = '', collapse = ''))                              # functions to collate simulation outputs
+source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collapse = ''))                # functions to run simulation
+source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
+source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
 run_from_saved = FALSE                                      # run from previous data or run from newly generated ecology etc.
 save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
-write_pdf = FALSE                                           # write graphical outputs to pdf (TRUE)
+write_pdf = TRUE                                           # write graphical outputs to pdf (TRUE)
 load_from_data = FALSE                                      # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
 
 write_params_to_table = FALSE
 overwrite_table = FALSE
 write_movie = FALSE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
-write_offset_layer = TRUE                                      # write layer containing all offset parcels to pdf
+write_offset_layer = FALSE                                    # write layer containing all offset parcels to pdf
 
-table_file = '~/Documents/run_summary.csv'
-print_folder = '~/Documents/offset_plots/'
+
+table_file =paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
 
 
 if (run_from_saved == TRUE){
-  parcels <- readRDS('parcels.rds')
-  index_object <- readRDS('index_object.rds')
-  initial_ecology <- readRDS('initial_ecology.rds')
-  decline_rates_initial <- readRDS('decline_rates_initial.rds')
-  global_params <- readRDS('global_params.rds')
+  parcels <- readRDS(paste(source_folder, 'parcels.rds', sep = '', collapse = '')) 
+  index_object <- readRDS(paste(source_folder, 'index_object.rds', sep = '', collapse = '')) 
+  initial_ecology <- readRDS(paste(source_folder, 'initial_ecology.rds', sep = '', collapse = '')) 
+  decline_rates_initial <- readRDS(paste(source_folder, 'decline_rates_initial.rds', sep = '', collapse = ''))
+  global_params <- readRDS(paste(source_folder, 'global_params.rds', sep = '', collapse = '')) 
 } else {
   global_params <- initialise_global_params()
   if (load_from_data == TRUE){
@@ -46,12 +53,12 @@ if (run_from_saved == TRUE){
 }
 
 if (save_initial_conditions == TRUE){
-  saveRDS(parcels, 'parcels.rds')
-  saveRDS(index_object, 'index_object.rds')
-  saveRDS(initial_ecology, 'initial_ecology.rds')
-  saveRDS(decline_rates_initial, 'decline_rates_initial.rds')
-  saveRDS(global_params, 'global_params.rds')
-  saveRDS(dev_vec, 'dev_vec.rds')
+  saveRDS(parcels, paste('parcels.rds', sep = '', collapse = '')) 
+  saveRDS(index_object, paste('index_object.rds', sep = '', collapse = '')) 
+  saveRDS(initial_ecology, paste('initial_ecology.rds', sep = '', collapse = '')) 
+  saveRDS(decline_rates_initial, paste('decline_rates_initial.rds', sep = '', collapse = '')) 
+  saveRDS(global_params, paste('global_params.rds', sep = '', collapse = '')) 
+  saveRDS(dev_vec, paste('dev_vec.rds', sep = '', collapse = '')) 
 }
 
 program_params = vector('list', 2)
@@ -84,7 +91,7 @@ for (comb_ind in seq(prog_num)){
     plot_characteristics <- get_plot_characteristics(program_params, realisations)
     
     if (write_pdf == TRUE){
-      filename = paste(print_folder, plot_characteristics, '.pdf', sep = '', collapse = '')
+      filename = paste(output_folder, plot_characteristics, '.pdf', sep = '', collapse = '')
       pdf(filename, width = 8.3, height = 11.7)
       plot_collated_realisations(collated_realisations,                                
                                  realisation_num = length(realisations), 
@@ -149,12 +156,11 @@ if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arra
 if (write_movie == TRUE){
   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
-  
-  source('~/Documents/R_Codes/make_movie.R')
   make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
 }
 
 if (write_offset_layer == TRUE){ #write all offset parcels to single layer to output as image
+  
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
   offset_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
                                         layer_type = 'offset', 
@@ -164,7 +170,7 @@ if (write_offset_layer == TRUE){ #write all offset parcels to single layer to ou
                                         landscape_dims = parcels$landscape_dims, 
                                         eco_dims = global_params$eco_dims)
   
-  png(filename = '~/Documents/offset_plots/offset_layer.png', height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
+  png(filename = paste(output_folder, 'offset_layer.png', sep = '', collapse = ''), height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
   image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
   dev.off()
   
@@ -177,7 +183,7 @@ if (write_offset_layer == TRUE){ #write all offset parcels to single layer to ou
                                         landscape_dims = parcels$landscape_dims, 
                                         eco_dims = global_params$eco_dims) #write all developed parcels to single layer to output as image
   
-  png(filename = '~/Documents/offset_plots/dev_layer.png', height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
+  png(filename = paste(output_folder, 'dev_layer.png', sep = '', collapse = ''), height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
   image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
   dev.off()
 }
