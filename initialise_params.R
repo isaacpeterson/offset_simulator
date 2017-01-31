@@ -2,7 +2,7 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 4 #how many realisations of system to run in parallel
+  global_params$realisation_num = 100 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num_x = 1 #number of regions in x
   global_params$region_num_y = 1 #number of regions in y
@@ -50,14 +50,10 @@ initialise_program_params<- function(){
   
   program_params$include_potential_developments_in_offset_calc = c(FALSE)
   program_params$include_potential_offsets_in_offset_calc = c(FALSE)
-  program_params$include_illegal_clearing_in_offset_calc = c(TRUE)
+  program_params$include_illegal_clearing_in_offset_calc = c(FALSE)
   program_params$include_potential_developments_in_dev_calc = program_params$include_potential_developments_in_offset_calc
   program_params$include_potential_offsets_in_dev_calc = program_params$include_potential_offsets_in_offset_calc
   program_params$include_illegal_clearing_in_dev_calc = program_params$include_illegal_clearing_in_offset_calc
-  
-#   program_params$include_potential_developments_in_dev_calc = c(TRUE)
-#   program_params$include_potential_offsets_in_dev_calc = c(TRUE, FALSE)
-#   program_params$include_illegal_clearing_in_dev_calc = c(TRUE, FALSE)
   
   program_params$illegal_clearing_prob = 1e-4
   

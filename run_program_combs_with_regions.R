@@ -24,14 +24,12 @@ save_initial_conditions = TRUE                             # use this to run fro
 write_pdf = TRUE                                           # write graphical outputs to pdf (TRUE)
 load_from_data = FALSE                                      # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
 
-write_params_to_table = TRUE
-overwrite_table = TRUE
 write_movie = TRUE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
 write_offset_layer = TRUE                                    # write layer containing all offset parcels to pdf
 
 
-table_file =paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
+table_file = paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
 
 
 if (run_from_saved == TRUE){
@@ -125,19 +123,19 @@ for (comb_ind in seq(prog_num)){
   fin <- Sys.time()
   print(fin - strt)
   
-  if (write_params_to_table == TRUE){
-    table_params <- current_program_params
-    table_params$system_NNL_success <- collated_realisations$system_NNL_plot_object$NNL_success
-    table_params$system_mean_NNL <- collated_realisations$system_NNL_plot_object$mean_NNL
-    table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$mean_NNL
-    table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$NNL_success
-    table_params = as.data.frame(table_params)
-    if ( (overwrite_table == TRUE) & (comb_ind == 1)){
-      write.table(table_params, file = table_file, quote = FALSE, append = FALSE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
-    } else {
-      write.table(table_params, file = table_file, quote = FALSE, append = TRUE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = FALSE)
-    }
-  }
+#   if (write_params_to_table == TRUE){
+#     table_params <- current_program_params
+#     table_params$system_NNL_success <- collated_realisations$system_NNL_plot_object$NNL_success
+#     table_params$system_mean_NNL <- collated_realisations$system_NNL_plot_object$mean_NNL
+#     table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$mean_NNL
+#     table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$NNL_success
+#     table_params = as.data.frame(table_params)
+#     if ( (overwrite_table == TRUE) & (comb_ind == 1)){
+#       write.table(table_params, file = table_file, quote = FALSE, append = FALSE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
+#     } else {
+#       write.table(table_params, file = table_file, quote = FALSE, append = TRUE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = FALSE)
+#     }
+#   }
   
 }
 
@@ -158,7 +156,7 @@ if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arra
 if (write_movie == TRUE){
   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
-  make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = '~/Documents/offsets_movs_sim/')
+  make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste(output_folder, 'offset_time_slice/', sep = '', collapse = ''))
 }
 
 if (write_offset_layer == TRUE){ #write all offset parcels to single layer to output as image
