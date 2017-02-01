@@ -261,7 +261,7 @@ sum_collated_cfacs <- function(merged_cfacs){
 
 
 # collate_type = 'illegal_clearing'
-# collated_cfac_object = illegal_cfacs
+# collated_cfac_object = collated_illegal_cfacs
 
 
 form_cfacs <- function(realisations, collate_type, use_cfac_type_in_sim, collated_cfac_object, decline_cfac_trajs, eco_dims){
@@ -274,7 +274,11 @@ form_cfacs <- function(realisations, collate_type, use_cfac_type_in_sim, collate
     parcel_indexes <- select_parcel_set_indexes(model_outputs, collate_type)
     offset_yrs <- select_offset_yrs(model_outputs, collate_type)
     if (use_cfac_type_in_sim == TRUE){
+      if (length(parcel_indexes) > 0){
       collate_list[[realisation_ind]] <- merge_lists(decline_cfac_trajs[unlist(parcel_indexes)], collated_cfac_object[[realisation_ind]]$cfac_trajs, offset_yrs, eco_dims)
+      } else {
+        collate_list[[realisation_ind]] = list(list_of_zeros(list_dims = eco_dims, array_dims = global_params$time_steps))
+      }
     } else {
       collate_list[[realisation_ind]] <- decline_cfac_trajs[unlist(parcel_indexes)]
     }

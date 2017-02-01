@@ -24,9 +24,9 @@ save_initial_conditions = TRUE                             # use this to run fro
 write_pdf = TRUE                                           # write graphical outputs to pdf (TRUE)
 load_from_data = FALSE                                      # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
 
-write_movie = TRUE                                      # write evolving ecology to movie
+write_movie = FALSE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
-write_offset_layer = TRUE                                    # write layer containing all offset parcels to pdf
+write_offset_layer = FALSE                                    # write layer containing all offset parcels to pdf
 
 
 table_file = paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
