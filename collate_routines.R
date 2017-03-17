@@ -9,6 +9,8 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
 #use_cfac_type_in_sim = TRUE
 collate_realisations <- function(realisations, global_params, use_cfac_type_in_sim, decline_rates_initial, land_parcels, initial_ecology){
   
+  parcel_nums_used = assess_parcels_used(realisations)
+  
   land_parcels = parcels$land_parcels
   collated_realisations = list()
   
@@ -113,7 +115,7 @@ collate_realisations <- function(realisations, global_params, use_cfac_type_in_s
                                               time_steps = global_params$time_steps, 
                                               eco_dims = global_params$eco_dims)
     illegal_sum_rel_to_counter <- subtract_nested_lists(illegally_cleared_sum, cfacs_object$net_illegal_cfac_sum)
-    illegal_sum_rel_initial <- nested_list_rel_initial(list_in = illegally_cleared_sum, global_params$eco_dims)
+    illegal_sum_rel_initial <- shift_nested_list(list_in = illegally_cleared_sum, global_params$eco_dims, shift_type = 'mean')
   } else{
     illegal_sum_rel_to_counter = list()
     illegal_sum_rel_initial = list()
@@ -121,6 +123,7 @@ collate_realisations <- function(realisations, global_params, use_cfac_type_in_s
     illegally_cleared_sum = list()
   }
   
+  collated_realisations$parcel_nums_used = parcel_nums_used
   collated_realisations$parcel_set_outcomes = parcel_set_outcomes
   collated_realisations$landscape_loss = landscape_loss
   collated_realisations$net_program_loss = net_program_loss
@@ -211,7 +214,7 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
   offset_cfac_sum <- sum_cfacs(offset_cfacs)
   dev_cfac_sum <- sum_cfacs(dev_cfacs)
   program_cfac_sum <- sum_nested_lists(list(offset_cfac_sum, dev_cfac_sum))
-  program_cfac_sum_rel_initial <- nested_list_rel_initial(list_in = program_cfac_sum, eco_dims)
+  program_cfac_sum_rel_initial <- shift_nested_list(list_in = program_cfac_sum, eco_dims, shift_type = 'mean')
   net_cfac_decline_sum <- nested_list_sum(decline_cfac_trajs)
   
   if (global_params$perform_illegal_clearing == TRUE){
@@ -422,10 +425,13 @@ find_parcel_set_NNL_yrs <- function(net_outcomes, offset_yrs, parcel_set_nums, t
 
 
 
-assess_allowed_devs <- function(realisations){
+assess_parcels_used <- function(realisations){
   dev_nums = unlist(lapply(seq_along(realisations), function(i) length(realisations[[i]]$dev_object$parcel_indexes)))
-  dev_characteristics = c(mean(dev_nums))
-  return(dev_characteristics)
+  offset_nums = unlist(lapply(seq_along(realisations), function(i) length(realisations[[i]]$offsets_object$parcel_indexes)))
+  program_nums = list()
+  program_nums$mean_dev_num = round(mean(dev_nums))
+  program_nums$mean_offset_num = round(mean(offset_nums))
+  return(program_nums)
 }
 
 
@@ -659,14 +665,20 @@ collate_program <- function(traj_type, realisations, trajectory_object, time_ste
   collated_program$offsets <- sum_parcel_sets(traj_type, collate_type = 'offsets', sum_type = 'net', realisations, trajectory_object, time_steps, eco_dims)
   collated_program$devs <- sum_parcel_sets(traj_type, collate_type = 'devs', sum_type = 'net', realisations, trajectory_object, time_steps, eco_dims)
   collated_program$net <- sum_nested_lists(list(collated_program$offsets, collated_program$devs))
-  collated_program$outcome_rel_initial <- nested_list_rel_initial(list_in = collated_program$net, eco_dims)
+  collated_program$outcome_rel_initial <- shift_nested_list(list_in = collated_program$net, eco_dims, shift_type = 'mean')
 #   collated_program$outcome_rel_initial <- lapply(seq_along(realisations), function(i) (lapply( seq(eco_dims), function(j) (
 #                                       collated_program$net[[i]][[j]] - rep(collated_program$net[[i]][[j]][1], length(collated_program$net[[i]][[j]]) )))))
   return(collated_program)
 }
 
-nested_list_rel_initial <- function(list_in, eco_dims){
-  list_out <- lapply(seq_along(list_in), function(i) (lapply( seq(eco_dims), function(j) (list_in[[i]][[j]] - rep(list_in[[i]][[j]][1], length(list_in[[i]][[j]]) )))))
+shift_nested_list <- function(list_in, eco_dims, shift_type){
+  if (shift_type == 'mean'){
+    mean_initial = mean(unlist(lapply(seq_along(list_in), function(i) (lapply( seq(eco_dims), function(j) (list_in[[i]][[j]][1]))))))
+  } else{
+    mean_initial = 0
+  }
+  list_out <- lapply(seq_along(list_in), function(i) (lapply( seq(eco_dims), function(j) (list_in[[i]][[j]] + rep(mean_initial - list_in[[i]][[j]][1], length(list_in[[i]][[j]]) )))))
+
   return(list_out)
 }
 
