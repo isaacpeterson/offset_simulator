@@ -20,18 +20,17 @@ source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))      
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
 save_collated_realisations = TRUE
-run_from_saved = FALSE                                      # run from previous data or run from newly generated ecology etc.
-save_initial_conditions = TRUE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
-write_pdf = TRUE                                          # write graphical outputs to pdf (TRUE)
-load_from_data = FALSE                                     # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
+save_realisations = TRUE
+run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
+save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
+write_pdf = FALSE                                          # write graphical outputs to pdf (TRUE)
+load_from_data = FALSE                                    # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
 
 write_movie = FALSE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
 write_offset_layer = FALSE                                    # write layer containing all offset parcels to pdf
 
-
 table_file = paste(output_folder, 'run_summary.csv', sep = '', collapse = '') 
-
 
 if (run_from_saved == TRUE){
   parcels <- readRDS(paste(source_folder, 'parcels.rds', sep = '', collapse = '')) 
@@ -49,7 +48,6 @@ if (run_from_saved == TRUE){
   }
   decline_rates_initial <- initialise_decline_rates(parcels, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
 }
-
 
 program_params = vector('list', 2)
 program_params[[2]] <- initialise_program_params() # list all program combinations to test
@@ -77,20 +75,32 @@ for (comb_ind in seq(prog_num)){
 
   current_program_param_inds = unlist(program_combs[comb_ind, ])
   current_program <- generate_current_program(program_params[[2]], current_program_param_inds) #write current program as a list
-  current_program_params <- collate_current_program(current_program, global_params)  #setup flags for cfacs, cfac adjustment etc.
-  program_params[[1]] = current_program_params
-  global_object = intialise_global_object(global_params, program_params, initial_ecology, decline_rates_initial, parcels)
+  global_params$program_params[[1]] <- collate_current_program(current_program, global_params)  #setup flags for cfacs, cfac adjustment etc.
+  global_object = intialise_global_object(global_params, initial_ecology, decline_rates_initial, parcels)
+  
   realisations <- foreach(run_ind = seq_len(global_params$realisation_num)) %dopar%{
     run_offsets_simulation(global_object)
   }
   
-  realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
+#  realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
+  
+  plot_characteristics <- get_plot_characteristics(global_params$program_params, realisations)
+  if (save_realisations == TRUE){
+    current_output_folder = paste(output_folder, '/realisations/', sep = '', collapse = '')
+    if (!file.exists(current_output_folder)){
+      dir.create(current_output_folder)
+    }
+    filename = paste(current_output_folder, plot_characteristics)
+    if (load_from_data == TRUE){
+      filename = paste(filename, '_grass_land', sep = '', collapse = '')
+    }
+    saveRDS(realisations, paste(filename, '.rds', sep = '', collapse = '')) 
+  }
   
   if (length(realisations) > 0){
     
     collated_realisations <- collate_realisations(realisations, global_params, use_cfac_type_in_sim = TRUE, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology) #take simulation ouputs and calculate gains and losses
-    plot_characteristics <- get_plot_characteristics(program_params, realisations)
-
+    
     if (save_collated_realisations == TRUE){
       current_output_folder = paste(output_folder, '/collated_realisations/', sep = '', collapse = '')
       if (!file.exists(current_output_folder)){
@@ -102,7 +112,7 @@ for (comb_ind in seq(prog_num)){
       }
       saveRDS(collated_realisations, paste(filename, '.rds', sep = '', collapse = '')) 
     }
-    
+
     if (write_pdf == TRUE){
       filename = paste(output_folder, plot_characteristics)
       if (load_from_data == TRUE){
@@ -113,7 +123,7 @@ for (comb_ind in seq(prog_num)){
       plot_single_policy_collated_realisations(collated_realisations,                                
                                  realisation_num = length(realisations), 
                                  global_params, 
-                                 program_params, 
+                                 global_params$program_params, 
                                  parcel_sum_lims = c(0, 20000), 
                                  eco_ind = 1, 
                                  lwd_vec = c(3, 0.15), 
@@ -122,16 +132,18 @@ for (comb_ind in seq(prog_num)){
       if (write_pdf == TRUE){
         dev.off()
       }
+      rm(realisations)
+      rm(collated_realisations)
     } 
     
-    plot_single_policy_collated_realisations(collated_realisations, 
-                               realisation_num = length(realisations), 
-                               global_params, 
-                               program_params, 
-                               parcel_sum_lims = c(0, 20000), 
-                               eco_ind = 1, 
-                               lwd_vec = c(3, 0.5), 
-                               edge_title = plot_characteristics)             #plot outputs from collated results in local window
+#     plot_single_policy_collated_realisations(collated_realisations, 
+#                                realisation_num = length(realisations), 
+#                                global_params, 
+#                                global_params$program_params, 
+#                                parcel_sum_lims = c(0, 20000), 
+#                                eco_ind = 1, 
+#                                lwd_vec = c(3, 0.5), 
+#                                edge_title = plot_characteristics)             #plot outputs from collated results in local window
   } else {
     print('no parcel sets found')
     collated_realisations = list()
@@ -140,21 +152,30 @@ for (comb_ind in seq(prog_num)){
   fin <- Sys.time()
   print(fin - strt)
   
-#   if (write_params_to_table == TRUE){
-#     table_params <- current_program_params
-#     table_params$system_NNL_success <- collated_realisations$system_NNL_plot_object$NNL_success
-#     table_params$system_mean_NNL <- collated_realisations$system_NNL_plot_object$mean_NNL
-#     table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$mean_NNL
-#     table_params$parcel_set_mean_NNL <- collated_realisations$parcel_set_NNL_plot_object$NNL_success
-#     table_params = as.data.frame(table_params)
-#     if ( (overwrite_table == TRUE) & (comb_ind == 1)){
-#       write.table(table_params, file = table_file, quote = FALSE, append = FALSE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
-#     } else {
-#       write.table(table_params, file = table_file, quote = FALSE, append = TRUE, sep = ",", eol = '\n', na = "NA", dec = ".", row.names = FALSE, col.names = FALSE)
-#     }
-#   }
-  
 }
+
+if (load_from_data == TRUE){
+  parcel_num = 1238
+} else{
+  parcel_num = 1600
+}
+
+
+# plot_policy_impact_comparisons(collated_realisation_set = list(collated_realisations),
+#                                 plot_lims = c(-6e5, 6e5), 
+#                                 eco_ind = 1, 
+#                                 lwd_vec = c(3, 0.5), 
+#                                 edge_title = '', 
+#                                 time_steps = 50,                               
+#                                 policy_type = "offset_bank_FALSE", 
+#                                 parcel_num) 
+# 
+# plot_policy_outcome_comparisons(collated_realisation_set = list(collated_realisations),
+#                                 plot_lims = c(-6e5, 6e5), 
+#                                 eco_ind = 1, 
+#                                 lwd_vec = c(3, 0.5), 
+#                                 edge_title = '', 
+#                                 time_steps = 50) 
 
 stopCluster(cl)
 
@@ -203,6 +224,7 @@ if (write_offset_layer == TRUE){ #write all offset parcels to single layer to ou
   png(filename = paste(output_folder, 'dev_layer.png', sep = '', collapse = ''), height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
   image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
   dev.off()
+  
 }
 
 
