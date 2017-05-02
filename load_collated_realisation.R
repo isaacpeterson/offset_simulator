@@ -8,58 +8,105 @@ library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
 
-policy_type = "restoration_gains_offset_bank_FALSE"
-load_from_data = FALSE
-load_coll_real_from_data = TRUE
-write_pdf = FALSE
+policy_type = "net_gains_offset_bank_FALSE"
+offset_bank = FALSE
+load_grassland_data = FALSE
+load_collated_realisations = FALSE
+write_pdf = TRUE
 
-if (load_from_data == TRUE){
+if (load_grassland_data == TRUE){
   parcel_num = 1238
-  collated_folder = '~/Documents/offset_plots_new_2/collated_realisations/grasslands/'
+  collated_folder = '~/Documents/offset_plots_new/collated_realisations/grasslands/'
 } else{
   parcel_num = 1600
-  collated_folder = '~/Documents/offset_plots_new_2/collated_realisations/'
+  collated_folder = '~/Documents/offset_plots_new/collated_realisations/'
+  realisations_folder = '~/Documents/offset_plots_new/realisations/'
+  sim_group_folder = '~/Documents/offset_plots_new/sim_group/'
 }
 
-output_folder = paste(collated_folder, 'pdf_comparisons/', sep = '', collapse = '')
+output_folder = paste('~/Documents/offset_plots_new/policy_comparison_pdfs/', sep = '', collapse = '')
+
 if (!file.exists(output_folder)){
   dir.create(output_folder)
 }
 
-
 source(paste(source_folder, 'initialise_params.R', sep = '', collapse = ''))                              # functions to collate simulation outputs
-source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collapse = ''))                # functions to run simulation
+source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collapse = ''))                 # functions to run simulation
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-current_policy_set <- list.files(path = collated_folder, pattern = policy_type, all.files = FALSE, 
-                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                                 include.dirs = FALSE, no.. = FALSE)
+current_collated_filenames <- list.files(path = collated_folder, pattern = policy_type, all.files = FALSE, 
+                                         full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                         include.dirs = FALSE, no.. = FALSE)
+current_realisations_filenames <- list.files(path = realisations_folder, pattern = policy_type, all.files = FALSE, 
+                                             full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                             include.dirs = FALSE, no.. = FALSE)
+current_sim_group_filenames <- list.files(path = sim_group_folder, pattern = policy_type, all.files = FALSE, 
+                                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                              include.dirs = FALSE, no.. = FALSE)
 
-policy_num = length(current_policy_set)
+policy_num = length(current_collated_filenames)
 print(policy_num)
 collated_realisation_set = vector('list', policy_num)
+program_params_set = vector('list', policy_num)
 
 for (policy_ind in seq(policy_num)){
-  if (load_coll_real_from_data == TRUE){
-    collated_realisations = readRDS(paste(collated_folder, current_policy_set[policy_ind], sep = '', collapse = ''))
+  
+  if (load_collated_realisations == TRUE){
+    collated_realisations = readRDS(paste(collated_folder, current_collated_filenames[policy_ind], sep = '', collapse = ''))
+#     collated_realisations$site_offset_gains = collated_realisations$net_offset_gains
+#     collated_realisations$site_dev_losses = collated_realisations$net_dev_losses
+#     collated_realisations$offset_bank_gains = collated_realisations$net_offset_bank
+#     collated_realisations$dev_credit_losses = collated_realisations$net_dev_credit_losses
+#     collated_realisations$net_offset_gains <- sum_net_gains_degs(list(collated_realisations$site_offset_gains,
+#                                                                       collated_realisations$offset_bank_gains))
+#     collated_realisations$net_dev_losses <- sum_net_gains_degs(list(collated_realisations$site_dev_losses, 
+#                                                                     collated_realisations$dev_credit_losses))
+#     collated_realisations$net_program_outcomes <- sum_nested_lists(list(collated_realisations$net_offset_gains, collated_realisations$net_dev_losses))
+#     collated_realisations$realisation_num = 50
   } else {
-    collated_realisations <- collate_realisations(realisations, global_params, use_cfac_type_in_sim = TRUE, decline_rates_initial, land_parcels = parcels$land_parcels, initial_ecology) #take simulation ouputs and calculate gains and losses
+   
+    realisations = readRDS(paste(realisations_folder, current_realisations_filenames[policy_ind], sep = '', collapse = ''))
+    sim_group = readRDS(paste(sim_group_folder, current_sim_group_filenames[policy_ind], sep = '', collapse = ''))
+    collated_realisations <- collate_realisations(realisations, 
+                                                  sim_group$global_params, 
+                                                  sim_group$program_params_to_use, 
+                                                  use_cfac_type_in_sim = TRUE, 
+                                                  sim_group$decline_rates_initial, 
+                                                  sim_group$parcels, 
+                                                  sim_group$initial_ecology) #take simulation ouputs and calculate gains and losses
   }
   collated_realisation_set[[policy_ind]] = collated_realisations
+  program_params_set[[policy_ind]] = sim_group$program_params_to_use
+  
 }
 
 if (write_pdf == TRUE){
   filename = paste(output_folder, policy_type, '_outcomes.pdf', sep = '', collapse = '')
   pdf(filename, width = 8.3, height = 11.7) 
 }
+
+if (offset_bank == TRUE){
+  site_plot_lims = c(0, 6e6)
+} else{
+  site_plot_lims = c(0, 1e4)
+}
+  
 plot_policy_outcome_comparisons(collated_realisation_set,
-                                 plot_lims = c(-6e5, 6e5), 
-                                 eco_ind = 1, 
-                                 lwd_vec = c(3, 0.5), 
-                                 edge_title = '', 
-                                 time_steps = 50) 
-     
+                                program_params_set,
+                                offset_bank,
+                                site_plot_lims,
+                                program_plot_lims = c(0, 10e6), 
+                                landscape_plot_lims = c(0, 10e6),
+                                sets_to_plot = 50,
+                                eco_ind = 1, 
+                                lwd_vec = c(3, 0.5), 
+                                edge_title = policy_type, 
+                                time_steps = 50) 
+
+# plot_site_outcomes(current_collated_realisation, current_program_params, eco_ind, offset_bank, sets_to_plot, site_plot_lims)
+
+
 if (write_pdf == TRUE){
   dev.off()
 }
@@ -69,13 +116,27 @@ if (write_pdf == TRUE){
   pdf(filename, width = 8.3, height = 11.7) 
 }
 
+if (offset_bank == TRUE){
+  site_impact_plot_lims = c(-1.5e6, 1.5e6)
+  program_impact_plot_lims = site_impact_plot_lims 
+  landscape_impact_plot_lims = site_impact_plot_lims
+} else{ 
+  site_impact_plot_lims = c(-1e4, 1e4)
+  program_impact_plot_lims = c(-1.5e6, 1.5e6)
+  landscape_impact_plot_lims = c(-1.5e6, 1.5e6)
+}
+
 plot_policy_impact_comparisons(collated_realisation_set,
-                               plot_lims = c(-6e5, 6e5), 
+                               program_params_set,
+                               site_impact_plot_lims,
+                               program_impact_plot_lims, 
+                               landscape_impact_plot_lims,
+                               sets_to_plot = 50,
                                eco_ind = 1, 
                                lwd_vec = c(3, 0.5), 
-                               edge_title = '', 
+                               edge_title = policy_type, 
                                time_steps = 50, 
-                               policy_type, 
+                               offset_bank, 
                                parcel_num)
 
 if (write_pdf == TRUE){
