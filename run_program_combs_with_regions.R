@@ -70,10 +70,12 @@ if (save_initial_conditions == TRUE){
   saveRDS(program_params, paste('program_params_group.rds', sep = '', collapse = '')) 
 }
 
-cl<-makeCluster(4)        #allow parallel processing on n = 4 processors
+crs = detectCores(all.tests = FALSE, logical = TRUE)
+
+cl<-makeCluster(crs)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
-print(paste('testing ', prog_num, ' combinations'))
+print(paste('testing ', prog_num, ' combinations on ', crs, ' cores'))
   
 # for (policy_ind in seq(prog_num)){
 for (policy_ind in 3:prog_num){
@@ -88,7 +90,7 @@ for (policy_ind in 3:prog_num){
   
 #  realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
   
-  sim_characteristics <- get_sim_characteristics(program_params_to_use)
+  sim_characteristics <- get_sim_characteristics(program_params_to_use, global_params$realisation_num)
   
   if (save_realisations == TRUE){
     

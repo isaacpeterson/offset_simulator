@@ -76,6 +76,7 @@ for (policy_ind in seq(policy_num)){
                                                   sim_group$parcels, 
                                                   sim_group$initial_ecology) #take simulation ouputs and calculate gains and losses
   }
+  
   collated_realisation_set[[policy_ind]] = collated_realisations
   program_params_set[[policy_ind]] = sim_group$program_params_to_use
   
@@ -123,7 +124,7 @@ if (offset_bank == TRUE){
 } else{ 
   site_impact_plot_lims = c(-1e4, 1e4)
   program_impact_plot_lims = c(-1.5e6, 1.5e6)
-  landscape_impact_plot_lims = c(-1.5e6, 1.5e6)
+  landscape_impact_plot_lims = c(-0.5e6, 0.5e6)
 }
 
 plot_policy_impact_comparisons(collated_realisation_set,
