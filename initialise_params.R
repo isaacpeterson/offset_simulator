@@ -2,7 +2,7 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 4 #how many realisations of system to run in parallel
+  global_params$realisation_num = 100 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num = 1
   global_params$region_num_x = 1
@@ -40,7 +40,7 @@ initialise_program_params <- function(){
   program_params = list()
   program_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
   program_params$offset_region = 'development' # force offsets to be in same region as development
-  program_params$use_offset_bank = c(TRUE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
+  program_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
   program_params$offset_bank_start = 1 #min time for offset banking to initialise
   program_params$offset_bank_end = 1 #mix time for offset banking to finish
   program_params$offset_bank_num = 700 # how many parcels to include in banking scheme
@@ -48,7 +48,7 @@ initialise_program_params <- function(){
   program_params$development_selection_type = 'random' #how the development parcels are selected - 'random' - sample from pool of available indexes
   program_params$offset_parcel_for_parcel = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
 
-  program_params$offset_time_horizon = c(15)
+  program_params$offset_time_horizon = c(15, 30)
   program_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') #future_condition', 'restoration_gains', 'restoration_condition_value'
   program_params$dev_calc_type = c('future_condition')                    #'future_condition', 'current_condition' 
   

@@ -500,51 +500,6 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, realisation
 
 
 
-get_plot_characteristics <- function(program_params){
-  
-  plot_characteristics = vector()
-  plot_characteristics = paste(plot_characteristics, program_params[[1]]$offset_calc_type, '_', sep = '', collapse = '')
-  plot_characteristics = paste(plot_characteristics, 'offset_bank_', program_params[[1]]$use_offset_bank, '_', sep = '', collapse = '')
-  if ((program_params[[1]]$use_offset_time_horizon == TRUE) & (program_params[[1]]$use_offset_bank == FALSE)){                                   
-    plot_characteristics = paste(plot_characteristics, 'time_horizon_', program_params[[1]]$offset_time_horizon, sep = '', collapse = '')
-  }
-  plot_characteristics = paste(plot_characteristics, '_include_illegal_clearing_', program_params[[1]]$include_illegal_clearing_in_offset_calc, sep = '', collapse = '')
-  
-  
-  #   plot_characteristics = paste(program_params[[1]]$offset_calc_type, '_', program_params[[1]]$dev_calc_type, '_', program_params[[1]]$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                program_params[[1]]$use_offset_bank, '_', sep = '', collapse = '')
-  #   
-  #   if (program_params[[1]]$use_offset_bank == TRUE){                                   
-  #     plot_characteristics = paste(plot_characteristics, program_params[[1]]$offset_bank_start, '_', program_params[[1]]$offset_bank_end, '_', 
-  #                                  program_params[[1]]$offset_bank_num, '_', program_params[[1]]$match_type, sep = '', collapse = '')
-  #   }
-  #   
-  #   plot_characteristics = paste(plot_characteristics, '_', program_params[[1]]$offset_action_type, '_', sep = '', collapse = '')
-  #   if (program_params[[1]]$offset_action_type == 'restore'){
-  #     plot_characteristics = paste(plot_characteristics, program_params[[1]]$restoration_rate, '_', sep = '', collapse = '')
-  #   }
-  #   
-  #   if (program_params[[1]]$use_offset_time_horizon == TRUE){                                   
-  #     plot_characteristics = paste(plot_characteristics, '_time_horizon_', program_params[[1]]$offset_time_horizon, sep = '', collapse = '')
-  #   }
-  
-  
-  #  plot_characteristics = paste(plot_characteristics, '_offsets_potential_developments_', program_params[[1]]$include_potential_developments_in_offset_calc, sep = '', collapse = '')
-  
-  #  plot_characteristics = paste(plot_characteristics, '_offsets_potential_offsets_', program_params[[1]]$include_potential_offsets_in_offset_calc, sep = '', collapse = '')
-  
-  #  plot_characteristics = paste(plot_characteristics, '_devs_illegal_clearing_', program_params[[1]]$include_illegal_clearing_in_dev_calc, sep = '', collapse = '')
-  
-  # plot_characteristics = paste(plot_characteristics, '_devs_potential_developments_', program_params[[1]]$include_potential_developments_in_dev_calc, sep = '', collapse = '')
-  
-  #  plot_characteristics = paste(plot_characteristics, '_devs_potential_offsets_', program_params[[1]]$include_potential_offsets_in_dev_calc, sep = '', collapse = '')
-  
-  
-  return(plot_characteristics)
-}
-
-
-
 
 plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, edge_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
   

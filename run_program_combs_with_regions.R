@@ -75,8 +75,8 @@ registerDoParallel(cl)
 
 print(paste('testing ', prog_num, ' combinations'))
   
-for (policy_ind in seq(prog_num)){
-
+# for (policy_ind in seq(prog_num)){
+for (policy_ind in 3:prog_num){
   strt<-Sys.time()
   
   program_params_to_use = append(program_params_group[policy_ind], regional_program_params_group)
@@ -88,21 +88,22 @@ for (policy_ind in seq(prog_num)){
   
 #  realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
   
-  plot_characteristics <- get_plot_characteristics(program_params_to_use)
+  sim_characteristics <- get_sim_characteristics(program_params_to_use)
+  
   if (save_realisations == TRUE){
     
     current_output_folder = paste(output_folder, '/realisations/', sep = '', collapse = '')
     if (!file.exists(current_output_folder)){
       dir.create(current_output_folder)
     }
-    realisations_filename = paste(current_output_folder, plot_characteristics, sep = '', collapse = '')
+    realisations_filename = paste(current_output_folder, sim_characteristics, sep = '', collapse = '')
     
     current_output_folder = paste(output_folder, '/sim_group/', sep = '', collapse = '')
     if (!file.exists(current_output_folder)){
       dir.create(current_output_folder)
     }
     
-    sim_group_filename = paste(current_output_folder, plot_characteristics, '_sim_group', sep = '', collapse = '')
+    sim_group_filename = paste(current_output_folder, sim_characteristics, '_sim_group', sep = '', collapse = '')
     if (load_from_grassland_data == TRUE){
       realisations_filename = paste(realisations_filename, '_grass_land', sep = '', collapse = '')
       sim_group_filename = paste(sim_group_filename, '_grass_land', sep = '', collapse = '')
@@ -113,66 +114,53 @@ for (policy_ind in seq(prog_num)){
 
   }
   
-  if (length(realisations) > 0){
+  if (perform_collate_realisations == TRUE){
     
-    collated_realisations <- collate_realisations(realisations, global_params, program_params_to_use, use_cfac_type_in_sim = TRUE, decline_rates_initial, parcels, initial_ecology) #take simulation ouputs and calculate gains and losses
-    
-    if (save_collated_realisations == TRUE){
-      current_output_folder = paste(output_folder, '/collated_realisations/', sep = '', collapse = '')
-      if (!file.exists(current_output_folder)){
-        dir.create(current_output_folder)
+    if (length(realisations) > 0){
+      
+      collated_realisations <- collate_realisations(realisations, global_params, program_params_to_use, use_cfac_type_in_sim = TRUE, decline_rates_initial, parcels, initial_ecology) #take simulation ouputs and calculate gains and losses
+      
+      if (save_collated_realisations == TRUE){
+        current_output_folder = paste(output_folder, '/collated_realisations/', sep = '', collapse = '')
+        if (!file.exists(current_output_folder)){
+          dir.create(current_output_folder)
+        }
+        filename = paste(current_output_folder, sim_characteristics)
+        if (load_from_grassland_data == TRUE){
+          filename = paste(filename, '_grass_land', sep = '', collapse = '')
+        }
+        saveRDS(collated_realisations, paste(filename, '.rds', sep = '', collapse = '')) 
       }
-      filename = paste(current_output_folder, plot_characteristics)
-      if (load_from_grassland_data == TRUE){
-        filename = paste(filename, '_grass_land', sep = '', collapse = '')
-      }
-      saveRDS(collated_realisations, paste(filename, '.rds', sep = '', collapse = '')) 
     }
-
+    
     if (write_pdf == TRUE){
-      filename = paste(output_folder, plot_characteristics)
+      filename = paste(output_folder, sim_characteristics)
       if (load_from_grassland_data == TRUE){
         filename = paste(filename, '_grass_land', sep = '', collapse = '')
       }
       filename = paste(filename, '.pdf', sep = '', collapse = '')
       pdf(filename, width = 8.3, height = 11.7)
       plot_single_policy_collated_realisations(collated_realisations,                                
-                                 realisation_num = length(realisations), 
-                                 global_params, 
-                                 global_params$program_params, 
-                                 parcel_sum_lims = c(0, 20000), 
-                                 eco_ind = 1, 
-                                 lwd_vec = c(3, 0.15), 
-                                 edge_title = plot_characteristics)              #write plot outputs from collated results to pdf
+                                               realisation_num = length(realisations), 
+                                               global_params, 
+                                               global_params$program_params, 
+                                               parcel_sum_lims = c(0, 20000), 
+                                               eco_ind = 1, 
+                                               lwd_vec = c(3, 0.15), 
+                                               edge_title = sim_characteristics)              #write plot outputs from collated results to pdf
       
       if (write_pdf == TRUE){
         dev.off()
       }
-      rm(realisations)
-      rm(collated_realisations)
+      
     } 
-    
-#     plot_single_policy_collated_realisations(collated_realisations, 
-#                                realisation_num = length(realisations), 
-#                                global_params, 
-#                                program_params_to_use, 
-#                                parcel_sum_lims = c(0, 20000), 
-#                                eco_ind = 1, 
-#                                lwd_vec = c(3, 0.5), 
-#                                edge_title = plot_characteristics)             #plot outputs from collated results in local window
+    rm(collated_realisations)
   } 
   
   fin <- Sys.time()
   print(fin - strt)
   
 }
-
-if (load_from_grassland_data == TRUE){
-  parcel_num = 1238
-} else{
-  parcel_num = 1600
-}
-
 
 stopCluster(cl)
 # 
