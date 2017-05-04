@@ -8,7 +8,7 @@ library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
 
-policy_type = "net_gains_offset_bank_FALSE"
+policy_type = "net_gains_offset_bank_FALSE_time_horizon_15"
 offset_bank = FALSE
 load_grassland_data = FALSE
 load_collated_realisations = FALSE

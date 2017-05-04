@@ -15,6 +15,5 @@ run_model.R
 run_params.R
 run_program_combs.R
 run_system_routines.R
-run_system_routines_modularised.R
 run_system_routines_multidim.R
 run_system_routines_multidim_multiregion.R
