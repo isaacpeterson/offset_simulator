@@ -8,7 +8,7 @@ library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
 
-policy_type = "net_gains_offset_bank_FALSE_time_horizon_15"
+policy_type = "net_gains_offset_bank_FALSE"
 offset_bank = FALSE
 load_grassland_data = FALSE
 load_collated_realisations = FALSE
@@ -20,7 +20,7 @@ if (load_grassland_data == TRUE){
 } else{
   parcel_num = 1600
   collated_folder = '~/Documents/offset_plots_new/collated_realisations/'
-  realisations_folder = '~/Documents/offset_plots_new/realisations/'
+  realisations_folder = '~/Documents/offset_plots_new/reals/'
   sim_group_folder = '~/Documents/offset_plots_new/sim_group/'
 }
 
@@ -45,12 +45,12 @@ current_sim_group_filenames <- list.files(path = sim_group_folder, pattern = pol
                                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                               include.dirs = FALSE, no.. = FALSE)
 
-policy_num = length(current_collated_filenames)
+policy_num = length(current_realisations_filenames)
 print(policy_num)
 collated_realisation_set = vector('list', policy_num)
 program_params_set = vector('list', policy_num)
 
-for (policy_ind in seq(policy_num)){
+for (policy_ind in seq_len(1)){
   
   if (load_collated_realisations == TRUE){
     collated_realisations = readRDS(paste(collated_folder, current_collated_filenames[policy_ind], sep = '', collapse = ''))
@@ -137,10 +137,12 @@ plot_policy_impact_comparisons(collated_realisation_set,
                                lwd_vec = c(3, 0.5), 
                                edge_title = policy_type, 
                                time_steps = 50, 
-                               offset_bank, 
-                               parcel_num)
+                               offset_bank)
 
 if (write_pdf == TRUE){
   dev.off()
 }
+
+
+
 

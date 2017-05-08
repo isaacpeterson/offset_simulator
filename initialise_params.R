@@ -2,7 +2,7 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 100 #how many realisations of system to run in parallel
+  global_params$realisation_num = 1 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num = 1
   global_params$region_num_x = 1
@@ -25,7 +25,7 @@ initialise_global_params <- function(){
   global_params$min_eco_val = 0  #minimum allowable ecological value of smallest ecological element (pixel)
   global_params$max_eco_val = 100 #maximum "   "     "           "
   global_params$max_restoration_eco_val = 70
-  global_params$min_initial_eco_val = 60 #minimum allowable initial ecological value of smallest ecological element (pixel)
+  global_params$min_initial_eco_val = 20 #minimum allowable initial ecological value of smallest ecological element (pixel)
   global_params$max_initial_eco_val = 90 #maximum "   "     "           "
   global_params$initial_eco_noise = 10 #how much initial variation in pixels per land parcel 
   global_params$blur = FALSE

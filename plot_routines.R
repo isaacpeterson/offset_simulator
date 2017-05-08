@@ -90,17 +90,17 @@ plot_site_outcomes <- function(current_collated_realisation, current_program_par
 
 
 
+# collated_realisation_set = list(collated_realisations)
+# program_params_set = list(program_params_to_use)
 # site_plot_lims = c(-1e4, 1e4)
-# program_plot_lims = c(-6e5, 6e5) 
-# landscape_plot_lims = c(-4e5, 6e5)
+# program_plot_lims = c(-1.5e6, 1.5e6)
+# landscape_plot_lims = c(-0.5e6, 0.5e6)
 # sets_to_plot = 50
 # eco_ind = 1 
 # lwd_vec = c(3, 0.5) 
-# edge_title = policy_type 
+# edge_title = '' 
 # time_steps = 50 
-# offset_bank 
-# parcel_num
-
+# offset_bank = FALSE
 
 plot_policy_impact_comparisons <- function(collated_realisation_set, program_params_set, site_plot_lims, program_plot_lims, landscape_plot_lims, sets_to_plot, eco_ind, lwd_vec, edge_title, time_steps, offset_bank, parcel_num){
   offset_col_vec = c('blue', 'red', 'darkgreen')

@@ -5,14 +5,13 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
   return(realisations)
 }
 
-# use_cfac_type_in_sim = TRUE
-# program_params = program_params_to_use
-  
-
-# global_params = realisations[[1]]$global_params
-# decline_rates_initial = realisations[[1]]$decline_rates_initial
-# parcels = realisations[[1]]$parcels
-# initial_ecology = realisations[[1]]$initial_ecology
+ 
+# global_params = sim_group$global_params 
+# program_params = sim_group$program_params_to_use 
+# use_cfac_type_in_sim = TRUE 
+# decline_rates_initial = sim_group$decline_rates_initial 
+# parcels = sim_group$parcels 
+# initial_ecology = sim_group$initial_ecology
 
 collate_realisations <- function(realisations, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial, parcels, initial_ecology){
   
@@ -963,7 +962,8 @@ collate_parcel_sets <- function(realisations, parcels, realisation_num, collate_
 }
 
 
-
+# traj_type = 'trajectory'
+# trajectory_object = realisations
 collate_program <- function(traj_type, realisations, trajectory_object, time_steps, eco_dims){
   collated_program = list()
   collated_program$offsets <- sum_parcel_sets(traj_type, collate_type = 'offsets', sum_type = 'net', realisations, trajectory_object, time_steps, eco_dims)

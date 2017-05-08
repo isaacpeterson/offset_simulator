@@ -19,8 +19,9 @@ source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collap
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-save_collated_realisations = TRUE
-save_realisations = TRUE
+perform_collate_realisations = TRUE
+save_realisations = FALSE
+save_collated_realisations = FALSE
 run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
 save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
 write_pdf = FALSE                                          # write graphical outputs to pdf (TRUE)
@@ -58,7 +59,6 @@ if (run_from_saved == TRUE){
   prog_num = dim(program_combs)[1] #how many combinations there are in total
   program_params_group = generate_program_params_group(prog_num, program_combs, program_params_to_test)
   
-  
 }
 
 
@@ -77,8 +77,8 @@ registerDoParallel(cl)
 
 print(paste('testing ', prog_num, ' combinations on ', crs, ' cores'))
   
-# for (policy_ind in seq(prog_num)){
-for (policy_ind in 3:prog_num){
+for (policy_ind in seq(prog_num)){
+
   strt<-Sys.time()
   
   program_params_to_use = append(program_params_group[policy_ind], regional_program_params_group)
@@ -135,27 +135,54 @@ for (policy_ind in 3:prog_num){
       }
     }
     
-    if (write_pdf == TRUE){
-      filename = paste(output_folder, sim_characteristics)
-      if (load_from_grassland_data == TRUE){
-        filename = paste(filename, '_grass_land', sep = '', collapse = '')
-      }
-      filename = paste(filename, '.pdf', sep = '', collapse = '')
-      pdf(filename, width = 8.3, height = 11.7)
-      plot_single_policy_collated_realisations(collated_realisations,                                
-                                               realisation_num = length(realisations), 
-                                               global_params, 
-                                               global_params$program_params, 
-                                               parcel_sum_lims = c(0, 20000), 
-                                               eco_ind = 1, 
-                                               lwd_vec = c(3, 0.15), 
-                                               edge_title = sim_characteristics)              #write plot outputs from collated results to pdf
-      
-      if (write_pdf == TRUE){
-        dev.off()
-      }
-      
-    } 
+#     if (write_pdf == TRUE){
+#       filename = paste(output_folder, sim_characteristics)
+#       if (load_from_grassland_data == TRUE){
+#         filename = paste(filename, '_grass_land', sep = '', collapse = '')
+#       }
+#       filename = paste(filename, '.pdf', sep = '', collapse = '')
+#       pdf(filename, width = 8.3, height = 11.7)
+#       plot_single_policy_collated_realisations(collated_realisations,                                
+#                                                realisation_num = length(realisations), 
+#                                                global_params, 
+#                                                global_params$program_params, 
+#                                                parcel_sum_lims = c(0, 20000), 
+#                                                eco_ind = 1, 
+#                                                lwd_vec = c(3, 0.15), 
+#                                                edge_title = sim_characteristics)              #write plot outputs from collated results to pdf
+#       
+#       if (write_pdf == TRUE){
+#         dev.off()
+#       }
+#       
+#     } 
+    
+    plot_policy_outcome_comparisons(list(collated_realisations),
+                                    list(program_params_to_use),
+                                    offset_bank = FALSE,
+                                    site_plot_lims = c(0, 1e4),
+                                    program_plot_lims = c(0, 10e6), 
+                                    landscape_plot_lims = c(0, 10e6),
+                                    sets_to_plot = 50,
+                                    eco_ind = 1, 
+                                    lwd_vec = c(3, 0.5), 
+                                    edge_title = '', 
+                                    time_steps = 50) 
+    
+
+    plot_policy_impact_comparisons(list(collated_realisations),
+                                   list(program_params_to_use),
+                                   site_plot_lims = c(-1e4, 1e4),
+                                   program_plot_lims = c(-1.5e6, 1.5e6),
+                                   landscape_plot_lims = c(-0.5e6, 0.5e6),
+                                   sets_to_plot = 50,
+                                   eco_ind = 1, 
+                                   lwd_vec = c(3, 0.5), 
+                                   edge_title = '', 
+                                   time_steps = 50, 
+                                   offset_bank = FALSE,
+                                   parcel_num = 1600)
+
     rm(collated_realisations)
   } 
   
