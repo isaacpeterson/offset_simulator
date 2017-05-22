@@ -140,7 +140,9 @@ collate_realisations <- function(realisations, global_params, program_params, us
                                     collated_illegal_clearing,
                                     eco_dims = global_params$eco_dims)
   
-  landscape_rel_to_counter <- subtract_nested_lists(net_landscape, rep(list(cfacs_object$net_cfac_decline_sum), realisation_num))
+  net_landscape_cfac_sum = build_landscape_cfacs(initial_ecology, decline_rates_initial, global_params, parcel_num, program_params[[1]])
+  
+  landscape_rel_to_counter <- subtract_nested_lists(net_landscape, rep(list(net_landscape_cfac_sum), realisation_num))
   
   system_NNL <- assess_system_NNL(landscape_rel_to_counter, 
                                   realisation_num, 
@@ -174,7 +176,6 @@ collate_realisations <- function(realisations, global_params, program_params, us
   collated_realisations$parcel_set_NNL = parcel_set_NNL
   collated_realisations$program_sums = program_sums
   collated_realisations$realisation_num = realisation_num
-  
   collated_realisations$collated_offsets = collated_offsets
   collated_realisations$collated_devs = collated_devs
   collated_realisations$collated_illegal_clearing = collated_illegal_clearing
@@ -293,6 +294,29 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
 }
 
 
+build_landscape_cfacs <- function(initial_ecology, decline_rates_initial, global_params, parcel_num, current_program_params){
+  
+  time_horizons <- generate_time_horizons(time_horizon_type = 'offsets', 
+                                          project_type = 'future', 
+                                          yr = 1, 
+                                          offset_yrs = 1, 
+                                          time_horizon = (global_params$time_steps - 1), 
+                                          parcel_count = length(initial_ecology) )
+  
+  current_cfacs = calc_cfacs(parcel_ecologies = initial_ecology, 
+                             parcel_num_remaining = parcel_num,
+                             global_params, 
+                             current_program_params,
+                             decline_rates_initial, 
+                             time_horizons, 
+                             offset_yrs = rep(1, length(initial_ecology)), 
+                             FALSE,
+                             FALSE,
+                             TRUE,  
+                             TRUE)
+  net_landscape_cfac = nested_list_sum(current_cfacs$cfac_trajs)
+  return(net_landscape_cfac)
+}
 
 
 # 

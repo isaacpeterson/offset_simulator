@@ -100,7 +100,20 @@ plot_site_outcomes <- function(current_collated_realisation, current_program_par
 # lwd_vec = c(3, 0.5) 
 # edge_title = '' 
 # time_steps = 50 
-# offset_bank = FALSE
+# offset_bank = TRUE
+
+
+
+# site_plot_lims = c(-4e3, 4e3)
+# program_plot_lims = c(-8e5, 8e5) 
+# landscape_plot_lims = c(-3e5, 3e5)
+# sets_to_plot = 50
+# eco_ind = 1 
+# lwd_vec = c(3, 0.5) 
+# edge_title = policy_type
+# time_steps = 50 
+# offset_bank
+# parcel_num
 
 plot_policy_impact_comparisons <- function(collated_realisation_set, program_params_set, site_plot_lims, program_plot_lims, landscape_plot_lims, sets_to_plot, eco_ind, lwd_vec, edge_title, time_steps, offset_bank, parcel_num){
   offset_col_vec = c('blue', 'red', 'darkgreen')
@@ -386,7 +399,7 @@ get_y_lab <- function(current_program_params, offset_bank){
 overlay_parcel_sets <- function(current_collated_realisation, current_program_params, offset_bank, realisation_ind, eco_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps){
   y_lab = get_y_lab(current_program_params, offset_bank)
   plot_lwd = 1
-  dev_nums = unlist(lapply(seq_along(collated_realisation_set[[policy_ind]]$collated_devs$trajectories), function(j) length(collated_realisation_set[[policy_ind]]$collated_devs$trajectories[[j]])))
+  dev_nums = unlist(lapply(seq_along(current_collated_realisation$collated_devs$trajectories), function(j) length(current_collated_realisation$collated_devs$trajectories[[j]])))
   #sets_to_plot = sample(min(dev_nums), 1)
   dev_credit_nums = unlist(lapply(seq_along(current_collated_realisation$collated_dev_credit$trajectories), function(j) length(current_collated_realisation$collated_dev_credit$trajectories[[j]])))
   if ((length(dev_nums) + length(dev_credit_nums)) > 0){
@@ -405,6 +418,7 @@ overlay_parcel_sets <- function(current_collated_realisation, current_program_pa
     
     overlay_parcel_set_element(collated_object = offset_set,
                                offset_bank,
+                               visualisation_type = 'stacked', 
                                realisation_ind, 
                                eco_ind, 
                                plot_col = 'darkgreen', 
@@ -418,6 +432,7 @@ overlay_parcel_sets <- function(current_collated_realisation, current_program_pa
     
     overlay_parcel_set_element(dev_set,
                                offset_bank,
+                               visualisation_type = 'non-stacked', 
                                realisation_ind = 1, 
                                eco_ind = 1, 
                                plot_col = 'red',
@@ -439,8 +454,15 @@ overlay_parcel_sets <- function(current_collated_realisation, current_program_pa
 }
 
 
+# collated_object = offset_set
+# 
+# visualisation_type = 'stacked' 
+# 
+# plot_col = 'darkgreen' 
+# 
+# plot_type = 'non-overlay'
 
-overlay_parcel_set_element <- function(collated_object, offset_bank, realisation_ind, eco_ind, plot_col, plot_lwd, plot_type, y_lab, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps){
+overlay_parcel_set_element <- function(collated_object, offset_bank, visualisation_type, realisation_ind, eco_ind, plot_col, plot_lwd, plot_type, y_lab, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps){
   
   if (offset_bank == FALSE){
     collated_traj_set = collated_object$collated_gains_degs[[realisation_ind]]$site_nets
@@ -451,7 +473,10 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, realisation
     } else {
       offset_yrs = rep(list(1), length(inds_to_plot))
     }
-    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]] [[eco_ind]][offset_yrs[[i]]:time_steps])
+    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]][[eco_ind]][offset_yrs[[i]]:time_steps])
+    if (visualisation_type == 'stacked'){
+      plot_list = lapply(seq_along(plot_list), function(i) Reduce('+', plot_list[1:i]))
+    }
   } else {
     plot_list = list(collated_object[[realisation_ind]][[eco_ind]])
   }

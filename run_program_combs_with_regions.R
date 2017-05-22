@@ -19,13 +19,13 @@ source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collap
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-perform_collate_realisations = TRUE
-save_realisations = FALSE
+perform_collate_realisations = FALSE
+save_realisations = TRUE
 save_collated_realisations = FALSE
 run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
 save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
 write_pdf = FALSE                                          # write graphical outputs to pdf (TRUE)
-load_from_grassland_data = FALSE                                    # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
+load_from_grassland_data = TRUE                                    # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
 
 write_movie = FALSE                                      # write evolving ecology to movie
 show_movie = FALSE                                      # show output in movie form of evolving ecology
@@ -56,8 +56,8 @@ if (run_from_saved == TRUE){
   
   program_params_to_test <- initialise_program_params() # list all program combinations to test
   program_combs <- generate_program_combs(program_params_to_test)  #generate all combinations of offset programs
-  prog_num = dim(program_combs)[1] #how many combinations there are in total
-  program_params_group = generate_program_params_group(prog_num, program_combs, program_params_to_test)
+  policy_num = dim(program_combs)[1] #how many combinations there are in total
+  program_params_group = generate_program_params_group(policy_num, program_combs, program_params_to_test)
   
 }
 
@@ -75,9 +75,10 @@ crs = detectCores(all.tests = FALSE, logical = TRUE)
 cl<-makeCluster(crs)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
-print(paste('testing ', prog_num, ' combinations on ', crs, ' cores'))
+print(paste('testing ', policy_num, ' combinations on ', crs, ' cores'))
+
   
-for (policy_ind in seq(prog_num)){
+for (policy_ind in 6:policy_num){
 
   strt<-Sys.time()
   
@@ -159,8 +160,8 @@ for (policy_ind in seq(prog_num)){
     
     plot_policy_outcome_comparisons(list(collated_realisations),
                                     list(program_params_to_use),
-                                    offset_bank = FALSE,
-                                    site_plot_lims = c(0, 1e4),
+                                    offset_bank = TRUE,
+                                    site_plot_lims = c(0, 6e6),
                                     program_plot_lims = c(0, 10e6), 
                                     landscape_plot_lims = c(0, 10e6),
                                     sets_to_plot = 50,
@@ -172,15 +173,15 @@ for (policy_ind in seq(prog_num)){
 
     plot_policy_impact_comparisons(list(collated_realisations),
                                    list(program_params_to_use),
-                                   site_plot_lims = c(-1e4, 1e4),
+                                   site_plot_lims = c(-1.5e6, 1.5e6),
                                    program_plot_lims = c(-1.5e6, 1.5e6),
-                                   landscape_plot_lims = c(-0.5e6, 0.5e6),
+                                   landscape_plot_lims = c(-1.5e6, 1.5e6),
                                    sets_to_plot = 50,
                                    eco_ind = 1, 
                                    lwd_vec = c(3, 0.5), 
                                    edge_title = '', 
                                    time_steps = 50, 
-                                   offset_bank = FALSE,
+                                   offset_bank = TRUE,
                                    parcel_num = 1600)
 
     rm(collated_realisations)

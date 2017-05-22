@@ -12,16 +12,18 @@ policy_type = "net_gains_offset_bank_FALSE"
 offset_bank = FALSE
 load_grassland_data = FALSE
 load_collated_realisations = FALSE
-write_pdf = TRUE
+write_pdf = FALSE
 
 if (load_grassland_data == TRUE){
   parcel_num = 1238
   collated_folder = '~/Documents/offset_plots_new/collated_realisations/grasslands/'
+  realisations_folder = '~/Documents/offset_plots_new/realisations/'
+  sim_group_folder = '~/Documents/offset_plots_new/sim_group/'
 } else{
   parcel_num = 1600
-  collated_folder = '~/Documents/offset_plots_new/collated_realisations/'
-  realisations_folder = '~/Documents/offset_plots_new/reals/'
-  sim_group_folder = '~/Documents/offset_plots_new/sim_group/'
+  collated_folder = '~/Documents/offset_plots_new/reals/'
+  realisations_folder = '/Volumes/Seagate\ Backup\ Plus\ Drive/offset_sims/200_devs/'
+  sim_group_folder = '/Volumes/Seagate\ Backup\ Plus\ Drive/offset_sims/sim_group/'
 }
 
 output_folder = paste('~/Documents/offset_plots_new/policy_comparison_pdfs/', sep = '', collapse = '')
@@ -50,20 +52,11 @@ print(policy_num)
 collated_realisation_set = vector('list', policy_num)
 program_params_set = vector('list', policy_num)
 
-for (policy_ind in seq_len(1)){
+for (policy_ind in seq_len(policy_num)){
   
   if (load_collated_realisations == TRUE){
     collated_realisations = readRDS(paste(collated_folder, current_collated_filenames[policy_ind], sep = '', collapse = ''))
-#     collated_realisations$site_offset_gains = collated_realisations$net_offset_gains
-#     collated_realisations$site_dev_losses = collated_realisations$net_dev_losses
-#     collated_realisations$offset_bank_gains = collated_realisations$net_offset_bank
-#     collated_realisations$dev_credit_losses = collated_realisations$net_dev_credit_losses
-#     collated_realisations$net_offset_gains <- sum_net_gains_degs(list(collated_realisations$site_offset_gains,
-#                                                                       collated_realisations$offset_bank_gains))
-#     collated_realisations$net_dev_losses <- sum_net_gains_degs(list(collated_realisations$site_dev_losses, 
-#                                                                     collated_realisations$dev_credit_losses))
-#     collated_realisations$net_program_outcomes <- sum_nested_lists(list(collated_realisations$net_offset_gains, collated_realisations$net_dev_losses))
-#     collated_realisations$realisation_num = 50
+
   } else {
    
     realisations = readRDS(paste(realisations_folder, current_realisations_filenames[policy_ind], sep = '', collapse = ''))
@@ -87,26 +80,23 @@ if (write_pdf == TRUE){
   pdf(filename, width = 8.3, height = 11.7) 
 }
 
-if (offset_bank == TRUE){
-  site_plot_lims = c(0, 6e6)
-} else{
-  site_plot_lims = c(0, 1e4)
-}
+# if (offset_bank == TRUE){
+#   site_plot_lims = c(0, 6e6)
+# } else{
+#   site_plot_lims = c(0, 1e4)
+# }
   
 plot_policy_outcome_comparisons(collated_realisation_set,
                                 program_params_set,
                                 offset_bank,
-                                site_plot_lims,
-                                program_plot_lims = c(0, 10e6), 
-                                landscape_plot_lims = c(0, 10e6),
+                                site_plot_lims = c(0, 1e4),
+                                program_plot_lims = c(0.5e6, 3.5e6), 
+                                landscape_plot_lims = c(2.5e6, 5e6),
                                 sets_to_plot = 50,
                                 eco_ind = 1, 
                                 lwd_vec = c(3, 0.5), 
                                 edge_title = policy_type, 
                                 time_steps = 50) 
-
-# plot_site_outcomes(current_collated_realisation, current_program_params, eco_ind, offset_bank, sets_to_plot, site_plot_lims)
-
 
 if (write_pdf == TRUE){
   dev.off()
@@ -117,27 +107,28 @@ if (write_pdf == TRUE){
   pdf(filename, width = 8.3, height = 11.7) 
 }
 
-if (offset_bank == TRUE){
-  site_impact_plot_lims = c(-1.5e6, 1.5e6)
-  program_impact_plot_lims = site_impact_plot_lims 
-  landscape_impact_plot_lims = site_impact_plot_lims
-} else{ 
-  site_impact_plot_lims = c(-1e4, 1e4)
-  program_impact_plot_lims = c(-1.5e6, 1.5e6)
-  landscape_impact_plot_lims = c(-0.5e6, 0.5e6)
-}
+# if (offset_bank == TRUE){
+#   site_impact_plot_lims = c(-1.5e6, 1.5e6)
+#   program_impact_plot_lims = site_impact_plot_lims 
+#   landscape_impact_plot_lims = site_impact_plot_lims
+# } else{ 
+#   site_impact_plot_lims = c(-1e4, 1e4)
+#   program_impact_plot_lims = c(-1.5e6, 1.5e6)
+#   landscape_impact_plot_lims = c(-0.5e6, 0.5e6)
+# }
 
 plot_policy_impact_comparisons(collated_realisation_set,
                                program_params_set,
-                               site_impact_plot_lims,
-                               program_impact_plot_lims, 
-                               landscape_impact_plot_lims,
+                               site_plot_lims = c(-5e3, 8e3),
+                               program_plot_lims = c(-5e5, 6e5), 
+                               landscape_plot_lims = c(-3e5, 3e5),
                                sets_to_plot = 50,
                                eco_ind = 1, 
                                lwd_vec = c(3, 0.5), 
                                edge_title = policy_type, 
                                time_steps = 50, 
-                               offset_bank)
+                               offset_bank,
+                               parcel_num)
 
 if (write_pdf == TRUE){
   dev.off()

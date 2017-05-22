@@ -2,7 +2,7 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 1 #how many realisations of system to run in parallel
+  global_params$realisation_num = 100 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num = 1
   global_params$region_num_x = 1
