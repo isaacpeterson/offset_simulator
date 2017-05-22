@@ -1,11 +1,11 @@
 
-# site_plot_lims = c(0, 5e6)
+# site_plot_lims = c(0, 1e4)
 # program_plot_lims = c(-6e6, 6e6) 
 # landscape_plot_lims = c(-4e6, 6e6)
 # sets_to_plot = 50
 # eco_ind = 1 
 # lwd_vec = c(3, 0.5) 
-# edge_title = policy_type 
+# edge_title = ''
 # time_steps = 50 
 
 
@@ -100,7 +100,7 @@ plot_site_outcomes <- function(current_collated_realisation, current_program_par
 # lwd_vec = c(3, 0.5) 
 # edge_title = '' 
 # time_steps = 50 
-# offset_bank = TRUE
+# offset_bank = FALSE
 
 
 
@@ -110,9 +110,9 @@ plot_site_outcomes <- function(current_collated_realisation, current_program_par
 # sets_to_plot = 50
 # eco_ind = 1 
 # lwd_vec = c(3, 0.5) 
-# edge_title = policy_type
+# edge_title = ''
 # time_steps = 50 
-# offset_bank
+# offset_bank = FALSE
 # parcel_num
 
 plot_policy_impact_comparisons <- function(collated_realisation_set, program_params_set, site_plot_lims, program_plot_lims, landscape_plot_lims, sets_to_plot, eco_ind, lwd_vec, edge_title, time_steps, offset_bank, parcel_num){
@@ -131,7 +131,7 @@ plot_policy_impact_comparisons <- function(collated_realisation_set, program_par
                           realisation_ind = 1, 
                           eco_ind = 1, 
                           plot_from_impact_yr = FALSE, 
-                          sets_to_plot,
+                          sets_to_plot = 10,
                           site_plot_lims,
                           time_steps)
 

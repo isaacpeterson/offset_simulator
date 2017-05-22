@@ -188,7 +188,7 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
                                                       current_development_object = global_object$match_object$current_development_object, 
                                                       region_ind, 
                                                       global_params)
-            stopifnot(length(global_object$dev_object$parcel_indexes) == length(unlist(global_object$dev_object$parcel_indexes)))
+            
           } 
         } 
         
@@ -1206,7 +1206,7 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
                                      yr) #perform matching routine
     
     if (match_object$match_flag == FALSE){
-      #inds_to_reject = which(unlist(dev_pool_object$parcel_vals_used) >= unlist(vals_to_match))
+      
       inds_to_keep = which(lapply(seq_along(dev_pool_object$parcel_vals_used), 
                     function(i) all(unlist(subtract_nested_lists(dev_pool_object$parcel_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
       current_match_pool = dev_pool_object$parcel_indexes[inds_to_keep]     #remove current potential development from potential pool

@@ -6,7 +6,7 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
+source_folder = paste(path.expand("~"), '/Documents/R_Codes/Offsets_Working_Feb_3/', sep = '', collapse = '')
 
 policy_type = "net_gains_offset_bank_FALSE"
 offset_bank = FALSE
@@ -15,21 +15,23 @@ load_collated_realisations = FALSE
 write_pdf = FALSE
 
 if (load_grassland_data == TRUE){
+  outputs_folder = paste(path.expand("~"), '/Documents/offset_plots/grassland/', sep = '', collapse = '')
   parcel_num = 1238
-  collated_folder = '~/Documents/offset_plots_new/collated_realisations/grasslands/'
-  realisations_folder = '~/Documents/offset_plots_new/realisations/'
-  sim_group_folder = '~/Documents/offset_plots_new/sim_group/'
+  
 } else{
+  outputs_folder = paste(path.expand("~"), '/Documents/offset_plots/simulated/', sep = '', collapse = '')
   parcel_num = 1600
-  collated_folder = '~/Documents/offset_plots_new/reals/'
-  realisations_folder = '/Volumes/Seagate\ Backup\ Plus\ Drive/offset_sims/200_devs/'
-  sim_group_folder = '/Volumes/Seagate\ Backup\ Plus\ Drive/offset_sims/sim_group/'
+  
 }
 
-output_folder = paste('~/Documents/offset_plots_new/policy_comparison_pdfs/', sep = '', collapse = '')
+collated_folder = paste(outputs_folder, '/collated_realisations/', sep = '', collapse = '')
+realisations_folder = paste(outputs_folder, '/realisations/', sep = '', collapse = '')
+sim_group_folder = paste(outputs_folder, '/sim_group/', sep = '', collapse = '')
 
-if (!file.exists(output_folder)){
-  dir.create(output_folder)
+output_plot_folder = paste(outputs_folder, 'policy_comparison_pdfs/', sep = '', collapse = '')
+
+if (!file.exists(output_plot_folder)){
+  dir.create(output_plot_folder)
 }
 
 source(paste(source_folder, 'initialise_params.R', sep = '', collapse = ''))                              # functions to collate simulation outputs
@@ -44,8 +46,8 @@ current_realisations_filenames <- list.files(path = realisations_folder, pattern
                                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                              include.dirs = FALSE, no.. = FALSE)
 current_sim_group_filenames <- list.files(path = sim_group_folder, pattern = policy_type, all.files = FALSE, 
-                                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                                              include.dirs = FALSE, no.. = FALSE)
+                                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                          include.dirs = FALSE, no.. = FALSE)
 
 policy_num = length(current_realisations_filenames)
 print(policy_num)
@@ -56,9 +58,9 @@ for (policy_ind in seq_len(policy_num)){
   
   if (load_collated_realisations == TRUE){
     collated_realisations = readRDS(paste(collated_folder, current_collated_filenames[policy_ind], sep = '', collapse = ''))
-
+    
   } else {
-   
+    
     realisations = readRDS(paste(realisations_folder, current_realisations_filenames[policy_ind], sep = '', collapse = ''))
     sim_group = readRDS(paste(sim_group_folder, current_sim_group_filenames[policy_ind], sep = '', collapse = ''))
     collated_realisations <- collate_realisations(realisations, 
@@ -71,12 +73,13 @@ for (policy_ind in seq_len(policy_num)){
   }
   
   collated_realisation_set[[policy_ind]] = collated_realisations
+  rm(collated_realisations)
   program_params_set[[policy_ind]] = sim_group$program_params_to_use
   
 }
 
 if (write_pdf == TRUE){
-  filename = paste(output_folder, policy_type, '_outcomes.pdf', sep = '', collapse = '')
+  filename = paste(output_plot_folder, policy_type, '_outcomes.pdf', sep = '', collapse = '')
   pdf(filename, width = 8.3, height = 11.7) 
 }
 
@@ -85,7 +88,7 @@ if (write_pdf == TRUE){
 # } else{
 #   site_plot_lims = c(0, 1e4)
 # }
-  
+
 plot_policy_outcome_comparisons(collated_realisation_set,
                                 program_params_set,
                                 offset_bank,
@@ -103,7 +106,7 @@ if (write_pdf == TRUE){
 }
 
 if (write_pdf == TRUE){
-  filename = paste(output_folder, policy_type, '_impacts.pdf', sep = '', collapse = '')
+  filename = paste(output_plot_folder, policy_type, '_impacts.pdf', sep = '', collapse = '')
   pdf(filename, width = 8.3, height = 11.7) 
 }
 
@@ -133,7 +136,3 @@ plot_policy_impact_comparisons(collated_realisation_set,
 if (write_pdf == TRUE){
   dev.off()
 }
-
-
-
-

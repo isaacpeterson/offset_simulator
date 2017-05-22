@@ -2,7 +2,7 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 100 #how many realisations of system to run in parallel
+  global_params$realisation_num = 1 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num = 1
   global_params$region_num_x = 1
@@ -48,13 +48,13 @@ initialise_program_params <- function(){
   program_params$development_selection_type = 'random' #how the development parcels are selected - 'random' - sample from pool of available indexes
   program_params$offset_parcel_for_parcel = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
 
-  program_params$offset_time_horizon = c(15, 30)
-  program_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') #future_condition', 'restoration_gains', 'restoration_condition_value'
+  program_params$offset_time_horizon = c(15)
+  program_params$offset_calc_type = c('net_gains') #future_condition', 'restoration_gains', 'restoration_condition_value'
   program_params$dev_calc_type = c('future_condition')                    #'future_condition', 'current_condition' 
   
   program_params$include_potential_developments_in_offset_calc = c(FALSE)
   program_params$include_potential_offsets_in_offset_calc = c(FALSE)
-  program_params$include_illegal_clearing_in_offset_calc = c(FALSE, TRUE)
+  program_params$include_illegal_clearing_in_offset_calc = c(FALSE)
 
   program_params$dev_counterfactual_type = 'offset_counterfactual'
   program_params$illegal_clearing_prob = 1e-3
@@ -65,7 +65,7 @@ initialise_program_params <- function(){
   program_params$use_parcel_set_dev_credit = TRUE
   program_params$dev_start = 1
   program_params$dev_end = 50
-  program_params$total_dev_num = 300
+  program_params$total_dev_num = 200
   return(program_params)
 }
 
