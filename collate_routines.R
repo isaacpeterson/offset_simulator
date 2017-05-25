@@ -8,7 +8,7 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
  
 # global_params = sim_group$global_params 
 # program_params = sim_group$program_params_to_use 
-# use_cfac_type_in_sim = TRUE 
+# use_cfac_type_in_sim = FALSE 
 # decline_rates_initial = sim_group$decline_rates_initial 
 # parcels = sim_group$parcels 
 # initial_ecology = sim_group$initial_ecology
@@ -284,7 +284,10 @@ collate_all_cfacs <- function(use_cfac_type_in_sim, initial_ecology, decline_rat
   offset_bank_cfac_sum <- sum_cfacs(offset_bank_cfacs)
   illegal_cfac_sum <- sum_cfacs(illegal_cfacs)
   
-  program_cfac_sum <- sum_nested_lists(list(offset_cfac_sum, dev_cfac_sum, dev_credit_cfac_sum, offset_bank_cfac_sum))
+  cfac_sums = list(offset_cfac_sum, dev_cfac_sum, dev_credit_cfac_sum, offset_bank_cfac_sum)
+  cfacs_to_use = unlist(lapply(seq_along(cfac_sums), function(i) length(cfac_sums[[i]]))) > 0
+  
+  program_cfac_sum <- sum_nested_lists(cfac_sums[cfacs_to_use])
   program_cfac_sum_rel_initial <- shift_nested_list(list_in = program_cfac_sum, eco_dims, shift_type = 'mean')
   net_cfac_decline_sum <- nested_list_sum(decline_cfac_trajs)
   
@@ -715,7 +718,7 @@ collate_cfacs <- function(current_model_outputs, parcels, collate_type, global_p
 
 
 # realisation_num = length(realisations) 
-# collate_type = 'illegal_clearing' 
+# collate_type = 'dev_credit' 
 
 
 run_collate_routine <- function(realisations, initial_ecology, parcels, realisation_num, collate_type, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial){

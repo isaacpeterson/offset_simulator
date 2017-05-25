@@ -94,7 +94,7 @@ parcel_set_list_names <- function(){
 run_system <- function(global_object, global_params, program_params_to_use, decline_rates_initial, parcels){ # main engine for code - returns all development/offset parcel sets, land parcel trajectories etc.
 
   for (yr in seq_len(global_params$time_steps)){          #run through main time loop
-  #for (yr in seq_len(20)){
+  #for (yr in seq_len(15)){
     
     for (region_ind in seq_len(parcels$region_num)){            #cycle through each region
 
@@ -109,13 +109,13 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
       }
       
       if (current_program_params$intervention_vec[yr] > 0){
-        global_object$index_object <- select_offset_index_pool(index_object = global_object$index_object, current_program_params, region_ind)
+        offset_index_pool <- select_offset_index_pool(index_object = global_object$index_object, current_program_params, region_ind)
         
-        if (global_object$index_object$empty_pool_flag == TRUE){ #if nothing in offset pool do not attempt to develop
+        if (offset_index_pool$empty_pool_flag == TRUE){ #if nothing in offset pool do not attempt to develop
           break
         }
         
-        global_object$offset_pool_object <- prepare_offset_pool(current_offset_pool = global_object$index_object$offset_index_pool, 
+        global_object$offset_pool_object <- prepare_offset_pool(current_offset_pool = offset_index_pool$pool, 
                                                                 current_program_params, 
                                                                 index_object = global_object$index_object, 
                                                                 offset_bank = global_object$offset_bank, 
@@ -130,8 +130,9 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
       }
       
       for (current_dev_index in seq_len(current_program_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
+        
         global_object$dev_credit_to_use = assess_credit(global_object, current_program_params)
-        print(global_object$dev_credit_to_use)
+        
         if (current_program_params$use_dev_credit == TRUE){
           
           global_object$dev_credit_to_use = assess_credit(global_object, current_program_params)
@@ -149,7 +150,7 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
                                              time_horizon)
       
           if (global_object$credit_match_object$match_flag == TRUE){
-            
+            #stopifnot(global_object$credit_match_object$match_flag == FALSE)
             global_object$dev_credit = global_object$credit_match_object$dev_credit
             print(paste('credit flag ', global_object$credit_match_object$match_vals))
             global_object <- perform_clearing_routine(global_object, 
@@ -256,12 +257,18 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
 } 
 
 
-remove_dev_parcel_from_current_pool <- function(pool_object, dev_ind){
-  ind_to_remove <- which(pool_object$parcel_indexes %in% dev_ind)
-  updated_pool_object <- lapply(seq_along(pool_object), function(i) pool_object[[i]][-ind_to_remove])
-  names(updated_pool_object) <- names(pool_object)
-  return(updated_pool_object)
+remove_parcel_from_current_pool <- function(offset_pool_object, current_parcel_indexes){
+  subset_pool_to_remove <- list_intersect(offset_pool_object$parcel_indexes, current_parcel_indexes)
+  subset_pool_to_use <- seq_along(offset_pool_object$parcel_indexes)[-subset_pool_to_remove$match_ind]
+  offset_pool_object <- select_subset(offset_pool_object, subset_pool_to_use)
+  return(offset_pool_object)
 }
+# remove_dev_parcel_from_current_pool <- function(pool_object, dev_ind){
+#   ind_to_remove <- which(pool_object$parcel_indexes %in% dev_ind)
+#   updated_pool_object <- lapply(seq_along(pool_object), function(i) pool_object[[i]][-ind_to_remove])
+#   names(updated_pool_object) <- names(pool_object)
+#   return(updated_pool_object)
+# }
 
 
 select_inds_to_clear <- function(index_object, current_program_params, land_parcel_num){
@@ -307,7 +314,6 @@ perform_illegal_clearing <- function(global_object, current_ecology, land_parcel
                                            global_params, 
                                            current_program_params,
                                            decline_rates, 
-                                           decline_rates_initial,
                                            time_horizon, 
                                            yr)  #determine future development parcel attributes
     
@@ -318,7 +324,6 @@ perform_illegal_clearing <- function(global_object, current_ecology, land_parcel
 
 perform_offset_routine <- function(global_object, match_object, current_program_params, region_ind, global_params){
   
-  offset_pool_object <- global_object$offset_pool_object
   index_object = global_object$index_object
   decline_rates = global_object$decline_rates
   offsets_object = global_object$offsets_object
@@ -343,16 +348,18 @@ perform_offset_routine <- function(global_object, match_object, current_program_
                                           current_offset_indexes) # set elements in decline rates array corresponding to offsets to restoration rates
   }
   
-  subset_pool_to_remove <- list_intersect(offset_pool_object$parcel_indexes, current_offset_indexes)
-  subset_pool_to_use <- seq_along(offset_pool_object$parcel_indexes)[-subset_pool_to_remove$match_ind]
-  offset_pool_object <- select_subset(offset_pool_object, subset_pool_to_use)
+
+#   subset_pool_to_remove <- list_intersect(offset_pool_object$parcel_indexes, current_offset_indexes)
+#   subset_pool_to_use <- seq_along(offset_pool_object$parcel_indexes)[-subset_pool_to_remove$match_ind]
+#   offset_pool_object <- select_subset(offset_pool_object, subset_pool_to_use)
+  
   index_object <- record_parcel_index(update_type = 'offset', index_object, parcel_indexes = current_offset_indexes, region_ind)
   offsets_object <- append_current_object(offsets_object, 
                                           current_offset_object, 
                                           append_type = 'as_list')      #record current offset parcels in offsets object containing all offsets info
   
   
-  global_object$offset_pool_object <- offset_pool_object
+  global_object$offset_pool_object <- remove_parcel_from_current_pool(global_object$offset_pool_object, current_parcel_indexes = current_offset_indexes)
   global_object$index_object <- index_object
   global_object$offsets_object <- offsets_object
   global_object$decline_rates <- decline_rates
@@ -369,13 +376,15 @@ perform_clearing_routine <- function(global_object, clearing_type, current_devel
   decline_rates = global_object$decline_rates
   current_dev_indexes <- current_development_object$parcel_indexes
   index_object <- update_ind_available(index_object, current_dev_indexes, region_ind)                 #remove development parcels from available pool
-  index_object <- record_parcel_index(update_type = clearing_type, index_object, parcel_indexes = current_dev_indexes, region_ind)
+  index_object <- record_parcel_index(update_type = clearing_type, 
+                                      index_object, 
+                                      parcel_indexes = current_dev_indexes, 
+                                      region_ind)
   
   if (clearing_type == 'development'){
     global_object$dev_object <- append_current_object(global_object$dev_object, 
                                                       current_development_object, 
                                                       append_type = 'as_list')
-    
   } else if (clearing_type == 'develop_from_credit'){
     global_object$dev_credit_object <- append_current_object(global_object$dev_credit_object,
                                                             current_development_object,   
@@ -395,6 +404,9 @@ perform_clearing_routine <- function(global_object, clearing_type, current_devel
                                         offset_action_type = vector(), 
                                         current_dev_indexes)     # set elements corresponding to developed parcels in decline rates array to zero. decline_rates <- current_dev_index_object$decline_rates
   
+  if (length(current_dev_indexes) > 0){
+    global_object$offset_pool_object <- remove_parcel_from_current_pool(global_object$offset_pool_object, current_parcel_indexes = current_dev_indexes)
+  }
   global_object$index_object <- index_object
   global_object$decline_rates <- decline_rates
   
@@ -492,39 +504,31 @@ assess_credit <- function(global_object, current_program_params){
 
 select_offset_index_pool <- function(index_object, current_program_params, region_ind){
   if (current_program_params$use_offset_bank == TRUE){
+    
     if (current_program_params$offset_region == 'development'){
-      offset_index_pool = index_object$banked_offset_pool[[region_ind]]
+      current_pool = index_object$banked_offset_pool[[region_ind]]
     } else if (current_program_params$offset_region == 'all'){
-      offset_index_pool = unlist(index_object$banked_offset_pool)
+      current_pool = unlist(index_object$banked_offset_pool)
     }
     
   }  else if (current_program_params$use_offset_bank == FALSE){
     if (current_program_params$offset_region == 'development'){
-      offset_index_pool = index_object$ind_available[[region_ind]]
+      current_pool = index_object$ind_available[[region_ind]]
     } else if (current_program_params$offset_region == 'all'){
-      offset_index_pool = unlist(index_object$ind_available)
+      current_pool = unlist(index_object$ind_available)
     }
   }
   
-  if (length(offset_index_pool) == 0){ #break out when no parcels are left in banking pool
+  if (length(current_pool) == 0){ #break out when no parcels are left in banking pool
     index_object$empty_pool_flag = TRUE
   } else {
     index_object$empty_pool_flag = FALSE
-    index_object$offset_index_pool = offset_index_pool
+    index_object$pool = current_pool
   }
   return(index_object)
   
 }
 
-
-
-
-# 
-# current_offset_pool = global_object$index_object$offset_index_pool
-# 
-# index_object = global_object$index_object 
-# offset_bank = global_object$offset_bank 
-# decline_rates = global_object$decline_rates
 
 
 prepare_offset_pool <- function(current_offset_pool, current_program_params, index_object, offset_bank, decline_rates, 
@@ -567,7 +571,6 @@ prepare_offset_pool <- function(current_offset_pool, current_program_params, ind
                                             global_params,
                                             current_program_params, 
                                             decline_rates,
-                                            decline_rates_initial,
                                             time_horizon, 
                                             yr)      #determine available parcel values, depending on what particular offset policy is in use using counterfactuals etc.
   
@@ -854,8 +857,8 @@ initialise_index_object <- function(parcels, initial_ecology, global_params){
   index_object$developments = list()
   index_object$offsets = list()
   index_object$illegal_clearing = list()
+  index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$parcel_sets = list()
   index_object$parcel_num_remaining = vector()
   index_object$break_flag = FALSE
   
@@ -1167,7 +1170,6 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
                                          global_params, 
                                          current_program_params,
                                          decline_rates, 
-                                         decline_rates_initial,
                                          time_horizon, 
                                          yr)  #determine future development parcel attributes
   
@@ -1251,7 +1253,6 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
 #                                            global_params, 
 #                                            current_program_params,
 #                                            decline_rates, 
-#                                            decline_rates_initial,
 #                                            time_horizon, 
 #                                            yr)  #determine future development parcel attributes
 
@@ -1289,7 +1290,6 @@ develop_from_credit <- function(current_ecology, dev_credit, global_params, curr
                                          time_horizon_type = 'future',
                                          global_params, 
                                          current_program_params,
-                                         decline_rates,
                                          decline_rates,
                                          time_horizon, 
                                          yr)
@@ -1769,6 +1769,8 @@ record_parcel_index <- function(update_type, index_object, parcel_indexes, regio
   } else if (update_type == 'illegal'){
     index_object$illegal_clearing = append(index_object$illegal_clearing, list(parcel_indexes))
     
+  } else if (update_type == 'develop_from_credit'){
+    index_object$dev_credit = append(index_object$dev_credit, list(parcel_indexes))
   }
   return(index_object)
 }
@@ -1879,7 +1881,7 @@ prepare_offset_bank <- function(current_offset_bank, current_offset_pool, offset
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, offset_restoration_flag, 
                                 include_potential_developments,include_potential_offsets,include_illegal_clearing,
-                                time_horizon_type, global_params, current_program_params, decline_rates, decline_rates_initial, time_horizon, yr){
+                                time_horizon_type, global_params, current_program_params, decline_rates, time_horizon, yr){
   
   current_pool = unlist(pool_object$parcel_indexes)
   parcel_count = length(current_pool)
@@ -1929,7 +1931,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                               parcel_num_remaining = pool_object$parcel_num_remaining, 
                               global_params, 
                               current_program_params, 
-                              decline_rates = decline_rates_initial[current_pool], 
+                              decline_rates = decline_rates[current_pool], 
                               time_horizons, 
                               offset_yrs, 
                               include_potential_developments,

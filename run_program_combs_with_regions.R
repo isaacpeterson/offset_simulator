@@ -1,4 +1,3 @@
-
 rm(list = ls())
 WD = getwd()
 
@@ -8,7 +7,7 @@ library(abind)
 library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
-output_folder = '~/Documents/offset_plots_new/'
+output_folder = '~/Documents/offset_data/'
 
 if (!file.exists(output_folder)){
   dir.create(output_folder)
@@ -47,7 +46,7 @@ if (run_from_saved == TRUE){
     parcels <- initialise_shape_parcels(global_params)
     initial_ecology <- initialise_ecology(global_params, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   }
-  decline_rates_initial <- initialise_decline_rates(parcels, global_params$sample_decline_rate, global_params$mean_decline_rates, decline_rate_std = 1e-4, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
+  decline_rates_initial <- initialise_decline_rates(parcels, global_params$sample_decline_rate, global_params$mean_decline_rates, decline_rate_std = 1e-10, eco_dims = global_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
   if (parcels$region_num > 1){
     regional_program_params_group = get_regional_params()
   } else {
@@ -88,9 +87,7 @@ for (policy_ind in seq(policy_num)){
   realisations <- foreach(run_ind = seq_len(global_params$realisation_num)) %dopar%{
     run_offsets_simulation(sim_group)
   }
-  
-#  realisations <- prepare_realisations(realisations) #remove unsuccessful realisations for collate routine
-  
+
   sim_characteristics <- get_sim_characteristics(program_params_to_use, global_params$realisation_num)
   
   if (save_realisations == TRUE){
@@ -142,56 +139,6 @@ for (policy_ind in seq(policy_num)){
       }
     }
     
-#     if (write_pdf == TRUE){
-#       filename = paste(output_folder, sim_characteristics)
-#       if (load_from_grassland_data == TRUE){
-#         filename = paste(filename, '_grass_land', sep = '', collapse = '')
-#       }
-#       filename = paste(filename, '.pdf', sep = '', collapse = '')
-#       pdf(filename, width = 8.3, height = 11.7)
-#       plot_single_policy_collated_realisations(collated_realisations,                                
-#                                                realisation_num = length(realisations), 
-#                                                global_params, 
-#                                                global_params$program_params, 
-#                                                parcel_sum_lims = c(0, 20000), 
-#                                                eco_ind = 1, 
-#                                                lwd_vec = c(3, 0.15), 
-#                                                edge_title = sim_characteristics)              #write plot outputs from collated results to pdf
-#       
-#       if (write_pdf == TRUE){
-#         dev.off()
-#       }
-#       
-#     } 
-    
-    
-    plot_policy_outcome_comparisons(list(collated_realisations),
-                                    list(program_params_to_use),
-                                    offset_bank = FALSE,
-                                    site_plot_lims = c(0, 2e4),
-                                    program_plot_lims = c(0, 10e6), 
-                                    landscape_plot_lims = c(0, 10e6),
-                                    sets_to_plot = 50,
-                                    eco_ind = 1, 
-                                    lwd_vec = c(3, 0.5), 
-                                    edge_title = '', 
-                                    time_steps = 50) 
-    
-
-    plot_policy_impact_comparisons(list(collated_realisations),
-                                   list(program_params_to_use),
-                                   site_plot_lims = c(-1e5, 1e5),
-                                   program_plot_lims = c(-1.5e6, 1.5e6),
-                                   landscape_plot_lims = c(-1.5e6, 1.5e6),
-                                   sets_to_plot = 50,
-                                   eco_ind = 1, 
-                                   lwd_vec = c(3, 0.5), 
-                                   edge_title = '', 
-                                   time_steps = 50, 
-                                   offset_bank = FALSE,
-                                   parcel_num = 1600)
-
-    rm(collated_realisations)
   } 
   
   fin <- Sys.time()
@@ -200,6 +147,20 @@ for (policy_ind in seq(policy_num)){
 }
 
 stopCluster(cl)
+
+plot_impact_set(current_collated_realisation = collated_realisations, 
+                current_program_params = sim_group$program_params_to_use, 
+                site_plot_lims = c(-5e3, 8e3),
+                program_plot_lims = c(-5e5, 6e5), 
+                landscape_plot_lims = c(-3e5, 3e5),
+                sets_to_plot = 50,
+                eco_ind = 1, 
+                lwd_vec = c(3, 0.5), 
+                edge_title = '', 
+                time_steps = 50, 
+                offset_bank = FALSE,
+                parcel_num = 1600)
+
 # 
 # if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
 #   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
