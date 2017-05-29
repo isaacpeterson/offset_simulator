@@ -124,37 +124,37 @@ plot_impact_set <- function(current_collated_realisation, current_program_params
                       site_plot_lims,
                       time_steps)
   
-#   realisation_num = current_collated_realisation$realisation_num
-#   
-#   overlay_realisations(plot_list = list(current_collated_realisation$net_offset_gains, 
-#                                         current_collated_realisation$net_dev_losses,
-#                                         current_collated_realisation$net_program_outcomes),
-#                        plot_title = 'Program Impact', 
-#                        x_lab = paste('Program ', write_NNL_label(current_collated_realisation$program_NNL$NNL_mean[[eco_ind]])),
-#                        realisation_num,
-#                        eco_ind, 
-#                        lwd_vec, 
-#                        col_vec = net_col_vec, 
-#                        legend_loc = 'topleft',
-#                        legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-#                        edge_title, 
-#                        plot_lims = program_plot_lims)
-#   
-#   plot_list = list(current_collated_realisation$landscape_rel_to_counter)
-#   
-#   x_lab = cbind(paste('System ', write_NNL_label(current_collated_realisation$system_NNL$NNL_mean[[eco_ind]])), 
-#                 paste('dev sites =', current_collated_realisation$parcel_nums_used$mean_dev_num, ', offset sites=', current_collated_realisation$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
-#   overlay_realisations(plot_list,
-#                        plot_title = 'Lamdscape Impact', 
-#                        x_lab = t(x_lab),
-#                        realisation_num,
-#                        eco_ind, 
-#                        lwd_vec, 
-#                        col_vec = c('black'),
-#                        legend_loc = 'topright',
-#                        legend_vec = 'NA', 
-#                        edge_title, 
-#                        landscape_plot_lims) 
+  realisation_num = current_collated_realisation$realisation_num
+  
+  overlay_realisations(plot_list = list(current_collated_realisation$net_offset_gains, 
+                                        current_collated_realisation$net_dev_losses,
+                                        current_collated_realisation$net_program_outcomes),
+                       plot_title = 'Program Impact', 
+                       x_lab = paste('Program ', write_NNL_label(current_collated_realisation$program_NNL$NNL_mean[[eco_ind]])),
+                       realisation_num,
+                       eco_ind, 
+                       lwd_vec, 
+                       col_vec = net_col_vec, 
+                       legend_loc = 'topleft',
+                       legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
+                       edge_title, 
+                       plot_lims = program_plot_lims)
+  
+  plot_list = list(current_collated_realisation$landscape_rel_to_counter)
+  
+  x_lab = cbind(paste('System ', write_NNL_label(current_collated_realisation$system_NNL$NNL_mean[[eco_ind]])), 
+                paste('dev sites =', current_collated_realisation$parcel_nums_used$mean_dev_num, ', offset sites=', current_collated_realisation$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
+  overlay_realisations(plot_list,
+                       plot_title = 'Lamdscape Impact', 
+                       x_lab = t(x_lab),
+                       realisation_num,
+                       eco_ind, 
+                       lwd_vec, 
+                       col_vec = c('black'),
+                       legend_loc = 'topright',
+                       legend_vec = 'NA', 
+                       edge_title, 
+                       landscape_plot_lims) 
   
 }
 

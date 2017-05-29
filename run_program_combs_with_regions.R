@@ -18,8 +18,8 @@ source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collap
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-perform_collate_realisations = TRUE
-save_realisations = FALSE
+perform_collate_realisations = FALSE
+save_realisations = TRUE
 save_collated_realisations = FALSE
 run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
 save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
@@ -148,18 +148,31 @@ for (policy_ind in seq(policy_num)){
 
 stopCluster(cl)
 
-plot_impact_set(current_collated_realisation = collated_realisations, 
-                current_program_params = sim_group$program_params_to_use, 
-                site_plot_lims = c(-5e3, 8e3),
-                program_plot_lims = c(-5e5, 6e5), 
-                landscape_plot_lims = c(-3e5, 3e5),
-                sets_to_plot = 50,
-                eco_ind = 1, 
-                lwd_vec = c(3, 0.5), 
-                edge_title = '', 
-                time_steps = 50, 
-                offset_bank = FALSE,
-                parcel_num = 1600)
+
+# plot_outcome_set(current_collated_realisation = collated_realisations,
+#                  current_program_params = sim_group$program_params_to_use,
+#                  offset_bank = TRUE,
+#                  site_plot_lims = c(0, 1e6),
+#                  program_plot_lims = c(0.5e6, 3.5e6), 
+#                  landscape_plot_lims = c(2.5e6, 5e6),
+#                  sets_to_plot = 50,
+#                  eco_ind = 1, 
+#                  lwd_vec = c(3, 0.5), 
+#                  edge_title = '', 
+#                  time_steps = 50) 
+# 
+# plot_impact_set(current_collated_realisation = collated_realisations, 
+#                 current_program_params = sim_group$program_params_to_use, 
+#                 site_plot_lims = c(-5e5, 8e5),
+#                 program_plot_lims = c(-5e5, 6e5), 
+#                 landscape_plot_lims = c(-3e5, 3e5),
+#                 sets_to_plot = 50,
+#                 eco_ind = 1, 
+#                 lwd_vec = c(3, 0.5), 
+#                 edge_title = '', 
+#                 time_steps = 50, 
+#                 offset_bank = TRUE,
+#                 parcel_num = 1600)
 
 # 
 # if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"

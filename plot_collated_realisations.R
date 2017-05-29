@@ -57,7 +57,7 @@ program_params_set = vector('list', policy_num)
 
 setup_sub_plots(nx = 3, ny = 4, x_space = 5, y_space = 5)
 
-for (policy_ind in 1){
+for (policy_ind in seq_len(policy_num)){
   sim_group = readRDS(paste(sim_group_folder, current_sim_group_filenames[policy_ind], sep = '', collapse = ''))
   
   if (load_collated_realisations == TRUE){
@@ -66,7 +66,7 @@ for (policy_ind in 1){
   } else {
     
     realisations = readRDS(paste(realisations_folder, current_realisations_filenames[policy_ind], sep = '', collapse = ''))
-    current_collated_realisation <- collate_realisations(realisations, 
+    current_collated_realisation <- collate_realisations(realisations[1:10], 
                                                          sim_group$global_params, 
                                                          sim_group$program_params_to_use, 
                                                          use_cfac_type_in_sim = FALSE, 
@@ -99,7 +99,6 @@ for (policy_ind in 1){
                   time_steps = 50, 
                   offset_bank,
                   parcel_num)
-  
 }
 
 
