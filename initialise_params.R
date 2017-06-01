@@ -2,13 +2,13 @@
 initialise_global_params <- function(){
   
   global_params = list()
-  global_params$realisation_num = 100 #how many realisations of system to run in parallel
+  global_params$realisation_num = 1 #how many realisations of system to run in parallel
   global_params$eco_dims = 1 #how many ecological dimensions to use in simulation
   global_params$region_num = 1
   global_params$region_num_x = 1
   global_params$region_num_y = 1
-  global_params$mean_decline_rates = -0.02 #set parameter for rate of decline according to logistic curve
-  dim(global_params$mean_decline_rates) = c(global_params$region_num, global_params$eco_dims)
+  global_params$mean_decline_rates = rep(-0.02, global_params$eco_dims) #set parameter for rate of decline according to logistic curve
+  global_params$decline_rate_std = rep(1e-10, global_params$eco_dims)
   global_params$time_steps = 50 #number of timesteps simulation will be run
   global_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   global_params$dims_to_use = seq(global_params$eco_dims) #what dimensions to consider in claculations e.g. keep many layers running while just optimisaing for layer 1 or 2 or 1:2
@@ -40,16 +40,16 @@ initialise_program_params <- function(){
   program_params = list()
   program_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
   program_params$offset_region = 'development' # force offsets to be in same region as development
-  program_params$use_offset_bank = c(TRUE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
+  program_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
   program_params$offset_bank_start = 1 #min time for offset banking to initialise
   program_params$offset_bank_end = 1 #mix time for offset banking to finish
   program_params$offset_bank_num = 700 # how many parcels to include in banking scheme
    
-  program_params$development_selection_type = 'random' #how the development parcels are selected - 'random' - sample from pool of available indexes
+  program_params$development_selection_type = 'random'  #how the development parcels are selected - 'random' or 'weighted'
   program_params$offset_parcel_for_parcel = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
 
   program_params$offset_time_horizon = c(15)
-  program_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') #future_condition', 'restoration_gains', 'restoration_condition_value'
+  program_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') #future_condition', 'restoration_gains', 
   program_params$dev_calc_type = c('future_condition')                    #'future_condition', 'current_condition' 
   
   program_params$include_potential_developments_in_offset_calc = c(FALSE)

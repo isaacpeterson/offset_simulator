@@ -1,10 +1,10 @@
-run_offsets_simulation <- function(sim_group){ # run the model and return outputs
+perform_offsets_simulation <- function(sim_group){ # run the model and return outputs
   
   if (global_params$set_seed == TRUE){
     set.seed(123)
   }
   global_object = intialise_global_object(sim_group$global_params, sim_group$initial_ecology, sim_group$decline_rates_initial, sim_group$parcels)
-  global_object <- run_system(global_object, sim_group$global_params, sim_group$program_params_to_use, sim_group$decline_rates_initial, sim_group$parcels)  
+  global_object <- run_system(global_object, sim_group$global_params, sim_group$program_params_to_use, sim_group$decline_rates_initial, sim_group$parcels, sim_group$dev_weights)  
   
   return(global_object)
 }  
@@ -38,7 +38,7 @@ parcel_set_list_names <- function(){
 }
 
 
-run_system <- function(global_object, global_params, program_params_to_use, decline_rates_initial, parcels){ # main engine for code - returns all development/offset parcel sets, land parcel trajectories etc.
+run_system <- function(global_object, global_params, program_params_to_use, decline_rates_initial, parcels, dev_weights){ # main engine for code - returns all development/offset parcel sets, land parcel trajectories etc.
 
   for (yr in seq_len(global_params$time_steps)){          #run through main time loop
 
@@ -83,6 +83,7 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
           
           global_object$credit_match_object = develop_from_credit(global_object$current_ecology, 
                                              global_object$dev_credit_to_use, 
+                                             dev_weights, 
                                              global_params,
                                              current_program_params,
                                              intervention_vec = current_program_params$intervention_vec, 
@@ -94,6 +95,7 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
                                              time_horizon)
       
           if (global_object$credit_match_object$match_flag == TRUE){
+            print('matched with credit')
             #stopifnot(global_object$credit_match_object$match_flag == FALSE)
             global_object$dev_credit = global_object$credit_match_object$dev_credit
             print(paste('credit flag ', global_object$credit_match_object$match_vals))
@@ -107,10 +109,10 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
         } 
         
         if ( (global_object$credit_match_object$match_flag == FALSE && current_program_params$use_parcel_sets == TRUE)){  #if insufficient credits accumulated, perform offset parcel set match
-          print('credit fail flag')
-          print(global_object$dev_credit_to_use)
+          
           global_object$match_object <- match_parcel_set(offset_pool_object = global_object$offset_pool_object, 
-                                           global_object$dev_credit_to_use, 
+                                           global_object$dev_credit_to_use,
+                                           dev_weights, 
                                            global_params, 
                                            current_program_params, 
                                            intervention_vec = current_program_params$intervention_vec, 
@@ -124,7 +126,7 @@ run_system <- function(global_object, global_params, program_params_to_use, decl
           
           if (global_object$match_object$match_flag == TRUE){
             
-            print('match flag')
+            print('matched parcel sets')
             global_object$recorded_dev_credit = append(global_object$recorded_dev_credit, global_object$match_object$dev_credit)
             global_object$dev_credit = global_object$match_object$dev_credit
             global_object <- perform_offset_routine(global_object, global_object$match_object, current_program_params, region_ind, global_params)
@@ -752,10 +754,21 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-initialise_parcels_from_data <- function(filename){
+
+initialise_parcels_from_data <- function(data_folder, data_type){
   
-  img = read.pnm(file = filename, cellres = 1)
-  parcel_array = img@grey
+  if (data_type == 'grassland'){
+    filename = paste(data_folder, 'planning.units.uid_20ha.pgm', sep = '', collapse = '')
+    img = read.pnm(file = filename, cellres = 1)
+    parcel_array = img@grey
+  } else if (data_type == 'hunter'){
+    parcels_raster <- readRDS(paste(data_folder, 'parcels_raster.rds', sep = '', collapse = ''))
+    LGA_raster <- readRDS(paste(data_folder, 'LGA_raster.rds', sep = '', collapse = ''))
+    parcels_mask_raster <- readRDS(paste(data_folder, 'parcels_mask_raster.rds', sep = '', collapse = ''))
+    parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
+    parcel_array[is.na(parcel_array)] = 0
+  }
+  
   land_index_vals = unique(as.vector(parcel_array))
   landscape_dims = dim(parcel_array)
   land_parcels <- lapply(seq_along(land_index_vals), function(i) which(parcel_array == land_index_vals[i]))
@@ -770,20 +783,43 @@ initialise_parcels_from_data <- function(filename){
   parcels$regions = regions
   parcels$region_num = region_num
   parcels$parcel_array = parcel_array
+  
   return(parcels)
 }
 
-initialise_ecology_from_data <- function(filename, land_parcels, eco_dims){
+initialise_ecology_from_grassland_data <- function(filename, land_parcels, eco_dims){
   img = read.pnm(file = filename, cellres = 1)
-  landscape = list()
+  landscape_ecology = list()
   img_to_use = img@grey
-  zero_inds = which(img_to_use == 0)
-  img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
-  landscape[[1]] = 100*img_to_use
-  initial_ecology <- split_landscape_to_land_parcels(landscape, land_parcels, eco_dims)
+#   zero_inds = which(img_to_use == 0)
+#   img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
+  landscape_ecology[[1]] = 100*img_to_use
+  initial_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
   return(initial_ecology)
 }
 
+
+
+raster_to_array <- function(raster_object){
+  raster_array = as.matrix(raster_object)
+  raster_array[is.na(raster_array)] = 0
+  return(raster_array)
+}
+
+
+initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, eco_dims){
+  veg_raster <- readRDS(paste(data_folder, 'veg_raster.rds', sep = '', collapse = ''))
+  animal_raster <- readRDS(paste(data_folder, 'animal_raster.rds', sep = '', collapse = ''))
+  species_raster = stack(veg_raster, animal_raster)
+  landscape_ecology = vector('list', eco_dims)
+  
+  for (eco_ind in seq(eco_dims)){
+    landscape_ecology[[eco_ind]] = raster_to_array(subset(species_raster, eco_ind))
+  }
+  
+  initial_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
+  return(initial_ecology)
+}
 
 initialise_shape_parcels <- function(global_params){
   parcels = list()
@@ -1054,37 +1090,20 @@ initialise_ecology <- function(global_params, land_parcels){    #initialise ecol
 
 # sample_decline_rate = global_params$sample_decline_rate
 # mean_decline_rates = global_params$mean_decline_rates
-# decline_rate_std = 1e-4
+# decline_rate_std = global_params$decline_rate_std
+
 initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, eco_dims){
   
-  regions = parcels$regions
   land_parcels = parcels$land_parcels
   parcel_num = length(land_parcels)
-  decline_rates = generate_nested_list(parcel_num, eco_dims)
-  
-  for (eco_ind in seq_len(eco_dims)){
-    for (region_ind in seq_len(length(regions))){
-      current_region = regions[[region_ind]]
-      current_parcel_num = length(current_region)    
-      decline_params = c(length(current_region), mean_decline_rates[region_ind, eco_ind], decline_rate_std)
-      
-      if (sample_decline_rate == TRUE){
-        region_decline_rates = array(rnorm(decline_params[1], mean = decline_params[2], sd = decline_params[3]), length(current_region))
-      } else {
-        region_decline_rates = array(rep(mean_decline_rates[region_ind, eco_ind], length(current_region), length(current_region)))
-      }
-      
-      for (region_parcel_count_ind in seq_len(length(current_region))){
-        parcel_ind = current_region[region_parcel_count_ind]
-        decline_rates[[parcel_ind]][[eco_ind]] = region_decline_rates[region_parcel_count_ind]
-      }
-    }
+  decline_rates = vector('list', parcel_num)
+  for (parcel_ind in seq(parcel_num)){
+    decline_rates[[parcel_ind]] = lapply(seq(eco_dims), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
   }
   
   return(decline_rates)
   
 }
-
 
 
 select_rand_index <- function(ind_available, parcel_num){
@@ -1102,8 +1121,9 @@ select_rand_index <- function(ind_available, parcel_num){
 # current_ecology = global_object$current_ecology
 
 
-match_parcel_set <- function(offset_pool_object, dev_credit, global_params, current_program_params, 
-                             intervention_vec, ind_available, current_ecology, decline_rates_initial, land_parcels, yr, time_horizon, region_ind){
+match_parcel_set <- function(offset_pool_object, dev_credit, dev_weights, global_params, current_program_params, 
+                             intervention_vec, ind_available, current_ecology, decline_rates_initial, 
+                             land_parcels, yr, time_horizon, region_ind){
   
   match_object = list()
   match_object$match_flag = FALSE
@@ -1112,8 +1132,8 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
   current_pool_indexes = offset_pool_object$parcel_indexes
   parcel_num_remaining = length(ind_available)
   current_match_pool = ind_available
-#   current_dev_prob_layer = dev_prob_layer[current_match_pool]
-#   current_dev_prob_layer = current_dev_prob_layer/max(current_dev_probe_layer)
+  current_dev_weights = dev_weights[current_match_pool]
+  current_dev_weights = lapply(seq_along(current_dev_weights), function(i) current_dev_weights[[i]]/sum(unlist(current_dev_weights)))
   
   if (parcel_num_remaining == 0){ # exit if no parcels remain
     return(match_object)
@@ -1148,7 +1168,7 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
     if (current_program_params$development_selection_type == 'random'){
       sample_ind = sample(seq_along(current_match_pool), size = 1)
     } else if (current_program_params$development_selection_type == 'weighted'){
-      sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_prob_list)
+      sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_weights)
     }
     
     current_test_index = current_match_pool[sample_ind]
@@ -1168,6 +1188,7 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
                                      current_pool = match_pool_to_use, 
                                      vals_to_use, 
                                      dev_credit, 
+                                     dev_weights, 
                                      use_parcel_set_dev_credit = current_program_params$use_parcel_set_dev_credit, 
                                      offset_multiplier = current_program_params$offset_multiplier, 
                                      match_threshold = global_params$match_threshold, 
@@ -1242,7 +1263,7 @@ match_parcel_set <- function(offset_pool_object, dev_credit, global_params, curr
 # land_parcels = global_object$land_parcels
 
 
-develop_from_credit <- function(current_ecology, dev_credit, global_params, current_program_params, intervention_vec, dev_ind_available, decline_rates_initial, land_parcels, region_ind, yr, time_horizon){
+develop_from_credit <- function(current_ecology, dev_credit, dev_weights, global_params, current_program_params, intervention_vec, dev_ind_available, decline_rates_initial, land_parcels, region_ind, yr, time_horizon){
   
   parcel_num_remaining = length(dev_ind_available)
   
@@ -1269,7 +1290,8 @@ develop_from_credit <- function(current_ecology, dev_credit, global_params, curr
                                    match_procedure = 'random', 
                                    current_pool = dev_pool_object$parcel_indexes, 
                                    vals_to_use = dev_pool_object$parcel_vals_used, 
-                                   dev_credit, 
+                                   dev_credit,
+                                   dev_weights, 
                                    use_parcel_set_dev_credit = FALSE, 
                                    offset_multiplier = current_program_params$offset_multiplier, 
                                    match_threshold = global_params$match_threshold, 
@@ -1562,8 +1584,8 @@ select_pool_to_match <- function(dims_to_use, ndims, thresh, pool_num, vals_to_u
 # dims_to_use = global_params$eco_dims
 # max_offset_parcel_num = global_params$max_offset_parcel_num 
 
-select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, dev_credit, use_parcel_set_dev_credit, 
-                             offset_multiplier, match_threshold, vals_to_match_initial, parcel_for_parcel, dims_to_use, max_offset_parcel_num,yr){
+select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, dev_credit, dev_weights, use_parcel_set_dev_credit, 
+                             offset_multiplier, match_threshold, vals_to_match_initial, parcel_for_parcel, dims_to_use, max_offset_parcel_num, yr){
   
   ndims = length(dims_to_use)
   thresh = array(match_threshold, ndims)         #create an array of threshold values with length equal to the dimensions to match to
@@ -1597,6 +1619,10 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
     } else if (match_procedure == 'random'){
       match_params = list()
       match_params$match_ind = sample(length(current_pool), 1)
+      match_params$match_vals = parcel_vals_pool[match_params$match_ind]
+    } else if (match_procedure == 'weighted'){
+      match_params = list()
+      match_params$match_ind = sample(length(current_pool), 1, dev_weights[current_pool])
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
     
@@ -1877,7 +1903,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     if (offset_restoration_flag == TRUE){
       restoration_vals = calc_parcel_trajs(current_parcel_ecologies = pool_object$parcel_ecologies, 
                                            action_type = 'restore', 
-                                           current_decline_rates = decline_rates[current_pool], 
+                                           current_decline_rates = decline_rates_initial[current_pool], 
                                            time_horizons, 
                                            global_params, 
                                            global_params$restoration_rate_params, 
@@ -2448,7 +2474,7 @@ combine_land_parcels_to_landscape <- function(current_ecology, land_parcels, lan
 }
 
 
-split_landscape_to_land_parcels <- function(landscape, land_parcels, eco_dims){
+split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, eco_dims){
   parcel_num = length(land_parcels)
   current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = eco_dims)
   
@@ -2457,7 +2483,7 @@ split_landscape_to_land_parcels <- function(landscape, land_parcels, eco_dims){
     parcel_dims = length(current_parcel)
     
     for (eco_ind in seq_len(eco_dims)){
-      current_ecology[[parcel_ind]][[eco_ind]] = landscape[[eco_ind]][current_parcel]
+      current_ecology[[parcel_ind]][[eco_ind]] = landscape_ecology[[eco_ind]][current_parcel]
     }
   }
   return(current_ecology)

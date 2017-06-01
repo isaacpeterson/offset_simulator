@@ -18,7 +18,9 @@ source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collap
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-perform_collate_realisations = FALSE
+collate_realisations = TRUE
+plot_impacts = TRUE
+
 save_realisations = FALSE
 save_collated_realisations = FALSE
 run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
@@ -136,13 +138,43 @@ for (policy_ind in seq(policy_num)){
     
   }
   
+  if (collate_realisations == TRUE){
+    collated_realisations <- run_collate_routines(realisations, 
+                                                sim_group$global_params, 
+                                                sim_group$program_params_to_use, 
+                                                use_cfac_type_in_sim = FALSE, 
+                                                sim_group$decline_rates_initial, 
+                                                sim_group$parcels, 
+                                                sim_group$initial_ecology) #take simulation ouputs and calculate gains and losses
+  
+    if (plot_impacts == TRUE){
+      setup_sub_plots(nx = 3, ny = 1, x_space = 5, y_space = 5)
+      plot_impact_set(collated_realisations, 
+                      current_program_params = sim_group$program_params_to_use, 
+                      site_plot_lims = c(-1e4, 1e4),
+                      program_plot_lims = c(-6e5, 6e5), 
+                      landscape_plot_lims = c(-6e5, 6e5), 
+                      sets_to_plot = 50,
+                      eco_ind = 1, 
+                      lwd_vec = c(3, 0.5), 
+                      edge_title = sim_characteristics, 
+                      time_steps = 50, 
+                      offset_bank = sim_group$program_params_to_use[[1]]$use_offset_bank,
+                      sim_group$parcels$land_parcel_num)
+    }
+    if (save_collated_realisations == TRUE){
+      current_output_folder = paste(output_folder, '/collated_realisations/', sep = '', collapse = '')
+      
+      if (!file.exists(current_output_folder)){
+        dir.create(current_output_folder)
+      }
+      saveRDS(collated_realisations, paste(collated_folder, sim_characteristics, '.rds', sep = '', collapse = '')) 
+    }
+  }
+  
   fin <- Sys.time()
   print(fin - strt)
   
 }
 
 stopCluster(cl)
-
-
-
-

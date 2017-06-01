@@ -13,7 +13,7 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
 # parcels = sim_group$parcels 
 # initial_ecology = sim_group$initial_ecology
 
-collate_realisations <- function(realisations, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial, parcels, initial_ecology){
+run_collate_routines <- function(realisations, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial, parcels, initial_ecology){
   
   parcel_nums_used = assess_parcels_used(realisations)
   
@@ -21,7 +21,7 @@ collate_realisations <- function(realisations, global_params, program_params, us
   
   realisation_num = length(realisations)
   
-  collated_offsets <- run_collate_routine(realisations,
+  collated_offsets <- run_site_scale_collate_routine(realisations,
                                           initial_ecology, 
                                           parcels, 
                                           realisation_num,
@@ -31,7 +31,7 @@ collate_realisations <- function(realisations, global_params, program_params, us
                                           use_cfac_type_in_sim, 
                                           decline_rates_initial)
   
-  collated_devs = run_collate_routine(realisations, 
+  collated_devs = run_site_scale_collate_routine(realisations, 
                                       initial_ecology, 
                                       parcels, 
                                       realisation_num, 
@@ -41,7 +41,7 @@ collate_realisations <- function(realisations, global_params, program_params, us
                                       use_cfac_type_in_sim, 
                                       decline_rates_initial)
   
-  collated_dev_credit = run_collate_routine(realisations, 
+  collated_dev_credit = run_site_scale_collate_routine(realisations, 
                                             initial_ecology, 
                                             parcels, 
                                             realisation_num, 
@@ -51,7 +51,7 @@ collate_realisations <- function(realisations, global_params, program_params, us
                                             use_cfac_type_in_sim, 
                                             decline_rates_initial)
   
-  collated_offset_bank = run_collate_routine(realisations,
+  collated_offset_bank = run_site_scale_collate_routine(realisations,
                                              initial_ecology,  
                                              parcels, 
                                              realisation_num, 
@@ -61,7 +61,7 @@ collate_realisations <- function(realisations, global_params, program_params, us
                                              use_cfac_type_in_sim, 
                                              decline_rates_initial)
   
-  collated_illegal_clearing = run_collate_routine(realisations, 
+  collated_illegal_clearing = run_site_scale_collate_routine(realisations, 
                                                   initial_ecology, 
                                                   parcels, 
                                                   realisation_num, 
@@ -530,7 +530,7 @@ assess_parcels_used <- function(realisations){
   offset_bank_nums = unlist(lapply(seq_along(realisations), function(i) length(realisations[[1]]$offset_bank$parcel_indexes)))
   program_nums = list()
   program_nums$mean_dev_num = round(mean(dev_nums)) + round(mean(dev_credit_nums))
-  program_nums$mean_offset_num = round(mean(offset_nums)) = round(mean(offset_bank_nums))
+  program_nums$mean_offset_num = round(mean(offset_nums)) + round(mean(offset_bank_nums))
   return(program_nums)
 }
 
@@ -720,9 +720,7 @@ collate_cfacs <- function(current_model_outputs, parcels, collate_type, global_p
 #collate_type = 'dev_credit'
 
 
-
-
-run_collate_routine <- function(realisations, initial_ecology, parcels, realisation_num, collate_type, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial){
+run_site_scale_collate_routine <- function(realisations, initial_ecology, parcels, realisation_num, collate_type, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial){
   collated_object = list()
   collated_object = collate_gains_degs(realisations, initial_ecology, parcels, realisation_num, collate_type, global_params, program_params, use_cfac_type_in_sim, decline_rates_initial)
   if (length(collated_object) > 0){

@@ -83,30 +83,20 @@ plot_site_outcomes <- function(current_collated_realisation, current_program_par
 
 
 
-# collated_realisation_set = list(collated_realisations)
-# program_params_set = list(program_params_to_use)
-# site_plot_lims = c(-1e4, 1e4)
-# program_plot_lims = c(-1.5e6, 1.5e6)
-# landscape_plot_lims = c(-0.5e6, 0.5e6)
+
+# current_program_params = sim_group$program_params_to_use 
+# site_plot_lims = c(-6e5, 6e5)
+# program_plot_lims = c(-6e5, 6e5) 
+# landscape_plot_lims = c(0, 1e6)
 # sets_to_plot = 50
 # eco_ind = 1 
 # lwd_vec = c(3, 0.5) 
-# edge_title = '' 
+# edge_title = policy_type 
 # time_steps = 50 
-# offset_bank = FALSE
-
-
-
-# site_plot_lims = c(-4e3, 4e3)
-# program_plot_lims = c(-8e5, 8e5) 
-# landscape_plot_lims = c(-3e5, 3e5)
-# sets_to_plot = 50
-# eco_ind = 1 
-# lwd_vec = c(3, 0.5) 
-# edge_title = ''
-# time_steps = 50 
-# offset_bank = FALSE
+# offset_bank
 # parcel_num
+
+
 
 plot_impact_set <- function(current_collated_realisation, current_program_params, site_plot_lims, program_plot_lims, landscape_plot_lims, sets_to_plot, eco_ind, lwd_vec, edge_title, time_steps, offset_bank, parcel_num){
   
@@ -145,7 +135,7 @@ plot_impact_set <- function(current_collated_realisation, current_program_params
   x_lab = cbind(paste('System ', write_NNL_label(current_collated_realisation$system_NNL$NNL_mean[[eco_ind]])), 
                 paste('dev sites =', current_collated_realisation$parcel_nums_used$mean_dev_num, ', offset sites=', current_collated_realisation$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
   overlay_realisations(plot_list,
-                       plot_title = 'Lamdscape Impact', 
+                       plot_title = 'Landscape Impact', 
                        x_lab = t(x_lab),
                        realisation_num,
                        eco_ind, 
@@ -159,12 +149,55 @@ plot_impact_set <- function(current_collated_realisation, current_program_params
 }
 
 
-# parcel_sum_lims = c(0, 20000) 
-# eco_ind = 1 
-# lwd_vec = c(3, 0.15) 
-# edge_title = plot_characteristics
-# realisation_num = length(realisations)
-# program_params = global_params$program_params
+# 
+# if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
+#   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+#                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+#   graphics.off()
+#   for (yr in seq_len(global_params$time_steps)){
+#     image(net_traj[[1]][, , yr], zlim = c(global_params$min_eco_val, global_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
+#     Sys.sleep(0.1)
+#     print(paste('year = ', yr))
+#   }
+# }
+# 
+# 
+# if (write_movie == TRUE){
+#   net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+#                                   time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = global_params$eco_dims)
+#   make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste(output_folder, 'offset_time_slice/', sep = '', collapse = ''))
+# }
+# 
+# if (write_offset_layer == TRUE){ #write all offset parcels to single layer to output as image
+#   
+#   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
+#   offset_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
+#                                         layer_type = 'offset', 
+#                                         program_parcels = unlist(realisations[[1]]$index_object$offsets),
+#                                         land_parcels = parcels$land_parcels, 
+#                                         time_steps = global_params$time_steps, 
+#                                         landscape_dims = parcels$landscape_dims, 
+#                                         eco_dims = global_params$eco_dims)
+#   
+#   png(filename = paste(output_folder, 'offset_layer.png', sep = '', collapse = ''), height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
+#   image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+#   dev.off()
+#   
+#   rgb.palette <- colorRampPalette(c("black", "red"), space = "rgb")
+#   dev_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
+#                                         layer_type = 'development', 
+#                                         program_parcels = unlist(realisations[[1]]$index_object$developments),
+#                                         land_parcels = parcels$land_parcels, 
+#                                         time_steps = global_params$time_steps, 
+#                                         landscape_dims = parcels$landscape_dims, 
+#                                         eco_dims = global_params$eco_dims) #write all developed parcels to single layer to output as image
+#   
+#   png(filename = paste(output_folder, 'dev_layer.png', sep = '', collapse = ''), height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
+#   image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+#   dev.off()
+#   
+# }
+
 
 plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, global_params, program_params, 
                                                      parcel_sum_lims, eco_ind, lwd_vec, edge_title){
