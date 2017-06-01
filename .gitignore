@@ -17,3 +17,4 @@ run_program_combs.R
 run_system_routines.R
 run_system_routines_multidim.R
 run_system_routines_multidim_multiregion.R
+run_program_combs_with_regions.R
