@@ -7,7 +7,7 @@ library(abind)
 library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
-output_folder = paste(path.expand('~'), '/offset_data/', sep = '', collapse = '')
+output_folder = paste(path.expand('~'), '/offset_data/simulated/', sep = '', collapse = '')
 
 if (!file.exists(output_folder)){
   dir.create(output_folder)
@@ -18,11 +18,15 @@ source(paste(source_folder,'run_system_routines_modularised.R', sep = '', collap
 source(paste(source_folder,'collate_routines.R', sep = '', collapse = ''))                                # functions to collate simulation outputs
 source(paste(source_folder,'plot_routines.R', sep = '', collapse = ''))                                   # functions to plot collated outputs
 
-collate_realisations = TRUE
-plot_impacts = TRUE
 
-save_realisations = FALSE
-save_collated_realisations = FALSE
+
+save_realisations = TRUE 
+collate_realisations = TRUE #TRUE, FALSE to perform collate routines as well as running the simulation or not
+save_collated_realisations = TRUE
+plot_impacts = TRUE #if collating realisations switch on to see impacts 
+
+
+
 run_from_saved = FALSE                                   # run from previous data or run from newly generated ecology etc.
 save_initial_conditions = FALSE                             # use this to run from simulated data (calculated at the initialisation of the code) or load data (eg from zonation etc)
 data_type = 'simulated'                                  # use this to run from simulated data (FALSE) or load data (TRUE - eg data from zonation etc - this will need to be modified to fit the expected format)
