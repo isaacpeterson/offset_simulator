@@ -7,7 +7,7 @@ library(abind)
 library(pixmap)
 
 source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
-output_folder = '~/Documents/offset_data/'
+output_folder = paste(path.expand('~'), '/offset_data/', sep = '', collapse = '')
 
 if (!file.exists(output_folder)){
   dir.create(output_folder)
