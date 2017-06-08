@@ -8,12 +8,12 @@ library(pixmap)
 
 source_folder = paste0(WD, '/')
 
-action_type = 'plot_impacts' #'collate_realisations', 'plot_impacts', or 'plot_outcomes'.
-policy_type = "restoration_gains"  #'restoration_gains', 'avoided_degs', 'net_gains'
+action_type = 'plot_outcomes' #'collate_realisations', 'plot_impacts', or 'plot_outcomes'.
+policy_type = "net_gains"  #'restoration_gains', 'avoided_degs', 'net_gains'
 offset_bank = FALSE
 write_pdf = FALSE
 data_type = 'simulated'
-time_created = '2017-159-103225'
+folder_to_collate = '2017-159-103225'
 
 if (offset_bank == FALSE){
   policy_type = paste0(policy_type, '_offset_bank_FALSE')
@@ -24,9 +24,9 @@ if (offset_bank == FALSE){
 data_folder = paste0(path.expand("~"), '/offset_data/', data_type, '/')
 
 
-collated_folder = paste0(data_folder, 'collated_realisations/', time_created, '/')
-realisations_folder = paste0(data_folder, 'realisations/', time_created, '/')
-sim_group_folder = paste0(data_folder, 'sim_group/', time_created, '/')
+collated_folder = paste0(data_folder, 'collated_realisations/', folder_to_collate, '/')
+realisations_folder = paste0(data_folder, 'realisations/', folder_to_collate, '/')
+sim_group_folder = paste0(data_folder, 'sim_group/', folder_to_collate, '/')
 
 source(paste0(source_folder,'simulation_routines.R'))                 # functions to run simulation
 source(paste0(source_folder,'collate_routines.R'))                                # functions to collate simulation outputs
