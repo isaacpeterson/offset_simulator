@@ -6,7 +6,7 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source_folder = paste0(path.expand("~"), '/Documents/R_Codes/Offsets_Working_Feb_3/')
+source_folder = paste0(WD, '/')
 
 action_type = 'plot_impacts' #'collate_realisations', 'plot_impacts', or 'plot_outcomes'.
 policy_type = "restoration_gains"  #'restoration_gains', 'avoided_degs', 'net_gains'

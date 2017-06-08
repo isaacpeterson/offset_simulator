@@ -22,11 +22,13 @@ run_params <- initialise_run_params()
 ecology_params <- initialise_ecology_params()
 policy_params_group = generate_policy_params_group(run_params)
 
-data_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/data/')
-
 if (run_params$save_realisations == TRUE){
   run_params <- write_output_folders(run_params, output_folder)
 }
+
+data_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/data/')
+
+
 
 simulation_data <- initialise_simulation_data(run_params, ecology_params)
 
