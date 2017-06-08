@@ -1,4 +1,16 @@
-Download all files from git repository
+Download and install the latest version of R
+
+if you are running from a unix system to install R:
+sudo apt-get update
+sudo apt-get install r-base
+sudo apt-get install git
+
+
+from R run
+install.packages("foreach")
+install.packages("doParallel")
+install.packages("abind")
+install.packages("pixmap")
 
 initialise_params.R 
 	- set policy parameters and ecology parameters e.g. offset gains structure, ecology size and dimensions etc
