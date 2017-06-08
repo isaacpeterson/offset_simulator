@@ -22,5 +22,8 @@ run_system_routines_modularised.R
 bind_collated_realisations.R
 run_program_combs_with_regions.R
 initialise_params.R
+.Rhistory
+.Rapp.history
+
 
 
