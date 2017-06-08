@@ -179,7 +179,7 @@ run_system <- function(global_object, run_params, ecology_params, policy_params,
   
   if (run_params$save_procedure == 'by_single_realisation'){
     current_dir = run_params$realisations_folder
-    saveRDS(list(global_object$trajectories), paste0(tempfile(pattern= current_policy_params$sim_characteristics, tmpdir = current_dir), '.rds')) 
+    saveRDS(list(global_object$trajectories), paste0(tempfile(pattern= paste0('reals_', current_policy_params$sim_characteristics), tmpdir = current_dir), '.rds')) 
   } else{
     return(global_object)
   }

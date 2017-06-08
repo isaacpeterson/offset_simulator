@@ -5,7 +5,7 @@ initialise_run_params <- function(){
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
   
   run_params$save_realisations = TRUE 
-  run_params$save_procedure = 'realisations_block' #'realisations_block', 'by_single_realisation', 'by_time_slice'
+  run_params$save_procedure = 'by_single_realisation' #'realisations_block', 'by_single_realisation', 'by_time_slice'
   
   run_params$collate_realisations = TRUE #TRUE, FALSE to perform collate routines as well as running the simulation or not
   run_params$save_collated_realisations = TRUE
@@ -16,7 +16,7 @@ initialise_run_params <- function(){
   run_params$show_movie = FALSE                                      # show output in movie form of evolving ecology
   run_params$write_offset_layer = FALSE                                    # write layer containing all offset parcels to pdf
   
-  run_params$realisation_num = 1
+  run_params$realisation_num = 5
   run_params$time_steps = 50
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
 

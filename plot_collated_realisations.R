@@ -23,10 +23,9 @@ if (offset_bank == FALSE){
 
 data_folder = paste0(path.expand("~"), '/offset_data/', data_type, '/')
 
-
-collated_folder = paste0(data_folder, 'collated_realisations/', folder_to_collate, '/')
-realisations_folder = paste0(data_folder, 'realisations/', folder_to_collate, '/')
-sim_group_folder = paste0(data_folder, 'sim_group/', folder_to_collate, '/')
+collated_folder = paste0(data_folder, '/collated_realisations/', folder_to_collate, '/')
+realisations_folder = paste0(data_folder, '/realisations/', folder_to_collate, '/')
+sim_group_folder = paste0(data_folder, '/sim_group/', folder_to_collate, '/')
 
 source(paste0(source_folder,'simulation_routines.R'))                 # functions to run simulation
 source(paste0(source_folder,'collate_routines.R'))                                # functions to collate simulation outputs
@@ -59,7 +58,7 @@ if (action_type == 'collate_realisations'){
   } 
   
   if (offset_bank == TRUE){
-    site_plot_lims = c(0, 6e5)
+    site_plot_lims = c(0, 2e6)
     site_impact_plot_lims = c(-1e6, 1e6)
   } else {
     site_plot_lims = c(0, 1e4)

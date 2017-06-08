@@ -40,15 +40,22 @@ print(paste('testing ', length(policy_params_group), ' combinations on ', run_pa
 for (policy_ind in seq_along(policy_params_group)){
   current_policy_params = select_current_policy(policy_params_group, policy_ind, run_params$realisation_num)
   
-  realisations <- foreach(run_ind = seq_len(run_params$realisation_num)) %dopar%{
-   perform_offsets_simulation(simulation_data, current_policy_params, ecology_params, run_params)
+  if (run_params$save_procedure == 'realisations_block'){
+    realisations <- foreach(run_ind = seq_len(run_params$realisation_num)) %dopar%{
+      perform_offsets_simulation(simulation_data, current_policy_params, ecology_params, run_params)
+    }  
+  } else {
+    foreach(run_ind = seq_len(run_params$realisation_num)) %dopar%{
+      perform_offsets_simulation(simulation_data, current_policy_params, ecology_params, run_params)
+    }  
   }
-  
   if (run_params$save_realisations == TRUE){
     sim_group_to_save = list(simulation_data, current_policy_params, run_params, ecology_params)
     names(sim_group_to_save) = c('simulation_data', 'current_policy_params', 'run_params', 'ecology_params')
-    saveRDS(sim_group_to_save, paste0(run_params$sim_group_folder, current_policy_params$sim_characteristics, '.rds'))
-    saveRDS(realisations, paste0(run_params$realisations_folder, current_policy_params$sim_characteristics, '.rds'))
+    saveRDS(sim_group_to_save, paste0(run_params$sim_group_folder, 'sim_data_', current_policy_params$sim_characteristics, '.rds'))
+    if (run_params$save_procedure == 'realisations_block'){
+      saveRDS(realisations, paste0(run_params$realisations_folder, 'realisations_',current_policy_params$sim_characteristics, '.rds'))
+    }
   }
   
   if (run_params$collate_realisations == TRUE){
@@ -63,7 +70,7 @@ for (policy_ind in seq_along(policy_params_group)){
     
     
     if (run_params$save_collated_realisations == TRUE){
-      saveRDS(collated_realisations, paste0(run_params$collated_folder, current_policy_params$sim_characteristics, '.rds')) 
+      saveRDS(collated_realisations, paste0(run_params$collated_folder, 'collated_reals_', current_policy_params$sim_characteristics, '.rds')) 
     }
     if (run_params$plot_impacts == TRUE){
       setup_sub_plots(nx = 3, ny = 2, x_space = 5, y_space = 5)

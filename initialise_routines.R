@@ -117,7 +117,7 @@ write_output_folders <- function(run_params, output_folder){
     dir.create(output_folder)
   }
   
-  run_params$output_folder = paste0(output_folder, run_params$data_type, '/')
+  run_params$output_folder = paste0(output_folder, '/', run_params$data_type, '/')
   if (!file.exists(run_params$output_folder)){
     dir.create(run_params$output_folder)
   }
