@@ -8,16 +8,15 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source_folder = '~/Documents/R_Codes/Offsets_Working_Feb_3/'
+source_folder = paste0(WD, '/')
+output_folder = paste0(path.expand('~'), '/offset_data/')
+
 source(paste0(source_folder, 'initialise_params.R'))
 source(paste0(source_folder, 'initialise_routines.R'))                              # functions to collate simulation outputs
 source(paste0(source_folder,'simulation_routines.R'))                # functions to run simulation
 source(paste0(source_folder,'collate_routines.R'))                                # functions to collate simulation outputs
 source(paste0(source_folder,'plot_routines.R'))                                   # functions to plot collated outputs
 
-
-
-output_folder = paste0(path.expand('~'), '/offset_data/')
 
 run_params <- initialise_run_params()
 ecology_params <- initialise_ecology_params()
@@ -30,12 +29,11 @@ if (run_params$save_realisations == TRUE){
 }
 
 simulation_data <- initialise_simulation_data(run_params, ecology_params)
-crs = detectCores(all.tests = FALSE, logical = TRUE)
 
-cl<-makeCluster(crs)        #allow parallel processing on n = 4 processors
+cl<-makeCluster(run_params$crs)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
-print(paste('testing ', length(policy_params_group), ' combinations on ', crs, ' cores'))
+print(paste('testing ', length(policy_params_group), ' combinations on ', run_params$crs, ' cores'))
 
 for (policy_ind in seq_along(policy_params_group)){
   current_policy_params = select_current_policy(policy_params_group, policy_ind, run_params$realisation_num)

@@ -2,6 +2,8 @@ initialise_run_params <- function(){
   run_params = list()
   run_params$data_type = 'simulated'
 
+  run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
+  
   run_params$save_realisations = TRUE 
   run_params$save_procedure = 'realisations_block' #'realisations_block', 'by_single_realisation', 'by_time_slice'
   
@@ -60,7 +62,7 @@ initialise_ecology_params <- function(){
 }
 
 
-initialise_policy_params <- function(){
+initialise_policy_params <- function(){ #list of variations in policy
   policy_params = list()
   policy_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
   policy_params$offset_region = 'development' # force offsets to be in same region as development
@@ -71,13 +73,13 @@ initialise_policy_params <- function(){
   
   policy_params$development_selection_type = 'random'  #how the development parcels are selected - 'random' or 'weighted'
   policy_params$offset_parcel_for_parcel = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
-  policy_params$offset_time_horizon = c(15, 30)
-  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') #'net_gains', 'restoration_gains', 'avoided_degs' 
+  policy_params$offset_time_horizon = c(15)
+  policy_params$offset_calc_type = c('net_gains') #'net_gains', 'restoration_gains', 'avoided_degs' 
   policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
   
   policy_params$include_potential_developments_in_offset_calc = c(FALSE)
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)
-  policy_params$include_illegal_clearing_in_offset_calc = c(FALSE, TRUE)
+  policy_params$include_illegal_clearing_in_offset_calc = c(FALSE)
   
   policy_params$dev_counterfactual_type = 'offset_counterfactual'
   policy_params$illegal_clearing_prob = 1e-3
