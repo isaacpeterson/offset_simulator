@@ -30,11 +30,12 @@ initialise_simulation_data <- function(run_params, ecology_params){
   names(simulation_data) = c('initial_ecology', 'decline_rates_initial', 'parcels', 'dev_weights')
   
   if (run_params$save_initial_conditions == TRUE){
-    saveRDS(paste(run_params$sim_group_folder, 'simulation_data.rds', sep = '', collapse = '')) 
+    saveRDS(paste0(run_params$sim_group_folder, 'simulation_data.rds')) 
   }
   return(simulation_data)
   
 }
+
 
 select_current_policy <- function(policy_params, policy_ind, realisation_num){
   
@@ -57,41 +58,41 @@ select_current_policy <- function(policy_params, policy_ind, realisation_num){
 get_current_sim_characteristics <- function(current_policy_params, realisation_num){
   
   sim_characteristics = vector()
-  sim_characteristics = paste(sim_characteristics, current_policy_params$offset_calc_type, '_', sep = '', collapse = '')
-  sim_characteristics = paste(sim_characteristics, 'offset_bank_', current_policy_params$use_offset_bank, '_', sep = '', collapse = '')
+  sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_calc_type, '_')
+  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_policy_params$use_offset_bank, '_')
   if ((current_policy_params$use_offset_time_horizon == TRUE) & (current_policy_params$use_offset_bank == FALSE)){                                   
-    sim_characteristics = paste(sim_characteristics, 'time_horizon_', current_policy_params$offset_time_horizon, sep = '', collapse = '')
+    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_policy_params$offset_time_horizon)
   }
-  sim_characteristics = paste(sim_characteristics, '_include_illegal_clearing_', current_policy_params$include_illegal_clearing_in_offset_calc, sep = '', collapse = '')
+  sim_characteristics = paste0(sim_characteristics, '_include_illegal_clearing_', current_policy_params$include_illegal_clearing_in_offset_calc)
   
-  sim_characteristics = paste(sim_characteristics, '_reals_', realisation_num, '_', sep = '', collapse = '')
-  #   sim_characteristics = paste(current_policy_params$offset_calc_type, '_', current_policy_params$dev_calc_type, '_', current_policy_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                current_policy_params$use_offset_bank, '_', sep = '', collapse = '')
+  sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
+  #   sim_characteristics = paste0(current_policy_params$offset_calc_type, '_', current_policy_params$dev_calc_type, '_', current_policy_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
+  #                                current_policy_params$use_offset_bank, '_')
   #   
   #   if (current_policy_params$use_offset_bank == TRUE){                                   
-  #     sim_characteristics = paste(sim_characteristics, current_policy_params$offset_bank_start, '_', current_policy_params$offset_bank_end, '_', 
-  #                                  current_policy_params$offset_bank_num, '_', current_policy_params$match_type, sep = '', collapse = '')
+  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_bank_start, '_', current_policy_params$offset_bank_end, '_', 
+  #                                  current_policy_params$offset_bank_num, '_', current_policy_params$match_type)
   #   }
   #   
-  #   sim_characteristics = paste(sim_characteristics, '_', current_policy_params$offset_action_type, '_', sep = '', collapse = '')
+  #   sim_characteristics = paste0(sim_characteristics, '_', current_policy_params$offset_action_type, '_')
   #   if (current_policy_params$offset_action_type == 'restore'){
-  #     sim_characteristics = paste(sim_characteristics, current_policy_params$restoration_rate, '_', sep = '', collapse = '')
+  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$restoration_rate, '_')
   #   }
   #   
   #   if (current_policy_params$use_offset_time_horizon == TRUE){                                   
-  #     sim_characteristics = paste(sim_characteristics, '_time_horizon_', current_policy_params$offset_time_horizon, sep = '', collapse = '')
+  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_policy_params$offset_time_horizon)
   #   }
   
   
-  #  sim_characteristics = paste(sim_characteristics, '_offsets_potential_developments_', current_policy_params$include_potential_developments_in_offset_calc, sep = '', collapse = '')
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_policy_params$include_potential_developments_in_offset_calc)
   
-  #  sim_characteristics = paste(sim_characteristics, '_offsets_potential_offsets_', current_policy_params$include_potential_offsets_in_offset_calc, sep = '', collapse = '')
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_policy_params$include_potential_offsets_in_offset_calc)
   
-  #  sim_characteristics = paste(sim_characteristics, '_devs_illegal_clearing_', current_policy_params$include_illegal_clearing_in_dev_calc, sep = '', collapse = '')
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_illegal_clearing_', current_policy_params$include_illegal_clearing_in_dev_calc)
   
-  # sim_characteristics = paste(sim_characteristics, '_devs_potential_developments_', current_policy_params$include_potential_developments_in_dev_calc, sep = '', collapse = '')
+  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_policy_params$include_potential_developments_in_dev_calc)
   
-  #  sim_characteristics = paste(sim_characteristics, '_devs_potential_offsets_', current_policy_params$include_potential_offsets_in_dev_calc, sep = '', collapse = '')
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_policy_params$include_potential_offsets_in_dev_calc)
   
   
   return(sim_characteristics)
@@ -110,21 +111,23 @@ write_folder <- function(output_folder, folder_type){
   return(current_output_folder)
 }
 
-write_output_folders <- function(run_params){
+write_output_folders <- function(run_params, output_folder){
   
-  if (!file.exists(run_params$output_folder)){
+  if (!file.exists(output_folder)){
+    dir.create(output_folder)
+  }
+  
+  run_params$output_folder = paste0(output_folder, run_params$data_type, '/')
+  if (!file.exists(output_folder)){
     dir.create(run_params$output_folder)
   }
   
   run_params$realisations_folder = write_folder(run_params$output_folder, folder_type = 'realisations')
-
   run_params$sim_group_folder = write_folder(run_params$output_folder, folder_type = 'sim_group')
-  
   run_params$collated_folder = write_folder(run_params$output_folder, 'collated_realisations')
   
   if (run_params$save_procedure == 'time_slice'){
     run_params$time_slice_folder = write_folder(run_params$realisations_folder, 'time_slices')
-    
   }
   
   return(run_params)
@@ -136,7 +139,7 @@ write_output_folders <- function(run_params){
 
 initialise_dev_weights <- function(data_type, data_folder, land_parcels){
   if (data_type == 'hunter'){
-    dev_weights <- readRDS(paste(data_folder, 'mining_raster.rds', sep = '', collapse = ''))
+    dev_weights <- readRDS(paste0(data_folder, 'mining_raster.rds'))
     dev_weights <- stackApply(dev_weights, indices = rep(1, dim(dev_weights)[3]), fun = sum)
     dev_weights_array <- raster_to_array(dev_weights)
     dev_weights = lapply(seq_along(land_parcels), function(i) sum(dev_weights_array[land_parcels[[i]] ])/sum(dev_weights_array))
@@ -313,13 +316,13 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 initialise_parcels_from_data <- function(data_folder, data_type){
   
   if (data_type == 'grassland'){
-    filename = paste(data_folder, 'planning.units.uid_20ha.pgm', sep = '', collapse = '')
+    filename = paste0(data_folder, 'planning.units.uid_20ha.pgm')
     img = read.pnm(file = filename, cellres = 1)
     parcel_array = img@grey
   } else if (data_type == 'hunter'){
-    parcels_raster <- readRDS(paste(data_folder, 'parcels_raster.rds', sep = '', collapse = ''))
-    LGA_raster <- readRDS(paste(data_folder, 'LGA_raster.rds', sep = '', collapse = ''))
-    parcels_mask_raster <- readRDS(paste(data_folder, 'parcels_mask_raster.rds', sep = '', collapse = ''))
+    parcels_raster <- readRDS(paste0(data_folder, 'parcels_raster.rds'))
+    LGA_raster <- readRDS(paste0(data_folder, 'LGA_raster.rds'))
+    parcels_mask_raster <- readRDS(paste0(data_folder, 'parcels_mask_raster.rds'))
     parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
     parcel_array[is.na(parcel_array)] = 0
   }
@@ -363,8 +366,8 @@ raster_to_array <- function(raster_object){
 
 
 initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, eco_dims){
-  #veg_raster <- readRDS(paste(data_folder, 'veg_raster.rds', sep = '', collapse = ''))
-  animal_raster <- readRDS(paste(data_folder, 'animal_raster.rds', sep = '', collapse = ''))
+  #veg_raster <- readRDS(paste0(data_folder, 'veg_raster.rds'))
+  animal_raster <- readRDS(paste0(data_folder, 'animal_raster.rds'))
   #species_raster = stack(veg_raster, animal_raster)
   landscape_ecology = vector('list', eco_dims)
   

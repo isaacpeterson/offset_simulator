@@ -15,9 +15,19 @@ source(paste0(source_folder,'simulation_routines.R'))                # functions
 source(paste0(source_folder,'collate_routines.R'))                                # functions to collate simulation outputs
 source(paste0(source_folder,'plot_routines.R'))                                   # functions to plot collated outputs
 
+
+
+output_folder = paste0(path.expand('~'), '/offset_data/')
+
 run_params <- initialise_run_params()
 ecology_params <- initialise_ecology_params()
 policy_params_group = generate_policy_params_group(run_params)
+
+data_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/data/')
+
+if (run_params$save_realisations == TRUE){
+  run_params <- write_output_folders(run_params, output_folder)
+}
 
 simulation_data <- initialise_simulation_data(run_params, ecology_params)
 crs = detectCores(all.tests = FALSE, logical = TRUE)

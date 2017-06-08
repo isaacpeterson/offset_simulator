@@ -1,9 +1,7 @@
 initialise_run_params <- function(){
   run_params = list()
   run_params$data_type = 'simulated'
-  
-  run_params$data_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/data/')
-  run_params$output_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/')
+
   run_params$save_realisations = TRUE 
   run_params$save_procedure = 'realisations_block' #'realisations_block', 'by_single_realisation', 'by_time_slice'
   
@@ -31,9 +29,7 @@ initialise_run_params <- function(){
   run_params$match_threshold = 0 # acceptable level above which to accept parcel match
   run_params$illegal_clearing_prob = 1e-3
    
-  if (run_params$save_realisations == TRUE){
-    run_params <- write_output_folders(run_params)
-  }
+
   return(run_params)
 }
 
