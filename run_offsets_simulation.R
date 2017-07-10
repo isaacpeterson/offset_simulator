@@ -1,6 +1,4 @@
 rm(list = ls())
-WD = getwd()
-
 strt<-Sys.time()
 
 library(foreach)
@@ -8,98 +6,85 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source_folder = paste0(WD, '/')
-output_folder = paste0(path.expand('~'), '/offset_data/')
-
-source(paste0(source_folder, 'initialise_params.R'))
-source(paste0(source_folder, 'initialise_routines.R'))                              # functions to collate simulation outputs
-source(paste0(source_folder,'simulation_routines.R'))                # functions to run simulation
-source(paste0(source_folder,'collate_routines.R'))                                # functions to collate simulation outputs
-source(paste0(source_folder,'plot_routines.R'))                                   # functions to plot collated outputs
-
+source('initialise_params.R')
+source('initialise_routines.R')                              # functions to collate simulation outputs
+source('simulation_routines.R')                # functions to run simulation
+source('collate_routines.R')                                # functions to collate simulation outputs
+source('plot_routines.R')                                   # functions to plot collated outputs
 
 run_params <- initialise_run_params()
-ecology_params <- initialise_ecology_params()
 policy_params_group = generate_policy_params_group(run_params)
+run_params <- run_initialise_routines(run_params, policy_params_group)
 
-if (run_params$save_realisations == TRUE){
-  run_params <- write_output_folders(run_params, output_folder)
-}
-
-data_folder = paste0(path.expand('~'), '/offset_data/', run_params$data_type, '/data/')
-
-
-
-simulation_data <- initialise_simulation_data(run_params, ecology_params)
+initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
+decline_rates_initial <- readRDS(paste0(run_params$simulation_inputs_folder, 'decline_rates_initial.rds'))
+parcels <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcels.rds'))
+dev_weights <- readRDS(paste0(run_params$simulation_inputs_folder, 'dev_weights.rds'))
 
 cl<-makeCluster(run_params$crs)        #allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
 print(paste('testing ', length(policy_params_group), ' combinations on ', run_params$crs, ' cores'))
 
-for (policy_ind in seq_along(policy_params_group)){
-  current_policy_params = select_current_policy(policy_params_group, policy_ind, run_params$realisation_num)
+for (scenario_ind in seq_along(policy_params_group)){
   
-  if (run_params$save_procedure == 'realisations_block'){
-    realisations <- foreach(run_ind = seq_len(run_params$realisation_num)) %dopar%{
-      perform_offsets_simulation(simulation_data, current_policy_params, ecology_params, run_params)
-    }  
-  } else {
-    foreach(run_ind = seq_len(run_params$realisation_num)) %dopar%{
-      perform_offsets_simulation(simulation_data, current_policy_params, ecology_params, run_params)
-    }  
-  }
-  if (run_params$save_realisations == TRUE){
-    sim_group_to_save = list(simulation_data, current_policy_params, run_params, ecology_params)
-    names(sim_group_to_save) = c('simulation_data', 'current_policy_params', 'run_params', 'ecology_params')
-    saveRDS(sim_group_to_save, paste0(run_params$sim_group_folder, 'sim_data_', current_policy_params$sim_characteristics, '.rds'))
-    if (run_params$save_procedure == 'realisations_block'){
-      saveRDS(realisations, paste0(run_params$realisations_folder, 'realisations_',current_policy_params$sim_characteristics, '.rds'))
-    }
-  }
+  foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
+
+    global_object <- perform_offsets_simulation(policy_params = policy_params_group[[scenario_ind]], 
+                                                run_params,
+                                                parcels, 
+                                                initial_ecology, 
+                                                decline_rates_initial,
+                                                dev_weights,
+                                                scenario_ind, 
+                                                realisation_ind)
+  } 
   
-  if (run_params$collate_realisations == TRUE){
-    collated_realisations <- run_collate_routines(realisations,
-                                                  run_params,
-                                                  ecology_params, 
-                                                  current_policy_params, 
-                                                  use_cfac_type_in_sim = TRUE, 
-                                                  simulation_data$decline_rates_initial, 
-                                                  simulation_data$parcels, 
-                                                  simulation_data$initial_ecology) #take simulation ouputs and calculate gains and losses
+ 
+  if (run_params$plot_outputs == TRUE){
+    collated_realisations = bind_collated_realisations(scenario_ind, 
+                                                       file_path = run_params$collated_folder, 
+                                                       eco_ind = 1)
+    sim_characteristics = get_current_sim_characteristics(policy_params_group[[scenario_ind]], run_params$realisation_num)
+    setup_sub_plots(nx = 3, ny = 2, x_space = 5, y_space = 5)
     
+    sets_to_plot = 10
+    policy_params = policy_params_group[[scenario_ind]]
     
-    if (run_params$save_collated_realisations == TRUE){
-      saveRDS(collated_realisations, paste0(run_params$collated_folder, 'collated_reals_', current_policy_params$sim_characteristics, '.rds')) 
+    if (policy_params$use_offset_bank == TRUE){
+      site_plot_lims = c(0, 1e7)
+      site_impact_plot_lims = c(-1e6, 1e6)
+    } else {
+      site_plot_lims = c(0, 1e4)
+      site_impact_plot_lims = c(-1e4, 1e4)
     }
-    if (run_params$plot_impacts == TRUE){
-      setup_sub_plots(nx = 3, ny = 2, x_space = 5, y_space = 5)
-      sets_to_plot = 10
-      plot_impact_set(collated_realisations, 
-                      current_policy_params, 
-                      site_plot_lims = c(-5e3, 5e3),
-                      program_plot_lims = c(-6e5, 6e5), 
-                      landscape_plot_lims = c(-6e5, 6e5), 
-                      sets_to_plot,
-                      eco_ind = 1, 
-                      lwd_vec = c(3, 0.5), 
-                      edge_title = current_policy_params$sim_characteristics, 
-                      time_steps = 50, 
-                      offset_bank = current_policy_params$use_offset_bank,
-                      simulation_data$parcels$land_parcel_num)
-      
-      plot_outcome_set(collated_realisations,
-                       current_policy_params,
-                       offset_bank = FALSE,
-                       site_plot_lims = c(0, 5e4),
-                       program_plot_lims = c(0, 6e6), 
-                       landscape_plot_lims = c(0, 1e7),
-                       sets_to_plot,
-                       eco_ind = 1, 
-                       lwd_vec = c(3, 0.5), 
-                       edge_title = '', 
-                       time_steps = 50) 
-    }
+    
+    program_plot_lims = c(0e6, 5e6) 
+    landscape_plot_lims = c(0e6, 1e7)
+    
+    program_impact_plot_lims = c(-6e5, 6e5) 
+    landscape_impact_plot_lims = c(-6e5, 6e5)
+
+    plot_impact_set(collated_realisations, 
+                    policy_params, 
+                    site_impact_plot_lims,
+                    program_impact_plot_lims, 
+                    landscape_impact_plot_lims, 
+                    sets_to_plot,
+                    lwd_vec = c(3, 0.5), 
+                    time_steps = run_params$time_steps, 
+                    parcels$land_parcel_num,
+                    realisation_num = run_params$realisation_num) 
+    
+    plot_outcome_set(collated_realisations,
+                     policy_params,
+                     site_plot_lims,
+                     program_plot_lims, 
+                     landscape_plot_lims,
+                     sets_to_plot,
+                     lwd_vec = c(3, 0.5), 
+                     time_steps = run_params$time_steps,
+                     realisation_num = run_params$realisation_num) 
   }
   
   fin <- Sys.time()

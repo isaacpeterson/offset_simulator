@@ -1,137 +1,56 @@
-initialise_simulation_data <- function(run_params, ecology_params){
+run_initialise_routines <- function(run_params, policy_params_group){
   
-  if (run_params$data_type == 'simulated'){
-    parcels <- initialise_shape_parcels(ecology_params)
-    initial_ecology <- initialise_ecology(ecology_params, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
-    dev_weights = list()  
-  } else {
-    parcels <- initialise_parcels_from_data(run_params$data_folder, run_params$data_type)
-    if (run_params$data_type == 'grassland'){
-      initial_ecology <- initialise_ecology_from_grassland_data(
-        filename =  "~/Desktop/grassland_data/hab.map.master.zo1.pgm", 
-        land_parcels = parcels$land_parcels, 
-        eco_dims = ecology_params$eco_dims)
-    } else if (run_params$data_type == 'hunter'){
-      initial_ecology <- initialise_ecology_from_hunter_data(run_params$data_folder, 
-                                                             land_parcels = parcels$land_parcels, 
-                                                             eco_dims = ecology_params$eco_dims)
-    }
-  } 
-  dev_weights <- initialise_dev_weights(run_params$data_type, run_params$data_folder, land_parcels)
+  folder_to_use = write_folder(run_params$output_folder)
+  folder_to_use = write_folder(paste0(folder_to_use, run_params$data_type, '/'))
+  run_params$simulation_inputs_folder = write_folder(paste0(folder_to_use, 'simulation_inputs/'))
   
-  decline_rates_initial <- initialise_decline_rates(parcels, 
-                                                    run_params$sample_decline_rate, 
-                                                    ecology_params$mean_decline_rates, 
-                                                    ecology_params$decline_rate_std, 
-                                                    eco_dims = ecology_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
-  
-  
-  simulation_data = list(initial_ecology, decline_rates_initial, parcels, dev_weights)
-  names(simulation_data) = c('initial_ecology', 'decline_rates_initial', 'parcels', 'dev_weights')
-  
-  if (run_params$save_initial_conditions == TRUE){
-    saveRDS(paste0(run_params$sim_group_folder, 'simulation_data.rds')) 
-  }
-  return(simulation_data)
-  
-}
-
-
-select_current_policy <- function(policy_params, policy_ind, realisation_num){
-  
-  current_policy_params = policy_params[[policy_ind]]
-  current_policy_params$sim_characteristics <- get_current_sim_characteristics(policy_params[[policy_ind]], realisation_num)
-  
-  return(current_policy_params)
-}
-
-# generate_sim_characteristics <- function(policy_params_group, realisation_num){
-#   policy_num = length(policy_params_group)
-#   sim_characteristics <- vector('list')
-#   for (policy_ind in seq(policy_num)){
-#     sim_characteristics[[policy_ind]] <- get_current_sim_characteristics(policy_params_group[[policy_ind]], 
-#                                                                        realisation_num)
-#   }
-#   return(sim_characteristics)
-# }
-
-get_current_sim_characteristics <- function(current_policy_params, realisation_num){
-  
-  sim_characteristics = vector()
-  sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_calc_type, '_')
-  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_policy_params$use_offset_bank, '_')
-  if ((current_policy_params$use_offset_time_horizon == TRUE) & (current_policy_params$use_offset_bank == FALSE)){                                   
-    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_policy_params$offset_time_horizon)
-  }
-  sim_characteristics = paste0(sim_characteristics, '_include_illegal_clearing_', current_policy_params$include_illegal_clearing_in_offset_calc)
-  
-  sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
-  #   sim_characteristics = paste0(current_policy_params$offset_calc_type, '_', current_policy_params$dev_calc_type, '_', current_policy_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                current_policy_params$use_offset_bank, '_')
-  #   
-  #   if (current_policy_params$use_offset_bank == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_bank_start, '_', current_policy_params$offset_bank_end, '_', 
-  #                                  current_policy_params$offset_bank_num, '_', current_policy_params$match_type)
-  #   }
-  #   
-  #   sim_characteristics = paste0(sim_characteristics, '_', current_policy_params$offset_action_type, '_')
-  #   if (current_policy_params$offset_action_type == 'restore'){
-  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$restoration_rate, '_')
-  #   }
-  #   
-  #   if (current_policy_params$use_offset_time_horizon == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_policy_params$offset_time_horizon)
-  #   }
-  
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_policy_params$include_potential_developments_in_offset_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_policy_params$include_potential_offsets_in_offset_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_illegal_clearing_', current_policy_params$include_illegal_clearing_in_dev_calc)
-  
-  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_policy_params$include_potential_developments_in_dev_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_policy_params$include_potential_offsets_in_dev_calc)
-  
-  
-  return(sim_characteristics)
-}
-
-
-write_folder <- function(output_folder, folder_type){
-  current_output_folder = paste0(output_folder, folder_type, '/')
-  if (!file.exists(current_output_folder)){
-    dir.create(current_output_folder)
-  }
-  current_output_folder = paste0(current_output_folder, format(Sys.time(), format = "%Y-%j-%H%M%S"), '/')
-  if (!file.exists(current_output_folder)){
-    dir.create(current_output_folder)
-  }
-  return(current_output_folder)
-}
-
-write_output_folders <- function(run_params, output_folder){
-  
-  if (!file.exists(output_folder)){
-    dir.create(output_folder)
+  if ((run_params$data_type == 'simulated') & (run_params$run_from_saved == FALSE)){
+    prepare_simulated_data(run_params$simulation_inputs_folder)
   }
   
-  run_params$output_folder = paste0(output_folder, '/', run_params$data_type, '/')
-  if (!file.exists(run_params$output_folder)){
-    dir.create(run_params$output_folder)
+  if (run_params$save_realisations == TRUE){
+    run_params <- write_output_folders(run_params, length(policy_params_group))
+    saveRDS(run_params, paste0(run_params$collated_folder, 'run_params.rds'))
+  }
+
+  for (scenario_ind in seq_along(policy_params_group)){
+    saveRDS(policy_params_group[[scenario_ind]], 
+            paste0(run_params$collated_folder, 'scenario_', scenario_ind, '_policy_params.rds'))
   }
   
-  run_params$realisations_folder = write_folder(run_params$output_folder, folder_type = 'realisations')
-  run_params$sim_group_folder = write_folder(run_params$output_folder, folder_type = 'sim_group')
-  run_params$collated_folder = write_folder(run_params$output_folder, 'collated_realisations')
-  
-  if (run_params$save_procedure == 'time_slice'){
-    run_params$time_slice_folder = write_folder(run_params$realisations_folder, 'time_slices')
-  }
+  ecology_params = readRDS(paste0(run_params$simulation_inputs_folder, 'ecology_params.rds'))
+  run_params$min_eco_val = ecology_params$min_eco_val
+  run_params$max_eco_val = ecology_params$max_eco_val
+  run_params$eco_dims = ecology_params$eco_dims #how many ecological dimensions in simulation
+  run_params$dims_to_use = seq(run_params$eco_dims)
   
   return(run_params)
 }
+
+
+
+
+prepare_simulated_data <- function(simulation_inputs_folder){
+  source('data_prep_routines.R')
+  data_type = 'simulated'
+  ecology_params <- initialise_ecology_params()
+  simulated_ecology_params <- initialise_simulated_ecology_params()
+  LGA_array <- simulate_LGA(simulated_ecology_params)
+  parcels <- LGA_to_parcel_list(LGA_array)
+  parcel_ecology <- simulate_ecology(simulated_ecology_params, eco_dims = ecology_params$eco_dims, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
+  landscape_ecology = list()
+  dev_weights = list()  
+  decline_rates_initial <- simulate_decline_rates(parcels$land_parcels, 
+                                                  sample_decline_rate = TRUE, 
+                                                  ecology_params$mean_decline_rates, 
+                                                  ecology_params$decline_rate_std, 
+                                                  eco_dims = ecology_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
+  
+  save_simulation_inputs(simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
+                         parcel_ecology, dev_weights, ecology_params)
+
+}
+
 
 
 
@@ -148,6 +67,49 @@ initialise_dev_weights <- function(data_type, data_folder, land_parcels){
   }
   return(dev_weights)
 }
+
+
+bind_params <- function(policy_params, run_params, ecology_params){
+  simulation_params = list(policy_params, run_params, ecology_params)
+  names(simulation_params) = c('policy_params', 'run_params', 'ecology_params')
+  simulation_params$sim_characteristics <- get_current_sim_characteristics(simulation_params$policy_params, 
+                                                                           simulation_params$run_params$realisation_num)
+  return(simulation_params)
+}
+
+
+write_folder <- function(current_folder){
+  if (!file.exists(current_folder)){
+    dir.create(current_folder)
+  }
+  return(current_folder)
+}
+
+write_output_folders <- function(run_params, scenario_num){
+  
+  output_folder = write_folder(paste0(run_params$output_folder, '/'))
+  output_folder = write_folder(paste0(output_folder, run_params$data_type, '/'))
+  output_folder = write_folder(paste0(output_folder, 'simulation_outputs/'))
+  filenames = list.files(path = output_folder, all.files = FALSE, 
+             full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+             include.dirs = FALSE, no.. = FALSE)
+  
+  if (length(filenames) > 0){
+    current_run = as.numeric(filenames[length(filenames)]) + 1
+  } else {
+    current_run = 1
+  }
+  output_folder = write_folder(paste0(output_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
+  run_params$data_folder = write_folder(paste0(output_folder, 'simulation_data/'))
+  
+  for (scenario_ind in (seq(scenario_num))){
+    write_folder(paste0(run_params$data_folder, 'scenario_', scenario_ind, '/'))
+  }
+  run_params$collated_folder = write_folder(paste0(output_folder, 'collated_realisations/'))
+  run_params$output_folder = output_folder
+  return(run_params)
+}
+
 
 
 generate_policy_combs <- function(policy_params_group){
@@ -175,18 +137,9 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$offset_action_type = 'restore'
   }
   
-  any(current_policy_params$include_potential_developments_in_offset_calc,
-      current_policy_params$include_potential_offsets_in_offset_calc,
-      current_policy_params$include_illegal_clearing_in_offset_calc) == TRUE
   
-  current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
-                                                       current_policy_params$include_potential_offsets_in_offset_calc,
-                                                       current_policy_params$include_illegal_clearing_in_offset_calc) == TRUE
-  current_policy_params$adjust_dev_cfacs_flag = any(current_policy_params$include_potential_developments_in_dev_calc,
-                                                    current_policy_params$include_potential_offsets_in_dev_calc,
-                                                    current_policy_params$include_illegal_clearing_in_dev_calc) == TRUE
   
-  current_policy_params$use_dev_credit = (current_policy_params$use_parcel_set_dev_credit) || (current_policy_params$offset_bank_type == 'credit')
+  current_policy_params$use_credit = (current_policy_params$use_credit) || (current_policy_params$offset_bank_type == 'credit')
   current_policy_params$use_parcel_sets = (current_policy_params$offset_bank_type == 'parcel_set') || (current_policy_params$use_offset_bank == FALSE)
   if ((current_policy_params$offset_bank_type == 'parcel_set') || (current_policy_params$use_offset_bank == FALSE)){
     current_policy_params$match_type = 'parcel_set'
@@ -235,14 +188,22 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_offset_calc
   }
   
+  current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
+                                                       current_policy_params$include_potential_offsets_in_offset_calc,
+                                                       current_policy_params$include_illegal_clearing_in_offset_calc) == TRUE
+  current_policy_params$adjust_dev_cfacs_flag = any(current_policy_params$include_potential_developments_in_dev_calc,
+                                                    current_policy_params$include_potential_offsets_in_dev_calc,
+                                                    current_policy_params$include_illegal_clearing_in_dev_calc) == TRUE
+  
   return(current_policy_params)
   
 }
 
 
 generate_policy_params_group <- function(run_params){
-  policy_params_to_test <- initialise_policy_params() # list all program combinations to test
-  policy_combs <- generate_policy_combs(policy_params_to_test)  #generate all combinations of offset programs
+  
+  policy_params <- initialise_policy_params() # list all program combinations to test
+  policy_combs <- generate_policy_combs(policy_params)  #generate all combinations of offset programs
   policy_num = dim(policy_combs)[1] #how many combinations there are in total
   
   policy_params_group = vector('list', policy_num)
@@ -250,35 +211,44 @@ generate_policy_params_group <- function(run_params){
   for (policy_ind in seq(policy_num)){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
-    current_policy <- generate_current_policy(policy_params_to_test, current_policy_param_inds) #write current policy as a list
+    current_policy <- generate_current_policy(policy_params, current_policy_param_inds) #write current policy as a list
     policy_params_group[[policy_ind]] <- collate_current_policy(current_policy, run_params)  #setup flags for cfacs, cfac adjustment etc.
     
   }
+  
   return(policy_params_group)
   
 }
 
 
 
+initialise_output_object <- function(parcels, initial_ecology, run_params, decline_rates_initial, save_realisations){
+  output_object = list()
+  output_object$offsets_object <- list()
+  output_object$dev_object <- list()
+  output_object$illegal_clearing_object <- list()
+  output_object$credit_object <- list()
+  output_object$offset_bank_object <- list()
+  output_object$current_ecology = initial_ecology
+  output_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
+  output_object$current_credit = list_of_zeros(run_params$eco_dims, 1)
+  output_object$decline_rates = decline_rates_initial
+  if (save_realisations == FALSE){
+    output_object$trajectories <- initialise_trajectories(run_params$eco_dims, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
+  }
+  return(output_object)
+}
 
-initialise_global_object <- function(initial_ecology, decline_rates_initial, parcels, ecology_params, run_params){
-  global_object = list()
-  global_object$dev_credit = array(0, ecology_params$eco_dims)
-  global_object$recorded_dev_credit = vector()
-  global_object$offsets_object <- initialise_parcel_set_object() 
-  global_object$dev_object <- initialise_parcel_set_object() 
-  global_object$illegal_clearing <- initialise_parcel_set_object()
-  global_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
-  global_object$dev_credit_object <- initialise_parcel_set_object() 
-  global_object$offset_bank <- initialise_parcel_set_object()
-  global_object$decline_rates <- decline_rates_initial
-  global_object$offset_pool_object <- list()
-  global_object$trajectories <- initialise_trajectories(ecology_params$eco_dims, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
-  global_object$initial_ecology = initial_ecology
-  global_object$current_ecology = initial_ecology
-  global_object$credit_match_object$match_flag = FALSE
-  global_object$match_object$match_flag = FALSE
-  return(global_object)
+initialise_trajectories <- function(eco_dims, land_parcels, time_steps){
+  parcel_num =  length(land_parcels)
+  trajectories = generate_nested_list(outer_dim = parcel_num, inner_dim = eco_dims)
+  for (parcel_ind in seq_len(parcel_num)){
+    for (eco_ind in seq_len(eco_dims)){
+      parcel_dims = length(land_parcels[[parcel_ind]])
+      trajectories[[parcel_ind]][[eco_ind]] = array(0, c(time_steps, parcel_dims))
+    }
+  }
+  return(trajectories)
 }
 
 
@@ -352,8 +322,8 @@ initialise_ecology_from_grassland_data <- function(filename, land_parcels, eco_d
   #   zero_inds = which(img_to_use == 0)
   #   img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
   landscape_ecology[[1]] = 100*img_to_use
-  initial_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
-  return(initial_ecology)
+  current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
+  return(current_ecology)
 }
 
 
@@ -378,8 +348,8 @@ initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, eco_d
     landscape_ecology[[eco_ind]] = current_species_layer
   }
   
-  initial_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
-  return(initial_ecology)
+  current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
+  return(current_ecology)
 }
 
 initialise_shape_parcels <- function(ecology_params){
@@ -417,9 +387,39 @@ initialise_shape_parcels <- function(ecology_params){
 }
 
 
-initialise_index_object <- function(parcels, initial_ecology, run_params){
+
+mcell <- function(x, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
+  
+  rowsizes = vy;
+  colsizes = vx;
+  rows = length(rowsizes);
+  cols = length(colsizes);
+  
+  a = 1
+  B = vector('list', rows*cols)   # make an array composed of lists with dimenisons that define the land parcels/regions. The list format allows arrays of different sizes to be stored
+  colStart = 0
+  for (i in seq_len(cols)){       # run down through the columns of input array 
+    rowStart = 0
+    for (j in seq_len(rows)){ #group elements of input array into sub arrays and assign to B
+      B[[a]] = x[rowStart+(1:rowsizes[j]), colStart+(1:colsizes[i])]
+      rowStart = rowStart + rowsizes[j]
+      a = a + 1
+    }
+    colStart = colStart + colsizes[i]
+  }
+  
+  parcel = list()
+  parcel$dims = c(length(vy), length(vx))
+  parcel$elements = B
+  return(parcel)
+  
+}  
+
+
+
+initialise_index_object <- function(parcels, current_ecology, run_params){
   index_object = list()
-  index_object$ind_available = vector('list', parcels$region_num)
+  index_object$indexes_to_use = vector('list', parcels$region_num)
   index_object$developments = list()
   index_object$offsets = list()
   index_object$illegal_clearing = list()
@@ -428,11 +428,11 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   index_object$parcel_num_remaining = vector()
   index_object$break_flag = FALSE
   
-  ind_available = parcels$regions
+  indexes_to_use = parcels$regions
   
   parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
   smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
-  initial_parcel_sums = unlist(lapply(seq_along(initial_ecology), function(i) sum(initial_ecology[[i]][[1]])))
+  initial_parcel_sums = unlist(lapply(seq_along(current_ecology), function(i) sum(current_ecology[[i]][[1]])))
   zeros_to_screen = which(initial_parcel_sums < 1e-5)
   
   if (run_params$screen_parcels == TRUE){
@@ -445,14 +445,13 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   parcels_to_screen = unique(c(parcels_to_screen, smalls_to_screen))
   
   for (region_ind in seq_len(parcels$region_num)){
-    current_region = ind_available[[region_ind]]
+    current_region = indexes_to_use[[region_ind]]
     inds_to_remove = which(current_region %in% parcels_to_screen)
     if (length(inds_to_remove) > 0){
-      ind_available[[region_ind]] = ind_available[[region_ind]][-inds_to_remove]
+      indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
     }
   }
-  index_object$ind_available = ind_available
-  index_object$landscape_inds = ind_available
+  index_object$indexes_to_use = indexes_to_use
   
   return(index_object)
   
@@ -465,7 +464,7 @@ initialise_ecology <- function(ecology_params, land_parcels){    #initialise eco
   
   parcel_num = length(land_parcels)
   eco_dims = ecology_params$eco_dims
-  initial_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = ecology_params$eco_dims)
+  current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = ecology_params$eco_dims)
   
   for (parcel_ind in seq_len(parcel_num)){  
     current_parcel = land_parcels[[parcel_ind]]
@@ -473,12 +472,12 @@ initialise_ecology <- function(ecology_params, land_parcels){    #initialise eco
     
     for (eco_ind in seq_len(eco_dims)){
       mean_eco_val = ecology_params$min_initial_eco_val + (ecology_params$max_initial_eco_val - ecology_params$min_initial_eco_val - ecology_params$initial_eco_noise)*runif(1)
-      initial_ecology[[parcel_ind]][[eco_ind]] =  array(mean_eco_val, parcel_dims) + ecology_params$initial_eco_noise*array(runif(length(current_parcel)), c(parcel_dims))
+      current_ecology[[parcel_ind]][[eco_ind]] =  array(mean_eco_val, parcel_dims) + ecology_params$initial_eco_noise*array(runif(length(current_parcel)), c(parcel_dims))
     }
     
   }
   
-  return(initial_ecology)
+  return(current_ecology)
 }
 
 
@@ -509,6 +508,18 @@ split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, eco_d
   }
   return(current_ecology)
   
+}
+
+generate_nested_list <- function(outer_dim, inner_dim){
+  if (outer_dim > 0){
+    nested_list <- vector('list', outer_dim)
+  } else {
+    nested_list = list()
+  }
+  for (outer_ind in seq_len(outer_dim)){
+    nested_list[[outer_ind]] <- vector('list', inner_dim)
+  }
+  return(nested_list)
 }
 
 
