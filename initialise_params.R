@@ -62,7 +62,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params$use_credit = TRUE
   policy_params$dev_start = 1
   policy_params$dev_end = 50
-  policy_params$total_dev_num = 100
+  policy_params$total_dev_num = 200
   return(policy_params)
 }
 
