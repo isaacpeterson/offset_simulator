@@ -10,7 +10,9 @@ Instructions to run the software
 Download and install the latest version of R. If you are running from a linux-type system this can be done using:
 
 `sudo apt-get update`
+
 `sudo apt-get install r-base`
+
 `sudo apt-get install git`
 
 
