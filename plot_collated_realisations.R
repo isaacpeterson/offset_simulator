@@ -6,25 +6,21 @@ library(pixmap)
 
 action_type = 'plot_outcomes' #'collate_realisations', 'plot_impacts', or 'plot_outcomes'.
 offset_bank = FALSE
-write_pdf = FALSE
+write_pdf = TRUE
 data_type = 'simulated'
-run_number = 35
+run_number = 40
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 
-simulation_data_folder = paste0(path.expand("~"), '/offset_data/', data_type, '/simulation_outputs/', runstring, '/')
-collated_folder = paste0(simulation_data_folder, '/collated_realisations/')
+collated_folder = paste0('~/offset_data/collated_realisations/')
+output_plot_folder = collated_folder
 
-
-source('simulation_routines.R')                 # functions to run simulation
-source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
+source('collate_routines.R')
 
 run_params = readRDS(paste0(collated_folder, 'run_params.rds'))
 current_filenames <- list.files(path = collated_folder, pattern = '_collated_realisation', all.files = FALSE, 
                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                 include.dirs = FALSE, no.. = FALSE)
-
-output_plot_folder = paste0(simulation_data_folder, '/output_pdfs/')
 
 if (!file.exists(output_plot_folder)){
   dir.create(output_plot_folder)
@@ -32,9 +28,9 @@ if (!file.exists(output_plot_folder)){
 
 if (write_pdf == TRUE){
   if (action_type == 'plot_impacts'){
-    filename = paste0(output_plot_folder, runstring, '_outcomes.pdf')
-  } else if (action_type == 'plot_outcomes'){
     filename = paste0(output_plot_folder, runstring, '_impacts.pdf')
+  } else if (action_type == 'plot_outcomes'){
+    filename = paste0(output_plot_folder, runstring, '_outcomes.pdf')
   }
   pdf(filename, width = 8.3, height = 11.7) 
 } 
@@ -60,6 +56,7 @@ policy_num = length(current_filenames)
 if (length(current_filenames) == 0){
   print('no files found')
 }
+
 scenario_filenames <- list.files(path = collated_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
