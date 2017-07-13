@@ -4,7 +4,7 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-action_type = 'plot_outcomes' #'collate_realisations', 'plot_impacts', or 'plot_outcomes'.
+plot_type = 'outcomes' #'impacts', 'outcomes'.
 offset_bank = FALSE
 write_pdf = TRUE
 data_type = 'simulated'
@@ -27,9 +27,9 @@ if (!file.exists(output_plot_folder)){
 }
 
 if (write_pdf == TRUE){
-  if (action_type == 'plot_impacts'){
+  if (plot_type == 'impacts'){
     filename = paste0(output_plot_folder, runstring, '_impacts.pdf')
-  } else if (action_type == 'plot_outcomes'){
+  } else if (plot_type == 'outcomes'){
     filename = paste0(output_plot_folder, runstring, '_outcomes.pdf')
   }
   pdf(filename, width = 8.3, height = 11.7) 
@@ -65,7 +65,7 @@ for (scenario_ind in seq_along(scenario_filenames)){
   collated_realisations = bind_collated_realisations(scenario_ind, 
                                                      file_path = collated_folder, 
                                                      eco_ind = 1)
-  if (action_type == 'plot_impacts'){
+  if (plot_type == 'impacts'){
     plot_impact_set(collated_realisations, 
                     current_policy_params, 
                     site_impact_plot_lims,
