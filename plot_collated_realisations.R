@@ -11,7 +11,7 @@ data_type = 'simulated'
 run_number = 40
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 
-collated_folder = paste0('~/offset_data/collated_realisations/')
+collated_folder = paste0('~/offset_data/collated_realisations/')  #LOCATION OF COLLATED FILES
 output_plot_folder = collated_folder
 
 source('plot_routines.R')                                   # functions to plot collated outputs
