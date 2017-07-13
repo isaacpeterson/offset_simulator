@@ -63,7 +63,7 @@ scenario_filenames <- list.files(path = collated_folder, pattern = '_policy_para
 for (scenario_ind in seq_along(scenario_filenames)){
   current_policy_params = readRDS(paste0(collated_folder, scenario_filenames[scenario_ind]))
   collated_realisations = bind_collated_realisations(scenario_ind, 
-                                                     file_path = run_params$collated_folder, 
+                                                     file_path = collated_folder, 
                                                      eco_ind = 1)
   if (action_type == 'plot_impacts'){
     plot_impact_set(collated_realisations, 
