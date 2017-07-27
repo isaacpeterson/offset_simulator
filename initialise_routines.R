@@ -8,10 +8,10 @@ run_initialise_routines <- function(run_params, policy_params_group){
     prepare_simulated_data(run_params$simulation_inputs_folder)
   }
   
-  if (run_params$save_realisations == TRUE){
+  #if (run_params$save_realisations == TRUE){
     run_params <- write_output_folders(run_params, length(policy_params_group))
     saveRDS(run_params, paste0(run_params$collated_folder, 'run_params.rds'))
-  }
+  #}
 
   for (scenario_ind in seq_along(policy_params_group)){
     saveRDS(policy_params_group[[scenario_ind]], 
@@ -233,9 +233,9 @@ initialise_output_object <- function(parcels, initial_ecology, run_params, decli
   output_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
   output_object$current_credit = list_of_zeros(run_params$eco_dims, 1)
   output_object$decline_rates = decline_rates_initial
-  if (save_realisations == FALSE){
-    output_object$trajectories <- initialise_trajectories(run_params$eco_dims, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
-  }
+#   if (save_realisations == FALSE){
+#     output_object$trajectories <- initialise_trajectories(run_params$eco_dims, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
+#   }
   return(output_object)
 }
 

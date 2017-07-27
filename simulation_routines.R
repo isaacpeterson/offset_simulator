@@ -32,12 +32,13 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
                      realisation_ind,
                      run_params$time_steps)
   
-  if (run_params$save_realisations == TRUE){
+  if (run_params$save_simulation_outputs == TRUE){
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_', realisation_ind, '_outputs.rds'))
   }
   
   for (eco_ind in seq(run_params$eco_dims)){
-    current_collated_realisation = run_collate_routines(decline_rates_initial, 
+    current_collated_realisation = run_collate_routines(read_outputs_from_file = FALSE, 
+                                                        decline_rates_initial, 
                                                         initial_ecology,  
                                                         simulation_outputs, 
                                                         current_data_dir, 
@@ -46,18 +47,15 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
                                                         realisation_ind, 
                                                         eco_ind)
     
-    if (run_params$save_realisations == TRUE){
-      saveRDS(current_collated_realisation, paste0(run_params$collated_folder, 
-                                          'scenario_', scenario_ind, 
-                                          '_feature_', eco_ind, 
-                                          '_collated_realisation_', realisation_ind, '.rds'))
-    } else {
-      if (eco_ind == 1){
-        collated_realisation = vector('list', run_params$eco_dims)
-      }
-      collated_realisation[[eco_ind]] = current_collated_realisation
-    }
+    saveRDS(current_collated_realisation, paste0(run_params$collated_folder, 
+                                                 'scenario_', scenario_ind, 
+                                                 '_feature_', eco_ind, 
+                                                 '_collated_realisation_', realisation_ind, '.rds'))
     
+  }
+  
+  if (run_params$save_simulation_outputs == FALSE){
+    unlink(current_data_dir, recursive = TRUE) 
   }
   
   return(simulation_outputs)
@@ -181,7 +179,7 @@ run_simulation <- function(global_object, run_params, policy_params, parcels,
             break
           }
         } 
- 
+        
       }
       
       if (run_params$perform_illegal_clearing == TRUE){
@@ -232,16 +230,12 @@ run_simulation <- function(global_object, run_params, policy_params, parcels,
     
     global_object$current_ecology <- kill_development_ecology(global_object$current_ecology, global_object$decline_rates, run_params$eco_dims)
     
-    if ( (run_params$save_procedure == 'by_time_step') & (run_params$save_realisations == TRUE)){
-      for (eco_ind in seq(run_params$eco_dims)){
-        ecology_to_save = lapply(seq_along(global_object$current_ecology), function(i) global_object$current_ecology[[i]][[eco_ind]])
-        formatC(yr, width = 3, format = "d", flag = "0")
-        saveRDS(ecology_to_save, paste0(current_data_dir, 'feature_', eco_ind, 
-                                        '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
-      }
-    } 
-    
-    global_object$trajectories <- update_trajectories(global_object$trajectories, run_params$eco_dims, global_object$current_ecology, yr)
+    for (eco_ind in seq(run_params$eco_dims)){
+      ecology_to_save = lapply(seq_along(global_object$current_ecology), function(i) global_object$current_ecology[[i]][[eco_ind]])
+      formatC(yr, width = 3, format = "d", flag = "0")
+      saveRDS(ecology_to_save, paste0(current_data_dir, 'feature_', eco_ind, 
+                                      '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+    }
     
     global_object$current_ecology <- project_current_system_multi(global_object$current_ecology, 
                                                                   decline_rates = global_object$decline_rates,
@@ -532,9 +526,9 @@ perform_banking_routine <- function(global_object, current_policy_params, yr, re
                                                      region_ind)   # arrange current parcel data  
   
   global_object$offset_bank_object = append_current_group(object_to_append = global_object$offset_bank_object, 
-                       current_object = current_banked_object, 
-                       append_routine = 'banked_offset')
-
+                                                          current_object = current_banked_object, 
+                                                          append_routine = 'banked_offset')
+  
   global_object$index_object <- update_indexes_to_use(global_object$index_object, 
                                                       current_banked_offset_pool, 
                                                       region_ind)
@@ -946,8 +940,8 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
                                   function(i) all(unlist(subtract_nested_lists(dev_pool_object$parcel_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
       current_match_pool = dev_pool_object$parcel_indexes[inds_to_keep]     #remove current potential development from potential pool
       current_match_vals_pool = dev_pool_object$parcel_vals_used[inds_to_keep]
-#       print(length(current_match_pool))
-#       print(unlist(vals_to_match))
+      #       print(length(current_match_pool))
+      #       print(unlist(vals_to_match))
     }
   }
   
@@ -1647,14 +1641,14 @@ append_current_group <- function(object_to_append, current_object, append_routin
                                              append_type = 'as_list', 
                                              inds_to_append = seq_along(object_to_append))      #record current offset parcels in offsets object containing all offsets info
   } else {
-  appended_object <- append_current_object(object_to_append, 
-                                           current_object, 
-                                           append_type = 'as_list', 
-                                           inds_to_append = which(!(names(current_object) == 'parcel_indexes')))      #record current offset parcels in offsets object containing all offsets info
-  appended_object <- append_current_object(appended_object, 
-                                           current_object, 
-                                           append_type = 'as_group', 
-                                           inds_to_append = which(names(current_object) == 'parcel_indexes'))
+    appended_object <- append_current_object(object_to_append, 
+                                             current_object, 
+                                             append_type = 'as_list', 
+                                             inds_to_append = which(!(names(current_object) == 'parcel_indexes')))      #record current offset parcels in offsets object containing all offsets info
+    appended_object <- append_current_object(appended_object, 
+                                             current_object, 
+                                             append_type = 'as_group', 
+                                             inds_to_append = which(names(current_object) == 'parcel_indexes'))
   }
   return(appended_object)
   

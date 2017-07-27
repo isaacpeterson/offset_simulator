@@ -4,11 +4,11 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-plot_type = 'outcomes' #'impacts', 'outcomes'.
+plot_type = 'outcomes' #'impacts', 'outcomes'
 offset_bank = FALSE
 write_pdf = TRUE
 data_type = 'simulated'
-run_number = 40
+run_number = 40 #used to name plot outputs
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 
 collated_folder = paste0('~/offset_data/collated_realisations/')  #LOCATION OF COLLATED FILES
@@ -17,7 +17,7 @@ output_plot_folder = collated_folder
 source('plot_routines.R')                                   # functions to plot collated outputs
 source('collate_routines.R')
 
-run_params = readRDS(paste0(collated_folder, 'run_params.rds'))
+run_params = readRDS(paste0(collated_folder, '/run_params.rds'))
 current_filenames <- list.files(path = collated_folder, pattern = '_collated_realisation', all.files = FALSE, 
                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                 include.dirs = FALSE, no.. = FALSE)
@@ -28,9 +28,9 @@ if (!file.exists(output_plot_folder)){
 
 if (write_pdf == TRUE){
   if (plot_type == 'impacts'){
-    filename = paste0(output_plot_folder, runstring, '_impacts.pdf')
+    filename = paste0(output_plot_folder, '/', runstring, '_impacts.pdf')
   } else if (plot_type == 'outcomes'){
-    filename = paste0(output_plot_folder, runstring, '_outcomes.pdf')
+    filename = paste0(output_plot_folder, '/', runstring, '_outcomes.pdf')
   }
   pdf(filename, width = 8.3, height = 11.7) 
 } 
@@ -60,8 +60,9 @@ if (length(current_filenames) == 0){
 scenario_filenames <- list.files(path = collated_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
+
 for (scenario_ind in seq_along(scenario_filenames)){
-  current_policy_params = readRDS(paste0(collated_folder, scenario_filenames[scenario_ind]))
+  current_policy_params = readRDS(paste0(collated_folder, '/', scenario_filenames[scenario_ind]))
   collated_realisations = bind_collated_realisations(scenario_ind, 
                                                      file_path = collated_folder, 
                                                      eco_ind = 1)
