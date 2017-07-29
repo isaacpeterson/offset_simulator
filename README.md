@@ -34,11 +34,32 @@ Description on the files
 * inputs policy parameters from initialise_params.R
 * runs simulations from simulation_routines.R
 * collates simulation outputs with collate_routines.R and plot_routines.R
-* plots outputs with plot_routines.R
 
 
 ### plot_collated_realisations.R
 
-* collate simulation outputs if necessary by setting action_type = 'collate_realisations’, 
-* run again with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of these 
-* setting the policy_type switch to 'restoration_gains', 'avoided_degs' or 'net_gains' finds all policy variations (time horizon etc) of those policy types and plots the outcomes or impacts for those policy types. 
+* Plot the results of the simulation
+* run with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of thiese
+
+
+Model outputs
+--------------
+
+Code should be in a directory called <base dire>/offset_simulator
+
+Outputs will be written into a directory called <base dire>/offset_data
+
+offset_data has the following structure:
+
+* input data name (by default 'simulated', for simulated data). Others will be here if you run with other data types.
+
+Within this directory there are the following directories 
+
+- `simulation_outputs` contains a folders automatically numbered sequentially for each new run. In each of these numbered folders there will be two folders called `collated_realisations` and `simulation_data`.  `simulation_data` is the raw outputs of the simulation. `collated_realisations` are processed outputs which can be used to make plots and there is one file per realization. The collated_realisations files have the impacts calculated with all specified counterfactuals. 
+
+- `simulation_inputs` contains all the processed input data needed to run the simulation (NOTE THIS ONLY APPLIES TO THE LATEST RUN). eg <base dire>/offset_data/simulated/simulation_outputs/00005 where 00005 is the latest run that has been done.
+
+
+
+
+
