@@ -35,7 +35,7 @@ calc_landscape_characteristics <- function(current_trajectories, landscape_cfacs
   return(landscape_object)
 }
 
-bind_collated_realisations <- function(scenario_ind, file_path, eco_ind){
+bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, number_to_bind=-1){
   
   current_filenames <- list.files(path = file_path, all.files = FALSE, 
                                   pattern = paste0('scenario_', scenario_ind, '_feature_', eco_ind, 
@@ -43,11 +43,14 @@ bind_collated_realisations <- function(scenario_ind, file_path, eco_ind){
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
   
-  realisation_num = length(current_filenames)
-  
+  # If only plotting a subser of the realisations set the number to bind to this value
+  # Note: a negative number means bind all
+  if( number_to_bind < 0)realisation_num = length(current_filenames)
+  else realisation_num = number_to_bind 
+
   if (realisation_num == 0){
-    print(paste0('no files found for scenario ', scenario_ind, ', species ', species_ind))
-    return()
+    stop(paste0('\n ERROR: No files found for scenario ', scenario_ind, ', in ', file_path))
+    
   }
   
   for (realisation_ind in seq(realisation_num)){
