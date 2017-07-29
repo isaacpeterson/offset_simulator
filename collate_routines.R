@@ -42,11 +42,19 @@ bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, number_
                                                    '_collated_realisation_'),
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
-  
+
+  # Check and print a warning if more realisations are specified then are available
+  # In in case just use available and print a warning
+  if(number_to_bind > length(current_filenames)) {
+    cat('\n WARNING: Trying to bind', number_to_bind, 'realisations but only found', 
+      length(current_filenames), 'in', file_path, 'Continuing with', length(current_filenames), 'realisations\n')
+      number_to_bind <- length(current_filenames)
+  }
+
   # If only plotting a subser of the realisations set the number to bind to this value
   # Note: a negative number means bind all
   if( number_to_bind < 0)realisation_num = length(current_filenames)
-  else realisation_num = number_to_bind 
+  else realisation_num = number_to_bind
 
   if (realisation_num == 0){
     stop(paste0('\n ERROR: No files found for scenario ', scenario_ind, ', in ', file_path))
