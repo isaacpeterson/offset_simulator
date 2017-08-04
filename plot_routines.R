@@ -1,5 +1,11 @@
 
 
+check_plot_options <- function() {
+
+  if(plot_type != 'impacts' & plot_type != 'outcomes')
+    stop( paste('\nERROR: Illegal plot option specified. Variable plot_type is set to', plot_type) )
+}
+
 plot_outcome_set <- function(collated_realisations, current_policy_params, site_plot_lims, program_plot_lims, 
                              landscape_plot_lims, sets_to_plot, lwd_vec, time_steps, realisation_num){
   
