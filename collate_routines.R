@@ -1,5 +1,6 @@
 #use_cfac_type_in_sim = TRUE
-run_collate_routines <- function(decline_rates_initial, initial_ecology, simulation_outputs, current_data_dir, run_params, policy_params, realisation_ind, eco_ind){
+run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, initial_ecology, simulation_outputs, current_data_dir, 
+                                 run_params, policy_params, realisation_ind, eco_ind){
   
     current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
                                                          nested_ind = eco_ind, output_type = 'nested')
@@ -16,7 +17,10 @@ run_collate_routines <- function(decline_rates_initial, initial_ecology, simulat
                                            use_cfac_type_in_sim = FALSE)
     
     current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', eco_ind, '.rds'))
-    simulation_outputs = readRDS(paste0(current_data_dir, 'realisation_', realisation_ind, '_outputs.rds'))
+    
+    if (read_outputs_from_file == TRUE){
+      simulation_outputs = readRDS(paste0(current_data_dir, 'realisation_', realisation_ind, '_outputs.rds'))
+    }
     
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 

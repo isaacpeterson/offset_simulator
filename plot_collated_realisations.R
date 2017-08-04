@@ -1,4 +1,3 @@
-
 # Plot the collated simulaton results
 # To run: source('plot_collated_realisations.R')
 
@@ -9,7 +8,7 @@ rm(list=ls(all=TRUE))
     #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-num_realisations_to_plot  = -50 # Note a negative number means plot all available
+# num_realisations_to_plot  = -50 # Note a negative number means plot all available
 offset_bank = FALSE
 write_pdf = TRUE
 run_number = 50   # for output plot name
@@ -26,26 +25,21 @@ output_plot_folder = collated_folder
 source('plot_routines.R')                                   # functions to plot collated outputs
 source('collate_routines.R')
 
-check_plot_options()
+#check_plot_options()
 
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 run_params = readRDS(paste0(collated_folder, '/run_params.rds'))
-# current_filenames <- list.files(path = collated_folder, pattern = '_collated_realisation', all.files = FALSE, 
-#                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-#                                 include.dirs = FALSE, no.. = FALSE)
-
 
 if (!file.exists(output_plot_folder)){
   dir.create(output_plot_folder)
 }
 
-
 # Set the output filename, and open the pdf file for reading
 if (write_pdf == TRUE){
   if (plot_type == 'impacts'){
-    filename = paste0(output_plot_folder, runstring, '_impacts.pdf')
+    filename = paste0(output_plot_folder, '/', runstring, '_impacts.pdf')
   } else if (plot_type == 'outcomes'){
-    filename = paste0(output_plot_folder, runstring, '_outcomes.pdf')
+    filename = paste0(output_plot_folder, '/', runstring, '_outcomes.pdf')
   }
   pdf(filename, width = 8.3, height = 11.7) 
 } 
@@ -70,14 +64,13 @@ scenario_filenames <- list.files(path = collated_folder, pattern = '_policy_para
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
 
+
 if (length(scenario_filenames) == 0){
   stop( paste('\nERROR: No files that match _policy_params found in', collated_folder) )
 }
 
-
-
 for (scenario_ind in seq_along(scenario_filenames)){
-  current_policy_params = readRDS(paste0(collated_folder, scenario_filenames[scenario_ind]))
+  current_policy_params = readRDS(paste0(collated_folder, '/', scenario_filenames[scenario_ind]))
   collated_realisations = bind_collated_realisations(scenario_ind, 
                                                      file_path = collated_folder, 
                                                      eco_ind = 1, num_realisations_to_plot)

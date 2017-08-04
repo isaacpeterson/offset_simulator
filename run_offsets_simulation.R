@@ -41,7 +41,6 @@ for (scenario_ind in seq_along(policy_params_group)){
                                                 realisation_ind)
   } 
   
- 
   if (run_params$plot_outputs == TRUE){
     collated_realisations = bind_collated_realisations(scenario_ind, 
                                                        file_path = run_params$collated_folder, 
@@ -56,7 +55,7 @@ for (scenario_ind in seq_along(policy_params_group)){
       site_plot_lims = c(0, 1e7)
       site_impact_plot_lims = c(-1e6, 1e6)
     } else {
-      site_plot_lims = c(0, 1e4)
+      site_plot_lims = c(0, 1e5)
       site_impact_plot_lims = c(-1e4, 1e4)
     }
     
