@@ -39,7 +39,8 @@ calc_landscape_characteristics <- function(current_trajectories, landscape_cfacs
   return(landscape_object)
 }
 
-bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, number_to_bind=-1){
+
+bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, realisation_num){
   
   current_filenames <- list.files(path = file_path, all.files = FALSE, 
                                   pattern = paste0('scenario_', scenario_ind, '_feature_', eco_ind, 
@@ -47,22 +48,17 @@ bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, number_
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
 
-  # Check and print a warning if more realisations are specified then are available
-  # In in case just use available and print a warning
-  if(number_to_bind > length(current_filenames)) {
-    cat('\n WARNING: Trying to bind', number_to_bind, 'realisations but only found', 
-      length(current_filenames), 'in', file_path, 'Continuing with', length(current_filenames), 'realisations\n')
-      number_to_bind <- length(current_filenames)
-  }
-
-  # If only plotting a subser of the realisations set the number to bind to this value
-  # Note: a negative number means bind all
-  if( number_to_bind < 0)realisation_num = length(current_filenames)
-  else realisation_num = number_to_bind
-
-  if (realisation_num == 0){
+  net_realisation_num = length(current_filenames)
+  
+  if (realisation_num == 'all'){
+    realisation_num = net_realisation_num
+  } 
+  
+  if (net_realisation_num == 0){
     stop(paste0('\n ERROR: No files found for scenario ', scenario_ind, ', in ', file_path))
-    
+  } else if (net_realisation_num < realisation_num){
+    realisation_num = net_realisation_num
+    print(paste0('found ', net_realisation_num, ' files for scenario ', scenario_ind, ', in ', file_path))
   }
   
   for (realisation_ind in seq(realisation_num)){
@@ -75,8 +71,9 @@ bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, number_
                                       function(i) append_nested_object(collated_realisations[[i]], current_collated_realisation[[i]]))
     }
   }
-  names(collated_realisations) = names(current_collated_realisation)
   
+  names(collated_realisations) = names(current_collated_realisation)
+  collated_realisations$realisation_num = realisation_num
   return(collated_realisations)
 }
 

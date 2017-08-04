@@ -8,26 +8,27 @@ rm(list=ls(all=TRUE))
     #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-# num_realisations_to_plot  = -50 # Note a negative number means plot all available
+realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
-write_pdf = TRUE
-run_number = 50   # for output plot name
+write_pdf = FALSE
+run_number = 47   # for output plot name
 
-#collated_folder = paste0('~/offset_data/collated_realisations/')  #LOCATION OF COLLATED FILES
-collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
+runstring = formatC(run_number, width = 5, format = "d", flag = "0")
+
+collated_folder = paste0('~/offset_data/simulated/simulation_outputs/', runstring, '/collated_realisations/')  #LOCATION OF COLLATED FILES
+#collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
 
     #---------------------
     # User parameters
     #---------------------
 
-
 source('plot_routines.R')                                   # functions to plot collated outputs
 source('collate_routines.R')
 
 #check_plot_options()
 
-runstring = formatC(run_number, width = 5, format = "d", flag = "0")
+
 run_params = readRDS(paste0(collated_folder, '/run_params.rds'))
 
 if (!file.exists(output_plot_folder)){
@@ -73,15 +74,8 @@ for (scenario_ind in seq_along(scenario_filenames)){
   current_policy_params = readRDS(paste0(collated_folder, '/', scenario_filenames[scenario_ind]))
   collated_realisations = bind_collated_realisations(scenario_ind, 
                                                      file_path = collated_folder, 
-                                                     eco_ind = 1, num_realisations_to_plot)
-
-  # Check if only plotting a subset of the realisations
-  # Note: a negative number means bind all
-  if( num_realisations_to_plot < 0 ) realisations_to_plot <- run_params$realisation_num
-  else realisations_to_plot <- num_realisations_to_plot
-
-  # In case more realisation are specified then are available
-  if(num_realisations_to_plot > run_params$realisation_num) realisations_to_plot <- run_params$realisation_num
+                                                     eco_ind = 1, 
+                                                     realisation_num)
 
   if (plot_type == 'impacts'){
     plot_impact_set(collated_realisations, 
@@ -93,7 +87,7 @@ for (scenario_ind in seq_along(scenario_filenames)){
                     lwd_vec = c(3, 0.5), 
                     time_steps = run_params$time_steps, 
                     parcel_num = 1600,
-                    realisation_num = realisations_to_plot) 
+                    realisation_num = collated_realisations$realisation_num) 
   } else {
     plot_outcome_set(collated_realisations,
                      current_policy_params,

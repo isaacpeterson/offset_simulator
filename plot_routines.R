@@ -311,7 +311,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
 
 write_NNL_label <- function(NNL_yrs){
   if (length(unlist(NNL_yrs)) > 0){
-    NNL_label = paste('NNL at ', mean(unlist(NNL_yrs)), ' years')
+    NNL_label = paste('NNL at ', round(mean(unlist(NNL_yrs))), ' years')
   } else {
     NNL_label = 'All realisations faileld NNL'
   } 
