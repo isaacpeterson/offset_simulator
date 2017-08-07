@@ -11,7 +11,7 @@ plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 47   # for output plot name
+run_number = 50   # for output plot name
 
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 

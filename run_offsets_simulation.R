@@ -31,7 +31,7 @@ for (scenario_ind in seq_along(policy_params_group)){
   
   foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 
-    global_object <- perform_offsets_simulation(policy_params = policy_params_group[[scenario_ind]], 
+  global_object <- perform_offsets_simulation(policy_params = policy_params_group[[scenario_ind]], 
                                                 run_params,
                                                 parcels, 
                                                 initial_ecology, 
@@ -40,52 +40,6 @@ for (scenario_ind in seq_along(policy_params_group)){
                                                 scenario_ind, 
                                                 realisation_ind)
   } 
-  
-  if (run_params$plot_outputs == TRUE){
-    collated_realisations = bind_collated_realisations(scenario_ind, 
-                                                       file_path = run_params$collated_folder, 
-                                                       eco_ind = 1)
-    sim_characteristics = get_current_sim_characteristics(policy_params_group[[scenario_ind]], run_params$realisation_num)
-    setup_sub_plots(nx = 3, ny = 2, x_space = 5, y_space = 5)
-    
-    sets_to_plot = 10
-    policy_params = policy_params_group[[scenario_ind]]
-    
-    if (policy_params$use_offset_bank == TRUE){
-      site_plot_lims = c(0, 1e7)
-      site_impact_plot_lims = c(-1e6, 1e6)
-    } else {
-      site_plot_lims = c(0, 1e5)
-      site_impact_plot_lims = c(-1e4, 1e4)
-    }
-    
-    program_plot_lims = c(0e6, 5e6) 
-    landscape_plot_lims = c(0e6, 1e7)
-    
-    program_impact_plot_lims = c(-6e5, 6e5) 
-    landscape_impact_plot_lims = c(-6e5, 6e5)
-
-    plot_impact_set(collated_realisations, 
-                    policy_params, 
-                    site_impact_plot_lims,
-                    program_impact_plot_lims, 
-                    landscape_impact_plot_lims, 
-                    sets_to_plot,
-                    lwd_vec = c(3, 0.5), 
-                    time_steps = run_params$time_steps, 
-                    parcels$land_parcel_num,
-                    realisation_num = run_params$realisation_num) 
-    
-    plot_outcome_set(collated_realisations,
-                     policy_params,
-                     site_plot_lims,
-                     program_plot_lims, 
-                     landscape_plot_lims,
-                     sets_to_plot,
-                     lwd_vec = c(3, 0.5), 
-                     time_steps = run_params$time_steps,
-                     realisation_num = run_params$realisation_num) 
-  }
   
   fin <- Sys.time()
   print(fin - strt)
