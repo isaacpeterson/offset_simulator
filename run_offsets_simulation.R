@@ -29,8 +29,9 @@ print(paste('testing ', length(policy_params_group), ' combinations on ', run_pa
 
 for (scenario_ind in seq_along(policy_params_group)){
   
+  print(paste('running ', run_params$realisation_num, ' realisations on scenario ', scenario_ind))
   foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
-
+  
   global_object <- perform_offsets_simulation(policy_params = policy_params_group[[scenario_ind]], 
                                                 run_params,
                                                 parcels, 
@@ -42,8 +43,8 @@ for (scenario_ind in seq_along(policy_params_group)){
   } 
   
   fin <- Sys.time()
-  print(fin - strt)
-  
+  print(paste('scenario ', scenario_ind, ' done at', round(fin - strt), ' mins')
+ 
 }
 
 stopCluster(cl)

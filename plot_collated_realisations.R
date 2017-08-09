@@ -11,7 +11,7 @@ plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 50   # for output plot name
+run_number = 51 # for output plot name
 
 runstring = formatC(run_number, width = 5, format = "d", flag = "0")
 
@@ -26,7 +26,7 @@ output_plot_folder = collated_folder
 source('plot_routines.R')                                   # functions to plot collated outputs
 source('collate_routines.R')
 
-#check_plot_options()
+check_plot_options()
 
 
 run_params = readRDS(paste0(collated_folder, '/run_params.rds'))
