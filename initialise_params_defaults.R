@@ -53,10 +53,7 @@ initialise_run_params <- function(){
   # Stops the offset from delivering any further gains once it has acheived the gains required
   run_params$limit_offset_restoration = TRUE
 
-  # Whether illegal clearing occurs
-  run_params$perform_illegal_clearing = TRUE 
-
-  # The probability per parcel of it being illegally cleared, every parcel gets set to this number
+    # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]

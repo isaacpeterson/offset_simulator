@@ -200,7 +200,7 @@ run_simulation <- function(global_object, run_params, policy_params, parcels,
         
       }
       
-      if (run_params$perform_illegal_clearing == TRUE){
+      if (run_params$illegal_clearing_prob > 0){
         
         illegally_cleared_object <- perform_illegal_clearing(global_object$current_ecology, 
                                                              global_object$index_object,
