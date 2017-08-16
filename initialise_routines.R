@@ -1,28 +1,28 @@
 run_initialise_routines <- function(run_params, policy_params_group){
   
-  folder_to_use = write_folder(run_params$output_folder)
-  folder_to_use = write_folder(paste0(folder_to_use, run_params$data_type, '/'))
-  run_params$simulation_inputs_folder = write_folder(paste0(folder_to_use, 'simulation_inputs/'))
+  run_params <- write_simulation_folders(run_params, length(policy_params_group))
   
-  if ((run_params$data_type == 'simulated') & (run_params$run_from_saved == FALSE)){
-    prepare_simulated_data(run_params$simulation_inputs_folder)
+  if (run_params$run_from_saved == FALSE){
+    if (run_params$simulate_data == TRUE){
+        overwrite <- readline("overwrite existing landscape data? (Y/N) ")
+        if (overwrite == 'Y'){
+          prepare_simulated_data(run_params)
+        }
+    }
   }
-  
-  #if (run_params$save_realisations == TRUE){
-    run_params <- write_output_folders(run_params, length(policy_params_group))
-    saveRDS(run_params, paste0(run_params$collated_folder, 'run_params.rds'))
-  #}
 
+  saveRDS(run_params, paste0(run_params$simulation_inputs_folder, 'run_params.rds'))
+  
   for (scenario_ind in seq_along(policy_params_group)){
     saveRDS(policy_params_group[[scenario_ind]], 
-            paste0(run_params$collated_folder, 'scenario_', scenario_ind, '_policy_params.rds'))
+            paste0(run_params$simulation_inputs_folder, 'scenario_', 
+                   formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
+                   '_policy_params.rds'))
   }
   
-  ecology_params = readRDS(paste0(run_params$simulation_inputs_folder, 'ecology_params.rds'))
+  ecology_params = readRDS(paste0(run_params$landscape_data_folder, 'ecology_params.rds'))
   run_params$min_eco_val = ecology_params$min_eco_val
   run_params$max_eco_val = ecology_params$max_eco_val
-  run_params$eco_dims = ecology_params$eco_dims #how many ecological dimensions in simulation
-  run_params$dims_to_use = seq(run_params$eco_dims)
   
   return(run_params)
 }
@@ -30,43 +30,30 @@ run_initialise_routines <- function(run_params, policy_params_group){
 
 
 
-prepare_simulated_data <- function(simulation_inputs_folder){
+prepare_simulated_data <- function(run_params){
   source('data_prep_routines.R')
-  data_type = 'simulated'
-  ecology_params <- initialise_ecology_params()
+  ecology_params <- initialise_ecology_params(run_params)
   simulated_ecology_params <- initialise_simulated_ecology_params()
   LGA_array <- simulate_LGA(simulated_ecology_params)
   parcels <- LGA_to_parcel_list(LGA_array)
-  parcel_ecology <- simulate_ecology(simulated_ecology_params, eco_dims = ecology_params$eco_dims, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
+  parcel_ecology <- simulate_ecology(simulated_ecology_params, feature_num = run_params$feature_num, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   landscape_ecology = list()
   dev_weights = list()  
-  decline_rates_initial <- simulate_decline_rates(parcels$land_parcels, 
+  decline_rates_initial <- simulate_decline_rates(length(parcels$land_parcels), 
                                                   sample_decline_rate = TRUE, 
                                                   ecology_params$mean_decline_rates, 
                                                   ecology_params$decline_rate_std, 
-                                                  eco_dims = ecology_params$eco_dims)       # set up array of decline rates that are eassociated with each cell
+                                                  feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
   
-  save_simulation_inputs(simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
+  save_simulation_inputs(run_params$landscape_data_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
                          parcel_ecology, dev_weights, ecology_params)
-
-}
-
-
-
-
-
-
-initialise_dev_weights <- function(data_type, data_folder, land_parcels){
-  if (data_type == 'hunter'){
-    dev_weights <- readRDS(paste0(data_folder, 'mining_raster.rds'))
-    dev_weights <- stackApply(dev_weights, indices = rep(1, dim(dev_weights)[3]), fun = sum)
-    dev_weights_array <- raster_to_array(dev_weights)
-    dev_weights = lapply(seq_along(land_parcels), function(i) sum(dev_weights_array[land_parcels[[i]] ])/sum(dev_weights_array))
-  } else {
-    dev_weights = list()
+  if (run_params$backup_landscape_data == TRUE){
+    save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
+                           parcel_ecology, dev_weights, ecology_params)
   }
-  return(dev_weights)
+
 }
+
 
 
 bind_params <- function(policy_params, run_params, ecology_params){
@@ -77,6 +64,18 @@ bind_params <- function(policy_params, run_params, ecology_params){
   return(simulation_params)
 }
 
+write_nested_folder <- function(current_folder){
+  while (!(file.exists(current_folder))){
+    dir_to_use = current_folder
+    while (!(file.exists(dir_to_use))){
+      dir_to_use_tmp = dir_to_use
+      dir_to_use = dirname(dir_to_use_tmp)
+    }
+    dir.create(dir_to_use_tmp)
+    return(current_folder)
+  }
+  return(current_folder)
+}
 
 write_folder <- function(current_folder){
   if (!file.exists(current_folder)){
@@ -85,12 +84,12 @@ write_folder <- function(current_folder){
   return(current_folder)
 }
 
-write_output_folders <- function(run_params, scenario_num){
+write_simulation_folders <- function(run_params, scenario_num){
+  simulation_folder = write_nested_folder(run_params$simulation_folder)
+  landscape_data_folder = write_folder(paste0(run_params$simulation_folder, '/landscape_data/'))
+  base_run_folder = paste0(run_params$simulation_folder, '/simulation_runs/')
   
-  output_folder = write_folder(paste0(run_params$output_folder, '/'))
-  output_folder = write_folder(paste0(output_folder, run_params$data_type, '/'))
-  output_folder = write_folder(paste0(output_folder, 'simulation_outputs/'))
-  filenames = list.files(path = output_folder, all.files = FALSE, 
+  filenames = list.files(path = base_run_folder, all.files = FALSE, 
              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
              include.dirs = FALSE, no.. = FALSE)
   
@@ -99,14 +98,18 @@ write_output_folders <- function(run_params, scenario_num){
   } else {
     current_run = 1
   }
-  output_folder = write_folder(paste0(output_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
-  run_params$data_folder = write_folder(paste0(output_folder, 'simulation_data/'))
+  
+  run_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
+  run_params$output_folder = write_folder(paste0(run_params$run_folder, '/simulation_outputs/'))
   
   for (scenario_ind in (seq(scenario_num))){
-    write_folder(paste0(run_params$data_folder, 'scenario_', scenario_ind, '/'))
+    write_folder(paste0(run_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
   }
-  run_params$collated_folder = write_folder(paste0(output_folder, 'collated_realisations/'))
-  run_params$output_folder = output_folder
+  
+  run_params$simulation_inputs_folder = write_folder(paste0(run_params$run_folder, '/simulation_inputs/'))
+  run_params$landscape_data_folder = landscape_data_folder
+  run_params$collated_folder = write_folder(paste0(run_params$run_folder, 'collated_outputs/'))
+
   return(run_params)
 }
 
@@ -139,7 +142,8 @@ collate_current_policy <- function(current_policy_params, run_params){
   
   
   
-  current_policy_params$use_credit = (current_policy_params$use_credit) || (current_policy_params$offset_bank_type == 'credit')
+  current_policy_params$allow_developments_from_credit = (current_policy_params$allow_developments_from_credit) || (current_policy_params$offset_bank_type == 'credit')
+  
   current_policy_params$use_parcel_sets = (current_policy_params$offset_bank_type == 'parcel_set') || (current_policy_params$use_offset_bank == FALSE)
   if ((current_policy_params$offset_bank_type == 'parcel_set') || (current_policy_params$use_offset_bank == FALSE)){
     current_policy_params$match_type = 'parcel_set'
@@ -181,12 +185,6 @@ collate_current_policy <- function(current_policy_params, run_params){
                                                                      prog_end = current_policy_params$dev_end, 
                                                                      total_policy_num = current_policy_params$total_dev_num, 
                                                                      sd = 1)
-  
-  if (current_policy_params$dev_counterfactual_type == 'offset_counterfactual'){
-    current_policy_params$include_potential_developments_in_dev_calc = current_policy_params$include_potential_developments_in_offset_calc
-    current_policy_params$include_potential_offsets_in_dev_calc = current_policy_params$include_potential_offsets_in_offset_calc
-    current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_offset_calc
-  }
   
   current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
                                                        current_policy_params$include_potential_offsets_in_offset_calc,
@@ -231,19 +229,19 @@ initialise_output_object <- function(parcels, initial_ecology, run_params, decli
   output_object$offset_bank_object <- list()
   output_object$current_ecology = initial_ecology
   output_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
-  output_object$current_credit = list_of_zeros(run_params$eco_dims, 1)
+  output_object$current_credit = list_of_zeros(run_params$feature_num, 1)
   output_object$decline_rates = decline_rates_initial
 #   if (save_realisations == FALSE){
-#     output_object$trajectories <- initialise_trajectories(run_params$eco_dims, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
+#     output_object$trajectories <- initialise_trajectories(run_params$feature_num, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
 #   }
   return(output_object)
 }
 
-initialise_trajectories <- function(eco_dims, land_parcels, time_steps){
+initialise_trajectories <- function(feature_num, land_parcels, time_steps){
   parcel_num =  length(land_parcels)
-  trajectories = generate_nested_list(outer_dim = parcel_num, inner_dim = eco_dims)
+  trajectories = generate_nested_list(outer_dim = parcel_num, inner_dim = feature_num)
   for (parcel_ind in seq_len(parcel_num)){
-    for (eco_ind in seq_len(eco_dims)){
+    for (eco_ind in seq_len(feature_num)){
       parcel_dims = length(land_parcels[[parcel_ind]])
       trajectories[[parcel_ind]][[eco_ind]] = array(0, c(time_steps, parcel_dims))
     }
@@ -281,50 +279,50 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
   vec
 }
 
+# 
+# 
+# initialise_parcels_from_data <- function(data_folder, data_type){
+#   
+#   if (data_type == 'grassland'){
+#     filename = paste0(data_folder, 'planning.units.uid_20ha.pgm')
+#     img = read.pnm(file = filename, cellres = 1)
+#     parcel_array = img@grey
+#   } else if (data_type == 'hunter'){
+#     parcels_raster <- readRDS(paste0(data_folder, 'parcels_raster.rds'))
+#     LGA_raster <- readRDS(paste0(data_folder, 'LGA_raster.rds'))
+#     parcels_mask_raster <- readRDS(paste0(data_folder, 'parcels_mask_raster.rds'))
+#     parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
+#     parcel_array[is.na(parcel_array)] = 0
+#   }
+#   
+#   land_index_vals = unique(as.vector(parcel_array))
+#   landscape_dims = dim(parcel_array)
+#   land_parcels <- lapply(seq_along(land_index_vals), function(i) which(parcel_array == land_index_vals[i]))
+#   regions = list()
+#   regions[[1]] = seq_len(length(land_parcels))
+#   region_num = length(regions)
+#   parcels = list()
+#   parcels$landscape_dims = landscape_dims
+#   parcels$parcel_indexes = seq_along(land_parcels)
+#   parcels$land_parcel_num = length(land_parcels)
+#   parcels$land_parcels = land_parcels
+#   parcels$regions = regions
+#   parcels$region_num = region_num
+#   parcels$parcel_array = parcel_array
+#   
+#   return(parcels)
+# }
 
-
-initialise_parcels_from_data <- function(data_folder, data_type){
-  
-  if (data_type == 'grassland'){
-    filename = paste0(data_folder, 'planning.units.uid_20ha.pgm')
-    img = read.pnm(file = filename, cellres = 1)
-    parcel_array = img@grey
-  } else if (data_type == 'hunter'){
-    parcels_raster <- readRDS(paste0(data_folder, 'parcels_raster.rds'))
-    LGA_raster <- readRDS(paste0(data_folder, 'LGA_raster.rds'))
-    parcels_mask_raster <- readRDS(paste0(data_folder, 'parcels_mask_raster.rds'))
-    parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
-    parcel_array[is.na(parcel_array)] = 0
-  }
-  
-  land_index_vals = unique(as.vector(parcel_array))
-  landscape_dims = dim(parcel_array)
-  land_parcels <- lapply(seq_along(land_index_vals), function(i) which(parcel_array == land_index_vals[i]))
-  regions = list()
-  regions[[1]] = seq_len(length(land_parcels))
-  region_num = length(regions)
-  parcels = list()
-  parcels$landscape_dims = landscape_dims
-  parcels$parcel_indexes = seq_along(land_parcels)
-  parcels$land_parcel_num = length(land_parcels)
-  parcels$land_parcels = land_parcels
-  parcels$regions = regions
-  parcels$region_num = region_num
-  parcels$parcel_array = parcel_array
-  
-  return(parcels)
-}
-
-initialise_ecology_from_grassland_data <- function(filename, land_parcels, eco_dims){
-  img = read.pnm(file = filename, cellres = 1)
-  landscape_ecology = list()
-  img_to_use = img@grey
-  #   zero_inds = which(img_to_use == 0)
-  #   img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
-  landscape_ecology[[1]] = 100*img_to_use
-  current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
-  return(current_ecology)
-}
+# initialise_ecology_from_grassland_data <- function(filename, land_parcels, feature_num){
+#   img = read.pnm(file = filename, cellres = 1)
+#   landscape_ecology = list()
+#   img_to_use = img@grey
+#   #   zero_inds = which(img_to_use == 0)
+#   #   img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
+#   landscape_ecology[[1]] = 100*img_to_use
+#   current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, feature_num)
+#   return(current_ecology)
+# }
 
 
 
@@ -334,23 +332,23 @@ raster_to_array <- function(raster_object){
   return(raster_array)
 }
 
-
-initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, eco_dims){
-  #veg_raster <- readRDS(paste0(data_folder, 'veg_raster.rds'))
-  animal_raster <- readRDS(paste0(data_folder, 'animal_raster.rds'))
-  #species_raster = stack(veg_raster, animal_raster)
-  landscape_ecology = vector('list', eco_dims)
-  
-  for (eco_ind in seq(eco_dims)){
-    current_species_layer = raster_to_array(subset(animal_raster, eco_ind))/992*100
-    current_species_layer[current_species_layer == 0] = 1e-10
-    current_species_layer[current_species_layer == 100] = 100 - 1e-10
-    landscape_ecology[[eco_ind]] = current_species_layer
-  }
-  
-  current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, eco_dims)
-  return(current_ecology)
-}
+# 
+# initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, feature_num){
+#   #veg_raster <- readRDS(paste0(data_folder, 'veg_raster.rds'))
+#   animal_raster <- readRDS(paste0(data_folder, 'animal_raster.rds'))
+#   #species_raster = stack(veg_raster, animal_raster)
+#   landscape_ecology = vector('list', feature_num)
+#   
+#   for (eco_ind in seq(feature_num)){
+#     current_species_layer = raster_to_array(subset(animal_raster, eco_ind))/992*100
+#     current_species_layer[current_species_layer == 0] = 1e-10
+#     current_species_layer[current_species_layer == 100] = 100 - 1e-10
+#     landscape_ecology[[eco_ind]] = current_species_layer
+#   }
+#   
+#   current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, feature_num)
+#   return(current_ecology)
+# }
 
 initialise_shape_parcels <- function(ecology_params){
   parcels = list()
@@ -416,7 +414,6 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 }  
 
 
-
 initialise_index_object <- function(parcels, current_ecology, run_params){
   index_object = list()
   index_object$indexes_to_use = vector('list', parcels$region_num)
@@ -457,52 +454,52 @@ initialise_index_object <- function(parcels, current_ecology, run_params){
   
 }
 
+# 
+# 
+# 
+# initialise_ecology <- function(ecology_params, run_params, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+#   
+#   parcel_num = length(land_parcels)
+#   feature_num = run_params$feature_num
+#   current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = run_params$feature_num)
+#   
+#   for (parcel_ind in seq_len(parcel_num)){  
+#     current_parcel = land_parcels[[parcel_ind]]
+#     parcel_dims = length(current_parcel)
+#     
+#     for (eco_ind in seq_len(feature_num)){
+#       mean_eco_val = ecology_params$min_initial_eco_val + (ecology_params$max_initial_eco_val - ecology_params$min_initial_eco_val - ecology_params$initial_eco_noise)*runif(1)
+#       current_ecology[[parcel_ind]][[eco_ind]] =  array(mean_eco_val, parcel_dims) + ecology_params$initial_eco_noise*array(runif(length(current_parcel)), c(parcel_dims))
+#     }
+#     
+#   }
+#   
+#   return(current_ecology)
+# }
 
 
-
-initialise_ecology <- function(ecology_params, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
-  
-  parcel_num = length(land_parcels)
-  eco_dims = ecology_params$eco_dims
-  current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = ecology_params$eco_dims)
-  
-  for (parcel_ind in seq_len(parcel_num)){  
-    current_parcel = land_parcels[[parcel_ind]]
-    parcel_dims = length(current_parcel)
-    
-    for (eco_ind in seq_len(eco_dims)){
-      mean_eco_val = ecology_params$min_initial_eco_val + (ecology_params$max_initial_eco_val - ecology_params$min_initial_eco_val - ecology_params$initial_eco_noise)*runif(1)
-      current_ecology[[parcel_ind]][[eco_ind]] =  array(mean_eco_val, parcel_dims) + ecology_params$initial_eco_noise*array(runif(length(current_parcel)), c(parcel_dims))
-    }
-    
-  }
-  
-  return(current_ecology)
-}
-
-
-initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, eco_dims){
+initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
   
   land_parcels = parcels$land_parcels
   parcel_num = length(land_parcels)
   decline_rates = vector('list', parcel_num)
   for (parcel_ind in seq(parcel_num)){
-    decline_rates[[parcel_ind]] = lapply(seq(eco_dims), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
+    decline_rates[[parcel_ind]] = lapply(seq(feature_num), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
   }
   
   return(decline_rates)
   
 }
 
-split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, eco_dims){
+split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, feature_num){
   parcel_num = length(land_parcels)
-  current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = eco_dims)
+  current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = feature_num)
   
   for (parcel_ind in seq_len(parcel_num)){  
     current_parcel = land_parcels[[parcel_ind]]
     parcel_dims = length(current_parcel)
     
-    for (eco_ind in seq_len(eco_dims)){
+    for (eco_ind in seq_len(feature_num)){
       current_ecology[[parcel_ind]][[eco_ind]] = landscape_ecology[[eco_ind]][current_parcel]
     }
   }
@@ -523,7 +520,7 @@ generate_nested_list <- function(outer_dim, inner_dim){
 }
 
 
-split_ecology <- function(current_ecology, land_parcels, parcel_indexes, eco_dims){
+split_ecology <- function(current_ecology, land_parcels, parcel_indexes, feature_num){
   parcel_indexes = unlist(parcel_indexes)
   parcel_ecologies = vector('list', length(parcel_indexes))
   

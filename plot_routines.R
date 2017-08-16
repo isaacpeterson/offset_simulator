@@ -81,15 +81,6 @@ plot_site_outcomes <- function(collated_realisations, current_policy_params, set
 }
 
 
-# current_policy_params = policy_params
-# site_plot_lims = c(-1e4, 1e4)
-# program_plot_lims = c(-6e5, 6e5) 
-# landscape_plot_lims = c(-6e5, 6e5) 
-# 
-# lwd_vec = c(3, 0.5) 
-# time_steps = run_params$time_steps 
-# parcel_num = parcels$land_parcel_num
-# realisation_num = run_params$realisation_num
 plot_impact_set <- function(collated_realisations, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
                             sets_to_plot, lwd_vec, time_steps, parcel_num, realisation_num){
   
@@ -138,7 +129,7 @@ plot_impact_set <- function(collated_realisations, current_policy_params, site_p
 make_movie <- function(){
   if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
     net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = ecology_params$eco_dims)
+                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = ecology_params$feature_num)
     graphics.off()
     for (yr in seq_len(run_params$time_steps)){
       image(net_traj[[1]][, , yr], zlim = c(ecology_params$min_eco_val, ecology_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
@@ -150,7 +141,7 @@ make_movie <- function(){
   
   if (write_movie == TRUE){
     net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, eco_dims = ecology_params$eco_dims)
+                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = ecology_params$feature_num)
     make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste0(output_folder, 'offset_time_slice/'))
   }
   
@@ -163,7 +154,7 @@ make_movie <- function(){
                                           land_parcels = parcels$land_parcels, 
                                           time_steps = run_params$time_steps, 
                                           landscape_dims = parcels$landscape_dims, 
-                                          eco_dims = ecology_params$eco_dims)
+                                          feature_num = ecology_params$feature_num)
     
     png(filename = paste0(output_folder, 'offset_layer.png'), height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
     image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
@@ -176,7 +167,7 @@ make_movie <- function(){
                                        land_parcels = parcels$land_parcels, 
                                        time_steps = run_params$time_steps, 
                                        landscape_dims = parcels$landscape_dims, 
-                                       eco_dims = ecology_params$eco_dims) #write all developed parcels to single layer to output as image
+                                       feature_num = ecology_params$feature_num) #write all developed parcels to single layer to output as image
     
     png(filename = paste0(output_folder, 'dev_layer.png'), height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
     image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
@@ -193,7 +184,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
   net_col_vec = c('darkgreen', 'red', 'black')
   
   time_horizon = run_params$time_steps
-  eco_dims = ecology_params$eco_dims
+  feature_num = ecology_params$feature_num
   
   if (policy_params$use_parcel_sets == TRUE){
     setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
@@ -453,6 +444,7 @@ plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, p
 
 
 plot_collated_realisation_set <- function(current_collated_real, overlay_plots, plot_col, realisation_num, lwd_vec, x_lab, plot_title, plot_lims){
+  
   if (plot_col == 'blue'){
     back_plot_col = 'skyblue'
   } else if (plot_col == 'black'){
@@ -494,17 +486,17 @@ plot_collated_realisation_set <- function(current_collated_real, overlay_plots, 
 
 generate_single_realisation_plots <- function(run_params, ecology_params, realisations, net_cfac_sum, eco_ind){
   time_horizon = run_params$time_steps
-  eco_dims = ecology_params$eco_dims
+  feature_num = ecology_params$feature_num
   realisation_ind = sample(length(realisations), 1)
   collated_parcel_sets_object = realisations[[realisation_ind]]$collated_parcel_sets_object
   # plot_sample_parcel_sets(collated_parcel_sets_object, plot_num = 9, global_params)
   
   setup_sub_plots(nx = 1, ny = 3, x_space = 2, y_space = 2)
   
-  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(policy_params$total_dev_num), time_horizon, ecology_params$eco_dims, 
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(policy_params$total_dev_num), time_horizon, ecology_params$feature_num, 
                                        headings = c('Single Realisation Net Program Developments', 'Single Realisation Net Program Offsets', 'Single Realisation Net Program Outcomes'))
   
-  parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, eco_dims, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon)
+  parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, feature_num, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon)
   
   
   par(mfrow = c(2, 1))
@@ -670,24 +662,17 @@ plot_NNL_hists <- function(parcel_set_NNL, program_NNL, system_NNL, use_parcel_s
 
 # plot_list = list(collated_realisations$program_impacts$net_offset_gains ,
 #                  collated_realisations$program_impacts$net_dev_losses,
-#                  collated_realisations$program_impacts$net_program_outcomes)
+#                  collated_realisations$program_impacts$net_program)
 # plot_title = 'Program Impact' 
+# col_vec = net_col_vec 
+# 
 # col_vec = net_col_vec 
 # legend_loc = 'topleft'
 # legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact') 
-
-# plot_title = 'Landscape Impact' 
-# x_lab = '' #t(x_lab)
-# col_vec = c('black')
-# legend_loc = 'topright'
-# legend_vec = 'NA' 
-# plot_lims = landscape_plot_lims
-
+# plot_lims = program_plot_lims
 
 overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, lwd_vec, 
                                  col_vec, legend_vec, legend_loc, plot_lims){
-  
-
   if (length(unlist(plot_list)) == 0){
     null_plot()
     return()
@@ -809,8 +794,8 @@ plot_parcel_set_parcels <- function(current_set_object){
   
   
   parcel_num = length(current_set_object$parcel_indexes)
-  sub_plots = 1:(parcel_num*ecology_params$eco_dims)
-  dim(sub_plots) = c(ecology_params$eco_dims, parcel_num)
+  sub_plots = 1:(parcel_num*ecology_params$feature_num)
+  dim(sub_plots) = c(ecology_params$feature_num, parcel_num)
   layout(sub_plots)
   
   rest_gains = current_set_object$rest_gains
@@ -820,7 +805,7 @@ plot_parcel_set_parcels <- function(current_set_object){
   mn = min(lim_vec)
   
   for (parcel_ind in seq_len(parcel_num)){
-    for (eco_ind in seq_len(ecology_params$eco_dims)){
+    for (eco_ind in seq_len(ecology_params$feature_num)){
       plot(rest_gains[, eco_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste('dim = ', eco_ind))
       lines(degs[, eco_ind, parcel_ind], col = 'blue')
       lines(rest_gains[, eco_ind, parcel_ind] + degs[, eco_ind, parcel_ind], col = 'red')
@@ -838,7 +823,7 @@ plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, run_p
   parcel_indexes = sample(policy_params$total_dev_num, plot_num)
   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
   for (parcel_set_index in parcel_indexes){
-    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = run_params$time_steps, ecology_params$eco_dims, 
+    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = run_params$time_steps, ecology_params$feature_num, 
                                          headings = c('Parcel Set Developments', 'Parcel Set Offsets', 'Parcel Set Outcome'))
   }
 }
@@ -933,9 +918,9 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
 
 
 
-generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims, eco_dims){
+generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims, feature_num){
   
-  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], time_steps, landscape_dims, eco_dims)
+  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], time_steps, landscape_dims, feature_num)
   
   if (layer_type == 'offset'){
     layer = net_traj[[1]][, , time_steps] > 0

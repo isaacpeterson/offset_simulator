@@ -1,11 +1,12 @@
 #use_cfac_type_in_sim = TRUE
+
 run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, initial_ecology, simulation_outputs, current_data_dir, 
-                                 run_params, policy_params, realisation_ind, eco_ind){
+                                 run_params, policy_params, realisation_ind, feature_ind){
   
     current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
-                                                         nested_ind = eco_ind, output_type = 'nested')
+                                                         nested_ind = feature_ind, output_type = 'nested')
     current_initial_ecology = select_nested_subset(nested_object = initial_ecology, 
-                                                   nested_ind = eco_ind, output_type = 'nested')
+                                                   nested_ind = feature_ind, output_type = 'nested')
     
     landscape_cfacs_object = collate_cfacs(run_params, policy_params,
                                            current_parcel_ecologies = current_initial_ecology,
@@ -14,9 +15,10 @@ run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, 
                                            current_parcel_num_remaining = vector(),
                                            cfac_type = 'landscape',
                                            collate_type = vector(), 
-                                           use_cfac_type_in_sim = FALSE)
+                                           use_cfac_type_in_sim = FALSE, 
+                                           feature_ind = 1)
     
-    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', eco_ind, '.rds'))
+    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', feature_ind, '.rds'))
     
     if (read_outputs_from_file == TRUE){
       simulation_outputs = readRDS(paste0(current_data_dir, 'realisation_', realisation_ind, '_outputs.rds'))
@@ -24,7 +26,7 @@ run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, 
     
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 
-                                            run_params, policy_params, use_cfac_type_in_sim = TRUE, parcels, eco_ind)
+                                            run_params, policy_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
     return(collated_realisation)
   
 }
@@ -40,14 +42,16 @@ calc_landscape_characteristics <- function(current_trajectories, landscape_cfacs
 }
 
 
-bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, realisation_num){
-  
+find_collated_files <- function(file_path, scenario_string, feature_string, realisation_num){
   current_filenames <- list.files(path = file_path, all.files = FALSE, 
-                                  pattern = paste0('scenario_', scenario_ind, '_feature_', eco_ind, 
+                                  pattern = paste0('scenario_', 
+                                                   scenario_string, 
+                                                   '_feature_', 
+                                                   feature_string, 
                                                    '_collated_realisation_'),
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
-
+  
   net_realisation_num = length(current_filenames)
   
   if (realisation_num == 'all'){
@@ -55,24 +59,33 @@ bind_collated_realisations <- function(scenario_ind, file_path, eco_ind, realisa
   } 
   
   if (net_realisation_num == 0){
-    stop(paste0('\n ERROR: No files found for scenario ', scenario_ind, ', in ', file_path))
+    stop(paste0('\n ERROR: No files found for scenario ', scenario_string, ', in ', file_path))
   } else if (net_realisation_num < realisation_num){
     realisation_num = net_realisation_num
-    print(paste0('found ', net_realisation_num, ' files for scenario ', scenario_ind, ', in ', file_path))
+    print(paste0('found ', net_realisation_num, ' files for scenario ', scenario_string, ', in ', file_path))
   }
   
+  filenames_to_use = current_filenames[seq(realisation_num)]
+  filenames_to_use = lapply(seq_along(filenames_to_use), function(i) paste0(file_path, '/', filenames_to_use[i]))
+  
+  return(filenames_to_use)
+}
+
+bind_collated_realisations <- function(collated_filenames){
+  realisation_num = length(collated_filenames)
+  
   for (realisation_ind in seq(realisation_num)){
-    current_collated_realisation = readRDS(paste0(file_path, current_filenames[realisation_ind]))
+    current_collated_realisation = readRDS(collated_filenames[[realisation_ind]])
     if (realisation_ind == 1){
       collated_realisations = lapply(seq_along(current_collated_realisation), 
                                      function(i) nest_list(current_collated_realisation[[i]]))
     } else {
       collated_realisations <- lapply(seq_along(current_collated_realisation), 
-                                      function(i) append_nested_object(collated_realisations[[i]], current_collated_realisation[[i]]))
+                                      function(i) append_nested_realisation(collated_realisations[[i]], current_collated_realisation[[i]], realisation_ind))
     }
+    names(collated_realisations) = names(current_collated_realisation)
   }
   
-  names(collated_realisations) = names(current_collated_realisation)
   collated_realisations$realisation_num = realisation_num
   return(collated_realisations)
 }
@@ -84,9 +97,36 @@ nest_list <- function(list_a){
   return(nested_list)
 }
 
+expand_current_collated_realisation <- function(expand_type, collated_object, net_names, realisation_ind){
+  expanded_collated_object = vector('list', length(net_names))
+  common_inds = (match(names(collated_object), net_names))
+  new_inds = setdiff(seq_along(net_names), common_inds)
+  expanded_collated_object[common_inds] = collated_object
+  if (expand_type == 'set'){
+    expanded_collated_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', realisation_ind - 1))
+  } else {
+    expanded_collated_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', 1))
+  }
+  names(expanded_collated_object) = net_names
+  return(expanded_collated_object)
+}
+
+
+append_nested_realisation <- function(collated_set, collated_element, realisation_ind){
+  
+  net_names = union(names(collated_set), names(collated_element))
+
+  collated_set = expand_current_collated_realisation(expand_type = 'set', collated_set, net_names, realisation_ind)
+  collated_element = expand_current_collated_realisation(expand_type = 'single', collated_element, net_names, realisation_ind)
+  
+  appended_object = append_nested_object(collated_set, collated_element)
+  return(appended_object)
+  
+}
+
 append_nested_object <- function(object_a, object_b){
   
-  appended_object <- lapply(seq_along(object_b), function(j) append(object_a[[j]], list(object_b[[j]])))
+  appended_object <- lapply(seq_along(object_a), function(j) append(object_a[[j]], list(object_b[[j]])))
   names(appended_object) = names(object_b)
   return(appended_object)  
 }
@@ -121,9 +161,16 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 
 
 
+# current_parcel_ecologies = current_initial_ecology
+# current_decline_rates = current_decline_rates_initial 
+# current_offset_yrs = rep(1, length(current_initial_ecology)) 
+# current_parcel_num_remaining = vector()
+# cfac_type = 'landscape'
+# collate_type = vector() 
+# use_cfac_type_in_sim = FALSE
 
 collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, current_decline_rates, current_offset_yrs, 
-                          current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim){
+                          current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
   cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, policy_params)
   
@@ -163,7 +210,7 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
                             include_potential_offsets,
                             include_illegal_clearing,
                             adjust_cfacs_flag,
-                            dims_to_use = 1)
+                            features_to_use = feature_ind)
   
   if (cfac_type == 'landscape'){
     background_cfacs = lapply(seq_along(cfacs_object$cfacs), function(i) cfacs_object$cfacs[[i]][[1]])    #extract from nested list
@@ -201,8 +248,15 @@ collate_net_program_outcomes <- function(simulation_outputs, summed_site_traject
 
 collate_net_program_impacts <- function(collated_program){
   collated_program_impacts = list()
-  collated_program_impacts$net_site_scale <- mapply('+', collated_program$collated_offsets$summed_gains_degs$site_nets, 
+  program_offsets = collated_program$collated_offsets$summed_gains_degs$site_nets
+  program_devs = collated_program$collated_devs$summed_gains_degs$site_nets
+  if ((length(program_offsets) > 0) & (length(program_devs) > 0)){
+    collated_program_impacts$net_site_scale <- mapply('+', collated_program$collated_offsets$summed_gains_degs$site_nets, 
                                                     collated_program$collated_devs$summed_gains_degs$site_nets, SIMPLIFY = FALSE)
+  } else {
+    collated_program_impacts$net_site_scale = list()
+  }
+  
   collated_program_impacts$net_site_offset_gains = Reduce('+', collated_program$collated_offsets$summed_gains_degs$site_nets)
   collated_program_impacts$net_offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$site_nets)
   collated_program_impacts$net_site_dev_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$site_nets)
@@ -220,7 +274,7 @@ collate_net_program_impacts <- function(collated_program){
 
 
 run_site_scale_collate_routine <- function(current_model_outputs, current_trajectories, current_decline_rates_initial, 
-                                           collate_type, run_params, policy_params, use_cfac_type_in_sim, eco_ind){
+                                           collate_type, run_params, policy_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
   collated_object = collate_gains_degs(current_model_outputs, 
@@ -229,7 +283,7 @@ run_site_scale_collate_routine <- function(current_model_outputs, current_trajec
                                        collate_type, 
                                        run_params, policy_params,
                                        use_cfac_type_in_sim, 
-                                       eco_ind)
+                                       feature_ind)
   
   if (length(collated_object) > 0){
     collated_object$grouped_gains_degs = group_gains_degs(collated_object, current_model_outputs$parcel_indexes)
@@ -269,25 +323,26 @@ group_gains_degs <- function(collated_object, parcel_indexes){
 
 
 collate_gains_degs <- function(current_model_outputs, current_trajectories, current_decline_rates_initial, 
-                               collate_type, run_params, policy_params, use_cfac_type_in_sim, eco_ind){ 
+                               collate_type, run_params, policy_params, use_cfac_type_in_sim, feature_ind){ 
   
   
   if (length(unlist(current_model_outputs$parcel_indexes)) == 0){
     return(NULL)
   }
   
-  current_parcel_ecologies = select_nested_subset(nested_object = current_model_outputs$parcel_ecologies, nested_ind = eco_ind, output_type = 'nested') 
+  current_parcel_ecologies = select_nested_subset(nested_object = current_model_outputs$parcel_ecologies, nested_ind = feature_ind, output_type = 'nested') 
   
   current_cfacs = collate_cfacs(run_params, policy_params, 
-                                current_parcel_ecologies = current_model_outputs$parcel_ecologies,
+                                current_parcel_ecologies,
                                 current_decline_rates = current_decline_rates_initial[unlist(current_model_outputs$parcel_indexes)], 
                                 current_offset_yrs =  unlist(current_model_outputs$offset_yrs),
                                 current_parcel_num_remaining = current_model_outputs$parcel_num_remaining,
                                 cfac_type = 'site_scale',
                                 collate_type, 
-                                use_cfac_type_in_sim)
+                                use_cfac_type_in_sim,
+                                feature_ind = 1)
   
-  parcel_ecologies_to_use = select_nested_subset(nested_object = current_model_outputs$parcel_ecologies, nested_ind = eco_ind, output_type = 'non-nested') 
+  parcel_ecologies_to_use = select_nested_subset(nested_object = current_model_outputs$parcel_ecologies, nested_ind = feature_ind, output_type = 'non-nested') 
   
   collated_gains_degs <- assess_gains_degs(trajectories_to_use = current_trajectories[unlist(current_model_outputs$parcel_indexes)],
                                            cfacs_to_use = current_cfacs$cfacs,
@@ -364,7 +419,7 @@ select_nested_subset <- function(nested_object, nested_ind, output_type){
 
 
 collate_program <- function(simulation_outputs, current_trajectories, landscape_cfacs_object, 
-                            current_decline_rates_initial, current_initial_ecology, run_params, policy_params, use_cfac_type_in_sim, parcels, eco_ind){
+                            current_decline_rates_initial, current_initial_ecology, run_params, policy_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_program = list()
   
@@ -374,7 +429,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                       collate_type = 'offsets', 
                                                                       run_params, policy_params,
                                                                       use_cfac_type_in_sim, 
-                                                                      eco_ind)
+                                                                      feature_ind)
   
   collated_program$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object, 
                                                                   current_trajectories, 
@@ -382,7 +437,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                   collate_type = 'devs', 
                                                                   run_params, policy_params,
                                                                   use_cfac_type_in_sim, 
-                                                                  eco_ind)
+                                                                  feature_ind)
   
   collated_program$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
                                                                         current_trajectories, 
@@ -390,7 +445,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                         collate_type = 'dev_credit', 
                                                                         run_params, policy_params,
                                                                         use_cfac_type_in_sim, 
-                                                                        eco_ind)
+                                                                        feature_ind)
   
   collated_program$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
                                                                          current_trajectories, 
@@ -398,7 +453,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                          collate_type = 'offset_bank', 
                                                                          run_params, policy_params,
                                                                          use_cfac_type_in_sim, 
-                                                                         eco_ind)
+                                                                         feature_ind)
   
   collated_program$collated_illegal_clearing = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$illegal_clearing_object, 
                                                                               current_trajectories, 
@@ -406,12 +461,13 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                               collate_type = 'illegal_clearing', 
                                                                               run_params, policy_params,
                                                                               use_cfac_type_in_sim, 
-                                                                              eco_ind)
+                                                                              feature_ind)
   
   collated_program$landscape <- calc_landscape_characteristics(current_trajectories, landscape_cfacs_object)
   
   collated_program$program_outcomes <- collate_net_program_outcomes(simulation_outputs, collated_program$landscape$summed_site_trajectories)
   collated_program$program_impacts <- collate_net_program_impacts(collated_program)
+  
   collated_program$program_cfacs = collate_program_cfacs(simulation_outputs, 
                                                          landscape_cfacs_object$background_cfacs, 
                                                          collated_program$collated_offsets, 

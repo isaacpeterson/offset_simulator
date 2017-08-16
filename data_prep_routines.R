@@ -6,6 +6,11 @@ write_folder <- function(current_folder){
 }
 
 
+scale_ecology <- function(landscape_ecology, max_eco_val){
+  landscape_ecology <- lapply(seq_along(landscape_ecology), function (i) landscape_ecology[[i]]/max(unlist(landscape_ecology)) * max_eco_val)
+  return(landscape_ecology)
+}
+
 shp_to_raster <- function(shp, raster_dims){
   r <- raster(ncol=raster_dims[2], nrow=raster_dims[1])
   extent(r) <- extent(shp)
@@ -14,12 +19,14 @@ shp_to_raster <- function(shp, raster_dims){
 }
 
 
-load_rasters <- function(current_data_path, file_pattern){
+load_rasters <- function(current_data_path, file_pattern, layer_num){
   current_filenames <- list.files(path = current_data_path, pattern = file_pattern, all.files = FALSE, 
                                   full.names = FALSE, recursive = TRUE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
-
-  for (species_ind in seq(length(current_filenames))){
+  if (layer_num == 'all'){
+    layer_num = length(current_filenames)
+  }
+  for (species_ind in seq(layer_num)){
     current_species_filename = paste(current_data_path, current_filenames[species_ind], sep = '', collapse = '')
     current_raster = raster(current_species_filename)
     if (species_ind == 1){
@@ -116,9 +123,9 @@ simulate_ecology_feature <- function(min_initial_eco_val, max_initial_eco_val, i
   
 }
   
-simulate_ecology <- function(simulated_ecology_params, eco_dims, land_parcels){ 
+simulate_ecology <- function(simulated_ecology_params, feature_num, land_parcels){ 
     
-  for (eco_ind in 1:eco_dims){
+  for (eco_ind in 1:feature_num){
     current_simulated_ecology <- simulate_ecology_feature(simulated_ecology_params$min_initial_eco_val, 
                                                        simulated_ecology_params$max_initial_eco_val, 
                                                        simulated_ecology_params$initial_eco_noise, 
@@ -132,18 +139,6 @@ simulate_ecology <- function(simulated_ecology_params, eco_dims, land_parcels){
   
   }
   return(simulated_ecology)
-}
-
-simulate_decline_rates <- function(land_parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, eco_dims){
-
-  parcel_num = length(land_parcels)
-  decline_rates = vector('list', parcel_num)
-  for (parcel_ind in seq(parcel_num)){
-    decline_rates[[parcel_ind]] = lapply(seq(eco_dims), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
-  }
-  
-  return(decline_rates)
-  
 }
 
 split_ecology <- function(landscape_ecology, land_parcels){
