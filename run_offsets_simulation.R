@@ -7,7 +7,7 @@ library(doParallel)
 library(abind)
 library(pixmap)
 
-source('initialise_params_hunter.R')
+source('initialise_params_defaults.R')
 source('initialise_routines.R')                              # functions to collate simulation outputs
 source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
@@ -16,11 +16,15 @@ source('plot_routines.R')                                   # functions to plot 
 run_params <- initialise_run_params()
 policy_params_group = generate_policy_params_group(run_params)
 run_params <- run_initialise_routines(run_params, policy_params_group)
-
 initial_ecology <- readRDS(paste0(run_params$landscape_data_folder, 'parcel_ecology.rds'))
-decline_rates_initial <- readRDS(paste0(run_params$landscape_data_folder, 'decline_rates_initial.rds'))
 parcels <- readRDS(paste0(run_params$landscape_data_folder, 'parcels.rds'))
 dev_weights <- readRDS(paste0(run_params$landscape_data_folder, 'dev_weights.rds'))
+
+decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
+                                                sample_decline_rate = TRUE, 
+                                                mean_decline_rates = run_params$mean_decline_rates, 
+                                                decline_rate_std = run_params$decline_rate_std, 
+                                                feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
 
 initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to_use_in_simulation)
 decline_rates_initial <- select_feature_subset(decline_rates_initial, run_params$features_to_use_in_simulation)

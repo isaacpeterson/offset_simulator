@@ -8,7 +8,6 @@ initialise_run_params <- function(){
   run_params$backup_landscape_data = FALSE 
   run_params$features_to_use_in_offset_calc = 2:5
   run_params$features_to_use_in_simulation = 2:5
-  
   run_params$feature_num = length(run_params$features_to_use_in_simulation)
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = FALSE     # write layer containing all offset parcels to pdf

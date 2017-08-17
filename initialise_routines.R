@@ -6,7 +6,8 @@ run_initialise_routines <- function(run_params, policy_params_group){
     if (run_params$simulate_data == TRUE){
         overwrite <- readline("overwrite existing landscape data? (Y/N) ")
         if (overwrite == 'Y'){
-          prepare_simulated_data(run_params)
+          source('simulate_ecology_routines.R')
+          prepare_simulated_data(run_params$landscape_data_folder)
         }
     }
   }
@@ -20,12 +21,16 @@ run_initialise_routines <- function(run_params, policy_params_group){
                    '_policy_params.rds'))
   }
   
-  ecology_params = readRDS(paste0(run_params$landscape_data_folder, 'ecology_params.rds'))
-  run_params$min_eco_val = ecology_params$min_eco_val
-  run_params$max_eco_val = ecology_params$max_eco_val
+  if (run_params$backup_landscape_data == TRUE){
+    save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
+                           parcel_ecology, dev_weights, ecology_params)
+  }
+  
   run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   return(run_params)
+  
 }
+
 
 select_feature_subset <- function(input_object, features_to_use){
   output_object <- lapply(seq_along(input_object), 
@@ -33,30 +38,6 @@ select_feature_subset <- function(input_object, features_to_use){
   return(output_object)
 }
 
-
-prepare_simulated_data <- function(run_params){
-  source('data_prep_routines.R')
-  ecology_params <- initialise_ecology_params(run_params)
-  simulated_ecology_params <- initialise_simulated_ecology_params()
-  LGA_array <- simulate_LGA(simulated_ecology_params)
-  parcels <- LGA_to_parcel_list(LGA_array)
-  parcel_ecology <- simulate_ecology(simulated_ecology_params, feature_num = run_params$feature_num, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
-  landscape_ecology = list()
-  dev_weights = list()  
-  decline_rates_initial <- simulate_decline_rates(length(parcels$land_parcels), 
-                                                  sample_decline_rate = TRUE, 
-                                                  ecology_params$mean_decline_rates, 
-                                                  ecology_params$decline_rate_std, 
-                                                  feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
-  
-  save_simulation_inputs(run_params$landscape_data_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
-                         parcel_ecology, dev_weights, ecology_params)
-  if (run_params$backup_landscape_data == TRUE){
-    save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
-                           parcel_ecology, dev_weights, ecology_params)
-  }
-
-}
 
 
 

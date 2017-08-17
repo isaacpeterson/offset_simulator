@@ -36,11 +36,14 @@ initialise_run_params <- function(){
   run_params$write_offset_layer = FALSE
   
   # The total number of layers to use in the offset calcuation (iterating from the start)
-  run_params$features_to_use = 1
+  run_params$features_to_use_in_offset_calc = 1
 
+  # what subset of features to use in the simulation
+  run_params$features_to_use_in_simulation = 1 
+  
   # The total number of features in the simulation
-  run_params$feature_num = 1 
-
+  run_params$feature_num = length(run_params$features_to_use_in_simulation)
+  
   # The maxoimum number of parcels can be selected to offset a single development
   run_params$max_offset_parcel_num = 5
 
@@ -53,9 +56,20 @@ initialise_run_params <- function(){
   # Stops the offset from delivering any further gains once it has acheived the gains required
   run_params$limit_offset_restoration = TRUE
 
-    # The probability per parcel of it being illegaxlly cleared, every parcel gets set to this number - set to zero to turn off
+    # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
+  run_params$mean_decline_rates = rep(list(-1e-2), run_params$feature_num) 
+  
+  # Sample form a normal distribution with this sd to add noise to the decline rates.
+  run_params$decline_rate_std = rep(list(1e-3), run_params$feature_num)
+  
+  # Lowest value that the logistic decline curve can reach. It will asypotote to this value
+  run_params$min_eco_val = 0  
+  
+  # Max value that the logistic decline curve can reach. It will asypotote to this value
+  run_params$max_eco_val = 100 
+  
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
   run_params$screen_parcels = TRUE 
 
@@ -200,14 +214,11 @@ initialise_policy_params <- function(){
   # impact of the development. This increases the impact of the development as
   # future gains are avoided
   policy_params$include_potential_offsets_in_dev_calc = c(FALSE)
-
-
+  
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
   policy_params$offset_multiplier = 1
-
-
 
   if (policy_params$use_offset_bank == TRUE){
 
@@ -225,66 +236,3 @@ initialise_policy_params <- function(){
 
 
 
-
-initialise_simulated_ecology_params <- function(){
-  
-  # Construct the static initial landscape 
-
-  simulated_ecology_params = list()
-
-  # Number of pixels in (y, x) for the feature layes 
-  simulated_ecology_params$ecology_size = c(300, 400)
-
-  # Numnber of parcels in x (but total size varies)
-  simulated_ecology_params$parcel_num_x = 30 
-
-  # Numnber of parcels in y (but total size varies)
-  simulated_ecology_params$parcel_num_y = 40 
-
-  # Minimum allowable initial ecological value of smallest ecological element
-  # (pixel) ie min value to sample from
-  simulated_ecology_params$min_initial_eco_val = 20
-
-  # Max allowable initial ecological value of largest element (pixel) ie max
-  # value to sample from
-  simulated_ecology_params$max_initial_eco_val = 90
-
-  # Mow much initial variation in pixels per land parcel (this is the width of
-  # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
-  # of 35, a new value will be sampled from between 35-45
-  simulated_ecology_params$initial_eco_noise = 10
-
-  # Defining multiple regions eg different states where different polcies can apply 
-  simulated_ecology_params$region_num_x = 1
-
-  # Defining multiple regions eg different states where different rules can apply 
-  simulated_ecology_params$region_num_y = 1
-
-  return(simulated_ecology_params)
-}
-
-
-initialise_ecology_params <- function(run_params){
-
-  # Set up how the landscape changes
-  
-  ecology_params = list()
-
-  # Set parameter for rate of decline curve according to logistic curve, need
-  # to mathc the number of features. Negative value means decline poltive
-  # value means improvement
-  
-  ecology_params$mean_decline_rates = rep(-1e-2, run_params$feature_num) 
-
-  # Sample form a normal distribution with this sd to add noise to the decline rates.
-  ecology_params$decline_rate_std = rep(1e-3, run_params$feature_num)
-
-  # Lowest value that the logistic decline curve can reach. It will asypotote to this value
-  ecology_params$min_eco_val = 0  
-
-  # Max value that the logistic decline curve can reach. It will asypotote to this value
-  ecology_params$max_eco_val = 100 
-  
-  return(ecology_params)
-  
-}

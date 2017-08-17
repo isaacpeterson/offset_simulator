@@ -100,46 +100,15 @@ mcell <- function(Arr_in, vx, vy){       #used to break up array into samller se
 
 
 
-save_simulation_inputs <- function(simulation_input_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
-                                   parcel_ecology, dev_weights, ecology_params){
+save_simulation_inputs <- function(simulation_input_folder, LGA_array, parcels, landscape_ecology,
+                                   parcel_ecology, dev_weights){
   saveRDS(LGA_array, paste0(simulation_input_folder, 'LGA_array.rds')) 
-  saveRDS(decline_rates_initial, paste0(simulation_input_folder, 'decline_rates_initial.rds')) 
   saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 
   saveRDS(landscape_ecology, paste0(simulation_input_folder, 'landscape_ecology.rds')) 
   saveRDS(parcel_ecology, paste0(simulation_input_folder, 'parcel_ecology.rds')) 
   saveRDS(dev_weights, paste0(simulation_input_folder, 'dev_weights.rds')) 
-  saveRDS(ecology_params, paste0(simulation_input_folder, 'ecology_params.rds')) 
 }
 
-simulate_ecology_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_eco_noise, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
-  
-  eco_scale = (max_initial_eco_val - min_initial_eco_val - initial_eco_noise)
-  
-  current_ecology = lapply(seq_along(land_parcels), function(i) min_initial_eco_val + eco_scale*runif(1)*array(1, length(land_parcels[[i]] )))
-  current_ecology_noise = lapply(seq_along(land_parcels), function(i) initial_eco_noise*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
-  current_ecology = mapply('+', current_ecology, current_ecology_noise, SIMPLIFY = FALSE)
-  
-  return(current_ecology)
-  
-}
-  
-simulate_ecology <- function(simulated_ecology_params, feature_num, land_parcels){ 
-    
-  for (eco_ind in 1:feature_num){
-    current_simulated_ecology <- simulate_ecology_feature(simulated_ecology_params$min_initial_eco_val, 
-                                                       simulated_ecology_params$max_initial_eco_val, 
-                                                       simulated_ecology_params$initial_eco_noise, 
-                                                       land_parcels)
-    current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
-    if (eco_ind == 1){
-      simulated_ecology <- current_simulated_ecology
-    } else {
-      simulated_ecology <- lapply(seq_along(land_parcels), function(j) append(simulated_ecology[[j]], current_simulated_ecology[[j]]))
-    }
-  
-  }
-  return(simulated_ecology)
-}
 
 split_ecology <- function(landscape_ecology, land_parcels){
   current_ecology = lapply(seq_along(land_parcels), 
@@ -188,7 +157,6 @@ simulate_LGA <- function(simulated_ecology_params){
   
   return(parcel_array)
 }
-
 
 
 

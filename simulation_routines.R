@@ -73,7 +73,7 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
 simulate_decline_rates <- function(parcel_num, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
   
     if (sample_decline_rate == TRUE){
-      decline_rates = lapply(seq(feature_num), function(i) lapply(seq(feature_num), function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
+      decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num), function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
     } else {
       decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num), function(j) mean_decline_rates[[j]]))
     }
