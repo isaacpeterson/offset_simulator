@@ -1,29 +1,6 @@
-decline_rates_initial.rds
-dev_vec.rds
-gains_degs_plots.R
-generate_program_params.R
-global_params.rds
-index_object.rds
-initial_ecology.rds
-initialise_common_params.R
-initialise_program_params.R
-offsets_flick.mpg
-parcels.rds
-plot.mpg
-plot_all_restgains_degs.R
-run_model.R
-run_params.R
-run_program_combs.R
-run_system_routines.R
-run_system_routines_multidim.R
-run_system_routines_multidim_multiregion.R
-run_program_combs_with_regions.R
-run_system_routines_modularised.R
-bind_collated_realisations.R
-run_program_combs_with_regions.R
 initialise_params.R
 .Rhistory
 .Rapp.history
-
+.DS_Store
 
 
