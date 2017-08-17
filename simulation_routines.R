@@ -8,8 +8,9 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
     set.seed(123)
   }
   
-  current_data_dir = write_folder(paste0(run_params$output_folder, 'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
-  current_data_dir = write_folder(paste0(current_data_dir, '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
+  current_data_dir = write_nested_folder(paste0(run_params$output_folder, 
+                                                'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
+                                                '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
   global_object = initialise_output_object(parcels, 
                                                 initial_ecology, 
@@ -64,16 +65,18 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
 }  
 
 
+
+# parcel_num = length(pool_object$parcel_ecologies) 
+# sample_decline_rate = FALSE 
+
+
 simulate_decline_rates <- function(parcel_num, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
   
-  decline_rates = vector('list', parcel_num)
-  for (parcel_ind in seq(parcel_num)){
     if (sample_decline_rate == TRUE){
-      decline_rates[[parcel_ind]] = lapply(seq(feature_num), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
+      decline_rates = lapply(seq(feature_num), function(i) lapply(seq(feature_num), function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
     } else {
-      decline_rates[[parcel_ind]] = lapply(seq(feature_num), function(i) mean_decline_rates[i])
+      decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num), function(j) mean_decline_rates[[j]]))
     }
-  }
   
   return(decline_rates)
   
@@ -239,7 +242,7 @@ run_simulation <- function(global_object, run_params, policy_params, parcels,
       
       global_object$decline_rates <- update_decline_rates(global_object$decline_rates, 
                                                           restoration_rate = current_policy_params$restoration_rate, 
-                                                          features_to_use = run_params$features_to_use, 
+                                                          features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc, 
                                                           feature_num = run_params$feature_num, 
                                                           decline_rate_type = 'offset', 
                                                           action_type = 'maintain', 
@@ -266,7 +269,7 @@ run_simulation <- function(global_object, run_params, policy_params, parcels,
                                                    global_object$decline_rates, 
                                                    current_time_horizons = rep(list(1), length(global_object$current_ecology)), 
                                                    run_params, 
-                                                   features_to_use = seq(run_params$feature_num), 
+                                                   features_to_use_in_offset_calc = seq(run_params$feature_num), 
                                                    time_fill = FALSE)
     print(yr)
   }
@@ -322,7 +325,7 @@ remove_parcel_from_current_pool <- function(offset_pool_object, current_parcel_i
   subset_pool_to_remove <- list_intersect(offset_pool_object$parcel_indexes, current_parcel_indexes)
   if (length(subset_pool_to_remove$match_ind) > 0){
     subset_pool_to_use <- seq_along(offset_pool_object$parcel_indexes)[-subset_pool_to_remove$match_ind]
-    offset_pool_object <- select_subset(offset_pool_object, subset_pool_to_use)
+    offset_pool_object <- select_pool_subset(offset_pool_object, subset_pool_to_use)
   }
   return(offset_pool_object)
 }
@@ -421,7 +424,7 @@ perform_offset_routine <- function(global_object, index_object, decline_rates, c
     global_object$decline_rates <- update_decline_rates(decline_rates, 
                                                         restoration_rate_params = run_params$restoration_rate_params, 
                                                         sample_restoration_rate = run_params$sample_restoration_rate,
-                                                        features_to_use = run_params$features_to_use, 
+                                                        features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc, 
                                                         feature_num = run_params$feature_num, 
                                                         decline_rate_type = 'offset', 
                                                         action_type = current_policy_params$offset_action_type, 
@@ -450,7 +453,7 @@ perform_clearing_routine <- function(global_object, index_object, decline_rates,
   global_object$decline_rates <- update_decline_rates(decline_rates, 
                                                       restoration_rate_params = vector(),
                                                       sample_restoration_rate = vector(),
-                                                      features_to_use = run_params$features_to_use, 
+                                                      features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc, 
                                                       feature_num = run_params$feature_num, 
                                                       decline_rate_type = 'development', 
                                                       action_type = vector(), 
@@ -500,7 +503,7 @@ prepare_offset_pool <- function(global_object, current_policy_params, region_ind
   
   if (current_policy_params$use_offset_bank == TRUE){
     subset_pool = which(unlist(global_object$offset_bank_object$parcel_indexes) %in% parcels$regions[[region_ind]])
-    offset_pool_object <- select_subset(global_object$offset_bank_object, subset_pool)
+    offset_pool_object <- select_pool_subset(global_object$offset_bank_object, subset_pool)
     offset_pool_object$restoration_vals <- find_current_parcel_sums(global_object$current_ecology[unlist(global_object$offset_bank_object$parcel_indexes[subset_pool])])
     
     offset_pool_type = 'offset_bank'
@@ -560,7 +563,7 @@ perform_banking_routine <- function(global_object, current_policy_params, yr, re
   global_object$decline_rates <- update_decline_rates(global_object$decline_rates,     # set decline rate parameters to offset
                                                       restoration_rate_params = run_params$restoration_rate_params,
                                                       sample_restoration_rate = run_params$sample_restoration_rate,
-                                                      features_to_use = run_params$features_to_use, 
+                                                      features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc, 
                                                       feature_num = run_params$feature_num, 
                                                       decline_rate_type = 'offset', 
                                                       action_type = current_policy_params$offset_action_type, 
@@ -640,7 +643,7 @@ assess_parcel_sets <- function(current_ecology, offsets_object, run_params, curr
     }
   }
   
-  parcel_set_success_inds <- unlist(lapply(seq_along(metric), function(i) (all(unlist(metric[[i]][run_params$features_to_use]) > 0))))
+  parcel_set_success_inds <- unlist(lapply(seq_along(metric), function(i) (all(unlist(metric[[i]][run_params$features_to_use_in_offset_calc]) > 0))))
   
   site_success_inds = which(unlist(offsets_object$parcel_indexes) %in% unlist(offset_indexes[parcel_set_success_inds]))
   assessed_parcel_sets_object$site_success_inds <- offsets_object$parcel_indexes[site_success_inds]
@@ -686,7 +689,7 @@ assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, ca
                               include_potential_offsets,
                               include_illegal_clearing,
                               adjust_cfacs_flag = current_policy_params$adjust_offset_cfacs_flag,
-                              features_to_use = run_params$features_to_use)
+                              features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc)
     
     cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
     
@@ -832,10 +835,10 @@ ecology_to_parcels <- function(current_ecology, land_parcels){
 # current_time_horizons = time_horizons
 # time_fill = TRUE
 
-project_parcel <- function(current_parcel_ecologies, current_decline_rates, current_time_horizons, run_params, features_to_use, time_fill){
+project_parcel <- function(current_parcel_ecologies, current_decline_rates, current_time_horizons, run_params, features_to_use_in_offset_calc, time_fill){
 
   parcel_trajs = lapply(seq_along(current_parcel_ecologies), 
-                        function(i) (lapply(features_to_use,  
+                        function(i) (lapply(features_to_use_in_offset_calc,  
                                             function(j) project_ecology(current_parcel_ecologies[[i]][[j]], 
                                                                         run_params$min_eco_val, 
                                                                         run_params$max_eco_val,
@@ -974,7 +977,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
                                      match_threshold = run_params$match_threshold, 
                                      vals_to_match_initial = vals_to_match, 
                                      current_policy_params$site_for_site, 
-                                     features_to_use = run_params$features_to_use,
+                                     features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc,
                                      max_offset_parcel_num = run_params$max_offset_parcel_num,
                                      yr) #perform matching routine
     
@@ -991,9 +994,9 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
   
   if (match_object$match_flag == TRUE){
     dev_match_index = which(unlist(dev_pool_object$parcel_indexes) == current_test_index)
-    match_object$current_dev_object = select_subset(dev_pool_object, unlist(dev_match_index))
+    match_object$current_dev_object = select_pool_subset(dev_pool_object, unlist(dev_match_index))
     subset_pool =  list_intersect(offset_pool_object$parcel_indexes, match_object$match_indexes)
-    offset_object <- select_subset(pool_object = offset_pool_object, subset_pool = subset_pool$match_ind)
+    offset_object <- select_pool_subset(pool_object = offset_pool_object, subset_pool = subset_pool$match_ind)
     match_object$offset_object = offset_object
   } else if (match_object$match_flag == FALSE){
     match_object$offset_object = list()
@@ -1047,7 +1050,7 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
                                      match_threshold = run_params$match_threshold, 
                                      vals_to_match_initial = current_credit, 
                                      site_for_site = TRUE, 
-                                     run_params$features_to_use, 
+                                     run_params$features_to_use_in_offset_calc, 
                                      max_offset_parcel_num = run_params$max_offset_parcel_num, 
                                      yr)
     
@@ -1058,7 +1061,7 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
   
   if (match_object$match_flag == TRUE){
     subset_pool =  list_intersect(dev_pool_object$parcel_indexes, match_object$match_indexes)
-    match_object$development_object = select_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
+    match_object$development_object = select_pool_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
   } else{
     match_object$development_object = list()
     match_object$current_credit = current_credit
@@ -1250,7 +1253,7 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-select_pool_to_match <- function(features_to_use, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold, 
+select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold, 
                                  current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type){
   
   pool_object = list()
@@ -1262,7 +1265,7 @@ select_pool_to_match <- function(features_to_use, ndims, thresh, pool_num, vals_
     return(pool_object)
   }
   
-  vals_to_test <- select_cols(vals_to_test, features_to_use)
+  vals_to_test <- select_cols(vals_to_test, features_to_use_in_offset_calc)
   zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) < 1e-5)  
   
   if (length(zero_inds) > 0){
@@ -1275,10 +1278,10 @@ select_pool_to_match <- function(features_to_use, ndims, thresh, pool_num, vals_
     } 
   }
   
-  vals_to_use <- lapply(seq_along(vals_to_use), function(i) vals_to_use[[i]][features_to_use])
+  vals_to_use <- lapply(seq_along(vals_to_use), function(i) vals_to_use[[i]][features_to_use_in_offset_calc])
   
   if ( (match_type == 'offset') & (allow_developments_from_credit == TRUE) ){
-    vals_to_match = vals_to_match - unlist(current_credit[features_to_use])
+    vals_to_match = vals_to_match - unlist(current_credit[features_to_use_in_offset_calc])
   }
   
   if (site_for_site == TRUE){
@@ -1331,7 +1334,7 @@ select_pool_to_match <- function(features_to_use, ndims, thresh, pool_num, vals_
 # match_threshold = run_params$match_threshold
 # vals_to_match_initial = current_credit 
 # site_for_site = TRUE 
-# features_to_use = run_params$features_to_use
+# features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc
 # max_offset_parcel_num = run_params$max_offset_parcel_num 
 
 
@@ -1343,21 +1346,21 @@ select_pool_to_match <- function(features_to_use, ndims, thresh, pool_num, vals_
 # match_threshold = run_params$match_threshold 
 # vals_to_match_initial = vals_to_match 
 # site_for_site = current_policy_params$site_for_site 
-# features_to_use = run_params$features_to_use
+# features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc
 # max_offset_parcel_num = run_params$max_offset_parcel_num
 
 
 
 select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit, dev_weights, allow_developments_from_credit, 
-                             offset_multiplier, match_threshold, vals_to_match_initial, site_for_site, features_to_use, max_offset_parcel_num, yr){
+                             offset_multiplier, match_threshold, vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
   
-  ndims = length(features_to_use)
+  ndims = length(features_to_use_in_offset_calc)
   thresh = array(match_threshold, ndims)         #create an array of threshold values with length equal to the dimensions to match to
   pool_num = length(current_pool)
   
-  vals_to_match = offset_multiplier*unlist(vals_to_match_initial[features_to_use])
+  vals_to_match = offset_multiplier*unlist(vals_to_match_initial[features_to_use_in_offset_calc])
   
-  pool_object <- select_pool_to_match(features_to_use, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold, 
+  pool_object <- select_pool_to_match(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold, 
                                       current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type)
   
   if (pool_object$break_flag == TRUE){
@@ -1519,7 +1522,7 @@ update_indexes_to_use <- function(index_object, parcel_indexes, region_ind){
 # }
 
 
-update_decline_rates <- function(decline_rates, restoration_rate_params, sample_restoration_rate, features_to_use, feature_num, decline_rate_type, action_type, parcel_indexes){
+update_decline_rates <- function(decline_rates, restoration_rate_params, sample_restoration_rate, features_to_use_in_offset_calc, feature_num, decline_rate_type, action_type, parcel_indexes){
   
   parcel_indexes = unlist(parcel_indexes)
   
@@ -1530,12 +1533,12 @@ update_decline_rates <- function(decline_rates, restoration_rate_params, sample_
     } else if (decline_rate_type == 'offset'){
       
       if (action_type == 'maintain'){
-        decline_rates[[current_parcel_ind]][features_to_use] = rep(list(1), length(features_to_use))
+        decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = rep(list(1), length(features_to_use_in_offset_calc))
       } else if (action_type == 'restore'){
         if (sample_restoration_rate == TRUE){
-          decline_rates[[current_parcel_ind]][features_to_use] = as.list(rnorm(length(features_to_use), mean = restoration_rate_params[1], sd = restoration_rate_params[2]))
+          decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = as.list(rnorm(length(features_to_use_in_offset_calc), mean = restoration_rate_params[1], sd = restoration_rate_params[2]))
         } else{
-          decline_rates[[current_parcel_ind]][features_to_use] = rep(list(restoration_rate_params[1]), length(features_to_use))
+          decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = rep(list(restoration_rate_params[1]), length(features_to_use_in_offset_calc))
         } 
         
       } 
@@ -1568,7 +1571,7 @@ list_intersect <- function(list_a, list_b){
 }
 
 
-select_subset <- function(pool_object, subset_pool){
+select_pool_subset <- function(pool_object, subset_pool){
   object_subset = lapply(seq_along(pool_object), function(i) pool_object[[i]][subset_pool])
   names(object_subset) <- names(pool_object)
   return(object_subset)
@@ -1596,7 +1599,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 
 # prepare_offset_bank <- function(current_offset_bank, current_offset_pool, offset_restoration_flag, land_parcels, current_ecologies, feature_num){
 #   subset_pool =  list_intersect(current_offset_bank$parcel_indexes, current_offset_pool)
-#   pool_object <- select_subset(pool_object = current_offset_bank, subset_pool = subset_pool$match_ind)
+#   pool_object <- select_pool_subset(pool_object = current_offset_bank, subset_pool = subset_pool$match_ind)
 #   if (offset_restoration_flag == TRUE){
 #     current_sums_object <- find_current_parcel_sums(current_ecologies, feature_num)
 #     pool_object$restoration_vals <- current_sums_object$parcel_sums
@@ -1608,7 +1611,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 
 
 
-
+# 
 # pool_object = offset_pool_object 
 # pool_type = offset_pool_type 
 # calc_type = current_policy_params$offset_calc_type 
@@ -1643,6 +1646,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
   parcel_count = length(current_pool)
   offset_yrs = unlist(pool_object$offset_yrs)
   
+  current_feature_num = length(run_params$features_to_use_in_offset_calc)
   if (pool_type == 'offsets') {
     
     if (calc_type == 'current_condition'){
@@ -1658,22 +1662,22 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
       if (action_type == 'maintain'){
         current_decline_rates = simulate_decline_rates(length(pool_object$parcel_ecologies), 
                                                        sample_decline_rate = FALSE, 
-                                                       mean_decline_rates = 1, 
+                                                       mean_decline_rates = rep(list(1), current_feature_num), 
                                                        decline_rate_std = vector(), 
-                                                       run_params$features_to_use)
+                                                       current_feature_num)
       } else if (action_type == 'restore'){
         current_decline_rates = simulate_decline_rates(length(pool_object$parcel_ecologies), 
                                                        sample_decline_rate = FALSE, 
-                                                       mean_decline_rates = run_params$restoration_rate_params[1], 
-                                                       decline_rate_std = run_params$restoration_rate_params[2], 
-                                                       run_params$features_to_use)
+                                                       mean_decline_rates = rep(list(run_params$restoration_rate_params[1]), current_feature_num), 
+                                                       decline_rate_std = rep(list(run_params$restoration_rate_params[2]), current_feature_num), 
+                                                       current_feature_num)
       }
       
       restoration_vals = project_parcel(current_parcel_ecologies = pool_object$parcel_ecologies, 
                                         current_decline_rates, 
                                         time_horizons, 
                                         run_params,
-                                        features_to_use = run_params$features_to_use,
+                                        features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc,
                                         time_fill = FALSE)
       
       restoration_vals = lapply(seq_along(restoration_vals), function(i) lapply(seq_along(restoration_vals[[i]]), function(j) sum(restoration_vals[[i]][[j]] )))
@@ -1707,7 +1711,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                               include_potential_offsets,
                               include_illegal_clearing,
                               adjust_cfacs_flag,
-                              features_to_use = run_params$features_to_use)
+                              features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc)
     
     pool_object$cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
   }
@@ -1889,7 +1893,7 @@ find_decline_rate <- function(decline_rates, current_parcel_ind, feature_ind){
 # parcel_num_remaining = pool_object$parcel_num_remaining 
 # decline_rates = decline_rates_initial[current_pool] 
 # time_fill = FALSE
-# features_to_use = seq(run_params$feature_num)
+# features_to_use_in_offset_calc = seq(run_params$feature_num)
 
 
 # parcel_ecologies = current_parcel_ecologies 
@@ -1897,13 +1901,13 @@ find_decline_rate <- function(decline_rates, current_parcel_ind, feature_ind){
 # current_policy_params = policy_params
 # decline_rates = current_decline_rates 
 # offset_yrs = current_offset_yrs 
-# features_to_use = eco_ind
+# features_to_use_in_offset_calc = eco_ind
 
 
 
 calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, run_params, current_policy_params, 
                        decline_rates, time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_illegal_clearing, 
-                       adjust_cfacs_flag, features_to_use){
+                       adjust_cfacs_flag, features_to_use_in_offset_calc){
   
   cfacs_object = list()
   if (length(decline_rates) != length(parcel_ecologies)){
@@ -1914,7 +1918,7 @@ calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, run_params, curre
                                       decline_rates, 
                                       time_horizons, 
                                       run_params,
-                                      features_to_use,
+                                      features_to_use_in_offset_calc,
                                       time_fill = TRUE)
   
   if (adjust_cfacs_flag == TRUE){
@@ -2273,13 +2277,13 @@ form_net_trajectory <- function(trajectories_list, land_parcels, time_steps, lan
 }
 
 
-sum_trajectories <- function(traj_list, features_to_use){
+sum_trajectories <- function(traj_list, features_to_use_in_offset_calc){
   
   parcel_traj_list = lapply(seq_along(traj_list), function(i) lapply(seq_along(traj_list[[i]]), 
                                                                          function(j) sum_cols_multi(traj_list[[i]][[j]])))
   
 #   parcel_num = length(traj_list)
-#   parcel_traj_list = generate_nested_list(parcel_num, length(features_to_use))
+#   parcel_traj_list = generate_nested_list(parcel_num, length(features_to_use_in_offset_calc))
 #   for (parcel_ind in seq_len(parcel_num)){
 #     
 #     for (feature_ind in seq_len(feature_num)){

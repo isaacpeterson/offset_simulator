@@ -23,11 +23,15 @@ run_initialise_routines <- function(run_params, policy_params_group){
   ecology_params = readRDS(paste0(run_params$landscape_data_folder, 'ecology_params.rds'))
   run_params$min_eco_val = ecology_params$min_eco_val
   run_params$max_eco_val = ecology_params$max_eco_val
-  
+  run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   return(run_params)
 }
 
-
+select_feature_subset <- function(input_object, features_to_use){
+  output_object <- lapply(seq_along(input_object), 
+                              function(i) (input_object[[i]][features_to_use]))
+  return(output_object)
+}
 
 
 prepare_simulated_data <- function(run_params){

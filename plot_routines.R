@@ -3,17 +3,17 @@
 check_plot_options <- function() {
 
   if(plot_type != 'impacts' & plot_type != 'outcomes')
-    stop( paste('\nERROR: Illegal plot option specified. Variable plot_type is set to', plot_type) )
+    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to', plot_type) )
 }
 
-plot_outcome_set <- function(collated_realisations, current_policy_params, site_plot_lims, program_plot_lims, 
-                             landscape_plot_lims, sets_to_plot, lwd_vec, time_steps, realisation_num){
+plot_outcome_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
+                             landscape_plot_lims, sets_to_plot, lwd_vec, time_steps, realisation_num, feature_ind){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
   dev_col_vec = c('blue', 'red')
   net_col_vec = c('darkgreen', 'red', 'black')
   
-  plot_site_outcomes(collated_realisations, current_policy_params, sets_to_plot, site_plot_lims)
+  plot_site_outcomes(collated_realisations, output_type, current_policy_params, sets_to_plot, site_plot_lims, feature_ind)
   
   plot_outcomes(collated_realisations$program_outcomes$net, 
                 plot_type = 'program', 
@@ -46,8 +46,8 @@ plot_outcome_set <- function(collated_realisations, current_policy_params, site_
 }
 
 
-plot_site_outcomes <- function(collated_realisations, current_policy_params, sets_to_plot, site_plot_lims){
-  y_lab = get_y_lab(current_policy_params)
+plot_site_outcomes <- function(collated_realisations, output_type, current_policy_params, sets_to_plot, site_plot_lims, feature_ind){
+  y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
 
   if (current_policy_params$use_offset_bank == TRUE){
     offset_parcel_indexes_to_use = collated_realisations$collated_offset_bank$parcel_indexes
@@ -81,17 +81,18 @@ plot_site_outcomes <- function(collated_realisations, current_policy_params, set
 }
 
 
-plot_impact_set <- function(collated_realisations, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
-                            sets_to_plot, lwd_vec, time_steps, parcel_num, realisation_num){
+plot_impact_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
+                            sets_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
   dev_col_vec = c('blue', 'red')
   net_col_vec = c('darkgreen', 'red', 'black')
   
-  overlay_parcel_sets(collated_realisations, 
+  overlay_parcel_sets(collated_realisations,
+                      output_type,
                       current_policy_params,
                       realisation_ind = 1, 
-                      eco_ind = 1, 
+                      feature_ind, 
                       plot_from_impact_yr = FALSE, 
                       sets_to_plot,
                       site_plot_lims,
@@ -101,7 +102,7 @@ plot_impact_set <- function(collated_realisations, current_policy_params, site_p
                                         collated_realisations$program_impacts$net_dev_losses,
                                         collated_realisations$program_impacts$net_program),
                        plot_title = 'Program Impact', 
-                       x_lab = paste('Program ', write_NNL_label(collated_realisations$program_NNL$NNL_mean)),
+                       x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_NNL$NNL_mean)),
                        realisation_num,
                        lwd_vec, 
                        col_vec = net_col_vec, 
@@ -111,8 +112,10 @@ plot_impact_set <- function(collated_realisations, current_policy_params, site_p
   
   plot_list = list(collated_realisations$landscape$landscape_impact)
   
-  x_lab = cbind(paste('System ', write_NNL_label(collated_realisations$system_NNL$NNL_mean)), 
-                paste('dev sites =', collated_realisations$parcel_nums_used$mean_dev_num, ', offset sites=', collated_realisations$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
+  x_lab = cbind(paste0('System ', write_NNL_label(collated_realisations$system_NNL$NNL_mean)), 
+                paste0('dev sites =', collated_realisations$parcel_nums_used$mean_dev_num, ', offset sites =', 
+                       collated_realisations$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
+  
   overlay_realisations(plot_list,
                        plot_title = 'Landscape Impact', 
                        x_lab = t(x_lab),
@@ -134,7 +137,7 @@ make_movie <- function(){
     for (yr in seq_len(run_params$time_steps)){
       image(net_traj[[1]][, , yr], zlim = c(ecology_params$min_eco_val, ecology_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
       Sys.sleep(0.1)
-      print(paste('year = ', yr))
+      print(paste0('year = ', yr))
     }
   }
   
@@ -177,7 +180,7 @@ make_movie <- function(){
 }
 
 plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, run_params, ecology_params, policy_params, 
-                                                     parcel_sum_lims, eco_ind, lwd_vec){
+                                                     parcel_sum_lims, feature_ind, lwd_vec){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
   dev_col_vec = c('blue', 'red')
@@ -190,7 +193,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
     setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
     plot_parcel_sets(collated_realisations, 
                      realisation_ind = 1, 
-                     eco_ind, 
+                     feature_ind, 
                      col_list = list(offset_col_vec, dev_col_vec, net_col_vec), 
                      legend_loc = 'topleft')
   }
@@ -213,7 +216,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                        plot_title = 'Program Scale Offset Impact', 
                        x_lab = '',
                        realisation_num,
-                       eco_ind, 
+                       feature_ind, 
                        lwd_vec, 
                        col_vec = offset_col_vec, 
                        legend_loc = 'topleft',
@@ -225,7 +228,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                        plot_title = 'Program Scale Development Impact', 
                        x_lab = '',
                        realisation_num,
-                       eco_ind, 
+                       feature_ind, 
                        lwd_vec, 
                        col_vec = dev_col_vec, 
                        legend_loc = 'topleft',
@@ -238,7 +241,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                        plot_title = 'Program Impact', 
                        x_lab = system_NNL$x_lab,
                        realisation_num,
-                       eco_ind, 
+                       feature_ind, 
                        lwd_vec, 
                        col_vec = net_col_vec, 
                        legend_loc = 'topleft',
@@ -249,7 +252,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                  collated_realisations$program_NNL,
                  collated_realisations$system_NNL,
                  use_parcel_sets = policy_params$use_parcel_sets, 
-                 eco_ind)
+                 feature_ind)
   
   plot_outcomes(collated_realisations$program_sums$outcome_rel_initial, 
                 plot_type = 'program', 
@@ -260,7 +263,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                 loss_stats = collated_realisations$net_program_loss, 
                 realisation_num, 
                 collated_realisations$program_cfac_sum_rel_initial,
-                eco_ind, 
+                feature_ind, 
                 lwd_vec, 
                 col_vec = c('red', 'blue'), 
                 legend_vec = c('Program Outcome', 'Program Counterfactual'), 
@@ -279,7 +282,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                 loss_stats = collated_realisations$landscape_loss, 
                 realisation_num, 
                 collated_realisations$net_cfac_sum, 
-                eco_ind, lwd_vec, 
+                feature_ind, lwd_vec, 
                 col_vec = c('red', 'blue'), 
                 legend_vec = c('Landscape Outcome', 'Landscape Counterfactual'), 
                 time_steps = run_params$time_steps)
@@ -290,7 +293,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                        plot_title = 'Lamdscape Impact', 
                        x_lab = '',
                        realisation_num,
-                       eco_ind, 
+                       feature_ind, 
                        lwd_vec, 
                        col_vec = c('black'),
                        legend_loc = 'topright',
@@ -302,7 +305,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
 
 write_NNL_label <- function(NNL_yrs){
   if (length(unlist(NNL_yrs)) > 0){
-    NNL_label = paste('NNL at ', round(mean(unlist(NNL_yrs))), ' years')
+    NNL_label = paste0('NNL at ', round(mean(unlist(NNL_yrs))), ' years')
   } else {
     NNL_label = 'All realisations faileld NNL'
   } 
@@ -337,22 +340,26 @@ overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectorie
 
 
 
-get_y_lab <- function(current_policy_params){
+get_y_lab <- function(output_type, current_policy_params, feature_ind){
   
-  y_lab = current_policy_params$offset_calc_type
-  if (current_policy_params$use_offset_bank == FALSE){
-    y_lab = paste(y_lab, 'T.H =', current_policy_params$offset_time_horizon, ', Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
-  } else{
-    y_lab = paste(y_lab, ' offset_bank T, Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
+  if (output_type == 'by_scenario'){
+    y_lab = current_policy_params$offset_calc_type
+  } else {
+    y_lab = paste0('Feature ', feature_ind, ', ')
   }
-  
+  if (current_policy_params$use_offset_bank == FALSE){
+    y_lab = paste0(y_lab, 'T.H. ', current_policy_params$offset_time_horizon, ', Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
+  } else{
+    y_lab = paste0(y_lab, ' offset_bank T, Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
+  }
   return(y_lab)
 }
 
 
 
-overlay_parcel_sets <- function(collated_realisations, current_policy_params, realisation_ind, eco_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps){
-  y_lab = get_y_lab(current_policy_params)
+overlay_parcel_sets <- function(collated_realisations, output_type, current_policy_params, realisation_ind, 
+                                feature_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps){
+  y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   plot_lwd = 1
   
   if (current_policy_params$use_offset_bank == FALSE){
@@ -430,7 +437,7 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, visualisati
 
 
 
-plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
+plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
   
   plot_num = length(col_vec)
   plot_collated_realisation_set(rest_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
@@ -484,7 +491,7 @@ plot_collated_realisation_set <- function(current_collated_real, overlay_plots, 
 
 
 
-generate_single_realisation_plots <- function(run_params, ecology_params, realisations, net_cfac_sum, eco_ind){
+generate_single_realisation_plots <- function(run_params, ecology_params, realisations, net_cfac_sum, feature_ind){
   time_horizon = run_params$time_steps
   feature_num = ecology_params$feature_num
   realisation_ind = sample(length(realisations), 1)
@@ -506,7 +513,7 @@ generate_single_realisation_plots <- function(run_params, ecology_params, realis
   
   if (length(success_NNL) > 0){
     NNL_success_yrs = NNL_object$NNL_yrs[success_NNL]
-    xl = t(cbind(paste('parcel set mean years to NNL = ', round(mean(NNL_success_yrs))), paste('NNL success = ', round(NNL_object$success*100), '%' )))
+    xl = t(cbind(paste0('parcel set mean years to NNL = ', round(mean(NNL_success_yrs))), paste0('NNL success = ', round(NNL_object$success*100), '%' )))
     hist(NNL_success_yrs, main = 'Single Realisation NNL frequencies', xlab = xl)
   }
   
@@ -524,7 +531,7 @@ generate_single_realisation_plots <- function(run_params, ecology_params, realis
   net_cond = total_parcel_sums - total_counter_sums
   
   if (length(NNL_object$system_NNL) > 0 ){
-    x_lab = paste('Mean System NNL = ', round(NNL_object$system_NNL), 'years')
+    x_lab = paste0('Mean System NNL = ', round(NNL_object$system_NNL), 'years')
   } else {x_lab = 'NNL fail'}
   
   plot((net_cond), type = 'l', main = 'Landscape Condition Relative to cfac', xlab = x_lab, ylab = '', col = 'red', lwd = 3)
@@ -538,10 +545,10 @@ generate_single_realisation_plots <- function(run_params, ecology_params, realis
 # x_lim = c(0, 100)
 
 
-plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, eco_ind){
+plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, feature_ind){
   
   if (NNL_plot_object$NNL_success > 0){
-    x_lab = t(cbind( paste('Mean NNL at  ', round(NNL_plot_object$NNL_mean), 'years'), paste('NNL success = ', round(NNL_plot_object$NNL_success*100), '%' )))
+    x_lab = t(cbind( paste0('Mean NNL at  ', round(NNL_plot_object$NNL_mean), 'years'), paste0('NNL success = ', round(NNL_plot_object$NNL_success*100), '%' )))
     NNL_yrs = unlist(NNL_plot_object$NNL_yrs)
     NNL_yrs <- NNL_yrs[which(NNL_yrs > 0)]
     hist(NNL_yrs, main = plot_tit, xlab = x_lab, xlim = x_lim, breaks=seq(min(NNL_yrs),max(NNL_yrs),by=1))
@@ -608,7 +615,7 @@ plot_mean_gains_degs <- function(summed_realisations, policy_params, realisation
 # ylim = c(net_mn, net_mx)
 
 
-# plot_split_realisations <- function(collated_summed_reals, cfac_type, plot_type, legend_vec, legend_pos, eco_ind, lwd_vec, plot_title, col_vec, realisation_num, ylim){
+# plot_split_realisations <- function(collated_summed_reals, cfac_type, plot_type, legend_vec, legend_pos, feature_ind, lwd_vec, plot_title, col_vec, realisation_num, ylim){
 #   
 #   rest_gains = collated_summed_reals$rest_gains
 #   
@@ -620,7 +627,7 @@ plot_mean_gains_degs <- function(summed_realisations, policy_params, realisation
 #     nets = collated_summed_reals$net_outcome$adjusted
 #   } 
 #   
-#   plot_summed_realisations(plot_type, rest_gains, avoided_degs, nets, plot_title, eco_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
+#   plot_summed_realisations(plot_type, rest_gains, avoided_degs, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
 
 # }
 
@@ -638,24 +645,24 @@ null_plot <- function(){
 
 # plot_realisation_hists(collated_realisations$system_NNL, collated_realisations$parcel_set_NNL, 
 #                        collated_realisations$collated_offsets$parcel_sums_at_offset, parcel_sum_lims = c(0, 20000), 
-#                        use_parcel_sets = policy_params$use_parcel_sets, parcel_set_set_NNL_object, eco_ind)
+#                        use_parcel_sets = policy_params$use_parcel_sets, parcel_set_set_NNL_object, feature_ind)
 
-plot_parcel_sums_hist <- function(parcel_sums_at_offset, eco_ind, parcel_sum_lims){
+plot_parcel_sums_hist <- function(parcel_sums_at_offset, feature_ind, parcel_sum_lims){
   current_parcel_sums_at_offset = unlist(parcel_sums_at_offset, recursive = FALSE)
   parcel_sums_at_offset_array = unlist(lapply(seq_along(current_parcel_sums_at_offset), function(i) current_parcel_sums_at_offset[[i]]))
   hist(parcel_sums_at_offset_array, main = 'offset parcel values', xlab = 'selected offset parcel values', xlim = parcel_sum_lims)
 }
 
-plot_NNL_hists <- function(parcel_set_NNL, program_NNL, system_NNL, use_parcel_sets, eco_ind){
+plot_NNL_hists <- function(parcel_set_NNL, program_NNL, system_NNL, use_parcel_sets, feature_ind){
   
   if (use_parcel_sets == TRUE){
-    plot_NNL_hist(parcel_set_NNL, plot_tit = 'Site scale NNL Assessment', x_lim = c(0, 100), eco_ind) 
+    plot_NNL_hist(parcel_set_NNL, plot_tit = 'Site scale NNL Assessment', x_lim = c(0, 100), feature_ind) 
   } else {
     null_plot()
   }
   
-  plot_NNL_hist(program_NNL, plot_tit = 'Program scale NNL Assessment', x_lim = c(0, 100), eco_ind)
-  plot_NNL_hist(system_NNL, plot_tit = 'Landscape scale NNL Assessment', x_lim = c(0, 100), eco_ind)
+  plot_NNL_hist(program_NNL, plot_tit = 'Program scale NNL Assessment', x_lim = c(0, 100), feature_ind)
+  plot_NNL_hist(system_NNL, plot_tit = 'Landscape scale NNL Assessment', x_lim = c(0, 100), feature_ind)
   
 }
 
@@ -720,11 +727,11 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
                           cfacs, lwd_vec, col_vec, legend_vec, time_steps){
   
   #current_total_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$total_loss[[i]]))
-  #loss_tit = paste('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
+  #loss_tit = paste0('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
   
   #current_NNL_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$NNL_loss[[i]]))
 #   if (length(current_NNL_loss) > 0){
-#     NNL_tit = paste('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
+#     NNL_tit = paste0('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
 #   } else {
 #     NNL_tit = 'All realisations failed NNL'
 #   }
@@ -757,15 +764,15 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
 
 
 
-plot_program_evaluation <- function(summed_program_realisations, loss_stats, realisation_num, summed_program_cfacs, eco_ind, lwd_vec, col_vec, legend_vec){
+plot_program_evaluation <- function(summed_program_realisations, loss_stats, realisation_num, summed_program_cfacs, feature_ind, lwd_vec, col_vec, legend_vec){
   
   #setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
   
-  loss_tit = paste('Net program loss = ', round(mean(loss_stats$total_loss)*100), '%')
+  loss_tit = paste0('Net program loss = ', round(mean(loss_stats$total_loss)*100), '%')
   
   if (length(loss_stats$NNL_loss) > 0){
-    #landscape_title = paste('NNL at ', round(mean(loss)), '\U00b1', round(max(range(loss) - (mean(loss))), 1), '% loss of landscape')
-    NNL_tit = paste('Mean NNL at  ', round(mean(loss_stats$NNL_loss*100)), '% program loss')
+    #landscape_title = paste0('NNL at ', round(mean(loss)), '\U00b1', round(max(range(loss) - (mean(loss))), 1), '% loss of landscape')
+    NNL_tit = paste0('Mean NNL at  ', round(mean(loss_stats$NNL_loss*100)), '% program loss')
   } else NNL_tit = 'All realisations failed NNL'
   
   sub_tit = cbind(NNL_tit, loss_tit)
@@ -778,7 +785,7 @@ plot_program_evaluation <- function(summed_program_realisations, loss_stats, rea
   legend('bottomleft', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   
   
-  #   plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, eco_ind = 1, lwd_vec, 
+  #   plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, feature_ind = 1, lwd_vec, 
   #                                  x_lab = '', plot_title = 'Net Value Rel. to Counterfactual', plot_lims = vector() )
   #   
 
@@ -805,10 +812,10 @@ plot_parcel_set_parcels <- function(current_set_object){
   mn = min(lim_vec)
   
   for (parcel_ind in seq_len(parcel_num)){
-    for (eco_ind in seq_len(ecology_params$feature_num)){
-      plot(rest_gains[, eco_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste('dim = ', eco_ind))
-      lines(degs[, eco_ind, parcel_ind], col = 'blue')
-      lines(rest_gains[, eco_ind, parcel_ind] + degs[, eco_ind, parcel_ind], col = 'red')
+    for (feature_ind in seq_len(ecology_params$feature_num)){
+      plot(rest_gains[, feature_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste0('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste0('dim = ', feature_ind))
+      lines(degs[, feature_ind, parcel_ind], col = 'blue')
+      lines(rest_gains[, feature_ind, parcel_ind] + degs[, feature_ind, parcel_ind], col = 'red')
     }
   }
   
@@ -855,7 +862,7 @@ collate_parcel_set_element <- function(rest_gains, avoided_degs){
 
 
 
-plot_parcel_sets <- function(collated_realisations, realisation_ind, eco_ind, col_list, legend_loc){
+plot_parcel_sets <- function(collated_realisations, realisation_ind, feature_ind, col_list, legend_loc){
   
   parcel_set_num = collated_realisations$collated_devs$parcel_set_num[[realisation_ind]]
   parcel_sets_to_plot = sample(parcel_set_num, min(parcel_set_num, 3))
@@ -944,8 +951,8 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
   if (!dir.exists(mov_folder)){
     dir.create(mov_folder)
   }
-  filename = paste(mov_folder, "tmp%03d.", filetype, sep = '')
-  mov_name_to_use = paste(mov_folder, mov_name, '.mpg', sep = '')
+  filename = paste0(mov_folder, "tmp%03d.", filetype, sep = '')
+  mov_name_to_use = paste0(mov_folder, mov_name, '.mpg', sep = '')
   if (filetype == 'png'){
     png(filename, height = dim(img_stack)[1], width = dim(img_stack)[2])
   } else if (filetype == 'jpg'){
@@ -958,7 +965,7 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
     
     image(img_stack[, , i], zlim = c(0, 100), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
     
-    print(paste(i, ' of ', im_num))
+    print(paste0(i, ' of ', im_num))
   }
   dev.off()
   

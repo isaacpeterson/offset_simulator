@@ -6,8 +6,10 @@ initialise_run_params <- function(){
   run_params$save_simulation_outputs = FALSE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.
   run_params$backup_landscape_data = FALSE 
-  run_params$features_to_use = 1 
-  run_params$feature_num = 5  #   CHANGE TO RUNNING SUBSET (how many ecological dimensions in simulation)
+  run_params$features_to_use_in_offset_calc = 2:5
+  run_params$features_to_use_in_simulation = 2:5
+  
+  run_params$feature_num = length(run_params$features_to_use_in_simulation)
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = FALSE     # write layer containing all offset parcels to pdf
   run_params$realisation_num = 1
@@ -39,7 +41,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params$total_dev_num = 300
   
   policy_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
-  policy_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
+  policy_params$offset_bank_type = c('credit') # c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
   policy_params$offset_bank_start = 1 #min time for offset banking to initialise
   policy_params$offset_bank_end = 1 #mix time for offset banking to finish
   policy_params$offset_bank_num = 200 # how many parcels to include in banking scheme
