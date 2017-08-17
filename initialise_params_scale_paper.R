@@ -98,7 +98,7 @@ initialise_policy_params <- function(){
   # 'avoided_degs - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains') # 'restoration_gains', 'avoided_degs') 
+  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') 
 
   # Options are 'maintain', 'protect', or 'restore'. 
   policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')
