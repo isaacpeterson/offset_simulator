@@ -1,6 +1,6 @@
 #use_cfac_type_in_sim = TRUE
 
-run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, initial_ecology, simulation_outputs, current_data_dir, 
+run_collate_routines <- function(simulation_outputs, current_trajectories, decline_rates_initial, initial_ecology, current_data_dir, 
                                  run_params, policy_params, realisation_ind, feature_ind){
   
     current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
@@ -18,11 +18,6 @@ run_collate_routines <- function(read_outputs_from_file, decline_rates_initial, 
                                            use_cfac_type_in_sim = FALSE, 
                                            feature_ind = 1)
     
-    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', feature_ind, '.rds'))
-    
-    if (read_outputs_from_file == TRUE){
-      simulation_outputs = readRDS(paste0(current_data_dir, 'realisation_', realisation_ind, '_outputs.rds'))
-    }
     
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 
@@ -43,15 +38,17 @@ calc_landscape_characteristics <- function(current_trajectories, landscape_cfacs
 
 
 find_collated_files <- function(file_path, scenario_string, feature_string, realisation_num){
-  current_filenames <- list.files(path = file_path, all.files = FALSE, 
-                                  pattern = paste0('scenario_', 
-                                                   scenario_string, 
-                                                   '_feature_', 
-                                                   feature_string, 
-                                                   '_collated_realisation_'),
+  scenario_filenames <- list.files(path = file_path, all.files = FALSE, 
+                                   pattern = paste0('scenario_', scenario_string),
+                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                   include.dirs = FALSE, no.. = FALSE)
+  
+  feature_filenames <- list.files(path = file_path, all.files = FALSE, 
+                                  pattern = paste0('feature_', feature_string),
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
   
+  current_filenames = intersect(feature_filenames, scenario_filenames)
   net_realisation_num = length(current_filenames)
   
   if (realisation_num == 'all'){

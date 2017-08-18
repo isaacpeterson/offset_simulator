@@ -4,25 +4,28 @@ run_initialise_routines <- function(run_params, policy_params_group){
   
   if (run_params$run_from_saved == FALSE){
     if (run_params$simulate_data == TRUE){
+      empty_dir_flag = length(list.files(run_params$simulation_inputs_folder)) == 0      #test to see if files are present in simulation input data folder
+      if (!empty_dir_flag){
         overwrite <- readline("overwrite existing landscape data? (Y/N) ")
-        if (overwrite == 'Y'){
-          source('simulate_ecology_routines.R')
-          prepare_simulated_data(run_params$landscape_data_folder)
-        }
+      } else { overwrite = 'Y'} 
+      if (overwrite == 'Y'){
+          source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
+          prepare_simulated_data(run_params$simulation_inputs_folder)
+      }
     }
   }
 
-  saveRDS(run_params, paste0(run_params$simulation_inputs_folder, 'run_params.rds'))
+  saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
   
   for (scenario_ind in seq_along(policy_params_group)){
     saveRDS(policy_params_group[[scenario_ind]], 
-            paste0(run_params$simulation_inputs_folder, 'scenario_', 
+            paste0(run_params$simulation_params_folder, 'scenario_', 
                    formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
                    '_policy_params.rds'))
   }
   
-  if (run_params$backup_landscape_data == TRUE){
-    save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
+  if (run_params$backup_simulation_inputs == TRUE){
+    save_simulation_inputs(run_params$simulation_params_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
                            parcel_ecology, dev_weights, ecology_params)
   }
   
@@ -54,10 +57,9 @@ write_nested_folder <- function(current_folder){
     dir_to_use = current_folder
     while (!(file.exists(dir_to_use))){
       dir_to_use_tmp = dir_to_use
-      dir_to_use = dirname(dir_to_use_tmp)
+      dir_to_use = dirname(dir_to_use)
     }
     dir.create(dir_to_use_tmp)
-    return(current_folder)
   }
   return(current_folder)
 }
@@ -71,7 +73,7 @@ write_folder <- function(current_folder){
 
 write_simulation_folders <- function(run_params, scenario_num){
   simulation_folder = write_nested_folder(run_params$simulation_folder)
-  landscape_data_folder = write_folder(paste0(run_params$simulation_folder, '/landscape_data/'))
+  simulation_inputs_folder = write_folder(paste0(run_params$simulation_folder, '/simulation_inputs/'))
   base_run_folder = paste0(run_params$simulation_folder, '/simulation_runs/')
   
   filenames = list.files(path = base_run_folder, all.files = FALSE, 
@@ -91,8 +93,8 @@ write_simulation_folders <- function(run_params, scenario_num){
     write_folder(paste0(run_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
   }
   
-  run_params$simulation_inputs_folder = write_folder(paste0(run_params$run_folder, '/simulation_inputs/'))
-  run_params$landscape_data_folder = landscape_data_folder
+  run_params$simulation_params_folder = write_folder(paste0(run_params$run_folder, '/simulation_params/'))
+  run_params$simulation_inputs_folder = simulation_inputs_folder
   run_params$collated_folder = write_folder(paste0(run_params$run_folder, 'collated_outputs/'))
 
   return(run_params)

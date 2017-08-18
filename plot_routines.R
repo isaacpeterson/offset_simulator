@@ -1,7 +1,7 @@
 
 
 check_plot_options <- function() {
-
+  
   if(plot_type != 'impacts' & plot_type != 'outcomes')
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to', plot_type) )
 }
@@ -48,7 +48,7 @@ plot_outcome_set <- function(collated_realisations, output_type, current_policy_
 
 plot_site_outcomes <- function(collated_realisations, output_type, current_policy_params, sets_to_plot, site_plot_lims, feature_ind){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
-
+  
   if (current_policy_params$use_offset_bank == TRUE){
     offset_parcel_indexes_to_use = collated_realisations$collated_offset_bank$parcel_indexes
     dev_parcel_indexes_to_use = collated_realisations$collated_dev_credit$parcel_indexes
@@ -56,8 +56,8 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
     offset_parcel_indexes_to_use = collated_realisations$collated_offsets$parcel_indexes
     dev_parcel_indexes_to_use = collated_realisations$collated_devs$parcel_indexes
   }
- overlay_trajectories(dev_parcel_indexes_to_use,
-                      current_policy_params$use_offset_bank,
+  overlay_trajectories(dev_parcel_indexes_to_use,
+                       current_policy_params$use_offset_bank,
                        trajectories = collated_realisations$landscape$summed_site_trajectories, 
                        realisation_ind = 1, 
                        plot_col = 'red', 
@@ -129,57 +129,7 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
 }
 
 
-make_movie <- function(){
-  if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
-    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = ecology_params$feature_num)
-    graphics.off()
-    for (yr in seq_len(run_params$time_steps)){
-      image(net_traj[[1]][, , yr], zlim = c(ecology_params$min_eco_val, ecology_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
-      Sys.sleep(0.1)
-      print(paste0('year = ', yr))
-    }
-  }
-  
-  
-  if (write_movie == TRUE){
-    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = ecology_params$feature_num)
-    make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste0(output_folder, 'offset_time_slice/'))
-  }
-  
-  if (write_offset_layer == TRUE){ #write all offset parcels to single layer to output as image
-    
-    rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
-    offset_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
-                                          layer_type = 'offset', 
-                                          program_parcels = unlist(realisations[[1]]$index_object$offsets),
-                                          land_parcels = parcels$land_parcels, 
-                                          time_steps = run_params$time_steps, 
-                                          landscape_dims = parcels$landscape_dims, 
-                                          feature_num = ecology_params$feature_num)
-    
-    png(filename = paste0(output_folder, 'offset_layer.png'), height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
-    image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
-    dev.off()
-    
-    rgb.palette <- colorRampPalette(c("black", "red"), space = "rgb")
-    dev_layer <- generate_offset_layer(trajectories = realisations[[1]]$trajectories, 
-                                       layer_type = 'development', 
-                                       program_parcels = unlist(realisations[[1]]$index_object$developments),
-                                       land_parcels = parcels$land_parcels, 
-                                       time_steps = run_params$time_steps, 
-                                       landscape_dims = parcels$landscape_dims, 
-                                       feature_num = ecology_params$feature_num) #write all developed parcels to single layer to output as image
-    
-    png(filename = paste0(output_folder, 'dev_layer.png'), height = dim(dev_layer$layer)[1], width = dim(dev_layer$layer)[2])
-    image(dev_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
-    dev.off()
-    
-  }
-}
-
-plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, run_params, ecology_params, policy_params, 
+plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, run_params, policy_params, 
                                                      parcel_sum_lims, feature_ind, lwd_vec){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
@@ -187,7 +137,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
   net_col_vec = c('darkgreen', 'red', 'black')
   
   time_horizon = run_params$time_steps
-  feature_num = ecology_params$feature_num
+  feature_num = run_params$feature_num
   
   if (policy_params$use_parcel_sets == TRUE){
     setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
@@ -327,8 +277,8 @@ write_NNL_label <- function(NNL_yrs){
 overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
                                  overlay_type, sets_to_plot, y_lab, site_plot_lims){
   if (offset_bank == FALSE){
-      parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]][sets_to_plot])
-      plot_list = trajectories[[realisation_ind]][parcel_indexes_to_use]
+    parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]][sets_to_plot])
+    plot_list = trajectories[[realisation_ind]][parcel_indexes_to_use]
   } else{
     parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]])
     plot_list = list(Reduce('+', trajectories[[realisation_ind]][parcel_indexes_to_use]))
@@ -491,16 +441,16 @@ plot_collated_realisation_set <- function(current_collated_real, overlay_plots, 
 
 
 
-generate_single_realisation_plots <- function(run_params, ecology_params, realisations, net_cfac_sum, feature_ind){
+generate_single_realisation_plots <- function(run_params, realisations, net_cfac_sum, feature_ind){
   time_horizon = run_params$time_steps
-  feature_num = ecology_params$feature_num
+  feature_num = run_params$feature_num
   realisation_ind = sample(length(realisations), 1)
   collated_parcel_sets_object = realisations[[realisation_ind]]$collated_parcel_sets_object
   # plot_sample_parcel_sets(collated_parcel_sets_object, plot_num = 9, global_params)
   
   setup_sub_plots(nx = 1, ny = 3, x_space = 2, y_space = 2)
   
-  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(policy_params$total_dev_num), time_horizon, ecology_params$feature_num, 
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(policy_params$total_dev_num), time_horizon, run_params$feature_num, 
                                        headings = c('Single Realisation Net Program Developments', 'Single Realisation Net Program Offsets', 'Single Realisation Net Program Outcomes'))
   
   parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, feature_num, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon)
@@ -703,7 +653,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
   if (legend_vec[1] != 'NA'){
     legend(legend_loc, legend_vec, bty="n", lty = c(2, 2, 2, 2), lwd = array(lwd_vec[1], 4), col = col_vec)
   }
-
+  
 }
 
 
@@ -730,12 +680,12 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
   #loss_tit = paste0('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
   
   #current_NNL_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$NNL_loss[[i]]))
-#   if (length(current_NNL_loss) > 0){
-#     NNL_tit = paste0('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
-#   } else {
-#     NNL_tit = 'All realisations failed NNL'
-#   }
-#   sub_tit = cbind(NNL_tit, loss_tit)
+  #   if (length(current_NNL_loss) > 0){
+  #     NNL_tit = paste0('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
+  #   } else {
+  #     NNL_tit = 'All realisations failed NNL'
+  #   }
+  #   sub_tit = cbind(NNL_tit, loss_tit)
   sub_tit = ''
   
   if (enforce_limits == TRUE){
@@ -758,7 +708,7 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
   if (include_legend == TRUE){
     legend('topright', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   }
-
+  
 }
 
 
@@ -788,7 +738,7 @@ plot_program_evaluation <- function(summed_program_realisations, loss_stats, rea
   #   plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, feature_ind = 1, lwd_vec, 
   #                                  x_lab = '', plot_title = 'Net Value Rel. to Counterfactual', plot_lims = vector() )
   #   
-
+  
   
 }
 
@@ -801,8 +751,8 @@ plot_parcel_set_parcels <- function(current_set_object){
   
   
   parcel_num = length(current_set_object$parcel_indexes)
-  sub_plots = 1:(parcel_num*ecology_params$feature_num)
-  dim(sub_plots) = c(ecology_params$feature_num, parcel_num)
+  sub_plots = 1:(parcel_num*run_params$feature_num)
+  dim(sub_plots) = c(run_params$feature_num, parcel_num)
   layout(sub_plots)
   
   rest_gains = current_set_object$rest_gains
@@ -812,7 +762,7 @@ plot_parcel_set_parcels <- function(current_set_object){
   mn = min(lim_vec)
   
   for (parcel_ind in seq_len(parcel_num)){
-    for (feature_ind in seq_len(ecology_params$feature_num)){
+    for (feature_ind in seq_len(run_params$feature_num)){
       plot(rest_gains[, feature_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste0('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste0('dim = ', feature_ind))
       lines(degs[, feature_ind, parcel_ind], col = 'blue')
       lines(rest_gains[, feature_ind, parcel_ind] + degs[, feature_ind, parcel_ind], col = 'red')
@@ -825,12 +775,12 @@ plot_parcel_set_parcels <- function(current_set_object){
 
 
 
-plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, run_params, ecology_params, policy_params){
+plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, run_params, policy_params){
   
   parcel_indexes = sample(policy_params$total_dev_num, plot_num)
   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
   for (parcel_set_index in parcel_indexes){
-    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = run_params$time_steps, ecology_params$feature_num, 
+    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = run_params$time_steps, run_params$feature_num, 
                                          headings = c('Parcel Set Developments', 'Parcel Set Offsets', 'Parcel Set Outcome'))
   }
 }
@@ -921,13 +871,9 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
 }
 
 
-
-
-
-
-generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims, feature_num){
+generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims){
   
-  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], time_steps, landscape_dims, feature_num)
+  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], time_steps, landscape_dims, feature_num = 1)
   
   if (layer_type == 'offset'){
     layer = net_traj[[1]][, , time_steps] > 0
@@ -968,5 +914,49 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
     print(paste0(i, ' of ', im_num))
   }
   dev.off()
+  
+}
+
+
+
+write_offset_layer <- function(filename_to_use, trajectories, parcels, sites, color_vec, run_params){ #write all offset parcels to single layer to output as image
+  
+  rgb.palette <- colorRampPalette(color_vec, space = "rgb")
+  offset_layer <- generate_offset_layer(trajectories, 
+                                        layer_type = 'offset', 
+                                        program_parcels = sites,
+                                        land_parcels = parcels$land_parcels, 
+                                        time_steps = run_params$time_steps, 
+                                        landscape_dims = parcels$landscape_dims)
+  
+  png(filename = filename_to_use, height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
+  image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+  dev.off()
+
+  
+}
+
+
+
+
+make_movie <- function(){
+  if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
+    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = run_params$feature_num)
+    graphics.off()
+    for (yr in seq_len(run_params$time_steps)){
+      image(net_traj[[1]][, , yr], zlim = c(run_params$min_eco_val, run_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
+      Sys.sleep(0.1)
+      print(paste0('year = ', yr))
+    }
+  }
+  
+  
+  if (write_movie == TRUE){
+    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
+                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = run_params$feature_num)
+    make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste0(output_folder, 'offset_time_slice/'))
+  }
+  
   
 }

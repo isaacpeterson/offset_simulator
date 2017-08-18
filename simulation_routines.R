@@ -1,7 +1,7 @@
 # policy_params = policy_params_group[[scenario_ind]]
 # realisation_ind = 1
 
-perform_offsets_simulation <- function(policy_params, run_params, parcels, initial_ecology, decline_rates_initial, 
+run_offset_simulation_routines <- function(policy_params, run_params, parcels, initial_ecology, decline_rates_initial, 
                                        dev_weights, scenario_ind, realisation_ind){ # run the model and return outputs
   
   if (run_params$set_seed == TRUE){
@@ -12,13 +12,13 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
                                                 'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
                                                 '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
-  global_object = initialise_output_object(parcels, 
+  simulation_outputs = initialise_output_object(parcels, 
                                                 initial_ecology, 
                                                 run_params, 
                                                 decline_rates_initial, 
                                                 run_params$save_realisations)
   
-  global_object <- run_simulation(global_object, 
+  simulation_outputs <- run_simulation(simulation_outputs, 
                                   run_params, 
                                   policy_params, 
                                   parcels, 
@@ -33,35 +33,53 @@ perform_offsets_simulation <- function(policy_params, run_params, parcels, initi
                      run_params$time_steps)
   
   if (run_params$save_simulation_outputs == TRUE){
-    saveRDS(global_object, paste0(current_data_dir, 'realisation_', 
+    saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_', 
                                        formatC(realisation_ind, width = 3, format = "d", flag = "0"), '_outputs.rds'))
   }
   
   for (feature_ind in seq(run_params$feature_num)){
-    current_collated_realisation = run_collate_routines(read_outputs_from_file = FALSE, 
+    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', feature_ind, '.rds'))
+    
+    current_collated_realisation = run_collate_routines(simulation_outputs, 
+                                                        current_trajectories,
                                                         decline_rates_initial, 
                                                         initial_ecology,  
-                                                        global_object, 
                                                         current_data_dir, 
                                                         run_params, 
                                                         policy_params,
                                                         realisation_ind, 
                                                         feature_ind)
     
-    saveRDS(current_collated_realisation, paste0(run_params$collated_folder, 
-                                                 'scenario_', 
-                                                 formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
-                                                 '_feature_', 
-                                                 formatC(feature_ind, width = 3, format = "d", flag = "0"), 
-                                                 '_collated_realisation_', 
-                                                 formatC(realisation_ind, width = 3, format = "d", flag = "0"),'.rds'))
+
+    file_prefix = paste0(run_params$collated_folder, 
+                         'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
+                         '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0")) 
+                         
+    
+    saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
+    
+    if ((run_params$write_offset_layer == TRUE) && (feature_ind == 1)){
+      write_offset_layer(paste0(file_prefix, '_offset_layer.png'), 
+                         current_trajectories, 
+                         parcels, 
+                         unlist(simulation_outputs$offsets_object$parcel_indexes), 
+                         color_vec = c('black', 'darkgreen'), 
+                         run_params)
+      write_offset_layer(paste0(file_prefix, '_dev_layer.png'),
+                         current_trajectories, 
+                         parcels, 
+                         unlist(simulation_outputs$dev_object$parcel_indexes), 
+                         color_vec = c('black', 'red'), 
+                         run_params)
+      
+    }
   }
   
   if (run_params$save_simulation_outputs == FALSE){
     unlink(current_data_dir, recursive = TRUE)
   }
   
-  return(global_object)
+  return(simulation_outputs)
 }  
 
 

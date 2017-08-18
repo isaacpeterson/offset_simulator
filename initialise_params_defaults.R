@@ -10,7 +10,7 @@ initialise_run_params <- function(){
   run_params$set_seed = FALSE
 
   # The number of realizations to run
-  run_params$realisation_num = 2
+  run_params$realisation_num = 4
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
@@ -26,14 +26,14 @@ initialise_run_params <- function(){
   # Use inputs previously saved in landscape inputs folder to run current simulation
   run_params$run_from_saved = FALSE
 
-  # Saves the landscape data use by simulation into the run specific simulations input folder 
-  run_params$backup_landscape_data = FALSE
+  # Saves the landscape data use by simulation into the run specific simulation params folder
+  run_params$backup_simulation_inputs = FALSE
 
   # Create an animation of the outputs
   run_params$write_movie = FALSE
 
-  # Makes a single pdf at the end of the simulation showing the locatons of all offsets
-  run_params$write_offset_layer = FALSE
+  # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
+  run_params$write_offset_layers = TRUE
   
   # The total number of layers to use in the offset calcuation (iterating from the start)
   run_params$features_to_use_in_offset_calc = 1
@@ -141,7 +141,7 @@ initialise_policy_params <- function(){
   # mean number using a normal distribution such that the total number of
   # developments will always equal the total number (Note sd for this
   # distribution is set in the code the currently isn't user settable)
-  policy_params$total_dev_num = 50
+  policy_params$total_dev_num = 10
   
   # How the development parcels are selected options are 'random' or
   # 'weighted'. Note tha weighted requires an additonal weighting layer. If

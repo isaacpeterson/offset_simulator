@@ -8,13 +8,13 @@ rm(list=ls(all=TRUE))
     #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-output_type = 'by_feature' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
+output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 49 # for output plot name
-sets_to_plot = 10
-plot_vec = 1:4
+run_number = 1 # for output plot name
+sets_to_plot = 5
+plot_vec = 1:2
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 
@@ -35,14 +35,14 @@ if (output_type == 'by_scenario'){
 }
 
 
-current_folder = paste0('~/offset_data/hunter/simulation_runs/', 
+current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
                         formatC(run_number, width = 5, format = "d", flag = "0"), '/')
 
 # current_folder = paste0('~/offset_data/simulated/nectar_runs/data100reps/')
 
 collated_folder = paste0(current_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
 
-simulation_inputs_folder = paste0(current_folder, '/simulation_inputs/')
+simulation_inputs_folder = paste0(current_folder, '/simulation_params/')
 #simulation_inputs_folder = collated_folder
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
@@ -78,8 +78,6 @@ if (write_pdf == TRUE){
 setup_sub_plots(nx = 3, ny = 4, x_space = 5, y_space = 5)
 
 
-
-
 scenario_filenames <- list.files(path = simulation_inputs_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
@@ -90,6 +88,8 @@ if (length(plot_vec) == 0){
 
 if (length(scenario_filenames) == 0){
   stop( paste('\nERROR: No files that match _policy_params found in', simulation_inputs_folder) )
+} else if (length(scenario_filenames) < max(plot_vec)){
+  stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_vec parameter does not match'))
 }
 
 for (plot_ind in plot_vec){

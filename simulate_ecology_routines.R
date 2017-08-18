@@ -81,6 +81,6 @@ prepare_simulated_data <- function(landscape_data_folder){
   landscape_ecology = list()
   dev_weights = list() 
   
-  save_simulation_inputs(run_params$landscape_data_folder, LGA_array, parcels, landscape_ecology,
+  save_simulation_inputs(landscape_data_folder, LGA_array, parcels, landscape_ecology,
                          parcel_ecology, dev_weights)
 }

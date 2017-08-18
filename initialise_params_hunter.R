@@ -11,7 +11,7 @@ initialise_run_params <- function(){
   run_params$feature_num = length(run_params$features_to_use_in_simulation)
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = FALSE     # write layer containing all offset parcels to pdf
-  run_params$realisation_num = 1
+  run_params$realisation_num = 50
   run_params$time_steps = 50
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
@@ -71,17 +71,3 @@ initialise_policy_params <- function(){ #list of variations in policy
   return(policy_params)
 }
 
-
-# 
-# initialise_ecology_params <- function(){
-#   
-#   ecology_params = list()
-#   ecology_params$feature_num = 1 #how many ecological dimensions in simulation
-#   ecology_params$mean_decline_rates = rep(-1e-2, ecology_params$feature_num) #set parameter for rate of decline according to logistic curve
-#   ecology_params$decline_rate_std = rep(1e-3, ecology_params$feature_num)
-#   ecology_params$min_eco_val = 0  # minimum allowable ecological value of smallest ecological element (pixel)
-#   ecology_params$max_eco_val = 100 # maximum "   "     "           "
-#   
-#   return(ecology_params)
-#   
-# }
