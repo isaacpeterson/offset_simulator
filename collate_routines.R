@@ -57,10 +57,13 @@ find_collated_files <- function(file_path, scenario_string, feature_string, real
   
   if (net_realisation_num == 0){
     stop(paste0('\n ERROR: No files found for scenario ', scenario_string, ', feature ', feature_string, ' in ', file_path))
-  } else if (net_realisation_num < realisation_num){
+  } 
+  
+  if (net_realisation_num < realisation_num){
     realisation_num = net_realisation_num
-    print(paste0('found ', net_realisation_num, ' files for scenario ', scenario_string, ', feature ', feature_string, ', in ', file_path))
+    print(paste0('WARNING: Only found ', realisation_num, ' realisation files for scenario ', scenario_string, ', feature ', feature_string, ', in ', file_path))
   }
+
   
   filenames_to_use = current_filenames[seq(realisation_num)]
   filenames_to_use = lapply(seq_along(filenames_to_use), function(i) paste0(file_path, '/', filenames_to_use[i]))

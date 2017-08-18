@@ -9,7 +9,7 @@ rm(list=ls(all=TRUE))
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
-realisation_num = 'all' # 'all' or number to plot
+realisation_num = 100 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
 run_number = 1 # for output plot name
