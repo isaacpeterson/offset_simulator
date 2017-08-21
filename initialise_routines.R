@@ -15,6 +15,8 @@ run_initialise_routines <- function(run_params, policy_params_group){
     }
   }
 
+  run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
+  
   run_params = list.save(run_params, paste0(run_params$simulation_params_folder, 'run_params.json'))
   
   for (scenario_ind in seq_along(policy_params_group)){

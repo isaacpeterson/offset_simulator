@@ -8,7 +8,7 @@ library(abind)
 library(pixmap)
 library(rlist)
 
-source('initialise_params_defaults.R')
+source('initialise_params_hunter.R')
 source('initialise_routines.R')                              # functions to collate simulation outputs
 source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
@@ -29,7 +29,6 @@ decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land
                                                 feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
 
 initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to_use_in_simulation)
-decline_rates_initial <- select_feature_subset(decline_rates_initial, run_params$features_to_use_in_simulation)
 
 cl<-makeCluster(run_params$crs)  # allow parallel processing on n = 4 processors
 registerDoParallel(cl)

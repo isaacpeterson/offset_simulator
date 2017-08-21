@@ -6,9 +6,6 @@ initialise_run_params <- function(){
  
   run_params$simulate_data = TRUE
   
-  # set the random number seed
-  run_params$set_seed = FALSE
-
   # The number of realizations to run
   run_params$realisation_num = 4
 
@@ -41,11 +38,8 @@ initialise_run_params <- function(){
 
   # what subset of features to use in the simulation
   run_params$features_to_use_in_simulation = 1 
-  
-  # The total number of features in the simulation
-  run_params$feature_num = length(run_params$features_to_use_in_simulation)
-  
-  # The maxoimum number of parcels can be selected to offset a single development
+ 
+    # The maxoimum number of parcels can be selected to offset a single development
   run_params$max_offset_parcel_num = 5
 
   # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
@@ -60,11 +54,10 @@ initialise_run_params <- function(){
     # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
-  run_params$mean_decline_rates = rep(list(-1e-2), run_params$feature_num) 
-  
   # Sample form a normal distribution with this sd to add noise to the decline rates.
-  run_params$decline_rate_std = rep(list(1e-3), run_params$feature_num)
-  
+  run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
+  run_params$decline_rate_std = rep(list(1e-3), length(run_params$features_to_use_in_simulation))
+
   # Lowest value that the logistic decline curve can reach. It will asypotote to this value
   run_params$min_eco_val = 0  
   
@@ -77,6 +70,9 @@ initialise_run_params <- function(){
   # Exclude parcels with less than this number of pixels.
   run_params$parcel_screen_size = 20 
 
+  # set the random number seed
+  run_params$set_seed = FALSE
+  
   # Acceptable level above which to accept parcel match for offset and
   # development calcs. Positive value means offset gains greater than
   # development losses by this amount are accepted. Negative value means

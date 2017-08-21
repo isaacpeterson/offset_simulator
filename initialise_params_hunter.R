@@ -2,32 +2,41 @@ initialise_run_params <- function(){
   run_params = list()
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/hunter/')
   run_params$simulate_data = FALSE
+  run_params$realisation_num = 5
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
+  run_params$time_steps = 50
   run_params$save_simulation_outputs = FALSE
+  run_params$overwrite_existing_landscape_data = TRUE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.
-  run_params$backup_landscape_data = FALSE 
-  run_params$features_to_use_in_offset_calc = 2:5
-  run_params$features_to_use_in_simulation = 2:5
-  run_params$feature_num = length(run_params$features_to_use_in_simulation)
+  run_params$backup_simulation_inputs = FALSE 
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = FALSE     # write layer containing all offset parcels to pdf
-  run_params$realisation_num = 50
-  run_params$time_steps = 50
+  
+  run_params$features_to_use_in_offset_calc = 2:5
+  run_params$features_to_use_in_simulation = 2:5
+  
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
-  run_params$limit_offset_restoration = TRUE
-  run_params$perform_illegal_clearing = TRUE # switch on/off illegal clearing 
   run_params$sample_decline_rate = FALSE
+  
+  run_params$limit_offset_restoration = TRUE
+  run_params$illegal_clearing_prob = 1e-3
+  
+  run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
+  run_params$decline_rate_std = rep(list(1e-3), length(run_params$features_to_use_in_simulation))
+
+  run_params$min_eco_val = 0  
+  run_params$max_eco_val = 100 
+  
   run_params$screen_parcels = TRUE # do not use parcels outside [0.05, 0.95]
   run_params$parcel_screen_size = 20 # ignore parcels with less than ecology_params$parcel_screen_size elements
   run_params$set_seed = FALSE
   run_params$match_threshold = 0 # acceptable level above which to accept parcel match
-  run_params$illegal_clearing_prob = 1e-3
+
   run_params$restoration_rate_params = c(0.02, 0.005)
 
   return(run_params)
 }
-
 
 
 initialise_policy_params <- function(){ #list of variations in policy
@@ -49,7 +58,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   
   policy_params$site_for_site = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
   policy_params$offset_time_horizon = c(30)
-  policy_params$offset_calc_type = c('avoided_degs') #'net_gains', 'restoration_gains', 'avoided_degs' 
+  policy_params$offset_calc_type = c('avoided_loss') #'net_gains', 'restoration_gains', 'avoided_loss' 
   policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
   
   policy_params$include_potential_developments_in_offset_calc = c(TRUE)
