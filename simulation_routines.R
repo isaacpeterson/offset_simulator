@@ -510,9 +510,8 @@ assess_credit <- function(simulation_outputs, current_policy_params){
 }
 
 
-
-
-prepare_offset_pool <- function(simulation_outputs, current_policy_params, region_ind, run_params, parcels, decline_rates_initial, yr){
+prepare_offset_pool <- function(simulation_outputs, current_policy_params, region_ind, run_params, 
+                                parcels, decline_rates_initial, yr){
   
   if (current_policy_params$intervention_vec[yr] ==  0){
     return()
@@ -531,7 +530,6 @@ prepare_offset_pool <- function(simulation_outputs, current_policy_params, regio
     
     offset_pool_type = 'offset_bank'
   } else {
-    
     offset_pool_object <- record_current_parcel_set(simulation_outputs$current_ecology[current_offset_pool], 
                                                     current_offset_pool, 
                                                     parcel_num_remaining = length(current_offset_pool), 
@@ -1163,6 +1161,10 @@ sum_lists <- function(list_a, list_b){
   }
   return(list_c)
 }
+
+# current_ecologies = simulation_outputs$current_ecology[current_offset_pool] 
+# current_pool = current_offset_pool 
+# parcel_num_remaining = length(current_offset_pool)
 
 
 record_current_parcel_set <- function(current_ecologies, current_pool, parcel_num_remaining, yr, region_ind){

@@ -9,12 +9,12 @@ run_initialise_routines <- function(run_params, policy_params_group){
         overwrite <- run_params$overwrite_existing_landscape_data
       } else { overwrite = TRUE} 
       if (overwrite == TRUE){
-          source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
-          prepare_simulated_data(run_params$simulation_inputs_folder)
+        source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
+        prepare_simulated_data(run_params$simulation_inputs_folder)
       }
     }
   }
-
+  
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
   
   run_params = list.save(run_params, paste0(run_params$simulation_params_folder, 'run_params.json'))
@@ -22,9 +22,9 @@ run_initialise_routines <- function(run_params, policy_params_group){
   for (scenario_ind in seq_along(policy_params_group)){
     current_policy_params = policy_params_group[[scenario_ind]]
     list.save(current_policy_params, 
-            paste0(run_params$simulation_params_folder, 'scenario_', 
-                   formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
-                   '_policy_params.json'))
+              paste0(run_params$simulation_params_folder, 'scenario_', 
+                     formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
+                     '_policy_params.json'))
   }
   
   if (run_params$backup_simulation_inputs == TRUE){
@@ -32,15 +32,23 @@ run_initialise_routines <- function(run_params, policy_params_group){
                            parcel_ecology, dev_weights, ecology_params)
   }
   
-  run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
+  if (length(intersect(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)) 
+             != length(run_params$features_to_use_in_offset_calc)){
+    stop(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
+  } else {
+    run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
+  }
   return(run_params)
   
 }
 
 
 select_feature_subset <- function(input_object, features_to_use){
+  if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
+    stop( paste('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions')) 
+  }
   output_object <- lapply(seq_along(input_object), 
-                              function(i) (input_object[[i]][features_to_use]))
+                          function(i) (input_object[[i]][features_to_use]))
   return(output_object)
 }
 
@@ -80,8 +88,8 @@ write_simulation_folders <- function(run_params, scenario_num){
   base_run_folder = paste0(run_params$simulation_folder, '/simulation_runs/')
   
   filenames = list.files(path = base_run_folder, all.files = FALSE, 
-             full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-             include.dirs = FALSE, no.. = FALSE)
+                         full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                         include.dirs = FALSE, no.. = FALSE)
   
   if (length(filenames) > 0){
     current_run = as.numeric(filenames[length(filenames)]) + 1
@@ -99,7 +107,7 @@ write_simulation_folders <- function(run_params, scenario_num){
   run_params$simulation_params_folder = write_folder(paste0(run_params$run_folder, '/simulation_params/'))
   run_params$simulation_inputs_folder = simulation_inputs_folder
   run_params$collated_folder = write_folder(paste0(run_params$run_folder, 'collated_outputs/'))
-
+  
   return(run_params)
 }
 
@@ -192,7 +200,7 @@ generate_policy_params_group <- function(run_params){
   
   policy_params <- initialise_policy_params() # list all program combinations to test
   if (policy_params$use_offset_bank == TRUE){
-        policy_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
+    policy_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
   } else {
     policy_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
@@ -226,9 +234,9 @@ initialise_output_object <- function(parcels, initial_ecology, run_params, decli
   output_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
   output_object$current_credit = list_of_zeros(run_params$feature_num, 1)
   output_object$decline_rates = decline_rates_initial
-#   if (save_realisations == FALSE){
-#     output_object$trajectories <- initialise_trajectories(run_params$feature_num, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
-#   }
+  #   if (save_realisations == FALSE){
+  #     output_object$trajectories <- initialise_trajectories(run_params$feature_num, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
+  #   }
   return(output_object)
 }
 
@@ -514,16 +522,3 @@ generate_nested_list <- function(outer_dim, inner_dim){
   return(nested_list)
 }
 
-
-split_ecology <- function(current_ecology, land_parcels, parcel_indexes, feature_num){
-  parcel_indexes = unlist(parcel_indexes)
-  parcel_ecologies = vector('list', length(parcel_indexes))
-  
-  for (parcel_ind in seq_len(length(parcel_indexes))){
-    current_parcel_ind = parcel_indexes[parcel_ind] 
-    current_parcel = select_land_parcel(land_parcels, current_parcel_ind)
-    current_parcel_ecology = extract_parcel(current_parcel, current_ecology)
-    parcel_ecologies[[parcel_ind]] = current_parcel_ecology
-  }
-  return(parcel_ecologies)
-}
