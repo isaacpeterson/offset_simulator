@@ -1102,7 +1102,7 @@ evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, restoration_v
     parcel_vals_pool = subtract_nested_lists(restoration_vals, cfac_vals)
   } else if (calc_type == 'restoration_condition_value'){
     parcel_vals_pool = restoration_vals
-  } else if (calc_type == 'avoided_degs'){
+  } else if (calc_type == 'avoided_loss'){
     parcel_vals_pool = subtract_nested_lists(parcel_sums_at_offset, cfac_vals)
   } else if ((calc_type == 'future_condition') || (calc_type == 'protected_condition')){
     parcel_vals_pool = cfac_vals 

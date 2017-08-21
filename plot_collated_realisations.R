@@ -1,7 +1,8 @@
 # Plot the collated simulaton results
 # To run: source('plot_collated_realisations.R')
-
 rm(list=ls(all=TRUE))
+
+library(rlist)
 
    #---------------------
     # User parameters
@@ -12,7 +13,7 @@ output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or
 realisation_num = 100 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 1 # for output plot name
+run_number = 8 # for output plot name
 sets_to_plot = 5
 plot_vec = 1:2
 string_width = 3 #how many digits are used to store scenario index and realisation index
@@ -42,8 +43,8 @@ current_folder = paste0('~/offset_data/simulated/simulation_runs/',
 
 collated_folder = paste0(current_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
 
-simulation_inputs_folder = paste0(current_folder, '/simulation_params/')
-#simulation_inputs_folder = collated_folder
+simulation_params_folder = paste0(current_folder, '/simulation_params/')
+#simulation_params_folder = collated_folder
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
@@ -59,7 +60,7 @@ source('collate_routines.R')
 
 check_plot_options()
 
-run_params = readRDS(paste0(simulation_inputs_folder, '/run_params.rds'))
+run_params = list.load(paste0(simulation_params_folder, '/run_params.json'))
 
 if (!file.exists(output_plot_folder)){
   dir.create(output_plot_folder)
@@ -78,7 +79,7 @@ if (write_pdf == TRUE){
 setup_sub_plots(nx = 3, ny = 4, x_space = 5, y_space = 5)
 
 
-scenario_filenames <- list.files(path = simulation_inputs_folder, pattern = '_policy_params', all.files = FALSE, 
+scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
 
@@ -87,7 +88,7 @@ if (length(plot_vec) == 0){
 }
 
 if (length(scenario_filenames) == 0){
-  stop( paste('\nERROR: No files that match _policy_params found in', simulation_inputs_folder) )
+  stop( paste('\nERROR: No files that match _policy_params found in', simulation_params_folder) )
 } else if (length(scenario_filenames) < max(plot_vec)){
   stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_vec parameter does not match'))
 }
@@ -98,7 +99,7 @@ for (plot_ind in plot_vec){
   } else {
     scenario_ind = plot_ind
   }
-  current_policy_params = readRDS(paste0(simulation_inputs_folder, '/', scenario_filenames[scenario_ind]))
+  current_policy_params = list.load(paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind]))
   collated_filenames = find_collated_files(file_path = collated_folder, 
                                           scenario_string = formatC(scenario_ind, width = string_width, format = "d", flag = "0"), 
                                           feature_string = formatC(feature_ind, width = string_width, format = "d", flag = "0"), 

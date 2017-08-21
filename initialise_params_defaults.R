@@ -23,6 +23,7 @@ initialise_run_params <- function(){
   # Setting to fale saves a lot of space
   run_params$save_simulation_outputs = FALSE
 
+  run_params$overwrite_existing_landscape_data = TRUE
   # Use inputs previously saved in landscape inputs folder to run current simulation
   run_params$run_from_saved = FALSE
 
@@ -109,10 +110,10 @@ initialise_policy_params <- function(){
 
   # The Options are 'restoration_gains' - the gains are calcualted relative to
   # the site value at the time of the interventionabove 
-  # 'avoided_degs - the gains are calculated relative to the biodiversity
+  # 'avoided_loss - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains') # 'restoration_gains', 'avoided_degs') 
+  policy_params$offset_calc_type = c('net_gains') # 'restoration_gains', 'avoided_loss') 
 
   # Options are 'maintain', 'protect', or 'restore'. 
   policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')
@@ -219,17 +220,6 @@ initialise_policy_params <- function(){
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
   policy_params$offset_multiplier = 1
-
-  if (policy_params$use_offset_bank == TRUE){
-
-    # 'current' - used for banking only - determine accrued offset gains till current year.
-    policy_params$offset_time_horizon_type = 'current'  
-  } else {
-
-    #'future' - project from time of development to offset time horizon, or 
-    policy_params$offset_time_horizon_type = 'future' 
-  }
-  
 
   return(policy_params)
 }

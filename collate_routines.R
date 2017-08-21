@@ -377,7 +377,7 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologie
   
   tmp_object$rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum(parcel_ecologies_to_use[[i]]))
   
-  tmp_object$avoided_degs = lapply(seq(parcel_num), function(i) sum(parcel_ecologies_to_use[[i]]) - sum_cols(cfacs_to_use[[i]]))
+  tmp_object$avoided_loss = lapply(seq(parcel_num), function(i) sum(parcel_ecologies_to_use[[i]]) - sum_cols(cfacs_to_use[[i]]))
   
   collated_object <- lapply(seq_along(tmp_object),
                             function(i) lapply(seq_along(tmp_object[[i]]), 
@@ -387,8 +387,8 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologie
   if ((collate_type == 'offsets') | (collate_type == 'offset_bank')){
     if (policy_params$offset_calc_type == 'restoration_gains'){
       collated_object$site_nets = collated_object$rest_gains
-    } else if (policy_params$offset_calc_type == 'avoided_degs'){
-      collated_object$site_nets = collated_object$avoided_degs
+    } else if (policy_params$offset_calc_type == 'avoided_loss'){
+      collated_object$site_nets = collated_object$avoided_loss
     } else if (policy_params$offset_calc_type == 'net_gains'){
       collated_object$site_nets = collated_object$nets
     }

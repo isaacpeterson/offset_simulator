@@ -6,22 +6,23 @@ run_initialise_routines <- function(run_params, policy_params_group){
     if (run_params$simulate_data == TRUE){
       empty_dir_flag = length(list.files(run_params$simulation_inputs_folder)) == 0      #test to see if files are present in simulation input data folder
       if (!empty_dir_flag){
-        overwrite <- readline("overwrite existing landscape data? (Y/N) ")
-      } else { overwrite = 'Y'} 
-      if (overwrite == 'Y'){
+        overwrite <- run_params$overwrite_existing_landscape_data
+      } else { overwrite = TRUE} 
+      if (overwrite == TRUE){
           source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
           prepare_simulated_data(run_params$simulation_inputs_folder)
       }
     }
   }
 
-  saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
+  run_params = list.save(run_params, paste0(run_params$simulation_params_folder, 'run_params.json'))
   
   for (scenario_ind in seq_along(policy_params_group)){
-    saveRDS(policy_params_group[[scenario_ind]], 
+    current_policy_params = policy_params_group[[scenario_ind]]
+    list.save(current_policy_params, 
             paste0(run_params$simulation_params_folder, 'scenario_', 
                    formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
-                   '_policy_params.rds'))
+                   '_policy_params.json'))
   }
   
   if (run_params$backup_simulation_inputs == TRUE){
@@ -121,7 +122,7 @@ generate_current_policy <- function(policy_params_group, current_policy_param_in
 
 collate_current_policy <- function(current_policy_params, run_params){
   
-  if (current_policy_params$offset_calc_type == 'avoided_degs'){
+  if (current_policy_params$offset_calc_type == 'avoided_loss'){
     current_policy_params$offset_action_type = 'maintain'
   } else if (current_policy_params$offset_calc_type %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
     current_policy_params$offset_action_type = 'restore'
@@ -139,7 +140,7 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$use_offset_time_horizon = FALSE
   } else {current_policy_params$use_offset_time_horizon = TRUE}
   
-  if( (current_policy_params$offset_calc_type == 'avoided_degs') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'protected_condition') ){
+  if( (current_policy_params$offset_calc_type == 'avoided_loss') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'protected_condition') ){
     current_policy_params$offset_cfacs_flag = TRUE
   } else{
     current_policy_params$offset_cfacs_flag = FALSE
@@ -188,6 +189,11 @@ collate_current_policy <- function(current_policy_params, run_params){
 generate_policy_params_group <- function(run_params){
   
   policy_params <- initialise_policy_params() # list all program combinations to test
+  if (policy_params$use_offset_bank == TRUE){
+        policy_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
+  } else {
+    policy_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
+  }
   policy_combs <- generate_policy_combs(policy_params)  #generate all combinations of offset programs
   policy_num = dim(policy_combs)[1] #how many combinations there are in total
   

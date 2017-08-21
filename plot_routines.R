@@ -160,7 +160,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                                                collated_realisations$net_offset_gains$losses))
   
   overlay_realisations(plot_list = list(collated_realisations$net_offset_gains$rest_gains,
-                                        collated_realisations$net_offset_gains$avoided_degs,
+                                        collated_realisations$net_offset_gains$avoided_loss,
                                         #collated_realisations$net_offset_gains$losses,
                                         collated_realisations$net_offset_gains$net_outcome),
                        plot_title = 'Program Scale Offset Impact', 
@@ -387,12 +387,12 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, visualisati
 
 
 
-plot_split_realisations <- function(plot_type, rest_gains, avoided_degs, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
+plot_split_realisations <- function(plot_type, rest_gains, avoided_loss, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
   
   plot_num = length(col_vec)
   plot_collated_realisation_set(rest_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
   if (plot_type == 'offsets'){
-    plot_collated_realisation_set(avoided_degs, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
+    plot_collated_realisation_set(avoided_loss, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
   }
   plot_collated_realisation_set(nets, overlay_plots = TRUE, plot_col = col_vec[plot_num], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)  
   legend(legend_pos, legend_vec, bty="n", lty = rep(2, plot_num), lwd = array(lwd_vec[1], plot_num), col = col_vec)
@@ -515,11 +515,11 @@ plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, feature_ind){
 plot_mean_gains_degs <- function(summed_realisations, policy_params, realisation_num){
   
   rest_gains = sum_cols_multi(summed_realisations$rest_gains)/realisation_num
-  net_degs = sum_cols_multi(summed_realisations$avoided_degs)/realisation_num
+  net_degs = sum_cols_multi(summed_realisations$avoided_loss)/realisation_num
   net_gains = net_degs + rest_gains
   
   if (policy_params$adjust_cfacs_flag == TRUE){
-    net_degs_adjusted = sum_cols_multi(summed_realisations$avoided_degs_adjusted)/realisation_num
+    net_degs_adjusted = sum_cols_multi(summed_realisations$avoided_loss_adjusted)/realisation_num
     net_gains_adjusted = net_degs_adjusted + rest_gains
     adjusted_contribution = net_degs_adjusted - net_degs
     
@@ -570,14 +570,14 @@ plot_mean_gains_degs <- function(summed_realisations, policy_params, realisation
 #   rest_gains = collated_summed_reals$rest_gains
 #   
 #   if (cfac_type == 'standard'){
-#     avoided_degs = collated_summed_reals$avoided_degs
+#     avoided_loss = collated_summed_reals$avoided_loss
 #     nets = collated_summed_reals$net_outcome$standard
 #   } else if ((cfac_type == 'include_clearing') || (cfac_type == 'include_clearing_offsets')){
-#     avoided_degs = collated_summed_reals$avoided_degs_adjusted
+#     avoided_loss = collated_summed_reals$avoided_loss_adjusted
 #     nets = collated_summed_reals$net_outcome$adjusted
 #   } 
 #   
-#   plot_summed_realisations(plot_type, rest_gains, avoided_degs, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
+#   plot_summed_realisations(plot_type, rest_gains, avoided_loss, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim)
 
 # }
 
@@ -756,7 +756,7 @@ plot_parcel_set_parcels <- function(current_set_object){
   layout(sub_plots)
   
   rest_gains = current_set_object$rest_gains
-  degs = current_set_object$avoided_degs
+  degs = current_set_object$avoided_loss
   lim_vec = c(rest_gains, degs, (rest_gains + degs)) 
   mx = max(lim_vec)
   mn = min(lim_vec)
@@ -801,11 +801,11 @@ setup_sub_plots <- function(nx, ny, x_space, y_space){
 
 
 
-collate_parcel_set_element <- function(rest_gains, avoided_degs){
+collate_parcel_set_element <- function(rest_gains, avoided_loss){
   collated_outs = list()
   collated_outs$rest_gains = rest_gains
-  collated_outs$avoided_degs = avoided_degs
-  collated_outs$nets = rest_gains + avoided_degs
+  collated_outs$avoided_loss = avoided_loss
+  collated_outs$nets = rest_gains + avoided_loss
   return(collated_outs)
 }
 
@@ -820,7 +820,7 @@ plot_parcel_sets <- function(collated_realisations, realisation_ind, feature_ind
   for (parcel_set_ind in parcel_sets_to_plot){
     parcel_set_traj_list = list()
     offset_plot_list = list(collated_realisations$collated_offsets$rest_gains[[realisation_ind]][, parcel_set_ind], 
-                            collated_realisations$collated_offsets$avoided_degs[[realisation_ind]][, parcel_set_ind],
+                            collated_realisations$collated_offsets$avoided_loss[[realisation_ind]][, parcel_set_ind],
                             collated_realisations$collated_offsets$nets[[realisation_ind]][, parcel_set_ind])
     
     dev_plot_list = list(collated_realisations$collated_devs$rest_gains[[realisation_ind]][, parcel_set_ind], 

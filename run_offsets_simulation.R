@@ -6,6 +6,7 @@ library(foreach)
 library(doParallel)
 library(abind)
 library(pixmap)
+library(rlist)
 
 source('initialise_params_defaults.R')
 source('initialise_routines.R')                              # functions to collate simulation outputs
@@ -13,12 +14,13 @@ source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
 
+
 run_params <- initialise_run_params()
 policy_params_group = generate_policy_params_group(run_params)
 run_params <- run_initialise_routines(run_params, policy_params_group)
-initial_ecology <- readRDS(paste0(run_params$landscape_data_folder, 'parcel_ecology.rds'))
-parcels <- readRDS(paste0(run_params$landscape_data_folder, 'parcels.rds'))
-dev_weights <- readRDS(paste0(run_params$landscape_data_folder, 'dev_weights.rds'))
+initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
+parcels <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcels.rds'))
+dev_weights <- readRDS(paste0(run_params$simulation_inputs_folder, 'dev_weights.rds'))
 
 decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
                                                 sample_decline_rate = TRUE, 
