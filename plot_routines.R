@@ -873,7 +873,8 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
 
 generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims){
   
-  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], time_steps, landscape_dims, feature_num = 1)
+  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], 
+                                  time_steps, landscape_dims, feature_num = 1)
   
   if (layer_type == 'offset'){
     layer = net_traj[[1]][, , time_steps] > 0

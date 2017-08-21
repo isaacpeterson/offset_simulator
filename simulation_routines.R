@@ -157,8 +157,8 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                     current_policy_params$offset_time_horizon)
           
           if (credit_match_object$match_flag == TRUE){
-            stopifnot(credit_match_object$match_vals > 0)
-            print('matched with credit')
+
+            print(credit_match_object$match_vals)
             simulation_outputs$current_credit = credit_match_object$current_credit
             print(paste('credit flag ', credit_match_object$match_vals))
             simulation_outputs <- perform_clearing_routine(simulation_outputs, 

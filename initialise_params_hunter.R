@@ -2,7 +2,7 @@ initialise_run_params <- function(){
   run_params = list()
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/hunter/')
   run_params$simulate_data = FALSE
-  run_params$realisation_num = 5
+  run_params$realisation_num = 2
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 50
   run_params$save_simulation_outputs = FALSE
