@@ -10,12 +10,12 @@ library(rlist)
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
-realisation_num = 100 # 'all' or number to plot
+realisation_num = 4 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 8 # for output plot name
+run_number = 9 # for output plot name
 sets_to_plot = 5
-plot_vec = 1:2
+plot_vec = 1:6
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 
