@@ -7,7 +7,7 @@ Software for simulating the impacts of biodiversity offsetting
 Instructions to run the software
 ---------------------------------
 
-Download and install the latest version of R. If you are running from a linux-type system this can be done using:
+Download and install the latest version of R. If you are running from a ubuntu/debian linux system, this can be done using:
 
 `sudo apt-get update`
 
@@ -18,7 +18,13 @@ Download and install the latest version of R. If you are running from a linux-ty
 
 Install the R packages foreach, doParallel, abind and pixmap. To do this from within R you can run:
 
-`install.packages(c("foreach", "doParallel", "abind", "pixmap"))`
+`install.packages(c("foreach", "doParallel", "abind", "pixmap", "rlist"))`
+
+Not if there is a problem installing the `rlist` package on linux system, you may need to install the packages libxml2-dev as follows:
+
+`sudo apt-get update`
+
+`sudo apt-get install libxml2-dev`
 
 
 Description on the files
