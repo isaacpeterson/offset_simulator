@@ -20,7 +20,7 @@ Install the R packages foreach, doParallel, abind and pixmap. To do this from wi
 
 `install.packages(c("foreach", "doParallel", "abind", "pixmap", "rlist"))`
 
-Note if there is a problem installing the `rlist` package on an ubuntu system, you may need to install the ubuntu package libxml2-dev as follows:
+Note if there is a problem installing the `rlist` package on an ubuntu system, you may need to install the ubuntu package `libxml2-dev` as follows:
 
 `sudo apt-get update`
 
