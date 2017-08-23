@@ -1,19 +1,19 @@
 run_initialise_routines <- function(run_params, policy_params_group){
-  
+  run_params$strt = Sys.time()
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
   
-  if (run_params$run_from_saved == FALSE){
-    if (run_params$simulate_data == TRUE){
-      empty_dir_flag = length(list.files(run_params$simulation_inputs_folder)) == 0      #test to see if files are present in simulation input data folder
-      if (!empty_dir_flag){
-        overwrite <- run_params$overwrite_existing_landscape_data
-      } else { overwrite = TRUE} 
-      if (overwrite == TRUE){
-        source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
-        prepare_simulated_data(run_params$simulation_inputs_folder)
-      }
-    }
-  }
+#   if (run_params$run_from_saved == FALSE){
+#     if (run_params$simulate_data == TRUE){
+#       empty_dir_flag = length(list.files(run_params$simulation_inputs_folder)) == 0      #test to see if files are present in simulation input data folder
+#       if (!empty_dir_flag){
+#         overwrite <- run_params$overwrite_existing_landscape_data
+#       } else { overwrite = TRUE} 
+#       if (overwrite == TRUE){
+#         source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
+#         prepare_simulated_data(run_params$simulation_inputs_folder)
+#       }
+#     }
+#   }
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
   run_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps, 
                                                           prog_start = run_params$dev_start,
@@ -60,12 +60,16 @@ overwrite_run_params <- function(run_params){
       print(names(new_run_params[obsolete_param_inds]))
       param_matches = param_matches[-obsolete_param_inds]
       param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
-      run_params[param_matches] = new_run_params[param_inds_to_use]
+      
     }
+    run_params[param_matches] = new_run_params[param_inds_to_use]
   }
   
   return(run_params)
 }
+
+
+
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
     stop( paste('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions')) 

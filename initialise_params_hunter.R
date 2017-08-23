@@ -12,7 +12,7 @@ initialise_run_params <- function(){
   run_params$backup_simulation_inputs = FALSE 
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = TRUE     # write layer containing all offset parcels to pdf
-  run_params$features_to_use_in_offset_calc = 1
+  run_params$features_to_use_in_offset_calc = 2:50
   run_params$features_to_use_in_simulation = 2:50
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
