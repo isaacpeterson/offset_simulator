@@ -1,5 +1,21 @@
 run_initialise_routines <- function(run_params, policy_params_group){
   
+  if (run_params$overwrite_default_params == TRUE){
+    print('overwriting defaults and removing the following obsolete params:')
+    source(run_params$overwrite_params_file)
+    new_run_params <- initialise_run_params()
+    param_matches = match(names(new_run_params), names(run_params))
+    obsolete_param_inds = which(is.na(param_matches))
+    param_inds_to_use = seq_along(new_run_params)
+    
+    if (length(obsolete_param_inds) > 0){
+
+      print(names(new_run_params[obsolete_param_inds]))
+      param_matches = param_matches[-obsolete_param_inds]
+      param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
+      run_params[param_matches] = new_run_params[param_inds_to_use]
+    }
+  }
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
   
   if (run_params$run_from_saved == FALSE){
@@ -16,19 +32,19 @@ run_initialise_routines <- function(run_params, policy_params_group){
   }
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
   run_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps, 
-                                                                              prog_start = run_params$dev_start,
-                                                                              prog_end = run_params$dev_end, 
-                                                                              run_params$total_dev_num, 
-                                                                              sd = 1)
+                                                          prog_start = run_params$dev_start,
+                                                          prog_end = run_params$dev_end, 
+                                                          run_params$total_dev_num, 
+                                                          sd = 1)
   
   saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
   dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.txt'))
   for (scenario_ind in seq_along(policy_params_group)){
     current_policy_params = policy_params_group[[scenario_ind]]
     saveRDS(current_policy_params, 
-              paste0(run_params$simulation_params_folder, 'scenario_', 
-                     formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
-                     '_policy_params.rds'))
+            paste0(run_params$simulation_params_folder, 'scenario_', 
+                   formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
+                   '_policy_params.rds'))
   }
   
   if (run_params$backup_simulation_inputs == TRUE){
@@ -37,7 +53,7 @@ run_initialise_routines <- function(run_params, policy_params_group){
   }
   
   if (length(intersect(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)) 
-             != length(run_params$features_to_use_in_offset_calc)){
+      != length(run_params$features_to_use_in_offset_calc)){
     stop(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
   } else {
     run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)

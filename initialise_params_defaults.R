@@ -2,6 +2,9 @@ initialise_run_params <- function(){
   run_params = list()
 
   run_params$overwrite_default_params = TRUE
+  
+  run_params$overwrite_params_file = 'initialise_params_scale_paper.R'
+  
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
  
@@ -47,7 +50,7 @@ initialise_run_params <- function(){
   run_params$write_movie = FALSE
 
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
-  run_params$write_offset_layers = TRUE
+  run_params$write_offset_layer = TRUE
   
   # The total number of layers to use in the offset calcuation (iterating from the start)
   run_params$features_to_use_in_offset_calc = 1

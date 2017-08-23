@@ -13,7 +13,6 @@ source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
 
-
 run_params <- initialise_run_params()
 policy_params_group = generate_policy_params_group(run_params)
 run_params <- run_initialise_routines(run_params, policy_params_group)
