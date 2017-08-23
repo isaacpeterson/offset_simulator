@@ -20,16 +20,13 @@ shp_to_raster <- function(shp, raster_dims){
 
 
 load_rasters <- function(current_data_path, current_filenames, layer_num){
-  current_filenames <- list.files(path = current_data_path, pattern = file_pattern, all.files = FALSE, 
-                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                                  include.dirs = FALSE, no.. = FALSE)
   if (layer_num == 'all'){
     layer_num = length(current_filenames)
   }
-  for (species_ind in seq(layer_num)){
-    current_species_filename = paste(current_data_path, current_filenames[species_ind], sep = '', collapse = '')
+  for (feature_ind in seq(layer_num)){
+    current_species_filename = paste0(current_data_path, current_filenames[feature_ind])
     current_raster = raster(current_species_filename)
-    if (species_ind == 1){
+    if (feature_ind == 1){
       raster_stack = current_raster
     } else{
       raster_stack = stack(raster_stack, current_raster)

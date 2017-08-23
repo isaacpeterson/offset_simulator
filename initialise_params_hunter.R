@@ -4,7 +4,7 @@ initialise_run_params <- function(){
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/hunter/')
   run_params$simulate_data = FALSE
   run_params$realisation_num = 1
-  run_params$crs = 4 #detectCores(all.tests = FALSE, logical = TRUE)
+  run_params$crs = 1 #detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 50
   run_params$save_simulation_outputs = TRUE
   run_params$overwrite_existing_landscape_data = FALSE
@@ -12,15 +12,11 @@ initialise_run_params <- function(){
   run_params$backup_simulation_inputs = FALSE 
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = TRUE     # write layer containing all offset parcels to pdf
-  run_params$test_a = 1
-  
-  run_params$features_to_use_in_offset_calc = 2:4
-  run_params$features_to_use_in_simulation = 2:11
-  run_params$test_b = 1
+  run_params$features_to_use_in_offset_calc = 1
+  run_params$features_to_use_in_simulation = 2:50
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
   run_params$sample_decline_rate = FALSE
-  run_params$test_c = 1
   run_params$limit_offset_restoration = TRUE
   run_params$illegal_clearing_prob = 1e-3
   
@@ -60,8 +56,8 @@ initialise_policy_params <- function(){ #list of variations in policy
   
   policy_params$site_for_site = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
   policy_params$offset_time_horizon = c(30)
-  policy_params$offset_calc_type = c('avoided_loss') #'net_gains', 'restoration_gains', 'avoided_loss' 
-  policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
+  policy_params$offset_calc_type = c('current_condition') #'net_gains', 'restoration_gains', 'avoided_loss', 'current_condition'
+  policy_params$dev_calc_type = c('current_condition')    #'future_condition', 'current_condition' 
   
   policy_params$include_potential_developments_in_offset_calc = c(TRUE)
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)

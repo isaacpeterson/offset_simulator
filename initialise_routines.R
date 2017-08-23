@@ -1,21 +1,5 @@
 run_initialise_routines <- function(run_params, policy_params_group){
   
-  if (run_params$overwrite_default_params == TRUE){
-    print('overwriting defaults and removing the following obsolete params:')
-    source(run_params$overwrite_params_file)
-    new_run_params <- initialise_run_params()
-    param_matches = match(names(new_run_params), names(run_params))
-    obsolete_param_inds = which(is.na(param_matches))
-    param_inds_to_use = seq_along(new_run_params)
-    
-    if (length(obsolete_param_inds) > 0){
-
-      print(names(new_run_params[obsolete_param_inds]))
-      param_matches = param_matches[-obsolete_param_inds]
-      param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
-      run_params[param_matches] = new_run_params[param_inds_to_use]
-    }
-  }
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
   
   if (run_params$run_from_saved == FALSE){
@@ -62,7 +46,26 @@ run_initialise_routines <- function(run_params, policy_params_group){
   
 }
 
-
+overwrite_run_params <- function(run_params){
+  if (run_params$overwrite_default_params == TRUE){
+    print(paste('overwriting defaults with ', run_params$overwrite_params_file, 'and removing the following obsolete params:'))
+    source(run_params$overwrite_params_file)
+    new_run_params <- initialise_run_params()
+    param_matches = match(names(new_run_params), names(run_params))
+    obsolete_param_inds = which(is.na(param_matches))
+    param_inds_to_use = seq_along(new_run_params)
+    
+    if (length(obsolete_param_inds) > 0){
+      
+      print(names(new_run_params[obsolete_param_inds]))
+      param_matches = param_matches[-obsolete_param_inds]
+      param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
+      run_params[param_matches] = new_run_params[param_inds_to_use]
+    }
+  }
+  
+  return(run_params)
+}
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
     stop( paste('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions')) 
