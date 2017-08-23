@@ -1,4 +1,12 @@
-run_initialise_routines <- function(run_params, policy_params_group){
+run_initialise_routines <- function(){
+  run_params <- initialise_run_params()
+  policy_params <- initialise_policy_params() # list all program combinations to test
+  if (run_params$overwrite_default_params == TRUE){
+    run_params <- overwrite_run_params(params_type = 'run', run_params, run_params$overwrite_params_file)
+    policy_params <- overwrite_run_params(params_type = 'policy', policy_params, run_params$overwrite_params_file)
+  }
+
+  policy_params_group = generate_policy_params_group(policy_params, run_params)
   run_params$strt = Sys.time()
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
   
@@ -42,15 +50,20 @@ run_initialise_routines <- function(run_params, policy_params_group){
   } else {
     run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   }
+  run_params$policy_params_group = policy_params_group
   return(run_params)
   
 }
 
-overwrite_run_params <- function(run_params){
-  if (run_params$overwrite_default_params == TRUE){
-    print(paste('overwriting defaults with ', run_params$overwrite_params_file, 'and removing the following obsolete params:'))
-    source(run_params$overwrite_params_file)
-    new_run_params <- initialise_run_params()
+overwrite_run_params <- function(params_type, run_params, overwrite_params_file){
+  
+    print(paste('overwriting defaults with ', overwrite_params_file, 'and removing the following obsolete params:'))
+    source(overwrite_params_file)
+    if (params_type == 'run'){
+      new_run_params <- initialise_run_params()
+    } else {
+      new_run_params <- initialise_policy_params()
+    }
     param_matches = match(names(new_run_params), names(run_params))
     obsolete_param_inds = which(is.na(param_matches))
     param_inds_to_use = seq_along(new_run_params)
@@ -63,7 +76,7 @@ overwrite_run_params <- function(run_params){
       
     }
     run_params[param_matches] = new_run_params[param_inds_to_use]
-  }
+
   
   return(run_params)
 }
@@ -218,9 +231,9 @@ collate_current_policy <- function(current_policy_params, run_params){
 }
 
 
-generate_policy_params_group <- function(run_params){
+generate_policy_params_group <- function(policy_params, run_params){
   
-  policy_params <- initialise_policy_params() # list all program combinations to test
+  
   if (policy_params$use_offset_bank == TRUE){
     policy_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
   } else {

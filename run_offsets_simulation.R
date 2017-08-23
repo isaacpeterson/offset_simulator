@@ -11,11 +11,7 @@ source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
 
-run_params <- initialise_run_params()
-run_params <- overwrite_run_params(run_params)
-
-policy_params_group = generate_policy_params_group(run_params)
-run_params <- run_initialise_routines(run_params, policy_params_group)
+run_params <- run_initialise_routines()
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
 parcels <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcels.rds'))
 dev_weights <- readRDS(paste0(run_params$simulation_inputs_folder, 'dev_weights.rds'))
@@ -31,14 +27,14 @@ initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to
 cl<-makeCluster(run_params$crs)  # allow parallel processing on n = 4 processors
 registerDoParallel(cl)
 
-for (scenario_ind in seq_along(policy_params_group)){
+for (scenario_ind in seq_along(run_params$policy_params_group)){
   loop_strt <- Sys.time()
-  print(paste0('running ', scenario_ind, ' of ', length(policy_params_group), ' scenarios with ', run_params$realisation_num, 
+  print(paste0('running ', scenario_ind, ' of ', length(run_params$policy_params_group), ' scenarios with ', run_params$realisation_num, 
         ' realisations on ', run_params$crs, ' cores'))
   
   foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 
-    simulation_outputs <- run_offset_simulation_routines(policy_params = policy_params_group[[scenario_ind]], 
+    simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]], 
                                                 run_params,
                                                 parcels, 
                                                 initial_ecology, 

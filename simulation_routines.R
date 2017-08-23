@@ -1,3 +1,4 @@
+# scenario_ind = 1
 # policy_params = policy_params_group[[scenario_ind]]
 # realisation_ind = 1
 

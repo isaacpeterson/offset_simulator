@@ -24,7 +24,7 @@ initialise_run_params <- function(){
   run_params$dev_start = 1
   
   # The time at which development ends
-  run_params$dev_end = 50
+  run_params$dev_end = 5
   
   # The total number of parcel that will be developed. The number of
   # developments per time step is determined as follows: First the mean number
