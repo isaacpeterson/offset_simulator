@@ -19,9 +19,9 @@ shp_to_raster <- function(shp, raster_dims){
 }
 
 
-load_rasters <- function(current_data_path, file_pattern, layer_num){
+load_rasters <- function(current_data_path, current_filenames, layer_num){
   current_filenames <- list.files(path = current_data_path, pattern = file_pattern, all.files = FALSE, 
-                                  full.names = FALSE, recursive = TRUE, ignore.case = FALSE, 
+                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
   if (layer_num == 'all'){
     layer_num = length(current_filenames)

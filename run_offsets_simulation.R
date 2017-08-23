@@ -6,9 +6,8 @@ library(foreach)
 library(doParallel)
 library(abind)
 library(pixmap)
-library(rlist)
 
-source('initialise_params_hunter.R')
+source('initialise_params_defaults.R')
 source('initialise_routines.R')                              # functions to collate simulation outputs
 source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
@@ -38,7 +37,7 @@ for (scenario_ind in seq_along(policy_params_group)){
   print(paste0('running ', scenario_ind, ' of ', length(policy_params_group), ' scenarios with ', run_params$realisation_num, 
         ' realisations on ', run_params$crs, ' cores'))
   
-  #foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
+  foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
     
     simulation_outputs <- run_offset_simulation_routines(policy_params = policy_params_group[[scenario_ind]], 
                                                 run_params,
@@ -48,7 +47,7 @@ for (scenario_ind in seq_along(policy_params_group)){
                                                 dev_weights,
                                                 scenario_ind, 
                                                 realisation_ind = 1)
- #}
+ }
 
   print(paste('scenario ', scenario_ind, ' done in', round(Sys.time() - loop_strt), ' mins'))
   

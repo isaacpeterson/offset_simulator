@@ -107,7 +107,7 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                        lwd_vec, 
                        col_vec = net_col_vec, 
                        legend_loc = 'topleft',
-                       legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
+                       legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                        plot_lims = program_plot_lims)
   
   plot_list = list(collated_realisations$landscape$landscape_impact)
@@ -871,23 +871,6 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
 }
 
 
-generate_offset_layer <- function(trajectories, layer_type, program_parcels, land_parcels, time_steps, landscape_dims){
-  
-  net_traj <- form_net_trajectory(trajectories_list = trajectories[program_parcels], land_parcels = land_parcels[program_parcels], 
-                                  time_steps, landscape_dims, feature_num = 1)
-  
-  if (layer_type == 'offset'){
-    layer = net_traj[[1]][, , time_steps] > 0
-  } else {
-    layer = net_traj[[1]][, , 1] > 0
-  }
-  
-  layer_object = list()
-  layer_object$trajs <- net_traj
-  layer_object$layer <- layer
-  return(layer_object)
-  
-}
 
 make_mov <- function(img_stack, filetype, mov_name, mov_folder){
   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
@@ -920,22 +903,37 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
 
 
 
-write_offset_layer <- function(filename_to_use, trajectories, parcels, sites, color_vec, run_params){ #write all offset parcels to single layer to output as image
-  
-  rgb.palette <- colorRampPalette(color_vec, space = "rgb")
-  offset_layer <- generate_offset_layer(trajectories, 
-                                        layer_type = 'offset', 
-                                        program_parcels = sites,
-                                        land_parcels = parcels$land_parcels, 
-                                        time_steps = run_params$time_steps, 
-                                        landscape_dims = parcels$landscape_dims)
-  
-  png(filename = filename_to_use, height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
-  image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
-  dev.off()
+# output_filename = paste0(run_params$collated_folder, '/offset_layer.png') 
+# landscape_dims = parcels$landscape_dims
+# trajectories_to_use = current_trajectories
+# land_parcels = parcels$land_parcels
+# parcel_indexes = unlist(current_collated_realisation$collated_offsets$parcel_indexes)
+# color_vec = c('black', 'darkgreen')
 
+combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_dims, feature_num){
   
+  landscape = array(0, array_dims = landscape_dims)
+  for (feature_ind in seq_len(feature_num)){
+    landscape[[feature_ind]][unlist(land_parcels)] = unlist(current_ecology[[feature_ind]])
+  }
+  return(landscape)
 }
+
+
+# rgb.palette <- colorRampPalette(color_vec, space = "rgb")
+# png(filename = output_filename, height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
+# image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+# dev.off()
+
+build_offset_mask <- function(current_ecology, landscape_dims, land_parcels, current_parcel_indexes, mask_val){ #write all offset parcels to single layer to output as image
+  
+  offset_mask = array(0, landscape_dims)
+  offset_mask[ unlist(land_parcels[unlist(current_parcel_indexes)])] = unlist(current_ecology[unlist(current_parcel_indexes)])
+  offset_mask = (offset_mask > 0)*mask_val
+  return(offset_mask)
+}
+
+
 
 
 

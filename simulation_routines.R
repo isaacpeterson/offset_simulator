@@ -38,7 +38,8 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
   }
   
   for (feature_ind in seq(run_params$feature_num)){
-    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_', realisation_ind, '_feature_', feature_ind, '.rds'))
+    current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_',formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
+                                          '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
     
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_trajectories,
@@ -58,21 +59,21 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
     
     saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
     
-    if ((run_params$write_offset_layer == TRUE) && (feature_ind == 1)){
-      write_offset_layer(paste0(file_prefix, '_offset_layer.png'), 
-                         current_trajectories, 
-                         parcels, 
-                         unlist(simulation_outputs$offsets_object$parcel_indexes), 
-                         color_vec = c('black', 'darkgreen'), 
-                         run_params)
-      write_offset_layer(paste0(file_prefix, '_dev_layer.png'),
-                         current_trajectories, 
-                         parcels, 
-                         unlist(simulation_outputs$dev_object$parcel_indexes), 
-                         color_vec = c('black', 'red'), 
-                         run_params)
-      
-    }
+#     if ((run_params$write_offset_layer == TRUE) && (feature_ind == 1)){
+#       write_offset_layer(paste0(file_prefix, '_offset_layer.png'), 
+#                          current_trajectories, 
+#                          parcels, 
+#                          unlist(simulation_outputs$offsets_object$parcel_indexes), 
+#                          color_vec = c('black', 'darkgreen'), 
+#                          run_params)
+#       write_offset_layer(paste0(file_prefix, '_dev_layer.png'),
+#                          current_trajectories, 
+#                          parcels, 
+#                          unlist(simulation_outputs$dev_object$parcel_indexes), 
+#                          color_vec = c('black', 'red'), 
+#                          run_params)
+#       
+#     }
   }
   
   if (run_params$save_simulation_outputs == FALSE){
@@ -276,8 +277,8 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
     
     for (feature_ind in seq(run_params$feature_num)){
       ecology_to_save = lapply(seq_along(simulation_outputs$current_ecology), function(i) simulation_outputs$current_ecology[[i]][[feature_ind]])
-      formatC(yr, width = 3, format = "d", flag = "0")
-      saveRDS(ecology_to_save, paste0(current_data_dir, 'feature_', feature_ind, 
+      saveRDS(ecology_to_save, paste0(current_data_dir, 
+                                      'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
                                       '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     }
     
@@ -310,8 +311,14 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
 
 build_trajectories <- function(current_data_dir, feature_num_to_use, parcels, realisation_ind, time_steps){
   for (feature_ind in feature_num_to_use){
-    trajectories = form_data_stack(current_data_dir, feature_ind, land_parcels = parcels$land_parcels, time_steps)
-    saveRDS(trajectories, file = paste0(current_data_dir, '/trajectories_', realisation_ind, '_feature_', feature_ind, '.rds'))
+    trajectories = form_data_stack(current_data_dir, 
+                                   feature_string = formatC(feature_ind, width = 3, format = "d", flag = "0"), 
+                                   land_parcels = parcels$land_parcels, 
+                                   time_steps)
+    
+    saveRDS(trajectories, file = paste0(current_data_dir, '/trajectories_', 
+                                        formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
+                                        '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
   }
 }
 
@@ -319,9 +326,10 @@ build_trajectories <- function(current_data_dir, feature_num_to_use, parcels, re
 # time_steps = run_params$time_steps
 
 
-form_data_stack <- function(current_data_dir, feature_ind, land_parcels, time_steps){
+form_data_stack <- function(current_data_dir, feature_string, land_parcels, time_steps){
   
-  current_filenames <- list.files(path = current_data_dir, pattern = paste0('feature_', feature_ind), all.files = FALSE, 
+  current_filenames <- list.files(path = current_data_dir, 
+                                  pattern = paste0('feature_', feature_string), all.files = FALSE, 
                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                   include.dirs = FALSE, no.. = FALSE)
   
@@ -376,17 +384,17 @@ select_inds_to_clear <- function(index_object, run_params){
   return(inds_to_clear)
 }
 
-
-select_parcels_by_prob <- function(index_object, current_policy_params, dev_prob_dist){
-  
-  dev_indexes_to_use = unlist(index_object$indexes_to_use)
-  current_dev_prob_list = dev_prob_list[dev_indexes_to_use]
-  
-  sample(seq_along(current_dev_prob_list), size = 1, prob = current_dev_prob_list)
-  
-  return(inds_to_clear)
-  
-}
+# 
+# select_parcels_by_prob <- function(index_object, current_policy_params, dev_prob_dist){
+#   
+#   dev_indexes_to_use = unlist(index_object$indexes_to_use)
+#   current_dev_prob_list = dev_prob_list[dev_indexes_to_use]
+#   
+#   sample(seq_along(current_dev_prob_list), size = 1, prob = current_dev_prob_list)
+#   
+#   return(inds_to_clear)
+#   
+# }
 
 
 
@@ -594,14 +602,14 @@ perform_banking_routine <- function(simulation_outputs, current_policy_params, y
 
 
 
-update_trajectories <- function(trajectories, feature_num, current_ecology, yr){
-  for (parcel_ind in seq_len(length(trajectories))){
-    for (feature_ind in seq_len(feature_num)){
-      trajectories[[parcel_ind]][[feature_ind]][yr, ] = current_ecology[[parcel_ind]][[feature_ind]] # record current ecology in trajectories list for each eco dimension
-    }
-  }
-  return(trajectories)
-}
+# update_trajectories <- function(trajectories, feature_num, current_ecology, yr){
+#   for (parcel_ind in seq_len(length(trajectories))){
+#     for (feature_ind in seq_len(feature_num)){
+#       trajectories[[parcel_ind]][[feature_ind]][yr, ] = current_ecology[[parcel_ind]][[feature_ind]] # record current ecology in trajectories list for each eco dimension
+#     }
+#   }
+#   return(trajectories)
+# }
 
 # offsets_object_to_assess = vector('list', length(offsets_object))
 #   for (name_ind in seq_along(offsets_object)){
@@ -1510,12 +1518,12 @@ extract_parcel <- function(current_parcel, current_ecology){
 }
 
 
-write_parcel_sets <- function(parcel_set_object, yr){
-  parcel_set = list()
-  parcel_set$offset_yrs = yr
-  parcel_set$parcel_set_object = parcel_set_object
-  return(parcel_set)
-}
+# write_parcel_sets <- function(parcel_set_object, yr){
+#   parcel_set = list()
+#   parcel_set$offset_yrs = yr
+#   parcel_set$parcel_set_object = parcel_set_object
+#   return(parcel_set)
+# }
 
 
 
@@ -1777,9 +1785,6 @@ append_current_group <- function(object_to_append, current_object, append_routin
 
 
 append_current_object <- function(parcel_set_object, current_parcel_set_object, append_type, inds_to_append){
-  
-  
-  
   if (append_type == 'as_group'){
     parcel_set_object[inds_to_append] <- lapply(inds_to_append, function(i) append(parcel_set_object[[i]], list(current_parcel_set_object[[i]])))
   } else if (append_type == 'as_list'){
@@ -1790,13 +1795,13 @@ append_current_object <- function(parcel_set_object, current_parcel_set_object, 
 }
 
 
-initialise_parcel_set_object <- function(){
-  list_names = parcel_set_list_names()
-  parcel_set_object = vector('list', length(list_names))
-  names(parcel_set_object) = list_names
-  return(parcel_set_object)
-  
-}
+# initialise_parcel_set_object <- function(){
+#   list_names = parcel_set_list_names()
+#   parcel_set_object = vector('list', length(list_names))
+#   names(parcel_set_object) = list_names
+#   return(parcel_set_object)
+#   
+# }
 
 
 # initialise_banked_offsets <- function(run_params, policy_params, banked_offset_vec){
@@ -1807,33 +1812,33 @@ initialise_parcel_set_object <- function(){
 #   return(offset_bank)
 # }
 
+# 
+# assess_time_horizon <- function(use_offset_time_horizon, offset_time_horizon, time_steps, yr){
+#   if (use_offset_time_horizon == TRUE){
+#     time_horizon = offset_time_horizon
+#   } else {
+#     time_horizon = time_steps - yr
+#   }
+#   
+#   #   if (assess_type == 'current'){
+#   #     time_horizons = rep(yr, parcel_count)
+#   #     time_horizons = time_horizons - offset_yrs
+#   #   } else if (assess_type == 'future'){
+#   #     time_horizons = rep(time_horizon, parcel_count)
+#   #   }
+#   
+#   return(time_horizon)
+# }
+# 
 
-assess_time_horizon <- function(use_offset_time_horizon, offset_time_horizon, time_steps, yr){
-  if (use_offset_time_horizon == TRUE){
-    time_horizon = offset_time_horizon
-  } else {
-    time_horizon = time_steps - yr
-  }
-  
-  #   if (assess_type == 'current'){
-  #     time_horizons = rep(yr, parcel_count)
-  #     time_horizons = time_horizons - offset_yrs
-  #   } else if (assess_type == 'future'){
-  #     time_horizons = rep(time_horizon, parcel_count)
-  #   }
-  
-  return(time_horizon)
-}
-
-
-
-
-
-select_land_parcel <- function(land_parcels, current_parcel_ind){
-  selected_land_parcel = land_parcels[[current_parcel_ind]]
-  return(selected_land_parcel)
-}
-
+# 
+# 
+# 
+# select_land_parcel <- function(land_parcels, current_parcel_ind){
+#   selected_land_parcel = land_parcels[[current_parcel_ind]]
+#   return(selected_land_parcel)
+# }
+# 
 
 
 # current_ecology = simulation_outputs$current_ecology
@@ -1858,75 +1863,52 @@ kill_development_ecology <- function(current_ecology, decline_rates, feature_num
 
 
 
-
-
-project_current_system_multi <- function(current_ecology, decline_rates, min_eco_val, max_eco_val, max_restoration_eco_val, time_horizon, feature_num){
-  
-  parcel_num = length(current_ecology)
-  
-  for (parcel_ind in seq_len(parcel_num)){
-    
-    for (feature_ind in seq_len(feature_num)){
-      current_parcel_ecology = current_ecology[[parcel_ind]][[feature_ind]] #select current ecological dimension to work on
-      current_decline_rate = decline_rates[[parcel_ind]][[feature_ind]] #select current decline rates to work on
-      if (current_decline_rate == 1){
-        updated_parcel_ecology = current_parcel_ecology      # if the parcel is to be maintained (i.e. decline rate = 1), set parcel values to current values
-      } else {
-        updated_parcel_ecology = sapply(current_parcel_ecology, logistic_ecology, min_eco_val, max_eco_val, decline_rate = current_decline_rate, time_horizon, time_fill = FALSE)
-      }
-      #dim(updated_parcel_ecology) = dim(current_parcel_ecology)
-      current_ecology[[parcel_ind]][[feature_ind]] = updated_parcel_ecology 
-    }
-  }
-  
-  return(current_ecology) 
-}
-
-
-
-
-build_traj_list <- function(trajectories, land_parcels, parcel_indexes, feature_num){
-  
-  parcel_num = length(parcel_indexes)
-  traj_list = vector('list', parcel_num)
-  
-  for (parcel_ind in seq_len(parcel_num)){
-    current_parcel_traj = vector('list', feature_num)
-    current_parcel = select_land_parcel(land_parcels, current_parcel_ind = parcel_indexes[parcel_ind])
-    
-    for (feature_ind in seq_len(feature_num)){
-      current_parcel_traj[[feature_ind]] = extract_3D_parcel(current_parcel, trajectories[[feature_ind]][, , ])
-    }
-    
-    traj_list[[parcel_ind]] = current_parcel_traj
-  }
-  
-  return(traj_list)
-}
+# 
+# 
+# project_current_system_multi <- function(current_ecology, decline_rates, min_eco_val, max_eco_val, max_restoration_eco_val, time_horizon, feature_num){
+#   
+#   parcel_num = length(current_ecology)
+#   
+#   for (parcel_ind in seq_len(parcel_num)){
+#     
+#     for (feature_ind in seq_len(feature_num)){
+#       current_parcel_ecology = current_ecology[[parcel_ind]][[feature_ind]] #select current ecological dimension to work on
+#       current_decline_rate = decline_rates[[parcel_ind]][[feature_ind]] #select current decline rates to work on
+#       if (current_decline_rate == 1){
+#         updated_parcel_ecology = current_parcel_ecology      # if the parcel is to be maintained (i.e. decline rate = 1), set parcel values to current values
+#       } else {
+#         updated_parcel_ecology = sapply(current_parcel_ecology, logistic_ecology, min_eco_val, max_eco_val, decline_rate = current_decline_rate, time_horizon, time_fill = FALSE)
+#       }
+#       #dim(updated_parcel_ecology) = dim(current_parcel_ecology)
+#       current_ecology[[parcel_ind]][[feature_ind]] = updated_parcel_ecology 
+#     }
+#   }
+#   
+#   return(current_ecology) 
+# }
 
 
 
 
-find_decline_rate <- function(decline_rates, current_parcel_ind, feature_ind){
-  current_dec_rate = decline_rates[[current_parcel_ind]][[feature_ind]]
-  return(current_dec_rate)
-}
+# build_traj_list <- function(trajectories, land_parcels, parcel_indexes, feature_num){
+#   
+#   parcel_num = length(parcel_indexes)
+#   traj_list = vector('list', parcel_num)
+#   
+#   for (parcel_ind in seq_len(parcel_num)){
+#     current_parcel_traj = vector('list', feature_num)
+#     current_parcel = select_land_parcel(land_parcels, current_parcel_ind = parcel_indexes[parcel_ind])
+#     
+#     for (feature_ind in seq_len(feature_num)){
+#       current_parcel_traj[[feature_ind]] = extract_3D_parcel(current_parcel, trajectories[[feature_ind]][, , ])
+#     }
+#     
+#     traj_list[[parcel_ind]] = current_parcel_traj
+#   }
+#   
+#   return(traj_list)
+# }
 
-
-
-# parcel_ecologies = pool_object$parcel_ecologies 
-# parcel_num_remaining = pool_object$parcel_num_remaining 
-# decline_rates = decline_rates_initial[current_pool] 
-# time_fill = FALSE
-# features_to_use_in_offset_calc = seq(run_params$feature_num)
-
-
-# parcel_ecologies = current_parcel_ecologies 
-# parcel_num_remaining = current_parcel_num_remaining
-# current_policy_params = policy_params
-# decline_rates = current_decline_rates 
-# offset_yrs = current_offset_yrs 
-# features_to_use_in_offset_calc = eco_ind
 
 
 
@@ -2059,13 +2041,6 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-# intervention_vec = current_policy_params$intervention_vec 
-# illegal_clearing_prob = run_params$illegal_clearing_prob
-# offset_intervention_scale = run_params$max_offset_parcel_num
-# feature_num = run_params$feature_num 
-# 
-# parcel_num = length(current_cfacs)
-# time_steps = run_params$time_steps
 
 find_weighted_counters <- function(current_cfacs, include_illegal_clearing, include_potential_developments, include_potential_offsets, 
                                    intervention_vec, illegal_clearing_prob, offset_intervention_scale, feature_num, parcel_num_remaining, 
@@ -2128,53 +2103,53 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
 
 
 
-###########     ERRORS IN THIS CODE   ########
+##########     ERRORS IN THIS CODE   ########
 
-# calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate_params, action_type, decline_rates, time_horizons, feature_num, min_eco_val, max_eco_val){
-#   
-#   if (length(decline_rates) != length(current_cfacs)){
-#     print('length error')
-#   }
-#   parcel_num = length(current_cfacs)
-#   offset_projections = vector('list', parcel_num)
-#   
-#   for (parcel_ind in seq_len(parcel_num)){
-#     
-#     time_horizon = time_horizons[parcel_ind] + 1
-#     current_offset_probs = offset_probs[[parcel_ind]]
-#     current_offset_projections = generate_nested_list(outer_dim = feature_num, inner_dim = time_horizon)
-#     
-#     for (feature_ind in seq_len(feature_num)){
-#       
-#       current_cfac = current_cfacs[[parcel_ind]][[feature_ind]]
-#       current_dec_rate = decline_rates[[parcel_ind]][[feature_ind]]
-#       
-#       for (proj_yr in seq_len(time_horizon)){
-#         current_offset_projections[[feature_ind]][[proj_yr]] = array(0, dim(current_cfac))
-#         
-#         if (current_offset_probs[proj_yr] > 0){
-#           current_parcel_ecology = list(current_cfac[proj_yr, ])
-#           
-#           current_offset_proj = project_ecology(current_parcel_ecology, 
-#                                                     action_type, 
-#                                                     min_eco_val, 
-#                                                     max_eco_val,
-#                                                     feature_num = length(current_parcel_ecology),
-#                                                     restoration_rate_params, 
-#                                                     current_dec_rate, 
-#                                                     (time_horizon - proj_yr), 
-#                                                     time_fill = TRUE)
-#           
-#           current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj[[1]]  #THIS IS WRONG
-#         }
-#       }
-#     }
-#     offset_projections[[parcel_ind]] = current_offset_projections
-#   }
-#   
-#   return(offset_projections)
-#   
-# }
+calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate_params, action_type, decline_rates, time_horizons, feature_num, min_eco_val, max_eco_val){
+  
+  if (length(decline_rates) != length(current_cfacs)){
+    print('length error')
+  }
+  parcel_num = length(current_cfacs)
+  offset_projections = vector('list', parcel_num)
+  
+  for (parcel_ind in seq_len(parcel_num)){
+    
+    time_horizon = time_horizons[parcel_ind] + 1
+    current_offset_probs = offset_probs[[parcel_ind]]
+    current_offset_projections = generate_nested_list(outer_dim = feature_num, inner_dim = time_horizon)
+    
+    for (feature_ind in seq_len(feature_num)){
+      
+      current_cfac = current_cfacs[[parcel_ind]][[feature_ind]]
+      current_dec_rate = decline_rates[[parcel_ind]][[feature_ind]]
+      
+      for (proj_yr in seq_len(time_horizon)){
+        current_offset_projections[[feature_ind]][[proj_yr]] = array(0, dim(current_cfac))
+        
+        if (current_offset_probs[proj_yr] > 0){
+          current_parcel_ecology = list(current_cfac[proj_yr, ])
+          
+          current_offset_proj = project_ecology(current_parcel_ecology, 
+                                                    action_type, 
+                                                    min_eco_val, 
+                                                    max_eco_val,
+                                                    feature_num = length(current_parcel_ecology),
+                                                    restoration_rate_params, 
+                                                    current_dec_rate, 
+                                                    (time_horizon - proj_yr), 
+                                                    time_fill = TRUE)
+          
+          current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj[[1]]  #THIS IS WRONG
+        }
+      }
+    }
+    offset_projections[[parcel_ind]] = current_offset_projections
+  }
+  
+  return(offset_projections)
+  
+}
 
 
 sum_offset_projs <- function(offset_projections, offset_probs, feature_num, time_horizons){
@@ -2239,88 +2214,47 @@ sum_cols_multi <- function(arr_to_use){
 }
 
 
-combine_land_parcels_to_landscape <- function(current_ecology, land_parcels, landscape_dims, feature_num){
-  landscape = list_of_zeros(list_dims = feature_num, array_dims = landscape_dims)
-  for (feature_ind in seq_len(feature_num)){
-    landscape[[feature_ind]][unlist(land_parcels)] = unlist(current_ecology)
-  }
-  return(landscape)
-}
 
 
 
-extract_3D_parcel <- function(current_parcel, trajectories){
-  loc_1 = ind2sub(dim(trajectories)[1], current_parcel[1])
-  loc_2 = ind2sub(dim(trajectories)[1], current_parcel[length(current_parcel)])
-  parcel_sz = c((loc_2[1] - loc_1[1] + 1), (loc_2[2] - loc_1[2] + 1), dim(trajectories)[3])
-  parcel_3D = array(0, parcel_sz)
-  parcel_3D[, ,] = trajectories[loc_1[1]:loc_2[1], loc_1[2]:loc_2[2], ]
-  return(parcel_3D)
-}
+# 
+# extract_3D_parcel <- function(current_parcel, trajectories){
+#   loc_1 = ind2sub(dim(trajectories)[1], current_parcel[1])
+#   loc_2 = ind2sub(dim(trajectories)[1], current_parcel[length(current_parcel)])
+#   parcel_sz = c((loc_2[1] - loc_1[1] + 1), (loc_2[2] - loc_1[2] + 1), dim(trajectories)[3])
+#   parcel_3D = array(0, parcel_sz)
+#   parcel_3D[, ,] = trajectories[loc_1[1]:loc_2[1], loc_1[2]:loc_2[2], ]
+#   return(parcel_3D)
+# }
 
 
-insert_parcel_trajectory <- function(trajectories, current_parcel, parcel_3D){
-  loc_1 = ind2sub(dim(trajectories)[1], current_parcel[1])
-  loc_2 = ind2sub(dim(trajectories)[1], current_parcel[length(current_parcel)])
-  trajectories[loc_1[1]:loc_2[1], loc_1[2]:loc_2[2], ] = parcel_3D 
-  return(trajectories)
-}
+# insert_parcel_trajectory <- function(trajectories, current_parcel, parcel_3D){
+#   loc_1 = ind2sub(dim(trajectories)[1], current_parcel[1])
+#   loc_2 = ind2sub(dim(trajectories)[1], current_parcel[length(current_parcel)])
+#   trajectories[loc_1[1]:loc_2[1], loc_1[2]:loc_2[2], ] = parcel_3D 
+#   return(trajectories)
+# }
 
 
-
-reshape_trajectories <- function(trajectories, land_parcels, feature_num){
-  for (parcel_ind in seq_along(trajectories)){
-    current_parcel_dims = dim(land_parcels[[parcel_ind]])
-    for (feature_ind in seq_along(feature_num)){
-      trajectories[[parcel_ind]][[feature_ind]] = reshape_parcel_traj(trajectories[[parcel_ind]][[feature_ind]], current_parcel_dims)
-    }
-  }
-  return(trajectories)
-}
-
-reshape_parcel_traj <- function(current_parcel_traj, current_parcel_dims){
-  dim(current_parcel_traj) = c(dim(current_parcel_traj), 1)
-  current_parcel_traj = aperm(current_parcel_traj, c(3, 2, 1))
-  dim(current_parcel_traj) = c(current_parcel_dims, dim(current_parcel_traj)[3]) 
-  return(current_parcel_traj)
-}
+# 
+# reshape_trajectories <- function(trajectories, land_parcels, feature_num){
+#   for (parcel_ind in seq_along(trajectories)){
+#     current_parcel_dims = dim(land_parcels[[parcel_ind]])
+#     for (feature_ind in seq_along(feature_num)){
+#       trajectories[[parcel_ind]][[feature_ind]] = reshape_parcel_traj(trajectories[[parcel_ind]][[feature_ind]], current_parcel_dims)
+#     }
+#   }
+#   return(trajectories)
+# }
+# 
 
 
-form_net_trajectory <- function(trajectories_list, land_parcels, time_steps, landscape_dims, feature_num){
-  
-  net_trajectories = vector('list', feature_num)
-  
-  for (feature_ind in seq_len(feature_num)){
-    current_trajectory = array(0, c(time_steps, length(unlist(parcels$land_parcels))))
-    for (parcel_ind in seq_along(trajectories_list)){
-      current_parcel = land_parcels[[parcel_ind]]
-      current_trajectory[, current_parcel] = trajectories_list[[parcel_ind]][[feature_ind]]
-    }
-    net_trajectories[[feature_ind]] = reshape_parcel_traj(current_trajectory, current_parcel_dims = landscape_dims)
-  }
-  return(net_trajectories)
-}
 
 
 sum_trajectories <- function(traj_list, features_to_use_in_offset_calc){
   
   parcel_traj_list = lapply(seq_along(traj_list), function(i) lapply(seq_along(traj_list[[i]]), 
                                                                          function(j) sum_cols_multi(traj_list[[i]][[j]])))
-  
-#   parcel_num = length(traj_list)
-#   parcel_traj_list = generate_nested_list(parcel_num, length(features_to_use_in_offset_calc))
-#   for (parcel_ind in seq_len(parcel_num)){
-#     
-#     for (feature_ind in seq_len(feature_num)){
-#       current_traj = traj_list[[parcel_ind]][[feature_ind]]
-#       if (length(dim(current_traj)) > 1){
-#         current_traj = apply(current_traj, MARGIN=1, sum)
-#       } else {
-#         current_traj = sum(current_traj)
-#       }
-#       parcel_traj_list[[parcel_ind]][[feature_ind]] = current_traj
-#     }  
-#   }
   return(parcel_traj_list)
 }
 

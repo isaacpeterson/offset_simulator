@@ -14,17 +14,16 @@ run_initialise_routines <- function(run_params, policy_params_group){
       }
     }
   }
-  
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
   
-  run_params = list.save(run_params, paste0(run_params$simulation_params_folder, 'run_params.json'))
-  
+  saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
+  dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.txt'))
   for (scenario_ind in seq_along(policy_params_group)){
     current_policy_params = policy_params_group[[scenario_ind]]
-    list.save(current_policy_params, 
+    saveRDS(current_policy_params, 
               paste0(run_params$simulation_params_folder, 'scenario_', 
                      formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
-                     '_policy_params.json'))
+                     '_policy_params.rds'))
   }
   
   if (run_params$backup_simulation_inputs == TRUE){
