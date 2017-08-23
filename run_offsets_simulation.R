@@ -45,7 +45,7 @@ for (scenario_ind in seq_along(policy_params_group)){
                                                 decline_rates_initial,
                                                 dev_weights,
                                                 scenario_ind, 
-                                                realisation_ind = 1)
+                                                realisation_ind)
  }
 
   print(paste('scenario ', scenario_ind, ' done in', round(Sys.time() - loop_strt), ' mins'))
