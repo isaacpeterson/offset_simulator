@@ -136,7 +136,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                               decline_rates_initial,
                                                               yr)
       
-      for (current_dev_index in seq_len(current_policy_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
+      for (current_dev_index in seq_len(run_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
         
         if (current_policy_params$allow_developments_from_credit == TRUE){
           
@@ -149,7 +149,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                     dev_weights,
                                                     run_params, 
                                                     current_policy_params,
-                                                    intervention_vec = current_policy_params$intervention_vec, 
+                                                    intervention_vec = run_params$intervention_vec, 
                                                     dev_indexes_to_use = simulation_outputs$index_object$indexes_to_use[[region_ind]], 
                                                     decline_rates_initial, 
                                                     parcels$land_parcels,
@@ -185,7 +185,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                            dev_weights, 
                                            run_params,
                                            current_policy_params, 
-                                           intervention_vec = current_policy_params$intervention_vec, 
+                                           intervention_vec = run_params$intervention_vec, 
                                            indexes_to_use = simulation_outputs$index_object$indexes_to_use[[region_ind]], 
                                            simulation_outputs$current_ecology, 
                                            decline_rates = simulation_outputs$decline_rates, 
@@ -521,7 +521,7 @@ assess_credit <- function(simulation_outputs, current_policy_params){
 prepare_offset_pool <- function(simulation_outputs, current_policy_params, region_ind, run_params, 
                                 parcels, decline_rates_initial, yr){
   
-  if (current_policy_params$intervention_vec[yr] ==  0){
+  if (run_params$intervention_vec[yr] ==  0){
     return()
   }
   
@@ -916,7 +916,7 @@ select_rand_index <- function(indexes_to_use, parcel_num){
 
 
 # offset_pool_object = simulation_outputs$offset_pool_object 
-# intervention_vec = current_policy_params$intervention_vec 
+# intervention_vec = run_params$intervention_vec 
 # indexes_to_use = simulation_outputs$index_object$indexes_to_use[[region_ind]] 
 # current_credit = simulation_outputs$current_credit
 # decline_rates = simulation_outputs$decline_rates 
@@ -1039,7 +1039,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
 
 # current_ecology = simulation_outputs$current_ecology 
 # current_credit = simulation_outputs$current_credit
-# intervention_vec = current_policy_params$intervention_vec 
+# intervention_vec = run_params$intervention_vec 
 # dev_indexes_to_use = simulation_outputs$index_object$indexes_to_use[[region_ind]]
 # land_parcels = parcels$land_parcels
 # time_horizon = current_policy_params$offset_time_horizon
@@ -1964,7 +1964,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                                      include_illegal_clearing, 
                                                      include_potential_developments, 
                                                      include_potential_offsets,  
-                                                     intervention_vec = current_policy_params$intervention_vec, 
+                                                     intervention_vec = run_params$intervention_vec, 
                                                      illegal_clearing_prob = run_params$illegal_clearing_prob,
                                                      offset_intervention_scale = run_params$max_offset_parcel_num,
                                                      run_params$feature_num, 

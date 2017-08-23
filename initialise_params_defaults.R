@@ -10,11 +10,26 @@ initialise_run_params <- function(){
   # The number of realizations to run
   run_params$realisation_num = 2
 
+  
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
 
   # hHw long to run the simulaton in years
   run_params$time_steps = 50
+  
+  # The time step at which development starts
+  run_params$dev_start = 1
+  
+  # The time at which development ends
+  run_params$dev_end = 50
+  
+  # The total number of parcel that will be developed. The number of
+  # developments per time step is determined as follows: First the mean number
+  # number per time step is determined, then sampling is done around this
+  # mean number using a normal distribution such that the total number of
+  # developments will always equal the total number (Note sd for this
+  # distribution is set in the code the currently isn't user settable)
+  run_params$total_dev_num = 10
   
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
@@ -127,19 +142,7 @@ initialise_policy_params <- function(){
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   policy_params$allow_developments_from_credit = TRUE
   
-  # The time step at which development starts
-  policy_params$dev_start = 1
 
-  # The time at which development ends
-  policy_params$dev_end = 50
-
-  # The total number of parcel that will be developed. The number of
-  # developments per time step is determined as follows: First the mean number
-  # number per time step is determined, then sampling is done around this
-  # mean number using a normal distribution such that the total number of
-  # developments will always equal the total number (Note sd for this
-  # distribution is set in the code the currently isn't user settable)
-  policy_params$total_dev_num = 10
   
   # How the development parcels are selected options are 'random' or
   # 'weighted'. Note tha weighted requires an additonal weighting layer. If

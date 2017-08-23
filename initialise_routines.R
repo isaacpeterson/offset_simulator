@@ -15,6 +15,11 @@ run_initialise_routines <- function(run_params, policy_params_group){
     }
   }
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
+  run_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps, 
+                                                                              prog_start = run_params$dev_start,
+                                                                              prog_end = run_params$dev_end, 
+                                                                              run_params$total_dev_num, 
+                                                                              sd = 1)
   
   saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
   dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.txt'))
@@ -177,11 +182,6 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$banked_offset_vec = list()
   }
   
-  current_policy_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps, 
-                                                                     prog_start = current_policy_params$dev_start,
-                                                                     prog_end = current_policy_params$dev_end, 
-                                                                     total_policy_num = current_policy_params$total_dev_num, 
-                                                                     sd = 1)
   
   current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
                                                        current_policy_params$include_potential_offsets_in_offset_calc,
