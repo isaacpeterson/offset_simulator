@@ -48,7 +48,6 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params$offset_bank_start = 1 #min time for offset banking to initialise
   policy_params$offset_bank_end = 1 #mix time for offset banking to finish
   policy_params$offset_bank_num = 200 # how many parcels to include in banking scheme
-  
   policy_params$development_selection_type = 'random'  #how the development parcels are selected - 'random' or 'weighted'
   
   policy_params$site_for_site = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development

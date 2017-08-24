@@ -3,12 +3,6 @@ initialise_run_params <- function(){
 
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
- 
-  run_params$simulate_data = TRUE
-  
-  # set the random number seed
-  run_params$set_seed = FALSE
-
   # The number of realizations to run
   run_params$realisation_num = 2
 
@@ -18,37 +12,11 @@ initialise_run_params <- function(){
   # hHw long to run the simulaton in years
   run_params$time_steps = 50
   
-  # Whether all of the outputs of the model are kept after a scenario is
-  # finished. If false only data required to generate the plots is kept.
-  # Setting to fale saves a lot of space
-  run_params$save_simulation_outputs = FALSE
-
-  # Use inputs previously saved in landscape inputs folder to run current simulation
-  run_params$run_from_saved = FALSE
-
-  # Saves the landscape data use by simulation into the run specific simulations input folder 
-  run_params$backup_landscape_data = FALSE
-
-  # Create an animation of the outputs
-  run_params$write_movie = FALSE
-
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets
   run_params$write_offset_layer = FALSE
   
-  # The total number of layers to use in the offset calcuation (iterating from the start)
-  run_params$features_to_use = 1
-
-  # The total number of features in the simulation
-  run_params$feature_num = 1 
-
-  # The maxoimum number of parcels can be selected to offset a single development
+    # The maxoimum number of parcels can be selected to offset a single development
   run_params$max_offset_parcel_num = 5
-
-  # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
-  run_params$sample_restoration_rate = FALSE
-
-  # Sample the decline rates from a normal distribution to they vary per parcel and per feature
-  run_params$sample_decline_rate = FALSE
 
   # Stops the offset from delivering any further gains once it has acheived the gains required
   run_params$limit_offset_restoration = TRUE
@@ -61,16 +29,6 @@ initialise_run_params <- function(){
 
   # Exclude parcels with less than this number of pixels.
   run_params$parcel_screen_size = 20 
-
-  # Acceptable level above which to accept parcel match for offset and
-  # development calcs. Positive value means offset gains greater than
-  # development losses by this amount are accepted. Negative value means
-  # offset value will be accepted that are smaller than dev value by this
-  # ammount
-  run_params$match_threshold = 0 
-  
-  # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
-  run_params$max_restoration_eco_val = 70
 
   # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
   run_params$restoration_rate_params = c(0.02, 0.005)
@@ -98,7 +56,7 @@ initialise_policy_params <- function(){
   # 'avoided_degs - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') 
+  policy_params$offset_calc_type = c('net_gains')#, 'restoration_gains', 'avoided_degs') 
 
   # Options are 'maintain', 'protect', or 'restore'. 
   policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')
@@ -114,20 +72,6 @@ initialise_policy_params <- function(){
   # previous time step) and use them to allow developments to proceed if the
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   policy_params$allow_developments_from_credit = TRUE
-  
-  # The time step at which development starts
-  policy_params$dev_start = 1
-
-  # The time at which development ends
-  policy_params$dev_end = 50
-
-  # The total number of parcel that will be developed. The number of
-  # developments per time step is determined as follows: First the mean number
-  # number per time step is determined, then sampling is done around this
-  # mean number using a normal distribution such that the total number of
-  # developments will always equal the total number (Note sd for this
-  # distribution is set in the code the currently isn't user settable)
-  policy_params$total_dev_num = 50
   
   # How the development parcels are selected options are 'random' or
   # 'weighted'. Note tha weighted requires an additonal weighting layer. If
@@ -161,13 +105,8 @@ initialise_policy_params <- function(){
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   policy_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
   
-  # TRUE - one-to-one selection of offset parcels for one development, FALSE =
-  # many-to-one selection of offset parcels for one development
-  policy_params$site_for_site = c(FALSE)
-
   # The time horizon in which the offset gains need to equal the devlopment impact
   policy_params$offset_time_horizon = c(15)
-
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
@@ -207,84 +146,7 @@ initialise_policy_params <- function(){
   # multiplied development impact
   policy_params$offset_multiplier = 1
 
-
-
-  if (policy_params$use_offset_bank == TRUE){
-
-    # 'current' - used for banking only - determine accrued offset gains till current year.
-    policy_params$offset_time_horizon_type = 'current'  
-  } else {
-
-    #'future' - project from time of development to offset time horizon, or 
-    policy_params$offset_time_horizon_type = 'future' 
-  }
-  
-
   return(policy_params)
+
 }
 
-
-
-
-initialise_simulated_ecology_params <- function(){
-  
-  # Construct the static initial landscape 
-
-  simulated_ecology_params = list()
-
-  # Number of pixels in (y, x) for the feature layes 
-  simulated_ecology_params$ecology_size = c(300, 400)
-
-  # Numnber of parcels in x (but total size varies)
-  simulated_ecology_params$parcel_num_x = 30 
-
-  # Numnber of parcels in y (but total size varies)
-  simulated_ecology_params$parcel_num_y = 40 
-
-  # Minimum allowable initial ecological value of smallest ecological element
-  # (pixel) ie min value to sample from
-  simulated_ecology_params$min_initial_eco_val = 20
-
-  # Max allowable initial ecological value of largest element (pixel) ie max
-  # value to sample from
-  simulated_ecology_params$max_initial_eco_val = 90
-
-  # Mow much initial variation in pixels per land parcel (this is the width of
-  # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
-  # of 35, a new value will be sampled from between 35-45
-  simulated_ecology_params$initial_eco_noise = 10
-
-  # Defining multiple regions eg different states where different polcies can apply 
-  simulated_ecology_params$region_num_x = 1
-
-  # Defining multiple regions eg different states where different rules can apply 
-  simulated_ecology_params$region_num_y = 1
-
-  return(simulated_ecology_params)
-}
-
-
-initialise_ecology_params <- function(run_params){
-
-  # Set up how the landscape changes
-  
-  ecology_params = list()
-
-  # Set parameter for rate of decline curve according to logistic curve, need
-  # to mathc the number of features. Negative value means decline poltive
-  # value means improvement
-  
-  ecology_params$mean_decline_rates = rep(-1e-2, run_params$feature_num) 
-
-  # Sample form a normal distribution with this sd to add noise to the decline rates.
-  ecology_params$decline_rate_std = rep(1e-3, run_params$feature_num)
-
-  # Lowest value that the logistic decline curve can reach. It will asypotote to this value
-  ecology_params$min_eco_val = 0  
-
-  # Max value that the logistic decline curve can reach. It will asypotote to this value
-  ecology_params$max_eco_val = 100 
-  
-  return(ecology_params)
-  
-}

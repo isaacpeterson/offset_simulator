@@ -5,8 +5,8 @@ run_initialise_routines <- function(){
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
   if (run_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_run_params(params_type = 'run', run_params, run_params$overwrite_params_file)
-    policy_params <- overwrite_run_params(params_type = 'policy', policy_params, run_params$overwrite_params_file)
+    run_params <- overwrite_current_params(params_type = 'run', run_params, run_params$overwrite_params_file)
+    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, run_params$overwrite_params_file)
   }
 
   policy_params_group = generate_policy_params_group(policy_params, run_params)
@@ -51,38 +51,37 @@ run_initialise_routines <- function(){
   
 }
 
-overwrite_run_params <- function(params_type, run_params, overwrite_params_file){
+
+overwrite_current_params <- function(params_type, current_params, overwrite_params_file){
   
-    
     source(overwrite_params_file)
     if (params_type == 'run'){
       cat('\n overwriting run_params defaults with', overwrite_params_file)
-      new_run_params <- initialise_run_params()
+      updated_params <- initialise_run_params()
     } else {
       cat('\n overwriting policy_params defaults with', overwrite_params_file)
-      new_run_params <- initialise_policy_params()
+      updated_params <- initialise_policy_params()
     }
   
-    param_matches = match(names(new_run_params), names(run_params))
+    param_matches = match(names(updated_params), names(current_params))
     obsolete_param_inds = which(is.na(param_matches))
-    param_inds_to_use = seq_along(new_run_params)
+    param_inds_to_use = seq_along(updated_params)
     
     if (length(obsolete_param_inds) > 0){
       if (params_type == 'run'){
       stop(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file, 
-              '\nthe following parameters in run_params do not match: remove or rename \n', names(new_run_params[obsolete_param_inds]), '\n'))
+              '\nthe following parameters in run_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
       } else if (params_type == 'policy'){
         stop(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file, 
-                 '\nthe following parameters in policy_params do not match: remove or rename \n', names(new_run_params[obsolete_param_inds]), '\n'))
+                 '\nthe following parameters in policy_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
       } 
       param_matches = param_matches[-obsolete_param_inds]
       param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
       
     }
-    run_params[param_matches] = new_run_params[param_inds_to_use]
+    current_params[param_matches] = updated_params[param_inds_to_use]
 
-  
-  return(run_params)
+  return(current_params)
 }
 
 
