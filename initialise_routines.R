@@ -53,20 +53,21 @@ run_initialise_routines <- function(){
 
 overwrite_run_params <- function(params_type, run_params, overwrite_params_file){
   
-    print(paste('overwriting defaults with ', overwrite_params_file, 'and removing the following obsolete params:'))
+    cat('\noverwriting defaults with', overwrite_params_file)
     source(overwrite_params_file)
     if (params_type == 'run'){
       new_run_params <- initialise_run_params()
     } else {
       new_run_params <- initialise_policy_params()
     }
+  
     param_matches = match(names(new_run_params), names(run_params))
     obsolete_param_inds = which(is.na(param_matches))
     param_inds_to_use = seq_along(new_run_params)
     
     if (length(obsolete_param_inds) > 0){
       
-      print(names(new_run_params[obsolete_param_inds]))
+      stop(cat('\nconflicts with ', names(new_run_params[obsolete_param_inds])))
       param_matches = param_matches[-obsolete_param_inds]
       param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
       

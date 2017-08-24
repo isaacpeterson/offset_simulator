@@ -3,7 +3,7 @@ initialise_run_params <- function(){
 
   run_params$overwrite_default_params = FALSE
   
-  run_params$overwrite_params_file = 'initialise_params_scale_paper.R'
+  run_params$overwrite_params_file = 'initialise_params_hunter.R'
   
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
@@ -13,7 +13,6 @@ initialise_run_params <- function(){
   # The number of realizations to run
   run_params$realisation_num = 2
 
-  
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
 
@@ -58,7 +57,7 @@ initialise_run_params <- function(){
   # what subset of features to use in the simulation
   run_params$features_to_use_in_simulation = 1 
  
-    # The maxoimum number of parcels can be selected to offset a single development
+  # The maxoimum number of parcels can be selected to offset a single development
   run_params$max_offset_parcel_num = 5
 
   # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
