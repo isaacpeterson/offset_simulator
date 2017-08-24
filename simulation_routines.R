@@ -1,5 +1,5 @@
 # scenario_ind = 1
-# policy_params = policy_params_group[[scenario_ind]]
+# policy_params = run_params$policy_params_group[[scenario_ind]]
 # realisation_ind = 1
 
 run_offset_simulation_routines <- function(policy_params, run_params, parcels, initial_ecology, decline_rates_initial, 

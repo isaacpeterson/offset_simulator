@@ -25,10 +25,10 @@ initialise_run_params <- function(){
   run_params$illegal_clearing_prob = 1e-3
 
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
-  run_params$screen_parcels = TRUE 
+  run_params$screen_parcels_by_size = TRUE 
 
   # Exclude parcels with less than this number of pixels.
-  run_params$parcel_screen_size = 20 
+  run_params$parcel_screen_size = 50 
 
   # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
   run_params$restoration_rate_params = c(0.02, 0.005)
@@ -56,7 +56,7 @@ initialise_policy_params <- function(){
   # 'avoided_degs - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains')#, 'restoration_gains', 'avoided_degs') 
+  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') 
 
   # Options are 'maintain', 'protect', or 'restore'. 
   policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')

@@ -85,10 +85,10 @@ initialise_run_params <- function(){
   run_params$max_eco_val = 100 
   
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
-  run_params$screen_parcels = TRUE 
+  run_params$screen_parcels_by_size = TRUE 
 
   # Exclude parcels with less than this number of pixels.
-  run_params$parcel_screen_size = 20 
+  run_params$parcel_screen_size = 0 
 
   # set the random number seed
   run_params$set_seed = FALSE
@@ -110,6 +110,7 @@ initialise_run_params <- function(){
   run_params$offset_exclusion_layer_filename = 'protected_areas.rds'
   run_params$apply_development_exclusion_layer = TRUE
   run_params$dev_exclusion_layer_filename = 'protected_areas.rds'
+  
   return(run_params)
 }
 
@@ -133,6 +134,7 @@ initialise_policy_params <- function(){
   # 'avoided_loss - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
+  #'current_condition' is the present condition of the site
   policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_loss') 
 
   # Options are 'maintain', 'protect', or 'restore'. 

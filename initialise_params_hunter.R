@@ -28,8 +28,9 @@ initialise_run_params <- function(){
   run_params$min_eco_val = 0  
   run_params$max_eco_val = 100 
   
-  run_params$screen_parcels = TRUE # do not use parcels outside [0.05, 0.95]
-  run_params$parcel_screen_size = 20 # ignore parcels with less than ecology_params$parcel_screen_size elements
+  run_params$screen_parcels_by_size = TRUE 
+  run_params$parcel_screen_size = 2 # ignore parcels with less than  run_params$parcel_screen_size elements
+  
   run_params$set_seed = FALSE
   run_params$match_threshold = 0 # acceptable level above which to accept parcel match
 

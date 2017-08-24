@@ -455,7 +455,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 }  
 
 
-initialise_index_object <- function(parcels, current_ecology, run_params){
+initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
   index_object$indexes_to_use = vector('list', parcels$region_num)
@@ -465,59 +465,44 @@ initialise_index_object <- function(parcels, current_ecology, run_params){
   index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
   index_object$parcel_num_remaining = vector()
+  index_objectindexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
+                                                      initial_ecology, run_params)
+ 
+  return(index_object)
   
-  indexes_to_use = parcels$regions
+}
+
+find_available_indexes <- function(indexes_to_use, parcels, initial_ecology, run_params){
   
-  parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-  smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
-  initial_parcel_sums = unlist(lapply(seq_along(current_ecology), function(i) sum(current_ecology[[i]][[1]])))
-  zeros_to_screen = which(initial_parcel_sums < 1e-5)
+  initial_parcel_sums = lapply(seq_along(initial_ecology), 
+                               function(i) lapply(seq_along(initial_ecology[[i]]), 
+                                                  function(j) sum(initial_ecology[[i]][[j]]) ) )
   
+  zeros_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
+                                        function(i) all(unlist(initial_parcel_sums[i]) == 0))))
+  indexes_to_use = screen_available_sites(indexes_to_use, zeros_to_screen, parcels$region_num)
   
-  if (run_params$screen_parcels == TRUE){
-    parcel_dist = quantile(initial_parcel_sums[-c(zeros_to_screen, smalls_to_screen)], probs = c(0.05, 0.95))
-    parcels_to_screen = c(which(initial_parcel_sums < parcel_dist[1]), which(initial_parcel_sums > parcel_dist[2]))
-  } else {
-    parcels_to_screen = zeros_to_screen
+  if (run_params$screen_parcels_by_size == TRUE){
+    parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
+    smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
+    indexes_to_use = screen_available_sites(indexes_to_use, smalls_to_screen, parcels$region_num)
   }
   
-  parcels_to_screen = unique(c(parcels_to_screen, smalls_to_screen))
+  return(indexes_to_use)
+}
+
+screen_available_sites <- function(indexes_to_use, parcels_to_screen, region_num){
   
-  for (region_ind in seq_len(parcels$region_num)){
+  for (region_ind in seq_len(region_num)){
     current_region = indexes_to_use[[region_ind]]
     inds_to_remove = which(current_region %in% parcels_to_screen)
     if (length(inds_to_remove) > 0){
       indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
     }
   }
-  index_object$indexes_to_use = indexes_to_use
   
-  return(index_object)
-  
+  return(indexes_to_use)
 }
-
-# 
-# 
-# 
-# initialise_ecology <- function(ecology_params, run_params, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
-#   
-#   parcel_num = length(land_parcels)
-#   feature_num = run_params$feature_num
-#   current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = run_params$feature_num)
-#   
-#   for (parcel_ind in seq_len(parcel_num)){  
-#     current_parcel = land_parcels[[parcel_ind]]
-#     parcel_dims = length(current_parcel)
-#     
-#     for (eco_ind in seq_len(feature_num)){
-#       mean_eco_val = ecology_params$min_initial_eco_val + (ecology_params$max_initial_eco_val - ecology_params$min_initial_eco_val - ecology_params$initial_eco_noise)*runif(1)
-#       current_ecology[[parcel_ind]][[eco_ind]] =  array(mean_eco_val, parcel_dims) + ecology_params$initial_eco_noise*array(runif(length(current_parcel)), c(parcel_dims))
-#     }
-#     
-#   }
-#   
-#   return(current_ecology)
-# }
 
 
 initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
