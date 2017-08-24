@@ -43,9 +43,6 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params = list()
   policy_params$offset_action_type = c('maintain')
   policy_params$allow_developments_from_credit = TRUE
-
-
-  
   policy_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
   policy_params$offset_bank_type = c('credit') # c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
   policy_params$offset_bank_start = 1 #min time for offset banking to initialise

@@ -1,7 +1,7 @@
 initialise_run_params <- function(){
   run_params = list()
 
-  run_params$overwrite_default_params = TRUE
+  run_params$overwrite_default_params = FALSE
   
   run_params$overwrite_params_file = 'initialise_params_hunter.R'
   
@@ -72,8 +72,10 @@ initialise_run_params <- function(){
     # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
-  # Sample form a normal distribution with this sd to add noise to the decline rates.
+  # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  run_params$decline_rate_std
   run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
+  
+  #set this parameter to zero to yield no noise
   run_params$decline_rate_std = rep(list(1e-3), length(run_params$features_to_use_in_simulation))
 
   # Lowest value that the logistic decline curve can reach. It will asypotote to this value
