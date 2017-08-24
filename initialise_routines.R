@@ -1,4 +1,5 @@
 run_initialise_routines <- function(){
+  
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
   if (run_params$overwrite_default_params == TRUE){
@@ -9,19 +10,6 @@ run_initialise_routines <- function(){
   policy_params_group = generate_policy_params_group(policy_params, run_params)
   run_params$strt = Sys.time()
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
-  
-#   if (run_params$run_from_saved == FALSE){
-#     if (run_params$simulate_data == TRUE){
-#       empty_dir_flag = length(list.files(run_params$simulation_inputs_folder)) == 0      #test to see if files are present in simulation input data folder
-#       if (!empty_dir_flag){
-#         overwrite <- run_params$overwrite_existing_landscape_data
-#       } else { overwrite = TRUE} 
-#       if (overwrite == TRUE){
-#         source('simulate_ecology_routines.R')                          #if no files are present or user wants to overwrite files simulate ecology and write files to directory
-#         prepare_simulated_data(run_params$simulation_inputs_folder)
-#       }
-#     }
-#   }
   run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
   run_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps, 
                                                           prog_start = run_params$dev_start,
@@ -39,11 +27,16 @@ run_initialise_routines <- function(){
                    '_policy_params.rds'))
   }
   
-  if (run_params$backup_simulation_inputs == TRUE){
-    save_simulation_inputs(run_params$simulation_params_folder, LGA_array, decline_rates_initial, parcels, landscape_ecology,
-                           parcel_ecology, dev_weights, ecology_params)
+  if (run_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = run_params$simulation_inputs_folder, all.files = FALSE, 
+                                                full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                                include.dirs = FALSE, no.. = FALSE)
+    if ( (length(current_filenames) == 0) | (run_params$run_from_saved == FALSE) ){
+      source('simulate_ecology_routines.R')
+      prepare_simulated_data(run_params)
+    }
   }
-  
+
   if (length(intersect(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)) 
       != length(run_params$features_to_use_in_offset_calc)){
     stop(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
@@ -51,6 +44,7 @@ run_initialise_routines <- function(){
     run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   }
   run_params$policy_params_group = policy_params_group
+  
   return(run_params)
   
 }
@@ -453,6 +447,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 initialise_index_object <- function(parcels, current_ecology, run_params){
+  
   index_object = list()
   index_object$indexes_to_use = vector('list', parcels$region_num)
   index_object$developments = list()
@@ -461,7 +456,6 @@ initialise_index_object <- function(parcels, current_ecology, run_params){
   index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
   index_object$parcel_num_remaining = vector()
-  index_object$break_flag = FALSE
   
   indexes_to_use = parcels$regions
   
@@ -469,6 +463,7 @@ initialise_index_object <- function(parcels, current_ecology, run_params){
   smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
   initial_parcel_sums = unlist(lapply(seq_along(current_ecology), function(i) sum(current_ecology[[i]][[1]])))
   zeros_to_screen = which(initial_parcel_sums < 1e-5)
+  
   
   if (run_params$screen_parcels == TRUE){
     parcel_dist = quantile(initial_parcel_sums[-c(zeros_to_screen, smalls_to_screen)], probs = c(0.05, 0.95))

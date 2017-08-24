@@ -1,14 +1,14 @@
 initialise_run_params <- function(){
   run_params = list()
 
-  run_params$overwrite_default_params = TRUE
+  run_params$overwrite_default_params = FALSE
   
   run_params$overwrite_params_file = 'initialise_params_scale_paper.R'
   
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
  
-  run_params$simulate_data = TRUE
+  run_params$use_simulated_data = TRUE
   
   # The number of realizations to run
   run_params$realisation_num = 2
@@ -44,7 +44,7 @@ initialise_run_params <- function(){
   run_params$run_from_saved = FALSE
 
   # Saves the landscape data use by simulation into the run specific simulation params folder
-  run_params$backup_simulation_inputs = FALSE
+  run_params$backup_simulation_inputs = TRUE
 
   # Create an animation of the outputs
   run_params$write_movie = FALSE
@@ -105,6 +105,10 @@ initialise_run_params <- function(){
   # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
   run_params$restoration_rate_params = c(0.02, 0.005)
 
+  run_params$apply_offset_exclusion_layer = TRUE
+  run_params$offset_exclusion_layer_filename = 'protected_areas.rds'
+  run_params$apply_development_exclusion_layer = TRUE
+  run_params$dev_exclusion_layer_filename = 'protected_areas.rds'
   return(run_params)
 }
 

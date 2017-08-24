@@ -6,14 +6,17 @@ initialise_run_params <- function(){
   run_params$realisation_num = 1
   run_params$crs = 1 #detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 50
+  run_params$dev_start = 1
+  run_params$dev_end = run_params$time_steps
+  run_params$total_dev_num = 200
   run_params$save_simulation_outputs = TRUE
   run_params$overwrite_existing_landscape_data = FALSE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.
   run_params$backup_simulation_inputs = FALSE 
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = TRUE     # write layer containing all offset parcels to pdf
-  run_params$features_to_use_in_offset_calc = 2:11
-  run_params$features_to_use_in_simulation = 2:11
+  run_params$features_to_use_in_offset_calc = 2
+  run_params$features_to_use_in_simulation = 2:5
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
   run_params$sample_decline_rate = FALSE
@@ -32,7 +35,7 @@ initialise_run_params <- function(){
   run_params$match_threshold = 0 # acceptable level above which to accept parcel match
 
   run_params$restoration_rate_params = c(0.02, 0.005)
-
+  run_params$use_protected_layer = TRUE
   return(run_params)
 }
 
@@ -42,9 +45,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params$offset_action_type = c('maintain')
   policy_params$allow_developments_from_credit = TRUE
 
-  policy_params$dev_start = 1
-  policy_params$dev_end = 50
-  policy_params$total_dev_num = 200
+
   
   policy_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
   policy_params$offset_bank_type = c('credit') # c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains

@@ -30,20 +30,31 @@ registerDoParallel(cl)
 for (scenario_ind in seq_along(run_params$policy_params_group)){
   loop_strt <- Sys.time()
   print(paste0('running ', scenario_ind, ' of ', length(run_params$policy_params_group), ' scenarios with ', run_params$realisation_num, 
-        ' realisations on ', run_params$crs, ' cores'))
+               ' realisations on ', run_params$crs, ' cores'))
   
-  foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
-
+  if (run_params$realisation_num > 1){
+    foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
+      
+      simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]], 
+                                                           run_params,
+                                                           parcels, 
+                                                           initial_ecology, 
+                                                           decline_rates_initial,
+                                                           dev_weights,
+                                                           scenario_ind, 
+                                                           realisation_ind)
+    }
+  } else {
     simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]], 
-                                                run_params,
-                                                parcels, 
-                                                initial_ecology, 
-                                                decline_rates_initial,
-                                                dev_weights,
-                                                scenario_ind, 
-                                                realisation_ind)
- }
-
+                                                         run_params,
+                                                         parcels, 
+                                                         initial_ecology, 
+                                                         decline_rates_initial,
+                                                         dev_weights,
+                                                         scenario_ind, 
+                                                         realisation_ind = 1)
+  }
+  
   print(paste('scenario ', scenario_ind, ' done in', Sys.time() - loop_strt))
   
 }

@@ -72,7 +72,7 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
   return(simulated_ecology)
 }
 
-prepare_simulated_data <- function(landscape_data_folder){
+prepare_simulated_data <- function(run_params){
   source('data_prep_routines.R')
   simulated_ecology_params <- initialise_simulated_ecology_params()
   LGA_array <- simulate_LGA(simulated_ecology_params)
@@ -81,6 +81,10 @@ prepare_simulated_data <- function(landscape_data_folder){
   landscape_ecology = list()
   dev_weights = list() 
   
-  save_simulation_inputs(landscape_data_folder, LGA_array, parcels, landscape_ecology,
+  save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, parcels, landscape_ecology,
                          parcel_ecology, dev_weights)
+  if (run_params$backup_simulation_inputs == TRUE){
+    save_simulation_inputs(run_params$simulation_params_folder, LGA_array, parcels, landscape_ecology,
+                           parcel_ecology, dev_weights)
+  }
 }

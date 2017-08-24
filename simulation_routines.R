@@ -1534,28 +1534,6 @@ update_indexes_to_use <- function(index_object, parcel_indexes, region_ind){
 }
 
 
-# record_parcel_index <- function(update_type, index_object, parcel_indexes, region_ind){
-#   
-#   if ( length(index_object$indexes_to_use[[region_ind]]) == 0 ){
-#     index_object$break_flag = TRUE
-#   } else {index_object$break_flag = FALSE}
-#   
-#   if (update_type == 'development'){
-#     index_object$developments = append(index_object$developments, list(parcel_indexes))
-#     
-#   } else if (update_type == 'offset'){
-#     index_object$offsets = append(index_object$offsets, list(parcel_indexes))
-#     
-#   } else if (update_type == 'illegal'){
-#     index_object$illegal_clearing = append(index_object$illegal_clearing, list(parcel_indexes))
-#     
-#   } else if (update_type == 'develop_from_credit'){
-#     index_object$current_credit = append(index_object$current_credit, list(parcel_indexes))
-#   }
-#   return(index_object)
-# }
-
-
 update_decline_rates <- function(decline_rates, restoration_rate_params, sample_restoration_rate, features_to_use_in_offset_calc, feature_num, decline_rate_type, action_type, parcel_indexes){
   
   parcel_indexes = unlist(parcel_indexes)
