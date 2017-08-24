@@ -1,7 +1,7 @@
 initialise_run_params <- function(){
   run_params = list()
 
-  run_params$overwrite_default_params = FALSE
+  run_params$overwrite_default_params = TRUE
   
   run_params$overwrite_params_file = 'initialise_params_hunter.R'
   

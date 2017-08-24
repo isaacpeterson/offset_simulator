@@ -2,7 +2,7 @@ initialise_run_params <- function(){
   run_params = list()
   run_params$overwrite_default_params = TRUE
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/hunter/')
-  run_params$simulate_data = FALSE
+  run_params$use_simulated_data = FALSE
   run_params$realisation_num = 1
   run_params$crs = 1 #detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 50
@@ -22,7 +22,6 @@ initialise_run_params <- function(){
   run_params$sample_decline_rate = FALSE
   run_params$limit_offset_restoration = TRUE
   run_params$illegal_clearing_prob = 1e-3
-  run_params$test_a = 1
   run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
   run_params$decline_rate_std = rep(list(1e-3), length(run_params$features_to_use_in_simulation))
 
@@ -35,7 +34,7 @@ initialise_run_params <- function(){
   run_params$match_threshold = 0 # acceptable level above which to accept parcel match
 
   run_params$restoration_rate_params = c(0.02, 0.005)
-  run_params$use_protected_layer = TRUE
+
   return(run_params)
 }
 
@@ -70,12 +69,6 @@ initialise_policy_params <- function(){ #list of variations in policy
   
   policy_params$offset_multiplier = 1
   
-  if (policy_params$use_offset_bank == TRUE){
-    policy_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
-  } else {
-    policy_params$offset_time_horizon_type = 'future' #'future' - project from time of development to offset time horizon, or 
-  }
-
   return(policy_params)
 }
 
