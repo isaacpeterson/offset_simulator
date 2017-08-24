@@ -55,12 +55,14 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
                                                          realisation_ind = 1)
   }
   
-  print(paste('scenario ', scenario_ind, ' done in', Sys.time() - loop_strt))
+  cat('\nscenario', scenario_ind, 'done in', 
+              round(difftime(Sys.time(), loop_strt), 1), units(difftime(Sys.time(), run_params$strt)))
   
 }
 
 if (run_params$save_simulation_outputs == FALSE){
   unlink(run_params$output_folder, recursive = TRUE)
 }
-print(paste('all scenarios done in', Sys.time() - run_params$strt, 'mins'))
+
+cat('\nall scenarios done in', round(difftime(Sys.time(), run_params$strt), 1), units(difftime(Sys.time(), run_params$strt)))
 stopCluster(cl)

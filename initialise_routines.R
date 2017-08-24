@@ -1,4 +1,6 @@
-run_initialise_routines <- function(){
+#generic set of initialisation routines that are called for every simulation 
+
+run_initialise_routines <- function(){ 
   
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
