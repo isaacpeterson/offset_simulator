@@ -29,8 +29,8 @@ registerDoParallel(cl)
 
 for (scenario_ind in seq_along(run_params$policy_params_group)){
   loop_strt <- Sys.time()
-  cat('\nrunning scenario ', scenario_ind, ' of ', length(run_params$policy_params_group), ' with ', run_params$realisation_num, 
-               ' realisations on ', run_params$crs, ' cores')
+  cat('\nrunning scenario', scenario_ind, 'of', length(run_params$policy_params_group), 'with', run_params$realisation_num, 
+               'realisations on', run_params$crs, ' cores')
   
   if (run_params$realisation_num > 1){
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
@@ -55,8 +55,8 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
                                                          realisation_ind = 1)
   }
   
-  cat('\nscenario', scenario_ind, 'done in', 
-              round(difftime(Sys.time(), loop_strt), 1), units(difftime(Sys.time(), run_params$strt)))
+  cat('\n   scenario', scenario_ind, 'done in', 
+              round(difftime(Sys.time(), loop_strt), 1), units(difftime(Sys.time(), loop_strt)))
   
 }
 
