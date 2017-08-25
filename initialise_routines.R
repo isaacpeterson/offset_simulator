@@ -20,13 +20,15 @@ run_initialise_routines <- function(){
                                                           sd = 1)
   
   saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
-  dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.txt'))
+  dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.R'))
+  policy_params_file = paste0(run_params$simulation_params_folder, 'policy_params.R')
   for (scenario_ind in seq_along(policy_params_group)){
     current_policy_params = policy_params_group[[scenario_ind]]
-    saveRDS(current_policy_params, 
-            paste0(run_params$simulation_params_folder, 'scenario_', 
-                   formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
-                   '_policy_params.rds'))
+    file_prefix = paste0(run_params$simulation_params_folder, 'scenario_', 
+                          formatC( scenario_ind, width = 3, format = "d", flag = "0"), 
+                          '_policy_params')
+    saveRDS(current_policy_params, paste0(file_prefix, '.rds'))
+    dump('current_policy_params', policy_params_file, append = TRUE)
   }
   
   if (run_params$use_simulated_data == TRUE) {
@@ -175,13 +177,17 @@ generate_current_policy <- function(policy_params_group, current_policy_param_in
 
 collate_current_policy <- function(current_policy_params, run_params){
   
-  if (current_policy_params$offset_calc_type == 'avoided_loss'){
+  if (current_policy_params$offset_calc_type == 'avoided_condition_decline'){
     current_policy_params$offset_action_type = 'maintain'
   } else if (current_policy_params$offset_calc_type %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
     current_policy_params$offset_action_type = 'restore'
-  }
-  
-  
+  } else if (current_policy_params$offset_calc_type %in% c('protected_condition')){
+    current_policy_params$offset_action_type = 'protect'
+  } else if (current_policy_params$offset_calc_type %in% c('current_condition_maintain')){
+    current_policy_params$offset_action_type = 'maintain'
+  } else if (current_policy_params$offset_calc_type %in% c('current_condition_protect')){
+    current_policy_params$offset_action_type = 'protect'
+  } 
   
   current_policy_params$allow_developments_from_credit = (current_policy_params$allow_developments_from_credit) || (current_policy_params$offset_bank_type == 'credit')
   
@@ -193,7 +199,7 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$use_offset_time_horizon = FALSE
   } else {current_policy_params$use_offset_time_horizon = TRUE}
   
-  if( (current_policy_params$offset_calc_type == 'avoided_loss') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'protected_condition') ){
+  if( (current_policy_params$offset_calc_type == 'avoided_condition_decline') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'protected_condition') ){
     current_policy_params$offset_cfacs_flag = TRUE
   } else{
     current_policy_params$offset_cfacs_flag = FALSE
@@ -458,14 +464,13 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
-  index_object$indexes_to_use = vector('list', parcels$region_num)
   index_object$developments = list()
   index_object$offsets = list()
   index_object$illegal_clearing = list()
   index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
   index_object$parcel_num_remaining = vector()
-  index_objectindexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
+  index_object$indexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
                                                       initial_ecology, run_params)
  
   return(index_object)
