@@ -140,11 +140,10 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
       for (current_dev_index in seq_len(run_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
         
         if (current_policy_params$allow_developments_from_credit == TRUE){
-          
+          print(unlist(simulation_outputs$current_credit))
           if (current_policy_params$use_offset_bank == TRUE){
             simulation_outputs$current_credit = assess_credit(simulation_outputs, current_policy_params)
           }
-          
           credit_match_object = develop_from_credit(simulation_outputs$current_ecology, 
                                                     simulation_outputs$current_credit, 
                                                     dev_weights,
@@ -500,7 +499,7 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
 
 assess_credit <- function(simulation_outputs, current_policy_params){
   
-  if (current_policy_params$use_offset_bank == TRUE){
+
     offset_credit = nested_list_sum(simulation_outputs$offset_pool_object$parcel_vals_used)
     dev_list = append(simulation_outputs$credit_object$parcel_vals_used, simulation_outputs$dev_object$parcel_vals_used)
     
@@ -511,7 +510,6 @@ assess_credit <- function(simulation_outputs, current_policy_params){
     } else{
       current_credit = offset_credit
     }
-  } 
   
   return(current_credit)
 }
@@ -533,7 +531,7 @@ prepare_offset_pool <- function(simulation_outputs, current_policy_params, regio
   if (current_policy_params$use_offset_bank == TRUE){
     subset_pool = which(unlist(simulation_outputs$offset_bank_object$parcel_indexes) %in% parcels$regions[[region_ind]])
     offset_pool_object <- select_pool_subset(simulation_outputs$offset_bank_object, subset_pool)
-    offset_pool_object$restoration_vals <- find_current_parcel_sums(simulation_outputs$current_ecology[unlist(simulation_outputs$offset_bank_object$parcel_indexes[subset_pool])])
+    offset_pool_object$projected_vals <- find_current_parcel_sums(simulation_outputs$current_ecology[unlist(simulation_outputs$offset_bank_object$parcel_indexes[subset_pool])])
     
     offset_pool_type = 'offset_bank'
   } else {
@@ -722,10 +720,10 @@ assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, ca
     cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
     
   }
-  restoration_vals = current_ecology[current_pool]
-  restoration_vals = lapply(seq_along(restoration_vals), function(i) lapply(seq_along(restoration_vals[[i]]), function(j) sum(restoration_vals[[i]][[j]] )))
+  projected_vals = current_ecology[current_pool]
+  projected_vals = lapply(seq_along(projected_vals), function(i) lapply(seq_along(projected_vals[[i]]), function(j) sum(projected_vals[[i]][[j]] )))
   
-  parcel_vals_achieved = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, restoration_vals, cfac_vals)
+  parcel_vals_achieved = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, projected_vals, cfac_vals)
   
   return(parcel_vals_achieved)
 }
@@ -912,7 +910,6 @@ select_rand_index <- function(indexes_to_use, parcel_num){
   parcel_indexes = indexes_to_use[sample(1:length(indexes_to_use), parcel_num)]
   return(parcel_indexes)
 }
-
 
 # offset_pool_object = simulation_outputs$offset_pool_object 
 # intervention_vec = run_params$intervention_vec 
@@ -1102,17 +1099,17 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
 
 
 
-evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, restoration_vals, cfac_vals){
+evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, projected_vals, cfac_vals){
   
   if (calc_type == 'current_condition'){
     parcel_vals_pool = parcel_sums_at_offset
   } else if (calc_type == 'restoration_gains'){
-    parcel_vals_pool = subtract_nested_lists(restoration_vals, parcel_sums_at_offset)
+    parcel_vals_pool = subtract_nested_lists(projected_vals, parcel_sums_at_offset)
   } else if (calc_type == 'net_gains'){
-    parcel_vals_pool = subtract_nested_lists(restoration_vals, cfac_vals)
+    parcel_vals_pool = subtract_nested_lists(projected_vals, cfac_vals)
   } else if (calc_type == 'restoration_condition_value'){
-    parcel_vals_pool = restoration_vals
-  } else if (calc_type == 'avoided_loss'){
+    parcel_vals_pool = projected_vals
+  } else if (calc_type == 'avoided_condition_decline'){
     parcel_vals_pool = subtract_nested_lists(parcel_sums_at_offset, cfac_vals)
   } else if ((calc_type == 'future_condition') || (calc_type == 'protected_condition')){
     parcel_vals_pool = cfac_vals 
@@ -1192,7 +1189,9 @@ record_current_parcel_set <- function(current_ecologies, current_pool, parcel_nu
 
 
 nested_list_tail <- function(list_a){
-  last_elements <- lapply(seq_along(list_a), function(i) lapply(seq_along(list_a[[i]]), function(j) tail(list_a[[i]][[j]], 1) ))
+  last_elements <- lapply(seq_along(list_a), 
+                          function(i) lapply(seq_along(list_a[[i]]), 
+                                             function(j) list_a[[i]][[j]][ length(list_a[[i]][[j]]) ] ))
   return(last_elements)
 }
 
@@ -1257,7 +1256,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   
   if (length(match_ind) > 1){
     match_ind = sample(match_ind, 1)
-    cat('\nmultiple match flag')
+    cat('\nduplicate match flag')
   }
   
   match_vals = parcel_vals_pool[match_ind]
@@ -1612,7 +1611,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 #   pool_object <- select_pool_subset(pool_object = current_offset_bank, subset_pool = subset_pool$match_ind)
 #   if (offset_restoration_flag == TRUE){
 #     current_sums_object <- find_current_parcel_sums(current_ecologies, feature_num)
-#     pool_object$restoration_vals <- current_sums_object$parcel_sums
+#     pool_object$projected_vals <- current_sums_object$parcel_sums
 #   }
 #   
 #   return(pool_object)
@@ -1667,7 +1666,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     
     time_horizons <- generate_time_horizons(project_type, yr, offset_yrs, time_horizon, parcel_count)
     if (action_type == 'protect'){
-      restoration_vals = list()
+      projected_vals = list()
     } else {
       if (action_type == 'maintain'){
         current_decline_rates = simulate_decline_rates(length(pool_object$parcel_ecologies), 
@@ -1683,17 +1682,18 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                                                        current_feature_num)
       }
       
-      restoration_vals = project_parcel(current_parcel_ecologies = pool_object$parcel_ecologies, 
+      projected_vals = project_parcel(current_parcel_ecologies = pool_object$parcel_ecologies, 
                                         current_decline_rates, 
                                         time_horizons, 
                                         run_params,
                                         features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc,
                                         time_fill = FALSE)
       
-      restoration_vals = lapply(seq_along(restoration_vals), function(i) lapply(seq_along(restoration_vals[[i]]), function(j) sum(restoration_vals[[i]][[j]] )))
+      projected_vals = lapply(seq_along(projected_vals), function(i) 
+        lapply(seq_along(projected_vals[[i]]), function(j) sum(projected_vals[[i]][[j]] )))
     } 
     
-    pool_object$restoration_vals = restoration_vals
+    pool_object$projected_vals = projected_vals
     
   } else if (pool_type == 'offset_bank'){
     
@@ -1706,7 +1706,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
       project_type = 'future'
     }
     time_horizons <- generate_time_horizons(project_type, yr, offset_yrs, time_horizon, parcel_count)
-    pool_object$restoration_vals = list()
+    pool_object$projected_vals = list()
   }
   
   if (cfacs_flag == TRUE){
@@ -1726,7 +1726,11 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     pool_object$cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
   }
   
-  pool_object$parcel_vals_used = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, pool_object$restoration_vals, pool_object$cfac_vals)
+  parcel_sums_at_offset_to_use = lapply(seq_along(pool_object$parcel_sums_at_offset), 
+                                        function(i) pool_object$parcel_sums_at_offset[[i]][run_params$features_to_use_in_offset_calc])
+  
+  pool_object$parcel_vals_used = evaluate_parcel_vals(calc_type, parcel_sums_at_offset_to_use, 
+                                                      pool_object$projected_vals, pool_object$cfac_vals)
   
   return(pool_object)
   

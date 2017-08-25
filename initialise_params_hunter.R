@@ -16,14 +16,14 @@ initialise_run_params <- function(){
   run_params$write_movie = FALSE            # write outputs to movie
   run_params$write_offset_layer = TRUE     # write layer containing all offset parcels to pdf
   run_params$features_to_use_in_offset_calc = 2
-  run_params$features_to_use_in_simulation = 2:5
+  run_params$features_to_use_in_simulation = 2:10
   run_params$max_offset_parcel_num = 5 #how many parcels can be selected to offset a single development
   run_params$sample_restoration_rate = FALSE
   run_params$sample_decline_rate = FALSE
   run_params$limit_offset_restoration = TRUE
   run_params$illegal_clearing_prob = 1e-3
-  run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
-  run_params$decline_rate_std = rep(list(1e-3), length(run_params$features_to_use_in_simulation))
+  run_params$mean_decline_rates = rep(list(-1e-10), length(run_params$features_to_use_in_simulation)) 
+  run_params$decline_rate_std = rep(list(0), length(run_params$features_to_use_in_simulation))
 
   run_params$min_eco_val = 0  
   run_params$max_eco_val = 100 
@@ -42,7 +42,6 @@ initialise_run_params <- function(){
 
 initialise_policy_params <- function(){ #list of variations in policy
   policy_params = list()
-  policy_params$offset_action_type = c('maintain')
   policy_params$allow_developments_from_credit = TRUE
   policy_params$use_offset_bank = c(FALSE) # FALSE - perform offsets simultaneously with development, TRUE - perform offset banking prior to development according to offset bank parameters 
   policy_params$offset_bank_type = c('credit') # c('parcel_set', 'credit')       #'parcel_set' - select discrete land parcels or 'credit' - subtract value from total accumulated gains
@@ -53,7 +52,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   
   policy_params$site_for_site = c(FALSE) # TRUE - one-to-one selection of offset parcels for one development, FALSE = many-to-one selection of offset parcels for one development
   policy_params$offset_time_horizon = c(30)
-  policy_params$offset_calc_type = c('avoided_loss') #'net_gains', 'restoration_gains', 'avoided_loss', 'current_condition'
+  policy_params$offset_calc_type = c('avoided_condition_decline') #'net_gains', 'restoration_gains', 'avoided_loss', 'current_condition'
   policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
   
   policy_params$include_potential_developments_in_offset_calc = c(TRUE)

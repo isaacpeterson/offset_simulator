@@ -53,20 +53,16 @@ initialise_policy_params <- function(){
 
   # The Options are 'restoration_gains' - the gains are calcualted relative to
   # the site value at the time of the interventionabove 
-  # 'avoided_degs - the gains are calculated relative to the biodiversity
+  # 'avoided_condition_decline - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_degs') 
-
-  # Options are 'maintain', 'protect', or 'restore'. 
-  policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')
+  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
 
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
   # 'future_condition' - is the do nothing trjectory of the development site.
   policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
-
 
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
@@ -106,7 +102,7 @@ initialise_policy_params <- function(){
   policy_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
   
   # The time horizon in which the offset gains need to equal the devlopment impact
-  policy_params$offset_time_horizon = c(15)
+  policy_params$offset_time_horizon = c(15, 30)
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
