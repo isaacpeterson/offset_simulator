@@ -11,9 +11,9 @@ output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or
 realisation_num = 1 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 17 # for output plot name
-sets_to_plot = 5
-plot_vec = 1:6
+run_number = 7 # for output plot name
+sets_to_plot = 5 #example site to plot
+plot_vec = 1
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
@@ -25,7 +25,7 @@ site_impact_plot_lims = rep(list(c(-3e3, 3e3)), length(plot_vec))
 program_outcome_plot_lims = rep(list(c(0e6, 3e6)), length(plot_vec))
 landscape_outcome_plot_lims = rep(list(c(0, 2e7)), length(plot_vec))
 
-program_impact_plot_lims = rep(list(c(-1e6, 1e6)), length(plot_vec)) 
+program_impact_plot_lims = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
 landscape_impact_plot_lims = rep(list(c(-6e5, 0)), length(plot_vec))
 
 
@@ -65,7 +65,7 @@ source('collate_routines.R')
 
 check_plot_options()
 
-run_params_filename <- list.files(path = simulation_params_folder, pattern = 'run_params', all.files = FALSE, 
+run_params_filename <- list.files(path = simulation_params_folder, pattern = 'run_params.rds', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
 

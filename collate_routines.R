@@ -248,24 +248,24 @@ collate_net_program_outcomes <- function(simulation_outputs, summed_site_traject
 
 collate_net_program_impacts <- function(collated_program){
   collated_program_impacts = list()
-  program_offsets = collated_program$collated_offsets$summed_gains_degs$site_nets
-  program_devs = collated_program$collated_devs$summed_gains_degs$site_nets
+  program_offsets = collated_program$collated_offsets$summed_gains_degs$nets
+  program_devs = collated_program$collated_devs$summed_gains_degs$nets
   if ((length(program_offsets) > 0) & (length(program_devs) > 0)){
-    collated_program_impacts$net_site_scale <- mapply('+', collated_program$collated_offsets$summed_gains_degs$site_nets, 
-                                                    collated_program$collated_devs$summed_gains_degs$site_nets, SIMPLIFY = FALSE)
+    collated_program_impacts$net_site_scale <- mapply('+', collated_program$collated_offsets$summed_gains_degs$nets, 
+                                                    collated_program$collated_devs$summed_gains_degs$nets, SIMPLIFY = FALSE)
   } else {
     collated_program_impacts$net_site_scale = list()
   }
   
-  collated_program_impacts$net_site_offset_gains = Reduce('+', collated_program$collated_offsets$summed_gains_degs$site_nets)
-  collated_program_impacts$net_offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$site_nets)
-  collated_program_impacts$net_site_dev_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$site_nets)
-  collated_program_impacts$net_dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$site_nets)
-  collated_program_impacts$net_illegal_clearing <- Reduce('+', collated_program$collated_illegal_clearing$summed_gains_degs$site_nets)
+  collated_program_impacts$net_offset_site_gains = Reduce('+', collated_program$collated_offsets$summed_gains_degs$nets)
+  collated_program_impacts$net_offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$nets)
+  collated_program_impacts$net_dev_site_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$nets)
+  collated_program_impacts$net_dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$nets)
+  collated_program_impacts$net_illegal_clearing <- Reduce('+', collated_program$collated_illegal_clearing$summed_gains_degs$nets)
   
-  collated_program_impacts$net_offset_gains = sum_program_elements(list(collated_program_impacts$net_site_offset_gains, collated_program_impacts$net_offset_bank_gains))
-  collated_program_impacts$net_dev_losses = sum_program_elements(list(collated_program_impacts$net_site_dev_losses, collated_program_impacts$net_dev_credit_losses))
-  collated_program_impacts$net_program <- sum_program_elements(list(collated_program_impacts$net_offset_gains, collated_program_impacts$net_dev_losses))
+  collated_program_impacts$total_offset_gains = sum_program_elements(list(collated_program_impacts$net_offset_site_gains, collated_program_impacts$net_offset_bank_gains))
+  collated_program_impacts$total_dev_losses = sum_program_elements(list(collated_program_impacts$net_dev_site_losses, collated_program_impacts$net_dev_credit_losses))
+  collated_program_impacts$program_total <- sum_program_elements(list(collated_program_impacts$total_offset_gains, collated_program_impacts$total_dev_losses))
   return(collated_program_impacts)
 }
 
@@ -386,24 +386,23 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologie
   
   if ((collate_type == 'offsets') | (collate_type == 'offset_bank')){
     if (policy_params$offset_calc_type == 'restoration_gains'){
-      collated_object$site_nets = collated_object$rest_gains
+      collated_object$nets = collated_object$rest_gains
     } else if (policy_params$offset_calc_type == 'avoided_loss'){
-      collated_object$site_nets = collated_object$avoided_loss
+      collated_object$nets = collated_object$avoided_loss
     } else if (policy_params$offset_calc_type == 'net_gains'){
-      collated_object$site_nets = collated_object$nets
+      collated_object$nets = collated_object$nets
     }
   } else {
     if (policy_params$dev_calc_type == 'future_condition'){
-      collated_object$site_nets = collated_object$nets
+      collated_object$nets = collated_object$nets
     } else if (policy_params$dev_calc_type == 'current_condition'){
-      collated_object$site_nets = collated_object$rest_gains
+      collated_object$nets = collated_object$rest_gains
     }
     
   }
   
   return(collated_object)
 }
-
 
 
 
@@ -476,16 +475,13 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                          collated_program$collated_offset_bank, 
                                                          collated_program$collated_illegal_clearing)
   
-  
-  
-  
   collated_program$site_NNL = assess_NNL(assess_type = 'site_scale', 
                                          impacts = collated_program$program_impacts$net_site_scale, 
                                          offset_yrs_to_use = collated_program$collated_offsets$offset_yrs, 
                                          parcel_indexes = simulation_outputs$offsets_object$parcel_indexes)
   
   collated_program$program_NNL = assess_NNL(assess_type = 'program', 
-                                            impacts = list(collated_program$program_impacts$net_program), 
+                                            impacts = list(collated_program$program_impacts$program_total), 
                                             offset_yrs_to_use = list(1), 
                                             parcel_indexes = vector())
   

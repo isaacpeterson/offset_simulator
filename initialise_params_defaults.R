@@ -3,7 +3,7 @@ initialise_run_params <- function(){
 
   run_params$overwrite_default_params = TRUE
   
-  run_params$overwrite_params_file = 'initialise_params_hunter.R'
+  run_params$overwrite_params_file = 'initialise_params_scale_paper_testing.R'
   
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')

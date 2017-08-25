@@ -81,6 +81,19 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
 }
 
 
+
+
+# site_plot_lims = site_impact_plot_lims[[plot_ind]]
+# program_plot_lims = program_impact_plot_lims[[plot_ind]] 
+# landscape_plot_lims = landscape_impact_plot_lims[[plot_ind]] 
+# lwd_vec = c(3, 0.5) 
+# time_steps = run_params$time_steps 
+# parcel_num = vector()
+# realisation_num = collated_realisations$realisation_num
+# feature_ind 
+
+
+
 plot_impact_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
                             sets_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
   
@@ -98,9 +111,9 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                       site_plot_lims,
                       time_steps)
   
-  overlay_realisations(plot_list = list(collated_realisations$program_impacts$net_offset_gains, 
-                                        collated_realisations$program_impacts$net_dev_losses,
-                                        collated_realisations$program_impacts$net_program),
+  overlay_realisations(plot_list = list(collated_realisations$program_impacts$total_offset_gains, 
+                                        collated_realisations$program_impacts$total_dev_losses,
+                                        collated_realisations$program_impacts$program_total),
                        plot_title = 'Program Impact', 
                        x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_NNL$NNL_mean)),
                        realisation_num,
@@ -306,6 +319,11 @@ get_y_lab <- function(output_type, current_policy_params, feature_ind){
 }
 
 
+# realisation_ind = 1 
+# plot_from_impact_yr = FALSE 
+
+
+
 
 overlay_parcel_sets <- function(collated_realisations, output_type, current_policy_params, realisation_ind, 
                                 feature_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps){
@@ -358,13 +376,21 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
 
 
 
+# collated_object = offset_set
+# offset_bank = current_policy_params$use_offset_bank
+# visualisation_type = 'stacked' 
+# 
+# plot_col = 'darkgreen' 
+# 
+# plot_type = 'non-overlay'
+
 
 overlay_parcel_set_element <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
                                        plot_col, plot_lwd, plot_type, y_lab, plot_from_impact_yr, 
                                        sets_to_plot, plot_lims, time_steps){
   
   if (offset_bank == FALSE){
-    collated_traj_set = collated_object$site_nets[[realisation_ind]]
+    collated_traj_set = collated_object$nets[[realisation_ind]]
     parcel_indexes = unlist(collated_object$parcel_indexes[[realisation_ind]][sets_to_plot])
     inds_to_plot = which(unlist(collated_object$parcel_indexes[[realisation_ind]]) %in% parcel_indexes)
     if (plot_from_impact_yr){
