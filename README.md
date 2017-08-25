@@ -55,7 +55,7 @@ offset_data has the following structure:
 
 Within this directory there are the following directories 
 
-- `simulation_outputs` contains a folders automatically numbered sequentially for each new run. In each of these numbered folders there will be two folders called `collated_realisations` and `simulation_data`.  `simulation_data` is the raw outputs of the simulation. `collated_realisations` are processed outputs which can be used to make plots and there is one file per realization. The collated_realisations files have the impacts calculated with all specified counterfactuals. 
+- `simulation_runs` contains a folders automatically numbered sequentially for each new run. In each of these numbered folders there will be three folders called `collated_outputs`, `simulation_data` and `simulation_params`. `simulation_data` is the raw outputs of the simulation, and will only be retained if the appropriate parameter is set (this can take a lot of space). `collated_realisations` are processed outputs which can be used to make plots and there is one file per realization. The collated_realisations files have the impacts calculated with all specified counterfactuals. `simulation_params` contains the parameter settings and other info used to generated the simulation.
 
 - `simulation_inputs` contains all the processed input data needed to run the simulation (NOTE THIS ONLY APPLIES TO THE LATEST RUN). eg <base dire>/offset_data/simulated/simulation_outputs/00005 where 00005 is the latest run that has been done.
 
