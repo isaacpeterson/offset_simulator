@@ -3,7 +3,7 @@ initialise_run_params <- function(){
 
   run_params$overwrite_default_params = TRUE
   
-  run_params$overwrite_params_file = 'initialise_params_scale_paper.R'
+  run_params$overwrite_params_file = 'initialise_params_hunter.R'
   
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
@@ -129,16 +129,16 @@ initialise_policy_params <- function(){
 
   policy_params = list()
 
-  # The Options are 'restoration_gains' - the gains are calcualted relative to
-  # the site value at the time of the interventionabove 
-  # 'avoided_loss - the gains are calculated relative to the biodiversity
-  # 'condition without the offset in place (the do nothing counterfactual)
-  # 'net_gains' - is the sum of the previous 2
-  #'current_condition' is the present condition of the site
-  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_loss') 
-
-  # Options are 'maintain', 'protect', or 'restore'. 
-  policy_params$offset_action_type = c('restore')  # 'maintain', 'protect')
+  # The Options are 'restoration_gains' - the gains are calculated relative to
+  # the site value at the time of the intervention above  - forces offsets to restore sites
+  # 'avoided_condition_decline - the gains are calculated relative to the biodiversity
+  # 'condition without the offset in place (the do nothing counterfactual) - forces offsets to maintain present value of sites
+  # 'net_gains' - is the sum of the previous 2- forces offsets to restore sites
+  # 'current_condition_maintain' is the present condition of the site assuming the site is maintained
+  # 'current_condition_protect' is the present condition of the site assuming the site is protected
+  # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
+  
+  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
 
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
@@ -146,20 +146,17 @@ initialise_policy_params <- function(){
   # 'future_condition' - is the do nothing trjectory of the development site.
   policy_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
 
-
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   policy_params$allow_developments_from_credit = TRUE
   
-
-  
   # How the development parcels are selected options are 'random' or
   # 'weighted'. Note tha weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # intialise_routines.R  (or put the files in simulation_inputs)
+  
   policy_params$development_selection_type = 'random'  
-
 
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
@@ -206,7 +203,7 @@ initialise_policy_params <- function(){
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
-  # future gains that are avoided)
+  # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)
 
   # Include future developments in calculating contribution of avoided losses
@@ -224,6 +221,7 @@ initialise_policy_params <- function(){
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
   # future gains are avoided
+  
   policy_params$include_potential_offsets_in_dev_calc = c(FALSE)
   
   # The development impacts is multiplied by this factor (irrespective of how
