@@ -16,8 +16,7 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, decli
                                            cfac_type = 'landscape',
                                            collate_type = vector(), 
                                            use_cfac_type_in_sim = FALSE, 
-                                           feature_ind = 1)
-    
+                                           feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
     
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 
@@ -236,9 +235,9 @@ collate_net_program_outcomes <- function(simulation_outputs, summed_site_traject
   collated_program_outcomes$dev_credit <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$credit_object$parcel_indexes)])
   collated_program_outcomes$offset_bank <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$offset_bank$parcel_indexes)])
   
-  collated_program_outcomes$net_offsets <- sum_program_elements(list(collated_program_outcomes$offsets, collated_program_outcomes$offset_bank))
-  collated_program_outcomes$net_devs <- sum_program_elements(list(collated_program_outcomes$devs, collated_program_outcomes$dev_credit))
-  collated_program_outcomes$net <- sum_program_elements(list(collated_program_outcomes$net_offsets, collated_program_outcomes$net_devs))
+  collated_program_outcomes$net_offsets <- sum_list(list(collated_program_outcomes$offsets, collated_program_outcomes$offset_bank))
+  collated_program_outcomes$net_devs <- sum_list(list(collated_program_outcomes$devs, collated_program_outcomes$dev_credit))
+  collated_program_outcomes$net <- sum_list(list(collated_program_outcomes$net_offsets, collated_program_outcomes$net_devs))
   
   return(collated_program_outcomes)
 }
@@ -263,9 +262,9 @@ collate_net_program_impacts <- function(collated_program){
   collated_program_impacts$net_dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$nets)
   collated_program_impacts$net_illegal_clearing <- Reduce('+', collated_program$collated_illegal_clearing$summed_gains_degs$nets)
   
-  collated_program_impacts$total_offset_gains = sum_program_elements(list(collated_program_impacts$net_offset_site_gains, collated_program_impacts$net_offset_bank_gains))
-  collated_program_impacts$total_dev_losses = sum_program_elements(list(collated_program_impacts$net_dev_site_losses, collated_program_impacts$net_dev_credit_losses))
-  collated_program_impacts$program_total <- sum_program_elements(list(collated_program_impacts$total_offset_gains, collated_program_impacts$total_dev_losses))
+  collated_program_impacts$total_offset_gains = sum_list(list(collated_program_impacts$net_offset_site_gains, collated_program_impacts$net_offset_bank_gains))
+  collated_program_impacts$total_dev_losses = sum_list(list(collated_program_impacts$net_dev_site_losses, collated_program_impacts$net_dev_credit_losses))
+  collated_program_impacts$program_total <- sum_list(list(collated_program_impacts$total_offset_gains, collated_program_impacts$total_dev_losses))
   return(collated_program_impacts)
 }
 
@@ -465,6 +464,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
   collated_program$landscape <- calc_landscape_characteristics(current_trajectories, landscape_cfacs_object)
   
   collated_program$program_outcomes <- collate_net_program_outcomes(simulation_outputs, collated_program$landscape$summed_site_trajectories)
+  
   collated_program$program_impacts <- collate_net_program_impacts(collated_program)
   
   collated_program$program_cfacs = collate_program_cfacs(simulation_outputs, 
@@ -545,10 +545,14 @@ get_current_sim_characteristics <- function(current_policy_params, realisation_n
   return(sim_characteristics)
 }
 
-sum_program_elements <- function(program_elements){
-  elements_to_sum = which(unlist(lapply(seq_along(program_elements), function(i) length(program_elements[[i]]) > 0)))
-  summed_program <- Reduce('+', program_elements[elements_to_sum])
-  return(summed_program)
+sum_list <- function(list_to_sum){
+  empties = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) == 0)))
+  if (length(empties) == length(list_to_sum)){
+    summed_list = list()
+  } else {
+    summed_list <- Reduce('+', list_to_sum[-empties])
+  }
+  return(summed_list)
 }
 
 

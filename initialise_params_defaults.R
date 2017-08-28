@@ -23,7 +23,7 @@ initialise_run_params <- function(){
   run_params$dev_start = 1
   
   # The time at which development ends
-  run_params$dev_end = 5
+  run_params$dev_end = 50
   
   # The total number of parcel that will be developed. The number of
   # developments per time step is determined as follows: First the mean number
@@ -31,7 +31,7 @@ initialise_run_params <- function(){
   # mean number using a normal distribution such that the total number of
   # developments will always equal the total number (Note sd for this
   # distribution is set in the code the currently isn't user settable)
-  run_params$total_dev_num = 10
+  run_params$total_dev_num = 20
   
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
