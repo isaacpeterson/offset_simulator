@@ -45,6 +45,7 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
       
     }
   }
+  
   for (feature_ind in seq(run_params$feature_num)){
     if (run_params$features_to_use_in_simulation > 1 ){  # if there is more than one feature load the 3D time-stacks from separate files for each feature 
       current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_',formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
@@ -233,26 +234,23 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
         
       }
       
-      if (run_params$illegal_clearing_prob > 0){
-        
-        illegally_cleared_object <- perform_illegal_clearing(simulation_outputs$current_ecology, 
-                                                             simulation_outputs$index_object,
-                                                             yr, 
-                                                             region_ind, 
-                                                             current_policy_params, 
-                                                             run_params, 
-                                                             decline_rates_initial, 
-                                                             current_policy_params$offset_time_horizon)
-        
-        if (!is.null(illegally_cleared_object)){
-          simulation_outputs <- perform_clearing_routine(simulation_outputs, 
-                                                         index_object = simulation_outputs$index_object, 
-                                                         decline_rates = simulation_outputs$decline_rates, 
-                                                         current_dev_object = illegally_cleared_object, 
-                                                         clearing_type = 'illegal', 
-                                                         region_ind, 
-                                                         run_params)
-        }
+      illegally_cleared_object <- perform_illegal_clearing(simulation_outputs$current_ecology, 
+                                                           simulation_outputs$index_object,
+                                                           yr, 
+                                                           region_ind, 
+                                                           current_policy_params, 
+                                                           run_params, 
+                                                           decline_rates_initial, 
+                                                           current_policy_params$offset_time_horizon)
+      
+      if (!is.null(illegally_cleared_object)){
+        simulation_outputs <- perform_clearing_routine(simulation_outputs, 
+                                                       index_object = simulation_outputs$index_object, 
+                                                       decline_rates = simulation_outputs$decline_rates, 
+                                                       current_dev_object = illegally_cleared_object, 
+                                                       clearing_type = 'illegal', 
+                                                       region_ind, 
+                                                       run_params)
       }
       
     }
@@ -382,13 +380,17 @@ select_inds_to_clear <- function(index_object, run_params){
 
 
 
-
+# current_ecology = simulation_outputs$current_ecology
+# index_object = simulation_outputs$index_object
+# time_horizon = current_policy_params$offset_time_horizon
 
 perform_illegal_clearing <- function(current_ecology, index_object, yr, region_ind, current_policy_params, 
                                      run_params, decline_rates_initial, time_horizon){
   
   parcel_num_remaining = length(index_object$indexes_to_use[[region_ind]])
   inds_to_clear <- select_inds_to_clear(index_object, current_policy_params)
+  print(inds_to_clear)
+  
   if (length(inds_to_clear) == 0){
     return()
   }

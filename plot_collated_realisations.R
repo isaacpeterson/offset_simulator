@@ -7,13 +7,13 @@ rm(list=ls(all=TRUE))
 #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
-realisation_num = 1 # 'all' or number to plot
+output_type = 'features' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
+realisation_num = 2 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 8 # for output plot name
+run_number = 21 # for output plot name
 sets_to_plot = 5 #example site to plot
-plot_vec = 1:6
+plot_vec = 1
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
@@ -29,9 +29,9 @@ program_impact_plot_lims = rep(list(c(-1e5, 1e5)), length(plot_vec))
 landscape_impact_plot_lims = rep(list(c(-6e5, 0)), length(plot_vec))
 
 
-if (output_type == 'by_scenario'){
+if (output_type == 'scenarios'){
   feature_ind = 1
-} else if (output_type == 'by_feature'){
+} else if (output_type == 'features'){
   scenario_ind = 1
 }
 
@@ -49,9 +49,9 @@ simulation_params_folder = paste0(current_folder, '/simulation_params/')
 output_plot_folder = collated_folder
 
 if (plot_type == 'impacts'){
-  filename = paste0(output_plot_folder, '/impacts_features_1_3.pdf')
+  filename = paste0(output_plot_folder, '/impacts.pdf')
 } else if (plot_type == 'outcomes'){
-  filename = paste0(output_plot_folder, '/outcomes_features_1_3.pdf')
+  filename = paste0(output_plot_folder, '/outcomes.pdf')
 }
 
 #---------------------
@@ -96,7 +96,7 @@ if (length(plot_vec) == 0){
   plot_vec = seq_along(scenario_filenames)
 }
 
-if (output_type == 'by_scenario'){
+if (output_type == 'scenarios'){
   if (length(scenario_filenames) == 0){
     stop( paste('\nERROR: No files that match _policy_params found in', simulation_params_folder) )
   } else if (length(scenario_filenames) < max(plot_vec)){
@@ -104,7 +104,7 @@ if (output_type == 'by_scenario'){
   }
 }
 for (plot_ind in plot_vec){
-  if (output_type == 'by_feature'){
+  if (output_type == 'features'){
     feature_ind = plot_ind
   } else {
     scenario_ind = plot_ind

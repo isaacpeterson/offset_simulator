@@ -1,4 +1,7 @@
-
+# empties = which(unlist(lapply(seq_along(current_sites_list), function(i) length(current_sites_list[[i]]) == 0)))
+# sets_to_use = setdiff(seq_along(current_sites_list), empties)
+# sites_used = vector('list', length(current_sites_list))
+# sites_used[sets_to_use] = lapply(seq_along(sets_to_use), function(i) length(unlist(current_sites_list[[i]])))
 
 check_plot_options <- function() {
   
@@ -90,9 +93,13 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
 # time_steps = run_params$time_steps 
 # parcel_num = vector()
 # realisation_num = collated_realisations$realisation_num
-# feature_ind 
-
-
+# 
+# 
+# offset_col_vec = c('blue', 'red', 'darkgreen')
+# dev_col_vec = c('blue', 'red')
+# net_col_vec = c('darkgreen', 'red', 'black')
+# realisation_ind = 1 
+# plot_from_impact_yr = FALSE 
 
 plot_impact_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
                             sets_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
@@ -111,11 +118,11 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                       site_plot_lims,
                       time_steps)
   
-  overlay_realisations(plot_list = list(collated_realisations$program_impacts$total_offset_gains, 
-                                        collated_realisations$program_impacts$total_dev_losses,
-                                        collated_realisations$program_impacts$program_total),
+  overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
+                                        collated_realisations$program_scale_impacts$net_dev_losses,
+                                        collated_realisations$program_scale_impacts$program_total),
                        plot_title = 'Program Impact', 
-                       x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_NNL$NNL_mean)),
+                       x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean)),
                        realisation_num,
                        lwd_vec, 
                        col_vec = net_col_vec, 
@@ -123,13 +130,14 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                        legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                        plot_lims = program_plot_lims)
   
-  plot_list = list(collated_realisations$landscape$landscape_impact)
   
-  x_lab = cbind(paste0('System ', write_NNL_label(collated_realisations$system_NNL$NNL_mean)), 
-                paste0('dev sites =', collated_realisations$parcel_nums_used$mean_dev_num, ', offset sites =', 
-                       collated_realisations$parcel_nums_used$mean_offset_num, 'of ', parcel_num))
+  x_lab = cbind(paste0('System ', write_NNL_label(collated_realisations$landscape_scale_NNL$NNL_mean)), 
+                paste0(find_list_mean(collated_realisations$sites_used$total_dev_sites), ' devs,', 
+                       find_list_mean(collated_realisations$sites_used$total_offset_sites), ' offsets,'),
+                paste0(find_list_mean(collated_realisations$sites_used$illegal_sites_cleared), ' illegals, ',
+                       length(collated_realisations$landscape$summed_site_trajectories[[1]]), ' total'))
   
-  overlay_realisations(plot_list,
+  overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
                        plot_title = 'Landscape Impact', 
                        x_lab = t(x_lab),
                        realisation_num,
@@ -140,6 +148,11 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                        landscape_plot_lims) 
   
 }
+
+
+
+
+
 
 
 plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, run_params, policy_params, 
@@ -163,7 +176,7 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
   
   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
   
-  system_NNL = collated_realisations$system_NNL
+  system_NNL = collated_realisations$landscape_NNL
   
   parcel_set_NNL = collated_realisations$parcel_set_NNL
   
@@ -212,8 +225,8 @@ plot_single_policy_collated_realisations <- function(collated_realisations, real
                        plot_lims = plot_lims)
   
   plot_NNL_hists(collated_realisations$parcel_set_NNL, 
-                 collated_realisations$program_NNL,
-                 collated_realisations$system_NNL,
+                 collated_realisations$program_scale_NNL,
+                 collated_realisations$landscape_NNL,
                  use_parcel_sets = policy_params$use_parcel_sets, 
                  feature_ind)
   
@@ -319,8 +332,7 @@ get_y_lab <- function(output_type, current_policy_params, feature_ind){
 }
 
 
-# realisation_ind = 1 
-# plot_from_impact_yr = FALSE 
+
 
 
 
@@ -333,12 +345,12 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
   if (current_policy_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
-    net_plot_list = collated_realisations$program_impacts$net_site_scale[[realisation_ind]][sets_to_plot]
+    net_plot_list = collated_realisations$site_scale_impacts[[realisation_ind]][sets_to_plot]
     
   } else {
-    offset_set = collated_realisations$program_impacts$net_offset_gains
-    dev_set = collated_realisations$program_impacts$net_dev_losses
-    net_plot_list = collated_realisations$program_impacts$net_program[[realisation_ind]]
+    offset_set = collated_realisations$program_scale_impacts$net_offset_gains
+    dev_set = collated_realisations$program_scale_impacts$net_dev_losses
+    net_plot_list = collated_realisations$program_scale_impacts$program_total[[realisation_ind]]
     
   }
   
@@ -506,8 +518,8 @@ generate_single_realisation_plots <- function(run_params, realisations, net_cfac
   
   net_cond = total_parcel_sums - total_counter_sums
   
-  if (length(NNL_object$system_NNL) > 0 ){
-    x_lab = paste0('Mean System NNL = ', round(NNL_object$system_NNL), 'years')
+  if (length(NNL_object$landscape_NNL) > 0 ){
+    x_lab = paste0('Mean System NNL = ', round(NNL_object$landscape_NNL), 'years')
   } else {x_lab = 'NNL fail'}
   
   plot((net_cond), type = 'l', main = 'Landscape Condition Relative to cfac', xlab = x_lab, ylab = '', col = 'red', lwd = 3)
@@ -611,7 +623,7 @@ null_plot <- function(){
   plot(NULL, type= 'n', xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, ann = FALSE)
 }
 # 
-# system_NNL = collated_realisations$system_NNL
+# system_NNL = collated_realisations$landscape_NNL
 # parcel_set_NNL = collated_realisations$parcel_set_NNL 
 # parcel_sums_at_offset = collated_realisations$collated_offsets$parcel_sums_at_offset
 # parcel_sum_lims = c(0, 20000)
@@ -619,7 +631,7 @@ null_plot <- function(){
 
 
 
-# plot_realisation_hists(collated_realisations$system_NNL, collated_realisations$parcel_set_NNL, 
+# plot_realisation_hists(collated_realisations$landscape_NNL, collated_realisations$parcel_set_NNL, 
 #                        collated_realisations$collated_offsets$parcel_sums_at_offset, parcel_sum_lims = c(0, 20000), 
 #                        use_parcel_sets = policy_params$use_parcel_sets, parcel_set_set_NNL_object, feature_ind)
 
@@ -629,7 +641,7 @@ plot_parcel_sums_hist <- function(parcel_sums_at_offset, feature_ind, parcel_sum
   hist(parcel_sums_at_offset_array, main = 'offset parcel values', xlab = 'selected offset parcel values', xlim = parcel_sum_lims)
 }
 
-plot_NNL_hists <- function(parcel_set_NNL, program_NNL, system_NNL, use_parcel_sets, feature_ind){
+plot_NNL_hists <- function(parcel_set_NNL, program_scale_NNL, system_NNL, use_parcel_sets, feature_ind){
   
   if (use_parcel_sets == TRUE){
     plot_NNL_hist(parcel_set_NNL, plot_tit = 'Site scale NNL Assessment', x_lim = c(0, 100), feature_ind) 
@@ -637,15 +649,15 @@ plot_NNL_hists <- function(parcel_set_NNL, program_NNL, system_NNL, use_parcel_s
     null_plot()
   }
   
-  plot_NNL_hist(program_NNL, plot_tit = 'Program scale NNL Assessment', x_lim = c(0, 100), feature_ind)
+  plot_NNL_hist(program_scale_NNL, plot_tit = 'Program scale NNL Assessment', x_lim = c(0, 100), feature_ind)
   plot_NNL_hist(system_NNL, plot_tit = 'Landscape scale NNL Assessment', x_lim = c(0, 100), feature_ind)
   
 }
 
 
-# plot_list = list(collated_realisations$program_impacts$net_offset_gains ,
-#                  collated_realisations$program_impacts$net_dev_losses,
-#                  collated_realisations$program_impacts$net_program)
+# plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains ,
+#                  collated_realisations$program_scale_impacts$net_dev_losses,
+#                  collated_realisations$program_scale_impacts$net_program)
 # plot_title = 'Program Impact' 
 # col_vec = net_col_vec 
 # 
