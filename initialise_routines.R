@@ -1,12 +1,12 @@
 #generic set of initialisation routines that are called for every simulation 
 
-run_initialise_routines <- function(){ 
+run_initialise_routines <- function(user_params_file){ 
   
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
   if (run_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_current_params(params_type = 'run', run_params, run_params$overwrite_params_file)
-    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, run_params$overwrite_params_file)
+    run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
+    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
   }
 
   policy_params_group = generate_policy_params_group(policy_params, run_params)
@@ -144,6 +144,7 @@ write_simulation_folders <- function(run_params, scenario_num){
   
   run_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
   run_params$output_folder = write_folder(paste0(run_params$run_folder, '/simulation_outputs/'))
+  cat('\n writing simulation outputs into', run_params$run_folder, '\n' )
   
   for (scenario_ind in (seq(scenario_num))){
     write_folder(paste0(run_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))

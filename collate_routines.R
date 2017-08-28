@@ -21,6 +21,7 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, decli
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 
                                             run_params, policy_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
+    
     return(collated_realisation)
   
 }
@@ -470,7 +471,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                          collated_program$collated_illegal_clearing)
   
   collated_program$site_scale_NNL = assess_NNL(assess_type = 'site_scale', 
-                                         impacts = collated_program$site_scale_impacts, 
+                                         impacts = collated_program$site_scale_impacts$net_impacts, 
                                          offset_yrs_to_use = collated_program$collated_offsets$offset_yrs, 
                                          parcel_indexes = simulation_outputs$offsets_object$parcel_indexes)
   
@@ -490,21 +491,51 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
   collated_program$net_landscape_loss = assess_landscape_loss(landscape_vals = collated_program$landscape$net_landscape, 
                                                               NNL_yr = unlist(collated_program$landscape_scale_NNL$NNL))
   
-  
+  collated_program$sites_used = find_sites_used(collated_program)
   return(collated_program)
   
 }
 
 
-collate_site_scale_impacts <- function(collated_site_scale_offsets, collated_site_scale_devs){
+find_sites_used <- function(collated_program){
+  sites_used = list()
+  sites_used$offset_sites = find_current_sites_used(collated_program$collated_offsets$parcel_indexes)
+  sites_used$dev_sites = find_current_sites_used(collated_program$collated_devs$parcel_indexes)
   
-  if ((length(collated_site_scale_offsets) > 0) & (length(collated_site_scale_devs) > 0)){
-    site_scale_impacts <- mapply('+', collated_site_scale_offsets, collated_site_scale_devs, SIMPLIFY = FALSE)
+  sites_used$offset_bank = find_current_sites_used(collated_program$collated_offset_bank$parcel_indexes)
+  sites_used$dev_credit = find_current_sites_used(collated_program$collated_dev_credit$parcel_indexes)
+  
+  sites_used$illegal_sites_cleared = find_current_sites_used(collated_program$collated_illegal_clearing$parcel_indexes)
+  sites_used$total_offset_sites = sum_list(list(sites_used$offset_sites, sites_used$offset_bank))
+  sites_used$total_dev_sites = sum_list(list(sites_used$dev_sites, sites_used$dev_credit))
+  
+  return(sites_used)
+}
+
+find_current_sites_used <- function(current_sites_list){
+  if (length(current_sites_list) == 0){
+    sites_used = list()
+    return(sites_used)
   } else {
-    site_scale_impacts$net_site_scale = list()
+    sites_used = length(unlist(current_sites_list))
+    return(sites_used)
   }
+}
+
+
+
+
+collate_site_scale_impacts <- function(collated_site_scale_offsets, collated_site_scale_devs){
+  site_scale_impacts = list()
+  if ((length(collated_site_scale_offsets) > 0) & (length(collated_site_scale_devs) > 0)){
+    site_scale_impacts$net_impacts <- mapply('+', collated_site_scale_offsets, collated_site_scale_devs, SIMPLIFY = FALSE)
+  } else {
+    site_scale_impacts = list()
+  }
+  
   return(site_scale_impacts)
 }
+
 get_current_sim_characteristics <- function(current_policy_params, realisation_num){
   
   sim_characteristics = vector()
@@ -550,18 +581,26 @@ get_current_sim_characteristics <- function(current_policy_params, realisation_n
 
 sum_list <- function(list_to_sum){
   empties = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) == 0)))
-  if (length(empties) == length(list_to_sum)){
+  sets_to_use = setdiff(seq_along(list_to_sum), empties)
+  if (length(sets_to_use) == 0){
     summed_list = list()
   } else {
-    if (length(empties) == 0){
-      summed_list <- Reduce('+', list_to_sum)
-    } else {
-      summed_list <- Reduce('+', list_to_sum[-empties])
-    }
+    summed_list <- Reduce('+', list_to_sum[sets_to_use])
   }
   return(summed_list)
 }
 
+
+find_list_mean <- function(list_to_sum){
+  empties = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) == 0)))
+  sets_to_use = setdiff(seq_along(list_to_sum), empties)
+  if (length(sets_to_use) == 0){
+    list_mean = list()
+  } else {
+      list_mean <- Reduce('+', list_to_sum[sets_to_use])/length(sets_to_use)
+  }
+  return(list_mean)
+}
 
 prepare_realisations <- function(realisations){   #remove unsuccessful offset programs
   offset_success_flag = unlist(lapply(seq_along(realisations), function(i) realisations[[i]]$offset_success_flag))
