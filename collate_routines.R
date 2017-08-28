@@ -228,44 +228,35 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
 }
 
 
-collate_net_program_outcomes <- function(simulation_outputs, summed_site_trajectories){
-  collated_program_outcomes = list()
-  collated_program_outcomes$offsets <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$offsets_object$parcel_indexes)])
-  collated_program_outcomes$devs <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$dev_object$parcel_indexes)])
-  collated_program_outcomes$dev_credit <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$credit_object$parcel_indexes)])
-  collated_program_outcomes$offset_bank <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$offset_bank$parcel_indexes)])
+collate_program_scale_outcomes <- function(simulation_outputs, summed_site_trajectories){
+  program_scale_outcomes = list()
+  program_scale_outcomes$offsets <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$offsets_object$parcel_indexes)])
+  program_scale_outcomes$devs <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$dev_object$parcel_indexes)])
+  program_scale_outcomes$dev_credit <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$credit_object$parcel_indexes)])
+  program_scale_outcomes$offset_bank <- Reduce('+', summed_site_trajectories[unlist(simulation_outputs$offset_bank$parcel_indexes)])
   
-  collated_program_outcomes$net_offsets <- sum_list(list(collated_program_outcomes$offsets, collated_program_outcomes$offset_bank))
-  collated_program_outcomes$net_devs <- sum_list(list(collated_program_outcomes$devs, collated_program_outcomes$dev_credit))
-  collated_program_outcomes$net <- sum_list(list(collated_program_outcomes$net_offsets, collated_program_outcomes$net_devs))
+  program_scale_outcomes$net_offsets <- sum_list(list(program_scale_outcomes$offsets, program_scale_outcomes$offset_bank))
+  program_scale_outcomes$net_devs <- sum_list(list(program_scale_outcomes$devs, program_scale_outcomes$dev_credit))
+  program_scale_outcomes$net_outcome <- sum_list(list(program_scale_outcomes$net_offsets, program_scale_outcomes$net_devs))
   
-  return(collated_program_outcomes)
+  return(program_scale_outcomes)
 }
 
 
 
 
-collate_net_program_impacts <- function(collated_program){
-  collated_program_impacts = list()
-  program_offsets = collated_program$collated_offsets$summed_gains_degs$nets
-  program_devs = collated_program$collated_devs$summed_gains_degs$nets
-  if ((length(program_offsets) > 0) & (length(program_devs) > 0)){
-    collated_program_impacts$net_site_scale <- mapply('+', collated_program$collated_offsets$summed_gains_degs$nets, 
-                                                    collated_program$collated_devs$summed_gains_degs$nets, SIMPLIFY = FALSE)
-  } else {
-    collated_program_impacts$net_site_scale = list()
-  }
+collate_program_scale_impacts <- function(collated_program){
+  program_scale_impacts = list()
+  program_scale_impacts$offset_site_gains = Reduce('+', collated_program$collated_offsets$summed_gains_degs$nets)
+  program_scale_impacts$offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$nets)
+  program_scale_impacts$dev_site_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$nets)
+  program_scale_impacts$dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$nets)
+  program_scale_impacts$illegal_clearing <- Reduce('+', collated_program$collated_illegal_clearing$summed_gains_degs$nets)
   
-  collated_program_impacts$net_offset_site_gains = Reduce('+', collated_program$collated_offsets$summed_gains_degs$nets)
-  collated_program_impacts$net_offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$nets)
-  collated_program_impacts$net_dev_site_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$nets)
-  collated_program_impacts$net_dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$nets)
-  collated_program_impacts$net_illegal_clearing <- Reduce('+', collated_program$collated_illegal_clearing$summed_gains_degs$nets)
-  
-  collated_program_impacts$total_offset_gains = sum_list(list(collated_program_impacts$net_offset_site_gains, collated_program_impacts$net_offset_bank_gains))
-  collated_program_impacts$total_dev_losses = sum_list(list(collated_program_impacts$net_dev_site_losses, collated_program_impacts$net_dev_credit_losses))
-  collated_program_impacts$program_total <- sum_list(list(collated_program_impacts$total_offset_gains, collated_program_impacts$total_dev_losses))
-  return(collated_program_impacts)
+  program_scale_impacts$net_offset_gains = sum_list(list(program_scale_impacts$offset_site_gains, program_scale_impacts$offset_bank_gains))
+  program_scale_impacts$net_dev_losses = sum_list(list(program_scale_impacts$dev_site_losses, program_scale_impacts$dev_credit_losses))
+  program_scale_impacts$program_total <- sum_list(list(program_scale_impacts$net_offset_gains, program_scale_impacts$net_dev_losses))
+  return(program_scale_impacts)
 }
 
 
@@ -461,11 +452,14 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                               use_cfac_type_in_sim, 
                                                                               feature_ind)
   
+  collated_program$site_scale_impacts <- collate_site_scale_impacts(collated_site_scale_offsets = collated_program$collated_offsets$summed_gains_degs$nets,
+                                                   collated_site_scale_devs = collated_program$collated_devs$summed_gains_degs$nets)
+
   collated_program$landscape <- calc_landscape_characteristics(current_trajectories, landscape_cfacs_object)
   
-  collated_program$program_outcomes <- collate_net_program_outcomes(simulation_outputs, collated_program$landscape$summed_site_trajectories)
+  collated_program$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collated_program$landscape$summed_site_trajectories)
   
-  collated_program$program_impacts <- collate_net_program_impacts(collated_program)
+  collated_program$program_scale_impacts <- collate_program_scale_impacts(collated_program)
   
   collated_program$program_cfacs = collate_program_cfacs(simulation_outputs, 
                                                          landscape_cfacs_object$background_cfacs, 
@@ -475,26 +469,26 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                          collated_program$collated_offset_bank, 
                                                          collated_program$collated_illegal_clearing)
   
-  collated_program$site_NNL = assess_NNL(assess_type = 'site_scale', 
-                                         impacts = collated_program$program_impacts$net_site_scale, 
+  collated_program$site_scale_NNL = assess_NNL(assess_type = 'site_scale', 
+                                         impacts = collated_program$site_scale_impacts, 
                                          offset_yrs_to_use = collated_program$collated_offsets$offset_yrs, 
                                          parcel_indexes = simulation_outputs$offsets_object$parcel_indexes)
   
-  collated_program$program_NNL = assess_NNL(assess_type = 'program', 
-                                            impacts = list(collated_program$program_impacts$program_total), 
+  collated_program$program_scale_NNL = assess_NNL(assess_type = 'program', 
+                                            impacts = list(collated_program$program_scale_impacts$program_total), 
                                             offset_yrs_to_use = list(1), 
                                             parcel_indexes = vector())
   
-  collated_program$landscape_NNL = assess_NNL(assess_type = 'landscape', 
+  collated_program$landscape_scale_NNL = assess_NNL(assess_type = 'landscape', 
                                               impacts = list(collated_program$landscape$landscape_impact), 
                                               offset_yrs_to_use = list(1), 
                                               parcel_indexes = vector())
   
-  collated_program$net_program_loss = assess_landscape_loss(landscape_vals = collated_program$program_outcomes$net, 
-                                                            NNL_yr = unlist(collated_program$program_NNL$NNL))
+  collated_program$net_program_loss = assess_landscape_loss(landscape_vals = collated_program$program_outcomes$net_outcome, 
+                                                            NNL_yr = unlist(collated_program$program_scale_NNL$NNL))
   
   collated_program$net_landscape_loss = assess_landscape_loss(landscape_vals = collated_program$landscape$net_landscape, 
-                                                              NNL_yr = unlist(collated_program$landscape_NNL$NNL))
+                                                              NNL_yr = unlist(collated_program$landscape_scale_NNL$NNL))
   
   
   return(collated_program)
@@ -502,6 +496,15 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
 }
 
 
+collate_site_scale_impacts <- function(collated_site_scale_offsets, collated_site_scale_devs){
+  
+  if ((length(collated_site_scale_offsets) > 0) & (length(collated_site_scale_devs) > 0)){
+    site_scale_impacts <- mapply('+', collated_site_scale_offsets, collated_site_scale_devs, SIMPLIFY = FALSE)
+  } else {
+    site_scale_impacts$net_site_scale = list()
+  }
+  return(site_scale_impacts)
+}
 get_current_sim_characteristics <- function(current_policy_params, realisation_num){
   
   sim_characteristics = vector()
@@ -550,7 +553,11 @@ sum_list <- function(list_to_sum){
   if (length(empties) == length(list_to_sum)){
     summed_list = list()
   } else {
-    summed_list <- Reduce('+', list_to_sum[-empties])
+    if (length(empties) == 0){
+      summed_list <- Reduce('+', list_to_sum)
+    } else {
+      summed_list <- Reduce('+', list_to_sum[-empties])
+    }
   }
   return(summed_list)
 }
