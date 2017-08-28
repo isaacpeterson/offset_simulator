@@ -4,7 +4,7 @@ initialise_run_params <- function(){
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
   # The number of realizations to run
-  run_params$realisation_num = 2
+  run_params$realisation_num = 1
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)

@@ -6,14 +6,14 @@ rm(list=ls(all=TRUE))
 # User parameters
 #---------------------
 
-plot_type = 'outcomes' # can be 'outcomes'  or 'impacts',
+plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'by_scenario' # set to 'by_feature' for multiple feature layers or 'by_scenario' for multiple scenarios
 realisation_num = 1 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 7 # for output plot name
+run_number = 8 # for output plot name
 sets_to_plot = 5 #example site to plot
-plot_vec = 1
+plot_vec = 1:6
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
