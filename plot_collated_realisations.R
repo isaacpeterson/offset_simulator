@@ -1,6 +1,5 @@
-# Plot the collated simulaton results
-# To run: source('plot_collated_realisations.R')
-rm(list=ls(all=TRUE))
+source('plot_routines.R')                                   # functions to plot collated outputs
+source('collate_routines.R')
 
 #---------------------
 # User parameters
@@ -11,7 +10,7 @@ output_type = 'features' # set to 'features' for multiple feature layers or 'sce
 realisation_num = 2 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 21 # for output plot name
+run_number = 28 # for output plot name
 sets_to_plot = 5 #example site to plot
 plot_vec = 1
 string_width = 3 #how many digits are used to store scenario index and realisation index
@@ -36,8 +35,6 @@ if (output_type == 'scenarios'){
 }
 
 
-
-
 # current_folder = paste0('~/offset_data/simulated/nectar_runs/data100reps/')
 
 collated_folder = paste0(current_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
@@ -53,15 +50,6 @@ if (plot_type == 'impacts'){
 } else if (plot_type == 'outcomes'){
   filename = paste0(output_plot_folder, '/outcomes.pdf')
 }
-
-#---------------------
-# User parameters
-#---------------------
-
-source('plot_routines.R')                                   # functions to plot collated outputs
-source('collate_routines.R')
-
-
 
 check_plot_options()
 
@@ -80,13 +68,10 @@ if (!file.exists(output_plot_folder)){
 }
 
 # Set the output filename, and open the pdf file for reading
-if (write_pdf == TRUE){
-  
-  pdf(filename, width = 8.3, height = 11.7) 
-} 
+if (write_pdf == TRUE){pdf(filename, width = 8.3, height = 11.7)} 
 
+# write plots to nx * ny subplots
 setup_sub_plots(nx = 3, ny = 4, x_space = 5, y_space = 5)
-
 
 scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 

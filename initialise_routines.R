@@ -9,6 +9,7 @@ run_initialise_routines <- function(user_params_file){
     policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
   }
 
+  check_policy_params(policy_params)
   policy_params_group = generate_policy_params_group(policy_params, run_params)
   run_params$strt = Sys.time()
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
@@ -53,6 +54,17 @@ run_initialise_routines <- function(user_params_file){
   
 }
 
+
+
+check_policy_params <- function(policy_params){
+  valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 
+                             'protected_condition', 'current_condition_maintain', 'current_condition_protect') 
+  discriminant = setdiff(policy_params$offset_calc_type, valid_offset_calc_type)
+  if (length(discriminant) > 0){
+    stop(cat('\n invalid offset_calc_type parameter ', discriminant))
+  }
+  
+}
 
 overwrite_current_params <- function(params_type, current_params, overwrite_params_file){
   

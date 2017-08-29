@@ -1,4 +1,4 @@
-# scenario_ind = 1
+# scenario_ind = 3
 # policy_params = run_params$policy_params_group[[scenario_ind]]
 # realisation_ind = 1
 
@@ -257,8 +257,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
     
     if ( (length(unlist(simulation_outputs$offsets_object$parcel_indexes)) > 0) & 
          (run_params$limit_offset_restoration == TRUE) & 
-         current_policy_params$offset_action_type == 'restore'){
-      
+         (current_policy_params$offset_action_type == 'restore')){
       
       assessed_parcel_sets_object <- assess_parcel_sets(simulation_outputs$current_ecology, 
                                                         simulation_outputs$offsets_object, 
@@ -387,13 +386,19 @@ select_inds_to_clear <- function(index_object, run_params){
 perform_illegal_clearing <- function(current_ecology, index_object, yr, region_ind, current_policy_params, 
                                      run_params, decline_rates_initial, time_horizon){
   
-  parcel_num_remaining = length(index_object$indexes_to_use[[region_ind]])
-  inds_to_clear <- select_inds_to_clear(index_object, current_policy_params)
-  print(inds_to_clear)
-  
-  if (length(inds_to_clear) == 0){
+  if (run_params$illegal_clearing_prob == 0){ # return null for illegal clearing off
     return()
   }
+  
+  inds_to_clear <- select_inds_to_clear(index_object, run_params)
+  cat('\n illegally cleared' , inds_to_clear)
+  
+  if (length(inds_to_clear) == 0){ #return null for no sites selected for illegal clearing
+    return()
+  }
+  
+  parcel_num_remaining = length(index_object$indexes_to_use[[region_ind]]) #used for calculation of cfac
+  
   illegally_cleared_object <- record_current_parcel_set(current_ecology[inds_to_clear], 
                                                         inds_to_clear, 
                                                         parcel_num_remaining, 
@@ -506,13 +511,15 @@ prepare_offset_pool <- function(simulation_outputs, current_policy_params, regio
                                 parcels, decline_rates_initial, yr){
   
   if (run_params$intervention_vec[yr] ==  0){
-    return()
+    offset_pool_object = list()
+    return(offset_pool_object)
   }
   
   current_offset_pool <- simulation_outputs$index_object$indexes_to_use[[region_ind]]
   
   if (length(current_offset_pool) == 0){ 
-    return(simulation_outputs)
+    offset_pool_object = list()
+    return(offset_pool_object)
   }
   
   if (current_policy_params$use_offset_bank == TRUE){
@@ -545,7 +552,6 @@ prepare_offset_pool <- function(simulation_outputs, current_policy_params, regio
                                             decline_rates_initial,
                                             time_horizon = current_policy_params$offset_time_horizon, 
                                             yr)      #determine available parcel values, depending on what particular offset policy is in use using counterfactuals etc.
-  
   return(offset_pool_object)
 }
 
@@ -1985,7 +1991,7 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
                              parcel_num, parcel_num_remaining, time_steps, illegal_clearing_prob){
   if (perform_weight == TRUE){
     if (calc_type == 'illegal_clearing'){
-      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(illegal_clearing_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_policy_params$illegal_clearing_prob)
+      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(illegal_clearing_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = run_params$illegal_clearing_prob)
     } else {
       weighted_probs <- find_intervention_probability(intervention_vec, 
                                                       offset_yrs,
