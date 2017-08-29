@@ -59,11 +59,16 @@ run_initialise_routines <- function(user_params_file){
 check_policy_params <- function(policy_params){
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 
                              'protected_condition', 'current_condition_maintain', 'current_condition_protect') 
-  discriminant = setdiff(policy_params$offset_calc_type, valid_offset_calc_type)
-  if (length(discriminant) > 0){
-    stop(cat('\n invalid offset_calc_type parameter ', discriminant))
-  }
+  check_current_param(setdiff(policy_params$offset_calc_type, valid_offset_calc_type))
+  valid_dev_calc_type = c('future_condition', 'current_condition')
+  check_current_param(setdiff(policy_params$dev_calc_type, valid_dev_calc_type))
   
+}
+
+check_current_param <- function(discriminant){
+  if (length(discriminant) > 0){
+    stop(cat('\n invalid parameter ', discriminant))
+  }
 }
 
 overwrite_current_params <- function(params_type, current_params, overwrite_params_file){

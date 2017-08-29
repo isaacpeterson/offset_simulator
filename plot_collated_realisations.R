@@ -6,13 +6,13 @@ source('collate_routines.R')
 #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-output_type = 'features' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
+output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 2 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 28 # for output plot name
+run_number = 31 # for output plot name
 sets_to_plot = 5 #example site to plot
-plot_vec = 1
+plot_vec = 1:3
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
 current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
