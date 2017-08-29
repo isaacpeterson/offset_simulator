@@ -318,16 +318,17 @@ overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectorie
 
 get_y_lab <- function(output_type, current_policy_params, feature_ind){
   
-  if (output_type == 'by_scenario'){
+  if (output_type == 'scenarios'){
     y_lab = current_policy_params$offset_calc_type
   } else {
     y_lab = paste0('Feature ', feature_ind, ', ')
   }
   if (current_policy_params$use_offset_bank == FALSE){
-    y_lab = paste0(y_lab, 'T.H. ', current_policy_params$offset_time_horizon, ', Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
+    y_lab = cbind(y_lab, paste0('T.H. ', current_policy_params$offset_time_horizon, ', Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc))
   } else{
-    y_lab = paste0(y_lab, ' offset_bank T, Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc)
+    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc))
   }
+  y_lab = t(y_lab)
   return(y_lab)
 }
 
