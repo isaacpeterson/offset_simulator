@@ -378,7 +378,6 @@ select_inds_to_clear <- function(index_object, run_params){
 
 
 
-
 # current_ecology = simulation_outputs$current_ecology
 # index_object = simulation_outputs$index_object
 # time_horizon = current_policy_params$offset_time_horizon

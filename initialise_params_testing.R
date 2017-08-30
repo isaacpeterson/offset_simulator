@@ -4,7 +4,7 @@ initialise_run_params <- function(){
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
   # The number of realizations to run
-  run_params$realisation_num = 1
+  run_params$realisation_num = 2
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
@@ -22,7 +22,7 @@ initialise_run_params <- function(){
   run_params$limit_offset_restoration = TRUE
 
     # The probability per parcel of it being illegaxlly cleared, every parcel gets set to this number - set to zero to turn off
-  run_params$illegal_clearing_prob = 1e-2
+  run_params$illegal_clearing_prob = 1e-3
 
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
   run_params$screen_parcels_by_size = TRUE 
@@ -51,12 +51,12 @@ initialise_policy_params <- function(){
 
   policy_params = list()
 
-  # The Options are 'restoration_gains' - the gains are calcualted relative to
+  # The options are 'restoration_gains' - the gains are calcualted relative to
   # the site value at the time of the interventionabove 
   # 'avoided_condition_decline - the gains are calculated relative to the biodiversity
   # 'condition without the offset in place (the do nothing counterfactual)
   # 'net_gains' - is the sum of the previous 2
-  policy_params$offset_calc_type = c('net_gains') 
+  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
 
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
