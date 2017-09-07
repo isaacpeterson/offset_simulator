@@ -10,22 +10,22 @@ output_type = 'scenarios' # set to 'features' for multiple feature layers or 'sc
 realisation_num = 2 # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 31 # for output plot name
-sets_to_plot = 5 #example site to plot
-plot_vec = 1:3
-string_width = 3 #how many digits are used to store scenario index and realisation index
+run_number = 2 # for output plot name
+sets_to_plot = 50 # example site to plot
+plot_vec = c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
+string_width = 3 # how many digits are used to store scenario index and realisation index
 
 current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
                         formatC(run_number, width = 5, format = "d", flag = "0"), '/')
 
 site_plot_lims = rep(list(c(0, 1e4)), length(plot_vec))
-site_impact_plot_lims = rep(list(c(-3e3, 3e3)), length(plot_vec))
+site_impact_plot_lims = rep(list(c(-10e3, 10e3)), length(plot_vec))
 
 program_outcome_plot_lims = rep(list(c(0e6, 3e6)), length(plot_vec))
 landscape_outcome_plot_lims = rep(list(c(0, 2e7)), length(plot_vec))
 
-program_impact_plot_lims = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
-landscape_impact_plot_lims = rep(list(c(-6e5, 0)), length(plot_vec))
+program_impact_plot_lims = rep(list(c(-9e5, 8e5)), length(plot_vec)) 
+landscape_impact_plot_lims = rep(list(c(-4e5, 12e5)), length(plot_vec))
 
 
 if (output_type == 'scenarios'){
