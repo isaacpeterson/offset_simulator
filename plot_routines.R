@@ -108,6 +108,7 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
   dev_col_vec = c('blue', 'red')
   net_col_vec = c('darkgreen', 'red', 'black')
   
+  # Plot the site scale impacts
   overlay_parcel_sets(collated_realisations,
                       output_type,
                       current_policy_params,
@@ -118,6 +119,7 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                       site_plot_lims,
                       time_steps)
   
+  # Plot the program scale impacts
   overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
                                         collated_realisations$program_scale_impacts$net_dev_losses,
                                         collated_realisations$program_scale_impacts$program_total),
@@ -136,7 +138,8 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
                        find_list_mean(collated_realisations$sites_used$total_offset_sites), ' offsets,'),
                 paste0(find_list_mean(collated_realisations$sites_used$illegal_sites_cleared), ' illegals, ',
                        length(collated_realisations$landscape$summed_site_trajectories[[1]]), ' total'))
-  
+
+  # Plot the landscape scale impacts
   overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
                        plot_title = 'Landscape Impact', 
                        x_lab = t(x_lab),
@@ -285,6 +288,8 @@ write_NNL_label <- function(NNL_yrs){
   } else {
     NNL_label = 'All realisations faileld NNL'
   } 
+
+  
   return(NNL_label)
 }
 
@@ -319,12 +324,12 @@ overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectorie
 get_y_lab <- function(output_type, current_policy_params, feature_ind){
   
   if (output_type == 'scenarios'){
-    y_lab = current_policy_params$offset_calc_type
+    y_lab = paste( 'off:', current_policy_params$offset_calc_type, '\ndev:', current_policy_params$dev_calc_type )
   } else {
     y_lab = paste0('Feature ', feature_ind, ', ')
   }
   if (current_policy_params$use_offset_bank == FALSE){
-    y_lab = cbind(y_lab, paste0('T.H. ', current_policy_params$offset_time_horizon, ', Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc))
+    y_lab = cbind(y_lab, paste0('T.H. ', current_policy_params$offset_time_horizon, ', ill_clear ', current_policy_params$include_illegal_clearing_in_offset_calc))
   } else{
     y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_policy_params$include_illegal_clearing_in_offset_calc))
   }
@@ -355,6 +360,8 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
     
   }
   
+
+  # Plot the impact of the offset site(s) 
   overlay_parcel_set_element(collated_object = offset_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'stacked', 
@@ -367,7 +374,8 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
                              sets_to_plot, 
                              site_plot_lims, 
                              time_steps)
-  
+
+  # Overlay the impact of the development site 
   overlay_parcel_set_element(dev_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'non-stacked', 
@@ -381,6 +389,7 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
                              site_plot_lims, 
                              time_steps)
   
+  # Overlay the net impact of the offset and development impact 
   overlay_plot_list(plot_type = 'overlay', net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
                     col_vec = rep('black', length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
@@ -752,40 +761,6 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
 
 
 
-
-plot_program_evaluation <- function(summed_program_realisations, loss_stats, realisation_num, summed_program_cfacs, feature_ind, lwd_vec, col_vec, legend_vec){
-  
-  #setup_sub_plots(nx = 1, ny = 2, x_tit = TRUE)
-  
-  loss_tit = paste0('Net program loss = ', round(mean(loss_stats$total_loss)*100), '%')
-  
-  if (length(loss_stats$NNL_loss) > 0){
-    #landscape_title = paste0('NNL at ', round(mean(loss)), '\U00b1', round(max(range(loss) - (mean(loss))), 1), '% loss of landscape')
-    NNL_tit = paste0('Mean NNL at  ', round(mean(loss_stats$NNL_loss*100)), '% program loss')
-  } else NNL_tit = 'All realisations failed NNL'
-  
-  sub_tit = cbind(NNL_tit, loss_tit)
-  
-  plot_collated_realisation_set(summed_program_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, lwd_vec, 
-                                x_lab = sub_tit, plot_title = 'Net Program Value', plot_lims = c(0, max(summed_program_realisations)))
-  plot_collated_realisation_set(summed_program_cfacs, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, lwd_vec, 
-                                x_lab = '', plot_title = '', plot_lims = vector())
-  
-  legend('bottomleft', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
-  
-  
-  #   plot_collated_realisation_set( (summed_program_realisations - summed_program_cfacs), overlay_plots = FALSE, plot_col = col_vec[3], realisation_num, feature_ind = 1, lwd_vec, 
-  #                                  x_lab = '', plot_title = 'Net Value Rel. to Counterfactual', plot_lims = vector() )
-  #   
-  
-  
-}
-
-
-
-
-
-
 plot_parcel_set_parcels <- function(current_set_object){
   
   
@@ -833,7 +808,7 @@ setup_sub_plots <- function(nx, ny, x_space, y_space){
   par(mar = c(x_space, y_space, 1, 0), oma = c(2, 4, 2.5, 0.5))
   
   par(tcl = -0.25)
-  par(mgp = c(2, 0.6, 0))
+  par(mgp = c(2, 0.3, 0))
   
 }
 

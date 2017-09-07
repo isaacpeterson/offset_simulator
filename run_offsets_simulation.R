@@ -11,7 +11,7 @@ source('simulation_routines.R')                # functions to run simulation
 source('collate_routines.R')                                # functions to collate simulation outputs
 source('plot_routines.R')                                   # functions to plot collated outputs
 
-user_params_file = 'initialise_params_testing.R'
+user_params_file = 'initialise_params_scale_paper.R'
 run_params <- run_initialise_routines(user_params_file)
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
 parcels <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcels.rds'))
