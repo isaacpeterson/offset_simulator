@@ -1,6 +1,15 @@
 #generic set of initialisation routines that are called for every simulation 
 
 run_initialise_routines <- function(user_params_file){ 
+  library(foreach)
+  library(doParallel)
+  library(abind)
+  library(pixmap)
+  
+  source('initialise_params_defaults.R')
+  source('simulation_routines.R')                 # functions to run simulation
+  source('collate_routines.R')                                # functions to collate simulation outputs
+  source('plot_routines.R')                                   # functions to plot collated outputs
   
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
