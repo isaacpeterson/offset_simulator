@@ -7,19 +7,27 @@ source('collate_routines.R')
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
-realisation_num = 2 # 'all' or number to plot
+realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
 run_number = 31 # for output plot name
-sets_to_plot = 5 #example site to plot
-plot_vec = 1:3
+sets_to_plot = 1 #example offset/development set to plot
+plot_vec = 1:12
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
-current_folder = paste0('~/offset_data/simulated/simulation_runs/', 
-                        formatC(run_number, width = 5, format = "d", flag = "0"), '/')
+# base_folder = paste0('~/offset_data/simulated/simulation_runs/', 
+#                         formatC(run_number, width = 5, format = "d", flag = "0"), '/')
+base_folder = '~/Downloads/00002/'
 
+collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
+
+simulation_params_folder = paste0(base_folder, '/simulation_params/')
+#simulation_params_folder = collated_folder
+
+#collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
+output_plot_folder = collated_folder
 site_plot_lims = rep(list(c(0, 1e4)), length(plot_vec))
-site_impact_plot_lims = rep(list(c(-3e3, 3e3)), length(plot_vec))
+site_impact_plot_lims = rep(list(c(-1e4, 1e4)), length(plot_vec))
 
 program_outcome_plot_lims = rep(list(c(0e6, 3e6)), length(plot_vec))
 landscape_outcome_plot_lims = rep(list(c(0, 2e7)), length(plot_vec))
@@ -35,15 +43,7 @@ if (output_type == 'scenarios'){
 }
 
 
-# current_folder = paste0('~/offset_data/simulated/nectar_runs/data100reps/')
 
-collated_folder = paste0(current_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
-
-simulation_params_folder = paste0(current_folder, '/simulation_params/')
-#simulation_params_folder = collated_folder
-
-#collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
-output_plot_folder = collated_folder
 
 if (plot_type == 'impacts'){
   filename = paste0(output_plot_folder, '/impacts.pdf')

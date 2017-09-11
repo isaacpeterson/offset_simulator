@@ -6,7 +6,7 @@
 check_plot_options <- function() {
   
   if(plot_type != 'impacts' & plot_type != 'outcomes')
-    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to', plot_type) )
+    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_type) )
 }
 
 plot_outcome_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
@@ -346,7 +346,7 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
   if (current_policy_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
-    net_plot_list = collated_realisations$site_scale_impacts[[realisation_ind]][sets_to_plot]
+    net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][sets_to_plot]
     
   } else {
     offset_set = collated_realisations$program_scale_impacts$net_offset_gains
@@ -389,14 +389,14 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
 
 
 
-# collated_object = offset_set
+# collated_object = dev_set
 # offset_bank = current_policy_params$use_offset_bank
-# visualisation_type = 'stacked' 
+# visualisation_type = 'non-stacked' 
 # 
-# plot_col = 'darkgreen' 
+# plot_col = 'red' 
 # 
 # plot_type = 'non-overlay'
-
+# plot_lims = site_plot_lims
 
 overlay_parcel_set_element <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
                                        plot_col, plot_lwd, plot_type, y_lab, plot_from_impact_yr, 
