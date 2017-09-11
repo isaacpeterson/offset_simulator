@@ -26,10 +26,10 @@ simulation_params_folder = paste0(base_folder, '/simulation_params/')
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
-site_plot_lims_set = rep(list(c(0, 1e4)), length(plot_vec))
+site_outcome_plot_lims_set = rep(list(c(0, 1e4)), length(plot_vec))
 site_impact_plot_lims_set = rep(list(c(-1e4, 1e4)), length(plot_vec))
 
-program_outcome_plot_lims_set = rep(list(c(0e6, 3e6)), length(plot_vec))
+program_outcome_plot_lims_set = rep(list(c(0e6, 10e6)), length(plot_vec))
 landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(plot_vec))
 
 program_impact_plot_lims_set = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
@@ -119,7 +119,7 @@ for (plot_ind in plot_vec){
     plot_outcome_set(collated_realisations,
                      output_type,
                      current_policy_params,
-                     site_plot_lims_set[[plot_ind]],
+                     site_outcome_plot_lims_set[[plot_ind]],
                      program_outcome_plot_lims_set[[plot_ind]], 
                      landscape_outcome_plot_lims_set[[plot_ind]],
                      sets_to_plot,

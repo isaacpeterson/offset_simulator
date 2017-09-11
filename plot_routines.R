@@ -9,6 +9,11 @@ check_plot_options <- function() {
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_type) )
 }
 
+
+# site_plot_lims = site_outcome_plot_lims_set[[plot_ind]]
+# program_plot_lims = program_outcome_plot_lims_set[[plot_ind]] 
+# landscape_plot_lims = landscape_outcome_plot_lims_set[[plot_ind]]
+
 plot_outcome_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
                              landscape_plot_lims, sets_to_plot, lwd_vec, time_steps, realisation_num, feature_ind){
   
@@ -18,7 +23,7 @@ plot_outcome_set <- function(collated_realisations, output_type, current_policy_
   
   plot_site_outcomes(collated_realisations, output_type, current_policy_params, sets_to_plot, site_plot_lims, feature_ind)
   
-  plot_outcomes(collated_realisations$program_outcomes$net, 
+  plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
                 plot_type = 'program', 
                 enforce_limits = TRUE, 
                 include_legend = FALSE, 
