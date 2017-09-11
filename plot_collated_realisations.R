@@ -5,13 +5,13 @@ source('collate_routines.R')
 # User parameters
 #---------------------
 
-plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
+plot_type = 'outcomes' # can be 'outcomes'  or 'impacts',
 output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
 run_number = 31 # for output plot name
-sets_to_plot = 1 #example offset/development set to plot
+sets_to_plot = 10 #example offset/development set to plot
 plot_vec = 1:12
 string_width = 3 #how many digits are used to store scenario index and realisation index
 
@@ -26,14 +26,14 @@ simulation_params_folder = paste0(base_folder, '/simulation_params/')
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
-site_plot_lims = rep(list(c(0, 1e4)), length(plot_vec))
-site_impact_plot_lims = rep(list(c(-1e4, 1e4)), length(plot_vec))
+site_plot_lims_set = rep(list(c(0, 1e4)), length(plot_vec))
+site_impact_plot_lims_set = rep(list(c(-1e4, 1e4)), length(plot_vec))
 
-program_outcome_plot_lims = rep(list(c(0e6, 3e6)), length(plot_vec))
-landscape_outcome_plot_lims = rep(list(c(0, 2e7)), length(plot_vec))
+program_outcome_plot_lims_set = rep(list(c(0e6, 3e6)), length(plot_vec))
+landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(plot_vec))
 
-program_impact_plot_lims = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
-landscape_impact_plot_lims = rep(list(c(-6e5, 0)), length(plot_vec))
+program_impact_plot_lims_set = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
+landscape_impact_plot_lims_set = rep(list(c(-6e5, 0)), length(plot_vec))
 
 
 if (output_type == 'scenarios'){
@@ -106,9 +106,9 @@ for (plot_ind in plot_vec){
     plot_impact_set(collated_realisations, 
                     output_type,
                     current_policy_params, 
-                    site_impact_plot_lims[[plot_ind]],
-                    program_impact_plot_lims[[plot_ind]], 
-                    landscape_impact_plot_lims[[plot_ind]], 
+                    site_impact_plot_lims_set[[plot_ind]],
+                    program_impact_plot_lims_set[[plot_ind]], 
+                    landscape_impact_plot_lims_set[[plot_ind]], 
                     sets_to_plot,
                     lwd_vec = c(3, 0.5), 
                     time_steps = run_params$time_steps, 
@@ -119,9 +119,9 @@ for (plot_ind in plot_vec){
     plot_outcome_set(collated_realisations,
                      output_type,
                      current_policy_params,
-                     site_plot_lims[[plot_ind]],
-                     program_outcome_plot_lims[[plot_ind]], 
-                     landscape_outcome_plot_lims[[plot_ind]],
+                     site_plot_lims_set[[plot_ind]],
+                     program_outcome_plot_lims_set[[plot_ind]], 
+                     landscape_outcome_plot_lims_set[[plot_ind]],
                      sets_to_plot,
                      lwd_vec = c(3, 0.5), 
                      time_steps = run_params$time_steps,
