@@ -204,6 +204,12 @@ initialise_policy_params <- function(){
   # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)
 
+  # include ability to set the counterfactual adjustment (include/exclude illegal clearing, 
+  # potential developments, and potential offsets) to be the same as the offset calculations or independent
+  # settings are 'as_offset' or 'independent_to_offset'
+  
+  policy_params$dev_counterfactual_adjustment = 'as_offset' 
+  
   # Include future developments in calculating contribution of avoided losses
   # to the impact of the development. This reduces the development impact because
   # projected future value of the site is lower if there is some probability

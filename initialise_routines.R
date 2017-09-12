@@ -254,7 +254,14 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$banked_offset_vec = list()
   }
   
-  
+  if (current_policy_params$dev_counterfactual_adjustment == 'as_offset'){
+    cat('\nusing same adjustment of cfacs in development impact calculation as in offset calculation')
+    current_policy_params$include_potential_developments_in_dev_calc = current_policy_params$include_potential_developments_in_offset_calc
+    current_policy_params$include_potential_offsets_in_dev_calc = current_policy_params$include_potential_offsets_in_offset_calc
+    current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_dev_calc
+  } else {
+    cat('\nusing independent adjustment of cfacs in development impact calculation')
+  }
   current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
                                                        current_policy_params$include_potential_offsets_in_offset_calc,
                                                        current_policy_params$include_illegal_clearing_in_offset_calc) == TRUE

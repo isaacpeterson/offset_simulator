@@ -8,7 +8,7 @@ initialise_run_params <- function(){
   run_params$time_steps = 50
   run_params$dev_start = 1
   run_params$dev_end = run_params$time_steps
-  run_params$total_dev_num = 200
+  run_params$total_dev_num = 10
   run_params$save_simulation_outputs = TRUE
   run_params$overwrite_existing_landscape_data = FALSE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.

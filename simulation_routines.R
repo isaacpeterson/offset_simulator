@@ -1,4 +1,4 @@
-# scenario_ind = 3
+# scenario_ind = 1
 # policy_params = run_params$policy_params_group[[scenario_ind]]
 # realisation_ind = 1
 
@@ -281,7 +281,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
     for (feature_ind in seq(run_params$feature_num)){
       ecology_to_save = lapply(seq_along(simulation_outputs$current_ecology), function(i) simulation_outputs$current_ecology[[i]][[feature_ind]])
       saveRDS(ecology_to_save, paste0(current_data_dir, 
-                                      'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
+                                      'feature_', formatC(run_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
                                       '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     }
     
@@ -1247,8 +1247,11 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   match_ind = which(err == min(err))
   
   if (length(match_ind) > 1){
+    
+    paste0('duplicate match flag on ', parcel_vals_pool[match_ind])
+    
     match_ind = sample(match_ind, 1)
-    cat('\nduplicate match flag')
+
   }
   
   match_vals = parcel_vals_pool[match_ind]
