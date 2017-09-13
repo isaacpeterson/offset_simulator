@@ -137,7 +137,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
       for (current_dev_index in seq_len(run_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
         
         if (current_policy_params$allow_developments_from_credit == TRUE){
-          cat('\n current credit', unlist(simulation_outputs$current_credit), '\n')
+          
           if (current_policy_params$use_offset_bank == TRUE){
             simulation_outputs$current_credit = assess_credit(simulation_outputs, current_policy_params)
           }
@@ -156,8 +156,12 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
           
           if (credit_match_object$match_flag == TRUE){
             
+            stopifnot(length(unlist(credit_match_object$match_vals)) > 0)
+            
             simulation_outputs$current_credit = credit_match_object$current_credit
-            print(paste('credit flag ', unlist(credit_match_object$match_vals)))
+
+            cat('\n developed site with value', unlist(credit_match_object$development_object$parcel_vals_used), 'from credit')
+            cat('\n', unlist(credit_match_object$current_credit), 'remaining\n')
             simulation_outputs <- perform_clearing_routine(simulation_outputs, 
                                                            simulation_outputs$index_object, 
                                                            simulation_outputs$decline_rates, 
@@ -165,7 +169,6 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                            clearing_type = 'develop_from_credit', 
                                                            region_ind, 
                                                            run_params)
-            
             
           }
           
@@ -192,7 +195,10 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
           
           if (match_object$match_flag == TRUE){
             
-            cat('\n matched parcel sets\n')
+            cat('\n matched development site', unlist(match_object$development_object$parcel_indexes), 
+                'with offset sites', unlist(match_object$offset_object$parcel_indexes), '\n')
+            
+            stopifnot(length(unlist(match_object$current_credit)) > 0)
             
             simulation_outputs$current_credit = match_object$current_credit
             simulation_outputs <- perform_offset_routine(simulation_outputs, 
@@ -208,7 +214,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
             simulation_outputs <- perform_clearing_routine(simulation_outputs, 
                                                            simulation_outputs$index_object, 
                                                            simulation_outputs$decline_rates, 
-                                                           current_dev_object = match_object$current_dev_object, 
+                                                           current_dev_object = match_object$development_object, 
                                                            clearing_type = 'development', 
                                                            region_ind, 
                                                            run_params)
@@ -379,7 +385,7 @@ perform_illegal_clearing <- function(current_ecology, index_object, yr, region_i
   }
   
   inds_to_clear <- select_inds_to_clear(index_object, run_params)
-  cat('\n illegally cleared' , inds_to_clear)
+  cat('\n illegally cleared sites' , inds_to_clear)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for illegal clearing
     return()
@@ -422,7 +428,7 @@ perform_illegal_clearing <- function(current_ecology, index_object, yr, region_i
 
 perform_offset_routine <- function(simulation_outputs, index_object, decline_rates, current_offset_object, current_offset_indexes, match_object, 
                                    current_policy_params, region_ind, run_params){
-  
+
   if (current_policy_params$use_offset_bank == TRUE){
     banked_offset_pool = simulation_outputs$offset_bank_object$parcel_indexes
     banked_offset_inds_used = list_intersect(banked_offset_pool, current_offset_indexes)         # determine parcels used in matching routine and remove from available pool
@@ -453,6 +459,7 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
   
   if (clearing_type == 'development'){
     simulation_outputs$dev_object <- append_current_group(simulation_outputs$dev_object, current_dev_object, append_routine = 'standard')
+
   } else if (clearing_type == 'develop_from_credit'){
     simulation_outputs$credit_object <- append_current_group(simulation_outputs$credit_object, current_dev_object, append_routine = 'standard')
   } else if (clearing_type == 'illegal'){
@@ -910,6 +917,13 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
   
   current_pool_vals = offset_pool_object$parcel_vals_used
   current_pool_indexes = offset_pool_object$parcel_indexes
+  
+  current_pool_vals_array <- matrix(unlist(current_pool_vals), nrow = length(current_pool_vals), byrow=TRUE)
+  zero_inds <- which(apply(current_pool_vals_array, MARGIN = 1, sum) == 0)
+  
+  current_pool_vals = current_pool_vals[-zero_inds]
+  current_pool_indexes = current_pool_indexes[-zero_inds]
+  
   parcel_num_remaining = length(indexes_to_use)
   current_match_pool = indexes_to_use
   
@@ -1000,10 +1014,12 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
   
   if (match_object$match_flag == TRUE){
     dev_match_index = which(unlist(dev_pool_object$parcel_indexes) == current_test_index)
-    match_object$current_dev_object = select_pool_subset(dev_pool_object, unlist(dev_match_index))
+    match_object$development_object = select_pool_subset(dev_pool_object, unlist(dev_match_index))
     subset_pool =  list_intersect(offset_pool_object$parcel_indexes, match_object$match_indexes)
     offset_object <- select_pool_subset(pool_object = offset_pool_object, subset_pool = subset_pool$match_ind)
     match_object$offset_object = offset_object
+    current_credit[run_params$features_to_use_in_offset_calc] = match_object$current_credit
+    match_object$current_credit = current_credit
   } else if (match_object$match_flag == FALSE){
     match_object$offset_object = list()
     match_object$current_credit = current_credit
@@ -1068,6 +1084,8 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
   if (match_object$match_flag == TRUE){
     subset_pool =  list_intersect(dev_pool_object$parcel_indexes, match_object$match_indexes)
     match_object$development_object = select_pool_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
+    current_credit[run_params$features_to_use_in_offset_calc] = match_object$current_credit
+    match_object$current_credit = current_credit
   } else{
     match_object$development_object = list()
     match_object$current_credit = current_credit
@@ -1267,7 +1285,6 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-
 select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold, 
                                  current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type){
   
@@ -1281,11 +1298,13 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   }
   
   vals_to_test <- select_cols(vals_to_test, features_to_use_in_offset_calc)
-  zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) < 1e-5)  
+  zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) == 0)  
   
   if (length(zero_inds) > 0){
     vals_to_use <- vals_to_use[-zero_inds]
-    current_pool = current_pool[-zero_inds]
+    current_pool <- current_pool[-zero_inds]
+    vals_to_test <- vals_to_test[-zero_inds]
+    pool_num = length(vals_to_test)
     if (length(current_pool) == 0){
       cat('\nall parcels yield zero assessment')
       pool_object$break_flag = TRUE
@@ -1302,7 +1321,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   if (site_for_site == TRUE){
     match_array = matrix(rep(vals_to_match, pool_num), ncol = ndims, byrow = TRUE)
     thresh_array = matrix(rep(thresh, pool_num), ncol = ndims, byrow = TRUE)
-  } else if (site_for_site == FALSE){
+  } else {
     vals_to_test = apply(vals_to_test, MARGIN = 2, 'sum')
     vals_to_test = matrix(vals_to_test, ncol = ndims, byrow = TRUE) 
     match_array = matrix(vals_to_match, ncol = ndims, byrow = TRUE)
@@ -1318,7 +1337,11 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   inds_to_use = which(apply(test_array, MARGIN = 1, prod) > 0) # test if all dimensions pass threshold test and are non-zero
   
   if (all(inds_to_use == FALSE)){
-    #cat('\nall sites fail threshold test')
+    if (match_type == 'development'){
+      cat('\n current credit of', unlist(current_credit), 'insufficient to allow development \n')
+    } else {
+      cat('\n insufficient offsets to allow development \n')
+    }
     pool_object$break_flag = TRUE
     return(pool_object)
   } else {
@@ -1338,7 +1361,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 }
 
 
-
+# 
 # match_type = 'development' 
 # match_procedure = 'random' 
 # current_pool = dev_pool_object$parcel_indexes 
@@ -1351,7 +1374,6 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 # site_for_site = TRUE 
 # features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc
 # max_offset_parcel_num = run_params$max_offset_parcel_num 
-
 
 # match_type = 'offset' 
 # match_procedure = 'euclidean' 
@@ -1445,7 +1467,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   match_object$match_vals = match_vals
   match_object$match_flag = match_flag
   #match_object$current_credit_to_use = -vals_to_match * (abs(vals_to_match) > match_threshold)
-  match_object$current_credit_to_use = as.list(current_credit_to_use)
+  match_object$current_credit = as.list(current_credit_to_use)
   match_object$vals_to_match = vals_to_match_initial
   
   return(match_object)
