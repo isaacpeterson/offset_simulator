@@ -29,28 +29,17 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
   
   if (run_params$save_simulation_outputs == TRUE){
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_', 
-                                       formatC(realisation_ind, width = 3, format = "d", flag = "0"), '_outputs.rds'))
-  }
-  
-  for (feature_ind in run_params$features_to_use_in_simulation){
-    current_trajectories = form_data_stack(current_data_dir, 
-                                           feature_string = formatC(feature_ind, width = 3, format = "d", flag = "0"), 
-                                           land_parcels = parcels$land_parcels, 
-                                           run_params$time_steps)
-    
-    if (run_params$features_to_use_in_simulation > 1 ){  # if there is more than one feature save the 3D time-stacks to separate files for each feature 
-      saveRDS(current_trajectories, file = paste0(current_data_dir, '/trajectories_', 
-                                                  formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
-                                                  '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
-      
-    }
+                                       formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
+                                       '_outputs.rds'))
   }
   
   for (feature_ind in seq(run_params$feature_num)){
-    if (run_params$features_to_use_in_simulation > 1 ){  # if there is more than one feature load the 3D time-stacks from separate files for each feature 
-      current_trajectories = readRDS(paste0(current_data_dir, 'trajectories_',formatC(realisation_ind, width = 3, format = "d", flag = "0"), 
-                                            '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
-    }
+    current_feature = run_params$features_to_use_in_simulation[feature_ind]
+    current_trajectories = form_data_stack(current_data_dir, 
+                                           feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
+                                           land_parcels = parcels$land_parcels, 
+                                           run_params$time_steps)
+    
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_trajectories,
                                                         decline_rates_initial, 
@@ -65,8 +54,8 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                          'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
                          '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0")) 
     
-    
-    saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '.rds'))
+    saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_', 
+                                                 formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
     #     if ((run_params$write_offset_layer == TRUE) && (feature_ind == 1)){
     #       write_offset_layer(paste0(file_prefix, '_offset_layer.png'), 
