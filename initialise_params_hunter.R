@@ -7,8 +7,8 @@ initialise_run_params <- function(){
   run_params$crs = 1 #detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 30
   run_params$dev_start = 1
-  run_params$dev_end = 5
-  run_params$total_dev_num = 20
+  run_params$dev_end = 50
+  run_params$total_dev_num = 100
   run_params$save_simulation_outputs = TRUE
   run_params$overwrite_existing_landscape_data = FALSE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.
@@ -60,10 +60,7 @@ initialise_policy_params <- function(){ #list of variations in policy
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)
   policy_params$include_illegal_clearing_in_offset_calc = c(TRUE)
   
-  policy_params$include_potential_developments_in_dev_calc = policy_params$include_potential_developments_in_offset_calc
-  policy_params$include_potential_offsets_in_dev_calc = policy_params$include_potential_offsets_in_offset_calc
-  policy_params$include_illegal_clearing_in_dev_calc = policy_params$include_illegal_clearing_in_offset_calc
-  
+  policy_params$dev_counterfactual_adjustment = 'as_offset'  
   policy_params$offset_multiplier = 1
   
   return(policy_params)

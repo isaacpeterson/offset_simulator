@@ -6,13 +6,13 @@ source('collate_routines.R')
 #---------------------
 
 plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
-output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
+output_type = 'features' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
-run_number = 21 # for output plot name
-set_to_plot = 2 # example site to plot
-plot_vec = 1 #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
+run_number = 41 # for output plot name
+set_to_plot = 10 # example site to plot
+plot_vec = 1:2 #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
 string_width = 3 # how many digits are used to store scenario index and realisation index
 
 base_folder = paste0('~/offset_data/hunter/simulation_runs/', 
@@ -27,14 +27,14 @@ simulation_params_folder = paste0(base_folder, '/simulation_params/')
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
-site_outcome_plot_lims_set = rep(list(c(0, 1e4)), length(plot_vec))
-site_impact_plot_lims_set = rep(list(c(-1e2, 1e2)), length(plot_vec))
+site_outcome_plot_lims_set = rep(list(c(0, 1e3)), length(plot_vec))
+site_impact_plot_lims_set = rep(list(c(-1e3, 1e3)), length(plot_vec))
 
 program_outcome_plot_lims_set = rep(list(c(0e6, 10e6)), length(plot_vec))
 landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(plot_vec))
 
-program_impact_plot_lims_set = rep(list(c(-1e5, 1e5)), length(plot_vec)) 
-landscape_impact_plot_lims_set = rep(list(c(-6e5, 0)), length(plot_vec))
+program_impact_plot_lims_set = rep(list(c(-1e4, 1e4)), length(plot_vec)) 
+landscape_impact_plot_lims_set = rep(list(c(-6e4, 0)), length(plot_vec))
 
 
 if (output_type == 'scenarios'){
@@ -107,6 +107,9 @@ for (plot_ind in plot_vec){
   
   if (plot_type == 'impacts'){
     plot_impact_set(collated_realisations, 
+                    plot_offset_impact = TRUE, 
+                    plot_dev_impact = TRUE, 
+                    plot_net_impact = FALSE, 
                     output_type,
                     current_policy_params, 
                     site_impact_plot_lims_set[[plot_ind]],

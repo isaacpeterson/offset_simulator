@@ -106,7 +106,7 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
 # realisation_ind = 1 
 # plot_from_impact_yr = FALSE 
 
-plot_impact_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
+plot_impact_set <- function(collated_realisations, plot_offset_impact, plot_dev_impact, plot_net_impact, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
                             set_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
@@ -114,7 +114,8 @@ plot_impact_set <- function(collated_realisations, output_type, current_policy_p
   net_col_vec = c('darkgreen', 'red', 'black')
   
   
-  overlay_parcel_sets(collated_realisations,
+  overlay_site_impacts(collated_realisations,
+                      plot_offset_impact, plot_dev_impact, plot_net_impact, 
                       output_type,
                       current_policy_params,
                       realisation_ind = 1, 
@@ -341,7 +342,7 @@ get_y_lab <- function(output_type, current_policy_params, feature_ind){
 
 
 
-overlay_parcel_sets <- function(collated_realisations, output_type, current_policy_params, realisation_ind, 
+overlay_site_impacts <- function(collated_realisations, plot_offset_impact, plot_dev_impact, plot_net_impact, output_type, current_policy_params, realisation_ind, 
                                 feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   plot_lwd = 1
@@ -359,39 +360,45 @@ overlay_parcel_sets <- function(collated_realisations, output_type, current_poli
     offset_set = collated_realisations$program_scale_impacts$net_offset_gains
     dev_set = collated_realisations$program_scale_impacts$net_dev_losses
     net_plot_list = collated_realisations$program_scale_impacts$program_total[[realisation_ind]]
-    
   }
+  plot_type = 'non-overlay'
   
+  if (plot_offset_impact == TRUE){
   overlay_parcel_set_element(collated_object = offset_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'stacked', 
                              realisation_ind, 
                              plot_col = 'darkgreen', 
                              plot_lwd,
-                             plot_type = 'non-overlay',
+                             plot_type,
                              y_lab,
                              plot_from_impact_yr,
                              set_to_plot, 
                              site_plot_lims, 
                              time_steps)
+    plot_type = 'overlay'
+  }
   
+  if (plot_dev_impact == TRUE){
   overlay_parcel_set_element(dev_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'non-stacked', 
                              realisation_ind, 
                              plot_col = 'red',
                              plot_lwd,
-                             plot_type = 'overlay',
+                             plot_type,
                              y_lab = '',
                              plot_from_impact_yr,
                              set_to_plot, 
                              site_plot_lims, 
                              time_steps)
+  }
   
-  overlay_plot_list(plot_type = 'overlay', net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
+  if (plot_net_impact == TRUE){
+    overlay_plot_list(plot_type, net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
                     col_vec = rep('black', length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
-  
+  }
 }
 
 
