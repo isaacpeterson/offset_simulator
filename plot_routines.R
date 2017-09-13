@@ -14,14 +14,14 @@ check_plot_options <- function() {
 # program_plot_lims = program_outcome_plot_lims_set[[plot_ind]] 
 # landscape_plot_lims = landscape_outcome_plot_lims_set[[plot_ind]]
 
-plot_outcome_set <- function(collated_realisations, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
+plot_outcome_set <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
                              landscape_plot_lims, set_to_plot, lwd_vec, time_steps, realisation_num, feature_ind){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
   dev_col_vec = c('blue', 'red')
   net_col_vec = c('darkgreen', 'red', 'black')
   
-  plot_site_outcomes(collated_realisations, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind)
+  plot_site_outcomes(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind)
   
   plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
                 plot_type = 'program', 
@@ -54,7 +54,7 @@ plot_outcome_set <- function(collated_realisations, output_type, current_policy_
 }
 
 
-plot_site_outcomes <- function(collated_realisations, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind){
+plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   
   if (current_policy_params$use_offset_bank == TRUE){
@@ -64,28 +64,33 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
     offset_parcel_indexes_to_use = collated_realisations$collated_offsets$parcel_indexes
     dev_parcel_indexes_to_use = collated_realisations$collated_devs$parcel_indexes
   }
+  
+  plot_type = 'non-overlay'
+  if (plot_site_dev_outcome == TRUE){
   overlay_trajectories(dev_parcel_indexes_to_use,
                        current_policy_params$use_offset_bank,
                        trajectories = collated_realisations$landscape$summed_site_trajectories, 
                        realisation_ind = 1, 
                        plot_col = 'red', 
-                       plot_type = 'non-overlay', 
+                       plot_type, 
                        overlay_type = 'single', 
                        set_to_plot, 
                        y_lab, 
                        site_plot_lims)
-  
+    plot_type = 'overlay'
+  }
+  if (plot_site_offset_outcome == TRUE){
   overlay_trajectories(offset_parcel_indexes_to_use, 
                        current_policy_params$use_offset_bank,
                        trajectories = collated_realisations$landscape$summed_site_trajectories, 
                        realisation_ind = 1, 
                        plot_col = 'darkgreen', 
-                       plot_type = 'overlay', 
+                       plot_type, 
                        overlay_type = 'single', 
                        set_to_plot, 
                        y_lab, 
                        site_plot_lims)
-  
+  }
 }
 
 
@@ -106,7 +111,7 @@ plot_site_outcomes <- function(collated_realisations, output_type, current_polic
 # realisation_ind = 1 
 # plot_from_impact_yr = FALSE 
 
-plot_impact_set <- function(collated_realisations, plot_offset_impact, plot_dev_impact, plot_net_impact, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
+plot_impact_set <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
                             set_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
   
   offset_col_vec = c('blue', 'red', 'darkgreen')
@@ -115,7 +120,7 @@ plot_impact_set <- function(collated_realisations, plot_offset_impact, plot_dev_
   
   
   overlay_site_impacts(collated_realisations,
-                      plot_offset_impact, plot_dev_impact, plot_net_impact, 
+                      plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, 
                       output_type,
                       current_policy_params,
                       realisation_ind = 1, 
@@ -342,7 +347,7 @@ get_y_lab <- function(output_type, current_policy_params, feature_ind){
 
 
 
-overlay_site_impacts <- function(collated_realisations, plot_offset_impact, plot_dev_impact, plot_net_impact, output_type, current_policy_params, realisation_ind, 
+overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_policy_params, realisation_ind, 
                                 feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   plot_lwd = 1
@@ -363,7 +368,7 @@ overlay_site_impacts <- function(collated_realisations, plot_offset_impact, plot
   }
   plot_type = 'non-overlay'
   
-  if (plot_offset_impact == TRUE){
+  if (plot_site_offset_impact == TRUE){
   overlay_parcel_set_element(collated_object = offset_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'stacked', 
@@ -379,7 +384,7 @@ overlay_site_impacts <- function(collated_realisations, plot_offset_impact, plot
     plot_type = 'overlay'
   }
   
-  if (plot_dev_impact == TRUE){
+  if (plot_site_dev_impact == TRUE){
   overlay_parcel_set_element(dev_set,
                              current_policy_params$use_offset_bank,
                              visualisation_type = 'non-stacked', 
@@ -394,7 +399,7 @@ overlay_site_impacts <- function(collated_realisations, plot_offset_impact, plot
                              time_steps)
   }
   
-  if (plot_net_impact == TRUE){
+  if (plot_site_net_impact == TRUE){
     overlay_plot_list(plot_type, net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
                     col_vec = rep('black', length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)

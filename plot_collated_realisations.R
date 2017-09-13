@@ -5,7 +5,7 @@ source('collate_routines.R')
 # User parameters
 #---------------------
 
-plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
+plot_type = 'outcomes' # can be 'outcomes'  or 'impacts',
 output_type = 'features' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
@@ -107,9 +107,9 @@ for (plot_ind in plot_vec){
   
   if (plot_type == 'impacts'){
     plot_impact_set(collated_realisations, 
-                    plot_offset_impact = TRUE, 
-                    plot_dev_impact = TRUE, 
-                    plot_net_impact = FALSE, 
+                    plot_site_offset_impact = TRUE, 
+                    plot_site_dev_impact = FALSE, 
+                    plot_site_net_impact = FALSE, 
                     output_type,
                     current_policy_params, 
                     site_impact_plot_lims_set[[plot_ind]],
@@ -123,6 +123,8 @@ for (plot_ind in plot_vec){
                     feature_ind = run_params$features_to_use_in_simulation[feature_ind]) 
   } else {
     plot_outcome_set(collated_realisations,
+                     plot_site_offset_outcome = TRUE, 
+                     plot_site_dev_outcome = FALSE, 
                      output_type,
                      current_policy_params,
                      site_outcome_plot_lims_set[[plot_ind]],
