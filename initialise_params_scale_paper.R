@@ -4,7 +4,7 @@ initialise_run_params <- function(){
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
   # The number of realizations to run
-  run_params$realisation_num = 1
+  run_params$realisation_num = 4
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
@@ -107,36 +107,19 @@ initialise_policy_params <- function(){
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  policy_params$include_potential_developments_in_offset_calc = c(FALSE)
+  policy_params$include_potential_developments_in_offset_calc = c(FALSE, TRUE)
 
   # Include future illegal developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  policy_params$include_illegal_clearing_in_offset_calc = c(FALSE)
+  policy_params$include_illegal_clearing_in_offset_calc = c(FALSE, TRUE)
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
   # future gains that are avoided)
   policy_params$include_potential_offsets_in_offset_calc = c(FALSE)
-
-  # Include future developments in calculating contribution of avoided losses
-  # to the impact of the development. This reduces the development impact because
-  # projected future value of the site is lower if there is some probability
-  # the site may be developed in the future
-  policy_params$include_potential_developments_in_dev_calc = c(FALSE)
-
-  # Include illegal clearing in the calculating the contribution of avoided
-  # losses to the impact of the development. This reduces the development
-  # impact because projected future value of the site is lower if there is
-  # some probability the site may be illegally developed in the future
-  policy_params$include_illegal_clearing_in_dev_calc = policy_params$include_illegal_clearing_in_offset_calc
-
-  # Include future offsets in calculating contribution of avoided gains to the
-  # impact of the development. This increases the impact of the development as
-  # future gains are avoided
-  policy_params$include_potential_offsets_in_dev_calc = c(FALSE)
-
-
+  
+  policy_params$dev_counterfactual_adjustment = 'as_offset'
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact

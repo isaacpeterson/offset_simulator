@@ -255,10 +255,9 @@ collate_current_policy <- function(current_policy_params, run_params){
   }
   
   if (current_policy_params$dev_counterfactual_adjustment == 'as_offset'){
-    cat('\nusing same adjustment of cfacs in development impact calculation as in offset calculation')
     current_policy_params$include_potential_developments_in_dev_calc = current_policy_params$include_potential_developments_in_offset_calc
     current_policy_params$include_potential_offsets_in_dev_calc = current_policy_params$include_potential_offsets_in_offset_calc
-    current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_dev_calc
+    current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_offset_calc
   } else {
     cat('\nusing independent adjustment of cfacs in development impact calculation')
   }
@@ -291,6 +290,9 @@ generate_policy_params_group <- function(policy_params, run_params){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
     current_policy <- generate_current_policy(policy_params, current_policy_param_inds) #write current policy as a list
+    if ((policy_ind == 1) & (current_policy$dev_counterfactual_adjustment == 'as_offset')){
+      cat('\nusing same adjustment of cfacs in development impact calculation as in offset calculation')
+    }
     policy_params_group[[policy_ind]] <- collate_current_policy(current_policy, run_params)  #setup flags for cfacs, cfac adjustment etc.
     
   }

@@ -324,9 +324,6 @@ stack_current_yr <- function(current_parcel, current_parcel_ecology, yr){
 }
 
 
-
-
-
 remove_parcel_from_current_pool <- function(offset_pool_object, current_parcel_indexes){
   subset_pool_to_remove <- list_intersect(offset_pool_object$parcel_indexes, current_parcel_indexes)
   if (length(subset_pool_to_remove$match_ind) > 0){
@@ -432,7 +429,7 @@ perform_offset_routine <- function(simulation_outputs, index_object, decline_rat
   if (current_policy_params$use_offset_bank == TRUE){
     banked_offset_pool = simulation_outputs$offset_bank_object$parcel_indexes
     banked_offset_inds_used = list_intersect(banked_offset_pool, current_offset_indexes)         # determine parcels used in matching routine and remove from available pool
-    simulation_outputs$offset_bank_object$parcel_indexes = banked_offset_pool[-banked_offset_inds_used$match_ind]
+    simulation_outputs$offset_bank_object$parcel_indexes = remove_index(banked_offset_pool, banked_offset_inds_used$match_ind)
     
   } else {
     simulation_outputs$index_object <- update_indexes_to_use(index_object, current_offset_indexes, region_ind)         # determine parcels used in matching routine and remove from available pool
@@ -908,6 +905,13 @@ select_rand_index <- function(indexes_to_use, parcel_num){
 # current_ecology = simulation_outputs$current_ecology
 # time_horizon = current_policy_params$offset_time_horizon
 
+remove_index <- function(object_list, ind_to_remove){
+  if (length(ind_to_remove) > 0){
+    object_list <- object_list[-ind_to_remove]
+  }
+  return(object_list)
+}
+
 match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, run_params, current_policy_params, 
                              intervention_vec, indexes_to_use, current_ecology, decline_rates_initial, 
                              land_parcels, yr, time_horizon, region_ind){
@@ -921,9 +925,10 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
   current_pool_vals_array <- matrix(unlist(current_pool_vals), nrow = length(current_pool_vals), byrow=TRUE)
   zero_inds <- which(apply(current_pool_vals_array, MARGIN = 1, sum) == 0)
   
-  current_pool_vals = current_pool_vals[-zero_inds]
-  current_pool_indexes = current_pool_indexes[-zero_inds]
   
+  current_pool_vals = remove_index(current_pool_vals, zero_inds)
+  current_pool_indexes = remove_index(current_pool_indexes, zero_inds)
+
   parcel_num_remaining = length(indexes_to_use)
   current_match_pool = indexes_to_use
   
@@ -979,8 +984,8 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
     
     if (current_policy_params$use_offset_bank == FALSE){
       dev_ind = list_intersect(current_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
-      match_pool_to_use = current_pool_indexes[-dev_ind$match_ind]       
-      vals_to_use = current_pool_vals[-dev_ind$match_ind]
+      match_pool_to_use = remove_index(current_pool_indexes, dev_ind$match_ind)
+      vals_to_use = remove_index(current_pool_vals, dev_ind$match_ind)
     } else {
       match_pool_to_use = current_pool_indexes  #if performing offset banking use any of the available banked offset pool
       vals_to_use = current_pool_vals
@@ -1300,17 +1305,15 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   vals_to_test <- select_cols(vals_to_test, features_to_use_in_offset_calc)
   zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) == 0)  
   
-  if (length(zero_inds) > 0){
-    vals_to_use <- vals_to_use[-zero_inds]
-    current_pool <- current_pool[-zero_inds]
-    vals_to_test <- vals_to_test[-zero_inds]
+    vals_to_use <- remove_index(vals_to_use, zero_inds)
+    current_pool <- remove_index(current_pool, zero_inds)
+    vals_to_test <- remove_index(vals_to_test, zero_inds)
     pool_num = length(vals_to_test)
     if (length(current_pool) == 0){
       cat('\nall parcels yield zero assessment')
       pool_object$break_flag = TRUE
       return(pool_object)
     } 
-  }
   
   vals_to_use <- lapply(seq_along(vals_to_use), function(i) vals_to_use[[i]][features_to_use_in_offset_calc])
   
@@ -1437,8 +1440,8 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
     if (site_for_site == FALSE){
       
       ind_to_remove = list_intersect(current_pool, current_match_index)
-      current_pool = current_pool[-ind_to_remove$match_ind]
-      parcel_vals_pool = parcel_vals_pool[-ind_to_remove$match_ind]
+      current_pool = remove_index(current_pool, ind_to_remove$match_ind)
+      parcel_vals_pool = remove_index(parcel_vals_pool, ind_to_remove$match_ind)
       match_vals = append(match_vals, current_match_val)
       match_indexes = append(match_indexes, current_match_index)
       if (length(unlist(match_indexes)) > max_offset_parcel_num){
@@ -1650,6 +1653,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 # include_potential_offsets = current_policy_params$include_potential_offsets_in_dev_calc
 # include_illegal_clearing = current_policy_params$include_illegal_clearing_in_dev_calc
 # time_horizon_type = 'future'
+
 
 
 

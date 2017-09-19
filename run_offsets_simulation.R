@@ -1,7 +1,8 @@
+# issues with scenario 14
 rm(list = ls())
 source('initialise_routines.R')                              # functions to collate simulation outputs
 
-user_params_file = 'initialise_params_hunter.R'
+user_params_file = 'initialise_params_scale_paper.R'
 
 run_params <- run_initialise_routines(user_params_file)
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))

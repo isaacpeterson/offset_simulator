@@ -29,7 +29,7 @@ initialise_run_params <- function(){
   # mean number using a normal distribution such that the total number of
   # developments will always equal the total number (Note sd for this
   # distribution is set in the code the currently isn't user settable)
-  run_params$total_dev_num = 20
+  run_params$total_dev_num = 200
   
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
@@ -214,19 +214,19 @@ initialise_policy_params <- function(){
   # to the impact of the development. This reduces the development impact because
   # projected future value of the site is lower if there is some probability
   # the site may be developed in the future
-  policy_params$include_potential_developments_in_dev_calc = c(FALSE)
+  # policy_params$include_potential_developments_in_dev_calc = c(FALSE)
 
   # Include illegal clearing in the calculating the contribution of avoided
   # losses to the impact of the development. This reduces the development
   # impact because projected future value of the site is lower if there is
   # some probability the site may be illegally developed in the future
-  policy_params$include_illegal_clearing_in_dev_calc = policy_params$include_illegal_clearing_in_offset_calc
+  # policy_params$include_illegal_clearing_in_dev_calc = policy_params$include_illegal_clearing_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
   # future gains are avoided
   
-  policy_params$include_potential_offsets_in_dev_calc = c(FALSE)
+  # policy_params$include_potential_offsets_in_dev_calc = c(FALSE)
   
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
