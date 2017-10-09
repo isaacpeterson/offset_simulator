@@ -22,7 +22,7 @@ initialise_run_params <- function(){
   run_params$sample_restoration_rate = FALSE
   run_params$sample_decline_rate = FALSE
   run_params$limit_offset_restoration = TRUE
-  run_params$illegal_clearing_prob = 0
+  run_params$illegal_clearing_prob = 1e-5
   run_params$mean_decline_rates = rep(list(-1e-10), length(run_params$features_to_use_in_simulation)) 
   run_params$decline_rate_std = rep(list(0), length(run_params$features_to_use_in_simulation))
 

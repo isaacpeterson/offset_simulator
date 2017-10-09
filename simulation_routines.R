@@ -118,7 +118,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                            decline_rates_initial, dev_weights, current_data_dir){ # main engine for code - returns all development/offset parcel sets, land parcel trajectories etc.
   
   for (yr in seq_len(run_params$time_steps)){          #run through main time loop
-    cat('\n time step', yr)
+    cat('\n t =', yr)
     for (region_ind in seq_len(parcels$region_num)){            #cycle through each region
       current_policy_params = select_current_policy(policy_params, region_ind, parcels$region_num)
       
@@ -194,7 +194,7 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                            region_ind)  #perform the matching routine - i.e. find a matching development/offset set.
           
           if (match_object$match_flag == TRUE){
-            
+            stop
             cat('\n matched development site', unlist(match_object$development_object$parcel_indexes), 
                 'with offset sites', unlist(match_object$offset_object$parcel_indexes), '\n')
             
@@ -382,10 +382,11 @@ perform_illegal_clearing <- function(current_ecology, index_object, yr, region_i
   }
   
   inds_to_clear <- select_inds_to_clear(index_object, run_params)
-  cat('\n illegally cleared sites' , inds_to_clear)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for illegal clearing
     return()
+  } else {
+    cat('\n illegally cleared sites' , inds_to_clear)
   }
   
   parcel_num_remaining = length(index_object$indexes_to_use[[region_ind]]) #used for calculation of cfac
@@ -1341,9 +1342,9 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   
   if (all(inds_to_use == FALSE)){
     if (match_type == 'development'){
-      cat('\n current credit of', unlist(current_credit), 'insufficient to allow development \n')
+      cat('\n current credit of', unlist(current_credit), 'is insufficient to allow development \n')
     } else {
-      cat('\n insufficient offsets to allow development \n')
+      cat('\n insufficient offset gains available to allow development \n')
     }
     pool_object$break_flag = TRUE
     return(pool_object)
@@ -1736,10 +1737,10 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     pool_object$cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
   }
   
-  parcel_sums_at_offset_to_use = lapply(seq_along(pool_object$parcel_sums_at_offset), 
+  parcel_sums_at_offset = lapply(seq_along(pool_object$parcel_sums_at_offset), 
                                         function(i) pool_object$parcel_sums_at_offset[[i]][run_params$features_to_use_in_offset_calc])
   
-  pool_object$parcel_vals_used = evaluate_parcel_vals(calc_type, parcel_sums_at_offset_to_use, 
+  pool_object$parcel_vals_used = evaluate_parcel_vals(calc_type, parcel_sums_at_offset, 
                                                       pool_object$projected_vals, pool_object$cfac_vals)
   
   return(pool_object)
@@ -1901,6 +1902,10 @@ kill_development_ecology <- function(current_ecology, decline_rates, feature_num
 # }
 
 
+# parcel_ecologies = pool_object$parcel_ecologies 
+# parcel_num_remaining = pool_object$parcel_num_remaining 
+# decline_rates = decline_rates_initial[current_pool]
+# features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc
 
 
 calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, run_params, current_policy_params, 
@@ -1943,7 +1948,7 @@ calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, run_params, curre
 
 
 # current_cfacs = cfacs_object$cfacs
-# current_cfacs= cfacs_object$decline_cfacs[unlist(current_model_ouputs$parcel_indexes)] 
+
 
 
 adjust_cfacs <- function(current_cfacs, include_potential_developments,include_potential_offsets, include_illegal_clearing, run_params,
