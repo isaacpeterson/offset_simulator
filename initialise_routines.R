@@ -160,8 +160,7 @@ write_simulation_folders <- function(run_params, scenario_num){
   
   filenames = list.files(path = base_run_folder, all.files = FALSE, 
                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                         include.dirs = FALSE, no.. = FALSE)
-  
+                         include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
   if (length(filenames) > 0){
     current_run = as.numeric(filenames[length(filenames)]) + 1
   } else {
@@ -519,16 +518,16 @@ find_available_indexes <- function(indexes_to_use, parcels, initial_ecology, run
                                function(i) lapply(seq_along(initial_ecology[[i]]), 
                                                   function(j) sum(initial_ecology[[i]][[j]]) ) )
   
-  zeros_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
+  parcels_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                         function(i) all(unlist(initial_parcel_sums[i]) == 0))))
-  indexes_to_use = screen_available_sites(indexes_to_use, zeros_to_screen, parcels$region_num)
   
   if (run_params$screen_parcels_by_size == TRUE){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
     smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
-    indexes_to_use = screen_available_sites(indexes_to_use, smalls_to_screen, parcels$region_num)
+    parcels_to_screen = unique(append(parcels_to_screen, smalls_to_screen))
   }
   
+  indexes_to_use = screen_available_sites(indexes_to_use, parcels_to_screen, parcels$region_num)
   return(indexes_to_use)
 }
 
