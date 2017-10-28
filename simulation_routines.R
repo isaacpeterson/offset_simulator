@@ -133,6 +133,9 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                                    parcels,
                                                                    decline_rates_initial,
                                                                    yr)
+      if (length(simulation_outputs$offset_pool_object$parcel_indexes) == 0){
+        print('line 137 flag')
+      }
       
       for (current_dev_index in seq_len(run_params$intervention_vec[yr])){   # cycle through number of developments and associated offsets
         
@@ -153,15 +156,20 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                                     region_ind,
                                                     yr, 
                                                     current_policy_params$offset_time_horizon)
-          
+          if (is.null(credit_match_object)){
+            print('line 160 flag')
+          }
           if (credit_match_object$match_flag == TRUE){
             
-            stopifnot(length(unlist(credit_match_object$match_vals)) > 0)
-            
             simulation_outputs$current_credit = credit_match_object$current_credit
-
+            if (is.null(simulation_outputs$current_credit)){
+              print('line 166 flag')
+            }
             cat('\n developed site with value', unlist(credit_match_object$development_object$parcel_vals_used), 'from credit')
             cat('\n', unlist(credit_match_object$current_credit), 'remaining\n')
+            if (is.null(credit_match_object$development_object)){
+              print('line 171 flag on development object')
+            }
             simulation_outputs <- perform_clearing_routine(simulation_outputs, 
                                                            simulation_outputs$index_object, 
                                                            simulation_outputs$decline_rates, 
@@ -178,7 +186,10 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
         } 
         
         if ( (credit_match_object$match_flag == FALSE && current_policy_params$use_parcel_sets == TRUE)){  #if insufficient credits accumulated, perform offset parcel set match
-          
+          if (length(simulation_outputs$offset_pool_object$parcel_indexes) == 0){
+            print('offset pool flag')
+
+          }
           match_object <- match_parcel_set(offset_pool_object = simulation_outputs$offset_pool_object, 
                                            simulation_outputs$current_credit,
                                            dev_weights, 
@@ -192,13 +203,13 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
                                            yr, 
                                            current_policy_params$offset_time_horizon, 
                                            region_ind)  #perform the matching routine - i.e. find a matching development/offset set.
-          
+          if (is.null(match_object)){
+            print('line 204 flag on match object')
+          }
           if (match_object$match_flag == TRUE){
-            stop
+
             cat('\n matched development site', unlist(match_object$development_object$parcel_indexes), 
                 'with offset sites', unlist(match_object$offset_object$parcel_indexes), '\n')
-            
-            stopifnot(length(unlist(match_object$current_credit)) > 0)
             
             simulation_outputs$current_credit = match_object$current_credit
             simulation_outputs <- perform_offset_routine(simulation_outputs, 
@@ -916,16 +927,18 @@ remove_index <- function(object_list, ind_to_remove){
 match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, run_params, current_policy_params, 
                              intervention_vec, indexes_to_use, current_ecology, decline_rates_initial, 
                              land_parcels, yr, time_horizon, region_ind){
-  
   match_object = list()
   match_object$match_flag = FALSE
   
   current_pool_vals = offset_pool_object$parcel_vals_used
   current_pool_indexes = offset_pool_object$parcel_indexes
+
+  if (length(offset_pool_object$parcel_indexes) == 0){
+    return(match_object)
+  }
   
   current_pool_vals_array <- matrix(unlist(current_pool_vals), nrow = length(current_pool_vals), byrow=TRUE)
   zero_inds <- which(apply(current_pool_vals_array, MARGIN = 1, sum) == 0)
-  
   
   current_pool_vals = remove_index(current_pool_vals, zero_inds)
   current_pool_indexes = remove_index(current_pool_indexes, zero_inds)
