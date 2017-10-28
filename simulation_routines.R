@@ -119,13 +119,14 @@ run_simulation <- function(simulation_outputs, run_params, policy_params, parcel
   
   for (yr in seq_len(run_params$time_steps)){          #run through main time loop
     cat('\n t =', yr)
-    for (region_ind in seq_len(parcels$region_num)){            #cycle through each region
-      current_policy_params = select_current_policy(policy_params, region_ind, parcels$region_num)
+    for (region_ind in seq_len(parcels$region_num)){            # if running multiple regions with distinct policies cycle through each region
+      current_policy_params = select_current_policy(policy_params, region_ind, parcels$region_num) # select current policy - i.e. how gains are calculated
       
-      if (current_policy_params$use_offset_bank == TRUE){
+      if (current_policy_params$use_offset_bank == TRUE){   #when running in offset banking select out current set of sites to add to bank
         simulation_outputs <- perform_banking_routine(simulation_outputs, current_policy_params, yr, region_ind, run_params)
       }
       
+      # determine current set of available offset sites and calculate their value by whatever gains structure is detailed in offset policy
       simulation_outputs$offset_pool_object <- prepare_offset_pool(simulation_outputs,
                                                                    current_policy_params, 
                                                                    region_ind, 
@@ -979,6 +980,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
     match_object = list()
     match_object$offset_object = list()
     match_object$current_credit = current_credit
+    match_object$match_flag = FALSE
     return(match_object)
   }
   
