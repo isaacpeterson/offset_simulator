@@ -499,12 +499,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
-  index_object$developments = list()
-  index_object$offsets = list()
-  index_object$illegal_clearing = list()
-  index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$parcel_num_remaining = vector()
   index_object$indexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
                                                       initial_ecology, run_params)
  
