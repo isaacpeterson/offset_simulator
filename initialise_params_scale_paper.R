@@ -3,25 +3,35 @@ initialise_run_params <- function(){
 
   # Where simulation outputs will be written
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
+
   # The number of realizations to run
   run_params$realisation_num = 100
+
+  # The total number of parcels that will be developed
+  run_params$total_dev_num = 250
+
+  # The time step at which development starts
+  run_params$dev_start = 1
+  
+  # The time at which development ends
+  run_params$dev_end = 50
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
 
-  # hHw long to run the simulaton in years
+  # How long to run the simulaton in years
   run_params$time_steps = 50
   
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets
   run_params$write_offset_layer = FALSE
   
-    # The maxoimum number of parcels can be selected to offset a single development
-  run_params$max_offset_parcel_num = 5
+  # The maxoimum number of parcels can be selected to offset a single development
+  run_params$max_offset_parcel_num = 20
 
   # Stops the offset from delivering any further gains once it has acheived the gains required
   run_params$limit_offset_restoration = TRUE
 
-    # The probability per parcel of it being illegaxlly cleared, every parcel gets set to this number - set to zero to turn off
+  # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
   # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
@@ -30,7 +40,7 @@ initialise_run_params <- function(){
   # Exclude parcels with less than this number of pixels.
   run_params$parcel_screen_size = 50 
 
-  # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
+  # The mean and the standard deviation of a normal distribution from which to sample the restoration parameters from
   run_params$restoration_rate_params = c(0.02, 0.005)
 
   return(run_params)
@@ -74,7 +84,6 @@ initialise_policy_params <- function(){
   # you are running on your own data you need to specify the weights file in
   # intialise_routines.R  (or put the files in simulation_inputs)
   policy_params$development_selection_type = 'random'  
-
 
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
