@@ -379,14 +379,9 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     net_plot_list = collated_realisations$program_scale_impacts$program_total[[realisation_ind]]
   }
   plot_type = 'non-overlay'
-<<<<<<< HEAD
   
   # Plot the impact of the offset site(s) 
-=======
 
-  # Plot the impact of the offset site(s) 
-
->>>>>>> origin/master
   if (plot_site_offset_impact == TRUE){
 
   overlay_parcel_set_element(collated_object = offset_set,
@@ -405,11 +400,9 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     plot_type = 'overlay'
   }
   
-<<<<<<< HEAD
-  # Plot the impact of the development site(s) 
-=======
+
   # Overlay the impact of the development site 
->>>>>>> origin/master
+
   if (plot_site_dev_impact == TRUE){
 
   overlay_parcel_set_element(dev_set,
