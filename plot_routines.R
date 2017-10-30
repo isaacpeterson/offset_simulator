@@ -3,10 +3,30 @@
 # sites_used = vector('list', length(current_sites_list))
 # sites_used[sets_to_use] = lapply(seq_along(sets_to_use), function(i) length(unlist(current_sites_list[[i]])))
 
-check_plot_options <- function() {
+check_plot_options <- function(plot_params, run_params, scenario_filenames) {
   
-  if(plot_type != 'impacts' & plot_type != 'outcomes')
-    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_type) )
+  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes')
+    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
+  
+  
+  if (run_params$total_dev_num < plot_params$example_set_to_plot){
+    stop (paste('chosen example set to plot needs to be less than ', run_params$total_dev_num))
+  }
+  
+  if (plot_params$output_type == 'scenarios'){
+    if (length(scenario_filenames) == 0){
+      stop( paste('\nERROR: No files that match _policy_params found in', plot_params$simulation_params_folder) )
+    } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
+      stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
+    }
+  } else {
+    if (run_params$feature_num < max(plot_params$plot_vec)){
+      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', run_params$feature_num, ')'))
+    }
+    
+  }
+  
+  
 }
 
 
