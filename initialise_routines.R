@@ -66,16 +66,33 @@ run_initialise_routines <- function(user_params_file){
 
 
 check_policy_params <- function(policy_params){
+  
+  offset_action_set = policy_params$policy_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 
-                             'protected_condition', 'current_condition_maintain', 'current_condition_protect') 
-  check_current_param(setdiff(policy_params$offset_calc_type, valid_offset_calc_type))
+                             'protected_condition', 'current_condition', 'restoration_condition_value')
+  for (offset_action_ind in seq_along(offset_action_set)){
+    check_current_param(offset_action_set[[offset_action_ind]][1], valid_offset_calc_type)
+    current_offset_action = offset_action_set[[offset_action_ind]][2]
+    if (current_offset_action == 'avoided_condition_decline'){
+      valid_offset_action_type = 'maintain'
+    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
+      valid_offset_action_type = 'restore'
+    } else if (current_offset_action %in% c('current_condition')){
+      valid_offset_action_type = c('protect', 'maintain')
+    } 
+    check_current_param(current_offset_action, valid_offset_action_type)
+  }
   valid_dev_calc_type = c('future_condition', 'current_condition')
-  check_current_param(setdiff(policy_params$dev_calc_type, valid_dev_calc_type))
+  check_current_param(policy_params$dev_calc_type, valid_dev_calc_type)
   
 }
 
-check_current_param <- function(discriminant){
-  if (length(discriminant) > 0){
+check_current_param <- function(current_calc_type, valid_offset_calc_type){
+  if(length(current_calc_type) == 0){
+    stop(cat('\n parameter ', valid_offset_calc_type, 'not set'))
+  }
+  discriminant = setdiff(current_calc_type, valid_offset_calc_type)
+  if ((length(discriminant) > 0)){
     stop(cat('\n invalid parameter ', discriminant))
   }
 }
@@ -203,17 +220,19 @@ generate_current_policy <- function(policy_params_group, current_policy_param_in
 
 collate_current_policy <- function(current_policy_params, run_params){
   
-  if (current_policy_params$offset_calc_type == 'avoided_condition_decline'){
-    current_policy_params$offset_action_type = 'maintain'
-  } else if (current_policy_params$offset_calc_type %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
-    current_policy_params$offset_action_type = 'restore'
-  } else if (current_policy_params$offset_calc_type %in% c('protected_condition')){
-    current_policy_params$offset_action_type = 'protect'
-  } else if (current_policy_params$offset_calc_type %in% c('current_condition_maintain')){
-    current_policy_params$offset_action_type = 'maintain'
-  } else if (current_policy_params$offset_calc_type %in% c('current_condition_protect')){
-    current_policy_params$offset_action_type = 'protect'
-  } 
+#   if (current_policy_params$offset_calc_type == 'avoided_condition_decline'){
+#     current_policy_params$offset_action_type = 'maintain'
+#   } else if (current_policy_params$offset_calc_type %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
+#     current_policy_params$offset_action_type = 'restore'
+#   } else if (current_policy_params$offset_calc_type %in% c('protected_condition')){
+#     current_policy_params$offset_action_type = 'protect'
+#   } else if (current_policy_params$offset_calc_type %in% c('current_condition_maintain')){
+#     current_policy_params$offset_action_type = 'maintain'
+#   } else if (current_policy_params$offset_calc_type %in% c('current_condition_protect')){
+#     current_policy_params$offset_action_type = 'protect'
+#   } 
+  current_policy_params$offset_calc_type = current_policy_params$offset_action_params[[1]][1]
+  current_policy_params$offset_action_type = current_policy_params$offset_action_params[[1]][2]
   
   current_policy_params$allow_developments_from_credit = (current_policy_params$allow_developments_from_credit) || (current_policy_params$offset_bank_type == 'credit')
   
@@ -289,9 +308,11 @@ generate_policy_params_group <- function(policy_params, run_params){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
     current_policy <- generate_current_policy(policy_params, current_policy_param_inds) #write current policy as a list
+    
     if ((policy_ind == 1) & (current_policy$dev_counterfactual_adjustment == 'as_offset')){
       cat('\nusing same adjustment of cfacs in development impact calculation as in offset calculation')
     }
+    
     policy_params_group[[policy_ind]] <- collate_current_policy(current_policy, run_params)  #setup flags for cfacs, cfac adjustment etc.
     
   }
@@ -500,14 +521,16 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$indexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
-                                                      initial_ecology, run_params)
- 
+  index_object$offset_indexes_to_use = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
+                                                             run_params$screen_offset_sites_by_size, run_params$screen_offset_site_zeros)
+  index_object$dev_indexes_to_use = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
+                                                          run_params$screen_dev_sites_by_size, run_params$screen_dev_site_zeros)
+  
   return(index_object)
   
 }
 
-find_available_indexes <- function(indexes_to_use, parcels, initial_ecology, run_params){
+set_available_indexes <- function(indexes_to_use, parcels, initial_ecology, screen_sites_by_size, screen_zeros){
   
   initial_parcel_sums = lapply(seq_along(initial_ecology), 
                                function(i) lapply(seq_along(initial_ecology[[i]]), 
@@ -516,13 +539,14 @@ find_available_indexes <- function(indexes_to_use, parcels, initial_ecology, run
   parcels_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                         function(i) all(unlist(initial_parcel_sums[i]) == 0))))
   
-  if (run_params$screen_parcels_by_size == TRUE){
+  if (screen_sites_by_size == TRUE){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-    smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
+    smalls_to_screen = which(parcel_lengths < run_params$site_screen_size)
     parcels_to_screen = unique(append(parcels_to_screen, smalls_to_screen))
   }
   
   indexes_to_use = screen_available_sites(indexes_to_use, parcels_to_screen, parcels$region_num)
+  
   return(indexes_to_use)
 }
 

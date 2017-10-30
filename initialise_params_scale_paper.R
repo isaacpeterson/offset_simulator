@@ -5,7 +5,7 @@ initialise_run_params <- function(){
   run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
 
   # The number of realizations to run
-  run_params$realisation_num = 100
+  run_params$realisation_num = 1
 
   # The total number of parcels that will be developed
   run_params$total_dev_num = 250
@@ -34,12 +34,18 @@ initialise_run_params <- function(){
   # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
-  # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
-  run_params$screen_parcels_by_size = TRUE 
+  # Excludes offset sites by size limitations (in number of elements set by run_params$parcel_screen_size)
+  run_params$screen_offset_sites_by_size = TRUE 
 
+  # Excludes offset sites by size limitations (in number of elements set by run_params$parcel_screen_size)
+  run_params$screen_dev_sites_by_size = TRUE
+  
   # Exclude parcels with less than this number of pixels.
   run_params$parcel_screen_size = 50 
 
+  run_params$screen_offset_site_zeros = TRUE
+  
+  
   # The mean and the standard deviation of a normal distribution from which to sample the restoration parameters from
   run_params$restoration_rate_params = c(0.02, 0.005)
 
