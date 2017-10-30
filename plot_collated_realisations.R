@@ -10,9 +10,11 @@ output_type = 'scenarios' # set to 'features' for multiple feature layers or 'sc
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
 write_pdf = FALSE
+
 plot_site_offset_impact = TRUE 
 plot_site_dev_impact = TRUE
 plot_site_net_impact = TRUE
+
 
 plot_site_offset_outcome = TRUE
 plot_site_dev_outcome = TRUE
@@ -28,10 +30,12 @@ setup_sub_plots(nx = 3, ny = 1, x_space = 5, y_space = 5)
 base_folder = paste0('~/offset_data/simulated//simulation_runs/', 
                         formatC(run_number, width = 5, format = "d", flag = "0"), '/')
 
+
 collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
 
 simulation_params_folder = paste0(base_folder, '/simulation_params/')
 #simulation_params_folder = collated_folder
+
 
 #collated_folder = '/Users/ascelin/analysis/src/offset_simulator/data3/collated_realisations/'
 output_plot_folder = collated_folder
@@ -43,6 +47,7 @@ landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(plot_vec))
 site_impact_plot_lims_set = rep(list(c(-3e4, 3e4)), length(plot_vec))
 program_impact_plot_lims_set = rep(list(c(-1e6, 1e6)), length(plot_vec)) 
 landscape_impact_plot_lims_set = rep(list(c(-1e6, 0)), length(plot_vec))
+
 
 
 if (output_type == 'scenarios'){
