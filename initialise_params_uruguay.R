@@ -1,14 +1,15 @@
 initialise_run_params <- function(){
   run_params = list()
   run_params$overwrite_default_params = TRUE
-  run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/hunter/')
+  run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/uruguay/')
   run_params$use_simulated_data = FALSE
   run_params$realisation_num = 1
   run_params$crs = 1 #detectCores(all.tests = FALSE, logical = TRUE)
   run_params$time_steps = 30
   run_params$dev_start = 1
-  run_params$dev_end = 50
-  run_params$total_dev_num = 100
+  run_params$dev_end = 5
+  run_params$total_dev_num = 5
+  run_params$illegal_clearing_prob = 1e-2
   run_params$save_simulation_outputs = TRUE
   run_params$overwrite_existing_landscape_data = FALSE
   run_params$run_from_saved = TRUE # run from previous data or run from newly generated ecology etc.
@@ -21,7 +22,7 @@ initialise_run_params <- function(){
   run_params$sample_restoration_rate = FALSE
   run_params$sample_decline_rate = FALSE
   run_params$limit_offset_restoration = TRUE
-  run_params$illegal_clearing_prob = 0
+  run_params$illegal_clearing_prob = 1e-5
   run_params$mean_decline_rates = rep(list(-1e-10), length(run_params$features_to_use_in_simulation)) 
   run_params$decline_rate_std = rep(list(0), length(run_params$features_to_use_in_simulation))
 

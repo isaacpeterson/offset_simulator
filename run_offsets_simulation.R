@@ -1,17 +1,8 @@
 rm(list = ls())
-
-library(foreach)
-library(doParallel)
-library(abind)
-library(pixmap)
-
-source('initialise_params_defaults.R')
 source('initialise_routines.R')                              # functions to collate simulation outputs
-source('simulation_routines.R')                # functions to run simulation
-source('collate_routines.R')                                # functions to collate simulation outputs
-source('plot_routines.R')                                   # functions to plot collated outputs
 
 user_params_file = 'initialise_params_scale_paper.R'
+
 run_params <- run_initialise_routines(user_params_file)
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
 parcels <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcels.rds'))
@@ -33,7 +24,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
   loop_strt <- Sys.time()
   cat('\nrunning scenario', scenario_ind, 'of', length(run_params$policy_params_group), 'with', run_params$realisation_num, 
                'realisations on', run_params$crs, ' cores \n')
-  
+
   if (run_params$realisation_num > 1){
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
       

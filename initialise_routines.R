@@ -1,6 +1,15 @@
 #generic set of initialisation routines that are called for every simulation 
 
 run_initialise_routines <- function(user_params_file){ 
+  library(foreach)
+  library(doParallel)
+  library(abind)
+  library(pixmap)
+  
+  source('initialise_params_defaults.R')
+  source('simulation_routines.R')                 # functions to run simulation
+  source('collate_routines.R')                                # functions to collate simulation outputs
+  source('plot_routines.R')                                   # functions to plot collated outputs
   
   run_params <- initialise_run_params()
   policy_params <- initialise_policy_params() # list all program combinations to test
@@ -151,8 +160,7 @@ write_simulation_folders <- function(run_params, scenario_num){
   
   filenames = list.files(path = base_run_folder, all.files = FALSE, 
                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                         include.dirs = FALSE, no.. = FALSE)
-  
+                         include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
   if (length(filenames) > 0){
     current_run = as.numeric(filenames[length(filenames)]) + 1
   } else {
@@ -245,7 +253,13 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$banked_offset_vec = list()
   }
   
-  
+  if (current_policy_params$dev_counterfactual_adjustment == 'as_offset'){
+    current_policy_params$include_potential_developments_in_dev_calc = current_policy_params$include_potential_developments_in_offset_calc
+    current_policy_params$include_potential_offsets_in_dev_calc = current_policy_params$include_potential_offsets_in_offset_calc
+    current_policy_params$include_illegal_clearing_in_dev_calc = current_policy_params$include_illegal_clearing_in_offset_calc
+  } else {
+    cat('\nusing independent adjustment of cfacs in development impact calculation')
+  }
   current_policy_params$adjust_offset_cfacs_flag = any(current_policy_params$include_potential_developments_in_offset_calc,
                                                        current_policy_params$include_potential_offsets_in_offset_calc,
                                                        current_policy_params$include_illegal_clearing_in_offset_calc) == TRUE
@@ -275,6 +289,9 @@ generate_policy_params_group <- function(policy_params, run_params){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
     current_policy <- generate_current_policy(policy_params, current_policy_param_inds) #write current policy as a list
+    if ((policy_ind == 1) & (current_policy$dev_counterfactual_adjustment == 'as_offset')){
+      cat('\nusing same adjustment of cfacs in development impact calculation as in offset calculation')
+    }
     policy_params_group[[policy_ind]] <- collate_current_policy(current_policy, run_params)  #setup flags for cfacs, cfac adjustment etc.
     
   }
@@ -482,12 +499,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
-  index_object$developments = list()
-  index_object$offsets = list()
-  index_object$illegal_clearing = list()
-  index_object$dev_credit = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$parcel_num_remaining = vector()
   index_object$indexes_to_use = find_available_indexes(indexes_to_use = parcels$regions, parcels, 
                                                       initial_ecology, run_params)
  
@@ -501,16 +513,16 @@ find_available_indexes <- function(indexes_to_use, parcels, initial_ecology, run
                                function(i) lapply(seq_along(initial_ecology[[i]]), 
                                                   function(j) sum(initial_ecology[[i]][[j]]) ) )
   
-  zeros_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
+  parcels_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                         function(i) all(unlist(initial_parcel_sums[i]) == 0))))
-  indexes_to_use = screen_available_sites(indexes_to_use, zeros_to_screen, parcels$region_num)
   
   if (run_params$screen_parcels_by_size == TRUE){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
     smalls_to_screen = which(parcel_lengths < run_params$parcel_screen_size)
-    indexes_to_use = screen_available_sites(indexes_to_use, smalls_to_screen, parcels$region_num)
+    parcels_to_screen = unique(append(parcels_to_screen, smalls_to_screen))
   }
   
+  indexes_to_use = screen_available_sites(indexes_to_use, parcels_to_screen, parcels$region_num)
   return(indexes_to_use)
 }
 

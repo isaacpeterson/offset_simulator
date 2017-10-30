@@ -7,7 +7,8 @@ write_folder <- function(current_folder){
 
 
 scale_ecology <- function(landscape_ecology, max_eco_val){
-  landscape_ecology <- lapply(seq_along(landscape_ecology), function (i) landscape_ecology[[i]]/max(unlist(landscape_ecology)) * max_eco_val)
+  landscape_ecology <- lapply(seq_along(landscape_ecology), 
+                              function (i) landscape_ecology[[i]]/max(landscape_ecology[[i]]) * max_eco_val)
   return(landscape_ecology)
 }
 
@@ -157,19 +158,19 @@ simulate_LGA <- function(simulated_ecology_params){
 
 
 
-LGA_to_parcel_list <- function(parcel_array){
+LGA_to_parcel_list <- function(LGA_array){
 
-  site_group_vals = unique(as.vector(parcel_array))
-  land_parcels <- lapply(seq_along(site_group_vals), function(i) which(parcel_array == site_group_vals[i]))
+  site_group_vals = unique(as.vector(LGA_array))
+  land_parcels <- lapply(seq_along(site_group_vals), function(i) which(LGA_array == site_group_vals[i]))
   
   parcels = list()
-  parcels$landscape_dims = dim(parcel_array)
+  parcels$landscape_dims = dim(LGA_array)
   parcels$parcel_indexes = seq_along(land_parcels)
   parcels$regions = list(parcels$parcel_indexes) #use only one region - if necessary this can be split up into multi-region
   parcels$region_num = length(parcels$regions)
   parcels$land_parcel_num = length(land_parcels)
   parcels$land_parcels = land_parcels
-  parcels$parcel_array = parcel_array
+  parcels$parcel_array = LGA_array
   
   return(parcels)
 }
