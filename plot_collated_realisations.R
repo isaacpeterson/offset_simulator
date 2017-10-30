@@ -9,7 +9,7 @@ plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
-write_pdf = FALSE
+write_pdf = TRUE
 plot_site_offset_impact = TRUE 
 plot_site_dev_impact = TRUE
 plot_site_net_impact = TRUE
@@ -22,8 +22,11 @@ example_set_to_plot = 25 # example site to plot
 plot_vec = 1 #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
 string_width = 3 # how many digits are used to store scenario index and realisation index
 
+# Set the output filename, and open the pdf file for reading
+if (write_pdf == TRUE){pdf(filename, width = 8.3, height = 11.7)} 
+
 # write plots to nx * ny subplots
-setup_sub_plots(nx = 3, ny = 1, x_space = 5, y_space = 5)
+setup_sub_plots(nx = 3, ny = 4, x_space = 5, y_space = 5)
                 
 base_folder = paste0('~/offset_data/simulated//simulation_runs/', 
                         formatC(run_number, width = 5, format = "d", flag = "0"), '/')
@@ -81,8 +84,7 @@ if (!file.exists(output_plot_folder)){
   dir.create(output_plot_folder)
 }
 
-# Set the output filename, and open the pdf file for reading
-if (write_pdf == TRUE){pdf(filename, width = 8.3, height = 11.7)} 
+
 
 scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 

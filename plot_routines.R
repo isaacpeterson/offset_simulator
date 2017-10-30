@@ -118,7 +118,7 @@ plot_impact_set <- function(collated_realisations, plot_site_offset_impact, plot
   dev_col_vec = c('blue', 'red')
   net_col_vec = c('darkgreen', 'red', 'black')
   
-  
+  # Plot the site scale impacts
   overlay_site_impacts(collated_realisations,
                       plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, 
                       output_type,
@@ -130,6 +130,7 @@ plot_impact_set <- function(collated_realisations, plot_site_offset_impact, plot
                       site_plot_lims,
                       time_steps)
   
+  # Plot the program scale impacts
   overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
                                         collated_realisations$program_scale_impacts$net_dev_losses,
                                         collated_realisations$program_scale_impacts$program_total),
@@ -149,6 +150,7 @@ plot_impact_set <- function(collated_realisations, plot_site_offset_impact, plot
                 paste0(find_list_mean(collated_realisations$sites_used$illegal_sites_cleared), ' illegals, ',
                        length(collated_realisations$landscape$summed_site_trajectories[[1]]), ' total'))
   
+  # Plot the landscape scale impacts
   overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
                        plot_title = 'Landscape Impact', 
                        x_lab = t(x_lab),
@@ -368,6 +370,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   }
   plot_type = 'non-overlay'
   
+  # Plot the impact of the offset site(s) 
   if (plot_site_offset_impact == TRUE){
   overlay_parcel_set_element(collated_object = offset_set,
                              current_policy_params$use_offset_bank,
@@ -384,6 +387,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     plot_type = 'overlay'
   }
   
+  # Plot the impact of the development site(s) 
   if (plot_site_dev_impact == TRUE){
   overlay_parcel_set_element(dev_set,
                              current_policy_params$use_offset_bank,
@@ -398,7 +402,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
                              site_plot_lims, 
                              time_steps)
   }
-  
+  # Overlay the net impact of the offset and development impact 
   if (plot_site_net_impact == TRUE){
     overlay_plot_list(plot_type, net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
                     col_vec = rep('black', length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 

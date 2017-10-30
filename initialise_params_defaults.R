@@ -56,7 +56,7 @@ initialise_run_params <- function(){
   run_params$features_to_use_in_simulation = 1 
  
   # The maxoimum number of parcels can be selected to offset a single development
-  run_params$max_offset_parcel_num = 5
+  run_params$max_offset_parcel_num = 10
 
   # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
   run_params$sample_restoration_rate = FALSE
@@ -82,12 +82,15 @@ initialise_run_params <- function(){
   # Max value that the logistic decline curve can reach. It will asypotote to this value
   run_params$max_eco_val = 100 
   
-  # Excludes the top and bottom 5% of parcels in terms of their biodiversity values soo keeps values between [0.05, 0.95]
-  run_params$screen_parcels_by_size = TRUE 
-
+  run_params$screen_offset_sites_by_size = TRUE 
+  
+  run_params$screen_dev_sites_by_size = TRUE 
   # Exclude parcels with less than this number of pixels.
-  run_params$parcel_screen_size = 0 
+  run_params$site_screen_size = 20 
 
+  run_params$screen_dev_site_zeros = FALSE
+  
+  run_params$screen_offset_site_zeros = TRUE
   # set the random number seed
   run_params$set_seed = FALSE
   
@@ -136,8 +139,12 @@ initialise_policy_params <- function(){
   # 'current_condition_protect' is the present condition of the site assuming the site is protected
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
-  policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
-
+  
+  policy_params$offset_action_params = list()
+  
+  #policy_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
+  #policy_params$offset_action_type = c('restore', 'restore', 'maintain')
+  
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
