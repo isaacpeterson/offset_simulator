@@ -9,12 +9,9 @@ plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
 output_type = 'scenarios' # set to 'features' for multiple feature layers or 'scenarios' for multiple scenarios
 realisation_num = 'all' # 'all' or number to plot
 offset_bank = FALSE
-<<<<<<< HEAD
-write_pdf = TRUE
-=======
-write_pdf = FALSE
 
->>>>>>> origin/master
+write_pdf = TRUE
+
 plot_site_offset_impact = TRUE 
 plot_site_dev_impact = TRUE
 plot_site_net_impact = TRUE
