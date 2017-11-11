@@ -46,7 +46,7 @@ run_initialise_routines <- function(user_params_file){
                                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                                 include.dirs = FALSE, no.. = FALSE)
     if ( (length(current_filenames) == 0) | (run_params$run_from_saved == FALSE) ){
-      source('simulate_ecology_routines.R')
+      source('construct_simulated_ecology.R')
       prepare_simulated_data(run_params)
     }
   }
@@ -521,9 +521,10 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$offset_indexes_to_use = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
+  index_object$indexes_to_use = list()
+  index_object$indexes_to_use$offsets = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
                                                              run_params$screen_offset_sites_by_size, run_params$screen_offset_site_zeros)
-  index_object$dev_indexes_to_use = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
+  index_object$indexes_to_use$devs = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
                                                           run_params$screen_dev_sites_by_size, run_params$screen_dev_site_zeros)
   
   return(index_object)
