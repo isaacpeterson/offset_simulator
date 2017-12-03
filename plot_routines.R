@@ -3,78 +3,65 @@
 # sites_used = vector('list', length(current_sites_list))
 # sites_used[sets_to_use] = lapply(seq_along(sets_to_use), function(i) length(unlist(current_sites_list[[i]])))
 
-check_plot_options <- function(plot_params, run_params, scenario_filenames) {
-  
-  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes')
-    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
-  
-  
-  if (run_params$total_dev_num < plot_params$example_set_to_plot){
-    stop (paste('chosen example set to plot needs to be less than ', run_params$total_dev_num))
-  }
-  
-  if (plot_params$output_type == 'scenarios'){
-    if (length(scenario_filenames) == 0){
-      stop( paste('\nERROR: No files that match _policy_params found in', plot_params$simulation_params_folder) )
-    } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
-      stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
-    }
-  } else {
-    if (run_params$feature_num < max(plot_params$plot_vec)){
-      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', run_params$feature_num, ')'))
-    }
-    
-  }
-  
-  
-}
-
 
 # site_plot_lims = site_outcome_plot_lims_set[[plot_ind]]
 # program_plot_lims = program_outcome_plot_lims_set[[plot_ind]] 
 # landscape_plot_lims = landscape_outcome_plot_lims_set[[plot_ind]]
+# 
 
-plot_outcome_set <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, site_plot_lims, program_plot_lims, 
-                             landscape_plot_lims, set_to_plot, lwd_vec, time_steps, realisation_num, feature_ind){
+
+plot_outcome_set <- function(collated_realisations, current_policy_params, plot_params, run_params, 
+                             realisation_num, plot_ind, feature_ind,  set_to_plot){
+
+  if (plot_params$plot_site == TRUE){
+    plot_site_outcomes(collated_realisations, 
+                       plot_params$plot_site_offset, 
+                       plot_params$plot_site_dev, 
+                       plot_params$output_type, 
+                       current_policy_params, 
+                       set_to_plot, 
+                       plot_params$site_outcome_plot_lims_set[[plot_ind]], 
+                       feature_ind,  
+                       plot_params$site_outcome_lwd_vec)
+  }
   
-  offset_col_vec = c('blue', 'red', 'darkgreen')
-  dev_col_vec = c('blue', 'red')
-  net_col_vec = c('darkgreen', 'red', 'black')
-  
-  plot_site_outcomes(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind)
-  
-  plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
-                plot_type = 'program', 
-                enforce_limits = TRUE, 
-                include_legend = FALSE, 
-                y_lims = program_plot_lims,
-                plot_title = 'Program Outcome', 
-                loss_stats = collated_realisations$net_program_loss, 
-                realisation_num, 
-                collated_realisations$program_cfacs$program_cfac_sum,
-                lwd_vec, 
-                col_vec = c('red', 'blue'), 
-                legend_vec = c('Outcome', 'Counterfactual'), 
-                time_steps)
-  
-  
-  plot_outcomes(collated_realisations$landscape$net_landscape, 
-                plot_type = 'landscape', 
-                enforce_limits = TRUE, 
-                include_legend = FALSE, 
-                y_lims = landscape_plot_lims,
-                plot_title = 'Landscape Outcome', 
-                loss_stats = collated_realisations$landscape_loss, 
-                realisation_num, 
-                collated_realisations$landscape$landscape_cfacs[[1]], 
-                lwd_vec, 
-                col_vec = c('red', 'blue'), 
-                legend_vec = c('Outcome', 'Counterfactual'), 
-                time_steps = time_steps)
+  if (plot_params$plot_program == TRUE){
+    
+    plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
+                  plot_type = 'program', 
+                  enforce_limits = TRUE, 
+                  include_legend = FALSE, 
+                  y_lims = plot_params$program_outcome_plot_lims_set[[plot_ind]] ,
+                  plot_title = 'Program Outcome', 
+                  loss_stats = collated_realisations$net_program_loss, 
+                  collated_realisations$realisation_num, 
+                  collated_realisations$program_cfacs$program_cfac_sum,
+                  plot_params$program_outcome_lwd_vec, 
+                  plot_params$program_outcome_col_vec, 
+                  legend_vec = c('Outcome', 'Counterfactual'), 
+                  run_params$time_steps)
+  }
+  if (plot_params$plot_landscape == TRUE){ 
+    plot_outcomes(collated_realisations$landscape$net_landscape, 
+                  plot_type = 'landscape', 
+                  enforce_limits = TRUE, 
+                  include_legend = FALSE, 
+                  y_lims = landscape_outcome_plot_lims_set[[plot_ind]],
+                  plot_title = 'Landscape Outcome', 
+                  loss_stats = collated_realisations$landscape_loss, 
+                  collated_realisations$realisation_num, 
+                  collated_realisations$landscape$landscape_cfacs[[1]], 
+                  plot_params$landscape_outcome_lwd_vec, 
+                  plot_params$landscape_outcome_col_vec, 
+                  legend_vec = c('Outcome', 'Counterfactual'), 
+                  time_steps = run_params$time_steps)
+    
+  }
 }
 
 
-plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind){
+plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
+                               output_type, current_policy_params, set_to_plot, site_plot_lims, feature_ind, site_lwd){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   
   if (current_policy_params$use_offset_bank == TRUE){
@@ -87,104 +74,116 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
-  overlay_trajectories(dev_parcel_indexes_to_use,
-                       current_policy_params$use_offset_bank,
-                       trajectories = collated_realisations$landscape$summed_site_trajectories, 
-                       realisation_ind = 1, 
-                       plot_col = 'red', 
-                       plot_type, 
-                       overlay_type = 'single', 
-                       set_to_plot, 
-                       y_lab, 
-                       site_plot_lims)
+    overlay_trajectories(dev_parcel_indexes_to_use,
+                         current_policy_params$use_offset_bank,
+                         trajectories = collated_realisations$landscape$summed_site_trajectories, 
+                         realisation_ind = 1, 
+                         plot_col = 'red', 
+                         plot_type, 
+                         overlay_type = 'single', 
+                         set_to_plot, 
+                         y_lab, 
+                         site_plot_lims,
+                         site_lwd)
     plot_type = 'overlay'
   }
   if (plot_site_offset_outcome == TRUE){
-  overlay_trajectories(offset_parcel_indexes_to_use, 
-                       current_policy_params$use_offset_bank,
-                       trajectories = collated_realisations$landscape$summed_site_trajectories, 
-                       realisation_ind = 1, 
-                       plot_col = 'darkgreen', 
-                       plot_type, 
-                       overlay_type = 'single', 
-                       set_to_plot, 
-                       y_lab, 
-                       site_plot_lims)
+    overlay_trajectories(offset_parcel_indexes_to_use, 
+                         current_policy_params$use_offset_bank,
+                         trajectories = collated_realisations$landscape$summed_site_trajectories, 
+                         realisation_ind = 1, 
+                         plot_col = 'darkgreen', 
+                         plot_type, 
+                         overlay_type = 'single', 
+                         set_to_plot, 
+                         y_lab, 
+                         site_plot_lims, 
+                         site_lwd)
+  }
+}
+
+
+plot_impact_set <- function(collated_realisations, current_policy_params, plot_params, run_params, realisation_num, plot_ind, feature_ind, set_to_plot){
+  
+  # Plot the site scale impacts
+  if (plot_params$plot_site == TRUE){
+
+    overlay_site_impacts(collated_realisations,
+                         plot_params$plot_site_offset, 
+                         plot_params$plot_site_dev, 
+                         plot_params$plot_site_net, 
+                         plot_params$output_type,
+                         current_policy_params,
+                         realisation_ind = 1, 
+                         run_params$features_to_use_in_simulation[feature_ind], 
+                         plot_from_impact_yr = FALSE, 
+                         set_to_plot,
+                         plot_params$site_impact_plot_lims_set[[plot_ind]],
+                         run_params$time_steps, 
+                         plot_params$site_impact_col_vec, 
+                         plot_params$site_impact_lwd)
+  }
+  # Plot the program scale impacts
+  if (plot_params$plot_program == TRUE){
+    overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
+                                          collated_realisations$program_scale_impacts$net_dev_losses,
+                                          collated_realisations$program_scale_impacts$program_total),
+                         plot_title = 'Program Impact', 
+                         x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean)),
+                         collated_realisations$realisation_num,
+                         plot_params$program_lwd_vec, 
+                         col_vec = plot_params$net_col_vec, 
+                         legend_loc = 'topleft',
+                         legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
+                         plot_lims = plot_params$program_plot_lims[[plot_ind]])
+    
+  }
+  
+  # Plot the landscape scale impacts
+  if (plot_params$plot_landscape == TRUE){
+    overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
+                         plot_title = 'Landscape Impact', 
+                         x_lab = '',
+                         collated_realisations$realisation_num,
+                         plot_params$landscape_lwd_vec, 
+                         plot_params$landscape_col_vec,
+                         legend_loc = 'topright',
+                         legend_vec = 'NA', 
+                         plot_params$landscape_impact_plot_lims_set[[plot_ind]]) 
   }
 }
 
 
 
-# 
-# site_plot_lims = site_impact_plot_lims[[plot_ind]]
-# program_plot_lims = program_impact_plot_lims[[plot_ind]] 
-# landscape_plot_lims = landscape_impact_plot_lims[[plot_ind]] 
-# lwd_vec = c(3, 0.5) 
-# time_steps = run_params$time_steps 
-# parcel_num = vector()
-# realisation_num = collated_realisations$realisation_num
-# 
-# 
-# offset_col_vec = c('blue', 'red', 'darkgreen')
-# dev_col_vec = c('blue', 'red')
-# net_col_vec = c('darkgreen', 'red', 'black')
-# realisation_ind = 1 
-# plot_from_impact_yr = FALSE 
 
-plot_impact_set <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_policy_params, site_plot_lims, program_plot_lims, landscape_plot_lims, 
-                            set_to_plot, lwd_vec, time_steps, parcel_num, realisation_num, feature_ind){
+check_plot_options <- function(plot_params, run_params, scenario_filenames) {
   
-  offset_col_vec = c('blue', 'red', 'darkgreen')
-  dev_col_vec = c('blue', 'red')
-  net_col_vec = c('darkgreen', 'red', 'black')
-  
-  # Plot the site scale impacts
-
- overlay_site_impacts(collated_realisations,
-                      plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, 
-                      output_type,
-                      current_policy_params,
-                      realisation_ind = 1, 
-                      feature_ind, 
-                      plot_from_impact_yr = FALSE, 
-                      set_to_plot,
-                      site_plot_lims,
-                      time_steps)
-  
-  # Plot the program scale impacts
-  overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
-                                        collated_realisations$program_scale_impacts$net_dev_losses,
-                                        collated_realisations$program_scale_impacts$program_total),
-                       plot_title = 'Program Impact', 
-                       x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean)),
-                       realisation_num,
-                       lwd_vec, 
-                       col_vec = net_col_vec, 
-                       legend_loc = 'topleft',
-                       legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-                       plot_lims = program_plot_lims)
+  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes')
+    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
   
   
-  x_lab = cbind(paste0('System ', write_NNL_label(collated_realisations$landscape_scale_NNL$NNL_mean)), 
-                paste0(find_list_mean(collated_realisations$sites_used$total_dev_sites), ' devs,', 
-                       find_list_mean(collated_realisations$sites_used$total_offset_sites), ' offsets,'),
-                paste0(find_list_mean(collated_realisations$sites_used$illegal_sites_cleared), ' illegals, ',
-                       length(collated_realisations$landscape$summed_site_trajectories[[1]]), ' total'))
-  # Plot the landscape scale impacts
-  overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
-                       plot_title = 'Landscape Impact', 
-                       x_lab = t(x_lab),
-                       realisation_num,
-                       lwd_vec, 
-                       col_vec = 'black',
-                       legend_loc = 'topright',
-                       legend_vec = 'NA', 
-                       landscape_plot_lims) 
+  if (run_params$total_dev_num < plot_params$sets_to_plot){
+    stop (paste('chosen example set to plot needs to be less than ', run_params$total_dev_num))
+  }
+  
+  if (plot_params$output_type == 'scenarios'){
+    if (length(scenario_filenames) == 0){
+      stop( paste('\nERROR: No files that match _policy_params found in', plot_params$simulation_params_folder) )
+    } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
+      stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
+    }
+  } else if (plot_params$output_type == 'features'){
+    if (run_params$feature_num < max(plot_params$plot_vec)){
+      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', run_params$feature_num, ')'))
+    }
+    
+  } else if (plot_params$output_type == 'multiple_sets'){
+    if ( max(plot_params$sets_to_plot) > run_params$total_dev_num){
+      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', run_params$total_dev_num, ')'))
+    }
+  }
   
 }
-
-
-
 
 
 # 
@@ -319,7 +318,7 @@ write_NNL_label <- function(NNL_yrs){
   } else {
     NNL_label = 'All realisations faileld NNL'
   } 
-
+  
   
   return(NNL_label)
 }
@@ -337,7 +336,7 @@ write_NNL_label <- function(NNL_yrs){
 
 
 overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
-                                 overlay_type, sets_to_plot, y_lab, site_plot_lims){
+                                 overlay_type, sets_to_plot, y_lab, site_plot_lims, lwd){
   if (offset_bank == FALSE){
     parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]][sets_to_plot])
     plot_list = trajectories[[realisation_ind]][parcel_indexes_to_use]
@@ -346,7 +345,7 @@ overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectorie
     plot_list = list(Reduce('+', trajectories[[realisation_ind]][parcel_indexes_to_use]))
   }
   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = y_lab, x_lab = '', 
-                    col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(0.5, length(plot_list)), 
+                    col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(lwd, length(plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
 }
 
@@ -369,13 +368,10 @@ get_y_lab <- function(output_type, current_policy_params, feature_ind){
 }
 
 
-
-
 overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_policy_params, realisation_ind, 
-                                feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps){
+                                 feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps, col_vec, plot_lwd){
   y_lab = get_y_lab(output_type, current_policy_params, feature_ind)
   plot_lwd = 1
-  
   
   if (current_policy_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
@@ -393,49 +389,49 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   plot_type = 'non-overlay'
   
   # Plot the impact of the offset site(s) 
-
+  
   if (plot_site_offset_impact == TRUE){
-
-  overlay_parcel_set_element(collated_object = offset_set,
-                             current_policy_params$use_offset_bank,
-                             visualisation_type = 'stacked', 
-                             realisation_ind, 
-                             plot_col = 'darkgreen', 
-                             plot_lwd,
-                             plot_type,
-                             y_lab,
-                             plot_from_impact_yr,
-                             set_to_plot, 
-                             site_plot_lims, 
-                             time_steps)
-
+    
+    overlay_parcel_set_element(collated_object = offset_set,
+                               current_policy_params$use_offset_bank,
+                               visualisation_type = 'stacked', 
+                               realisation_ind, 
+                               plot_col = col_vec[1], 
+                               plot_lwd,
+                               plot_type,
+                               y_lab,
+                               plot_from_impact_yr,
+                               set_to_plot, 
+                               site_plot_lims, 
+                               time_steps)
+    
     plot_type = 'overlay'
   }
   
-
+  
   # Overlay the impact of the development site 
-
+  
   if (plot_site_dev_impact == TRUE){
-
-  overlay_parcel_set_element(dev_set,
-                             current_policy_params$use_offset_bank,
-                             visualisation_type = 'non-stacked', 
-                             realisation_ind, 
-                             plot_col = 'red',
-                             plot_lwd,
-                             plot_type,
-                             y_lab = '',
-                             plot_from_impact_yr,
-                             set_to_plot, 
-                             site_plot_lims, 
-                             time_steps)
+    
+    overlay_parcel_set_element(dev_set,
+                               current_policy_params$use_offset_bank,
+                               visualisation_type = 'non-stacked', 
+                               realisation_ind, 
+                               plot_col = col_vec[2],
+                               plot_lwd,
+                               plot_type,
+                               y_lab = '',
+                               plot_from_impact_yr,
+                               set_to_plot, 
+                               site_plot_lims, 
+                               time_steps)
   }
-
+  
   # Overlay the net impact of the offset and development impact 
   if (plot_site_net_impact == TRUE){
     overlay_plot_list(plot_type, net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
-                    col_vec = rep('black', length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
-                    legend_vec = 'NA', legend_loc = FALSE)
+                      col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
+                      legend_vec = 'NA', legend_loc = FALSE)
   }
 }
 

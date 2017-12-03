@@ -17,8 +17,15 @@ setup_sub_plots(plot_params$nx, plot_params$ny, x_space = 5, y_space = 5)
 
 if (plot_params$output_type == 'scenarios'){
   feature_ind = 1
+  set_to_plot = plot_params$sets_to_plot
 } else if (plot_params$output_type == 'features'){
   scenario_ind = 1
+  set_to_plot = plot_params$sets_to_plot
+} else if (plot_params$output_type == 'site_sets'){
+  scenario_ind = 8
+  feature_ind = 1
+  plot_params$plot_program = FALSE
+  plot_params$plot_landscape = FALSE
 }
 
 if (file.exists(plot_params$run_params_filename) == FALSE){
@@ -31,18 +38,20 @@ scenario_filenames <- list.files(path = plot_params$simulation_params_folder, pa
 
 check_plot_options(plot_params, run_params, scenario_filenames)
 
-
 if (!file.exists(plot_params$output_plot_folder)){
   dir.create(plot_params$output_plot_folder)
 }
 
-
-for (plot_ind in plot_params$plot_vec){
+for (plot_ind in seq_along(plot_params$plot_vec)){
+  
   if (plot_params$output_type == 'features'){
-    feature_ind = plot_ind
-  } else {
-    scenario_ind = plot_ind
+    feature_ind = plot_params$plot_vec[plot_ind]
+  } else if (plot_params$output_type == 'scenarios'){
+    scenario_ind = plot_params$plot_vec[plot_ind]
+  } else if (plot_params$output_type == 'site_sets'){
+    set_to_plot = plot_params$plot_vec[plot_ind]
   }
+  
   current_policy_params = readRDS(paste0(plot_params$simulation_params_folder, '/', scenario_filenames[scenario_ind]))
   collated_filenames = find_collated_files(file_path = plot_params$collated_folder, 
                                            scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"), 
@@ -54,34 +63,23 @@ for (plot_ind in plot_params$plot_vec){
   
   if (plot_params$plot_type == 'impacts'){
     plot_impact_set(collated_realisations, 
-                    plot_params$plot_site_offset_impact, 
-                    plot_params$plot_site_dev_impact, 
-                    plot_params$plot_site_net_impact, 
-                    plot_params$output_type,
                     current_policy_params, 
-                    plot_params$site_impact_plot_lims_set[[plot_ind]],
-                    plot_params$program_impact_plot_lims_set[[plot_ind]], 
-                    plot_params$landscape_impact_plot_lims_set[[plot_ind]], 
-                    plot_params$example_set_to_plot,
-                    plot_params$lwd_vec, 
-                    time_steps = run_params$time_steps, 
-                    parcel_num = vector(),
+                    plot_params, 
+                    run_params, 
                     realisation_num = collated_realisations$realisation_num,
-                    feature_ind = run_params$features_to_use_in_simulation[feature_ind]) 
-  } else {
-    plot_outcome_set(collated_realisations,
-                     plot_params$plot_site_offset_outcome, 
-                     plot_params$plot_site_dev_outcome, 
-                     plot_params$output_type,
-                     current_policy_params,
-                     plot_params$site_outcome_plot_lims_set[[plot_ind]],
-                     plot_params$program_outcome_plot_lims_set[[plot_ind]], 
-                     plot_params$landscape_outcome_plot_lims_set[[plot_ind]],
-                     plot_params$example_set_to_plot,
-                     plot_params$lwd_vec, 
-                     time_steps = run_params$time_steps,
-                     realisation_num = collated_realisations$realisation_num, 
-                     feature_ind) 
+                    plot_ind, 
+                    feature_ind,
+                    set_to_plot) 
+  } else if (plot_params$plot_type == 'outcomes'){
+    plot_outcome_set(collated_realisations, 
+                     current_policy_params, 
+                     plot_params, 
+                     run_params, 
+                     realisation_num = collated_realisations$realisation_num,
+                     plot_ind, 
+                     feature_ind,
+                     set_to_plot)
+
   }
   
   print(paste0('policy ', scenario_ind, ' done'))
