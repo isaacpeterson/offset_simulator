@@ -148,7 +148,7 @@ plot_impact_set <- function(collated_realisations, current_policy_params, plot_p
                          x_lab = '',
                          collated_realisations$realisation_num,
                          plot_params$landscape_lwd_vec, 
-                         plot_params$landscape_col_vec,
+                         plot_params$landscape_col,
                          legend_loc = 'topright',
                          legend_vec = 'NA', 
                          plot_params$landscape_impact_plot_lims_set[[plot_ind]]) 
@@ -255,7 +255,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
     if (max(set_to_plot) > length(dev_set$parcel_indexes[[realisation_ind]])){
-      stop(cat('\nexample set to plot exceeds total development number'))
+      stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$parcel_indexes[[realisation_ind]]), ' sites'))
     }
     net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][set_to_plot]
     
