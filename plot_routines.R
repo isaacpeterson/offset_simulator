@@ -37,7 +37,8 @@ plot_outcome_set <- function(collated_realisations, current_policy_params, plot_
                   collated_realisations$realisation_num, 
                   collated_realisations$program_cfacs$program_cfac_sum,
                   plot_params$program_outcome_lwd_vec, 
-                  plot_params$program_outcome_col_vec, 
+                  outcome_col = plot_params$landscape_col, 
+                  cfac_col = plot_params$cfac_col,
                   legend_vec = c('Outcome', 'Counterfactual'), 
                   run_params$time_steps)
   }
@@ -46,13 +47,14 @@ plot_outcome_set <- function(collated_realisations, current_policy_params, plot_
                   plot_type = 'landscape', 
                   enforce_limits = TRUE, 
                   include_legend = FALSE, 
-                  y_lims = landscape_outcome_plot_lims_set[[plot_ind]],
+                  y_lims = plot_params$landscape_outcome_plot_lims_set[[plot_ind]],
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
                   collated_realisations$landscape$landscape_cfacs[[1]], 
                   plot_params$landscape_outcome_lwd_vec, 
-                  plot_params$landscape_outcome_col_vec, 
+                  outcome_col = plot_params$landscape_col, 
+                  cfac_col = plot_params$cfac_col,
                   legend_vec = c('Outcome', 'Counterfactual'), 
                   time_steps = run_params$time_steps)
     
@@ -132,7 +134,7 @@ plot_impact_set <- function(collated_realisations, current_policy_params, plot_p
                          x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean)),
                          collated_realisations$realisation_num,
                          plot_params$program_lwd_vec, 
-                         col_vec = plot_params$net_col_vec, 
+                         col_vec = plot_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                          plot_lims = plot_params$program_plot_lims[[plot_ind]])
@@ -186,130 +188,6 @@ check_plot_options <- function(plot_params, run_params, scenario_filenames) {
 }
 
 
-# 
-# 
-# plot_single_policy_collated_realisations <- function(collated_realisations, realisation_num, run_params, policy_params, 
-#                                                      parcel_sum_lims, feature_ind, lwd_vec){
-#   
-#   offset_col_vec = c('blue', 'red', 'darkgreen')
-#   dev_col_vec = c('blue', 'red')
-#   net_col_vec = c('darkgreen', 'red', 'black')
-#   
-#   time_horizon = run_params$time_steps
-#   feature_num = run_params$feature_num
-#   
-#   if (policy_params$use_parcel_sets == TRUE){
-#     setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
-#     plot_parcel_sets(collated_realisations, 
-#                      realisation_ind = 1, 
-#                      feature_ind, 
-#                      col_list = list(offset_col_vec, dev_col_vec, net_col_vec), 
-#                      legend_loc = 'topleft')
-#   }
-#   
-#   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
-#   
-#   system_NNL = collated_realisations$landscape_NNL
-#   
-#   parcel_set_NNL = collated_realisations$parcel_set_NNL
-#   
-#   plot_lims <- find_plot_lims(plot_list = list(collated_realisations$net_offset_gains$net_outcome, 
-#                                                collated_realisations$net_dev_losses$net_outcome,
-#                                                collated_realisations$net_program_outcomes,
-#                                                collated_realisations$net_offset_gains$losses))
-#   
-#   overlay_realisations(plot_list = list(collated_realisations$net_offset_gains$rest_gains,
-#                                         collated_realisations$net_offset_gains$avoided_loss,
-#                                         #collated_realisations$net_offset_gains$losses,
-#                                         collated_realisations$net_offset_gains$net_outcome),
-#                        plot_title = 'Program Scale Offset Impact', 
-#                        x_lab = '',
-#                        realisation_num,
-#                        feature_ind, 
-#                        lwd_vec, 
-#                        col_vec = offset_col_vec, 
-#                        legend_loc = 'topleft',
-#                        legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Offset Impact'), 
-#                        plot_lims = plot_lims) 
-#   
-#   overlay_realisations(plot_list = list(collated_realisations$net_dev_losses$rest_gains,
-#                                         collated_realisations$net_dev_losses$net_outcome),
-#                        plot_title = 'Program Scale Development Impact', 
-#                        x_lab = '',
-#                        realisation_num,
-#                        feature_ind, 
-#                        lwd_vec, 
-#                        col_vec = dev_col_vec, 
-#                        legend_loc = 'topleft',
-#                        legend_vec = c('Development Loss', 'Development Impact'), 
-#                        plot_lims = plot_lims) 
-#   
-#   overlay_realisations(plot_list = list(collated_realisations$net_offset_gains$net_outcome, 
-#                                         collated_realisations$net_dev_losses$net_outcome,
-#                                         collated_realisations$net_program_outcomes),
-#                        plot_title = 'Program Impact', 
-#                        x_lab = system_NNL$x_lab,
-#                        realisation_num,
-#                        feature_ind, 
-#                        lwd_vec, 
-#                        col_vec = net_col_vec, 
-#                        legend_loc = 'topleft',
-#                        legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-#                        plot_lims = plot_lims)
-#   
-#   plot_NNL_hists(collated_realisations$parcel_set_NNL, 
-#                  collated_realisations$program_scale_NNL,
-#                  collated_realisations$landscape_NNL,
-#                  use_parcel_sets = policy_params$use_parcel_sets, 
-#                  feature_ind)
-#   
-#   plot_outcomes(collated_realisations$program_sums$outcome_rel_initial, 
-#                 plot_type = 'program', 
-#                 enforce_limits = TRUE, 
-#                 include_legend = FALSE, 
-#                 y_lims = vector(),
-#                 plot_title = 'Program Outcome', 
-#                 loss_stats = collated_realisations$net_program_loss, 
-#                 realisation_num, 
-#                 collated_realisations$program_cfac_sum_rel_initial,
-#                 feature_ind, 
-#                 lwd_vec, 
-#                 col_vec = c('red', 'blue'), 
-#                 legend_vec = c('Program Outcome', 'Program Counterfactual'), 
-#                 time_steps = run_params$time_steps)
-#   
-#   
-#   #   plot_collated_realisation_set(collated_realisations$landscape_rel_to_cfac_including_clearing, overlay_plots = FALSE, plot_col = 'black', realisation_num, lwd_vec, 
-#   #                                 x_lab = '', plot_title = 'Program Outcome', plot_lims = vector())
-#   # 
-#   plot_outcomes(collated_realisations$net_landscape, 
-#                 plot_type = 'landscape', 
-#                 enforce_limits = TRUE, 
-#                 include_legend = FALSE, 
-#                 y_lims = vector(),
-#                 plot_title = 'Landscape Outcome', 
-#                 loss_stats = collated_realisations$landscape_loss, 
-#                 realisation_num, 
-#                 collated_realisations$net_cfac_sum, 
-#                 feature_ind, lwd_vec, 
-#                 col_vec = c('red', 'blue'), 
-#                 legend_vec = c('Landscape Outcome', 'Landscape Counterfactual'), 
-#                 time_steps = run_params$time_steps)
-#   
-#   
-#   plot_list = list(collated_realisations$landscape_rel_to_cfac_including_clearing)
-#   overlay_realisations(plot_list,
-#                        plot_title = 'Lamdscape Impact', 
-#                        x_lab = '',
-#                        realisation_num,
-#                        feature_ind, 
-#                        lwd_vec, 
-#                        col_vec = c('black'),
-#                        legend_loc = 'topright',
-#                        legend_vec = 'Landscape Impact', 
-#                        plot_lims = c(min(unlist(plot_list)), (max(unlist(plot_list))) + 0.25*max(abs(unlist(plot_list))))) 
-#   
-# }
 
 
 write_NNL_label <- function(NNL_yrs){
@@ -704,17 +582,6 @@ plot_NNL_hists <- function(parcel_set_NNL, program_scale_NNL, system_NNL, use_pa
 }
 
 
-# plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains ,
-#                  collated_realisations$program_scale_impacts$net_dev_losses,
-#                  collated_realisations$program_scale_impacts$net_program)
-# plot_title = 'Program Impact' 
-# col_vec = net_col_vec 
-# 
-# col_vec = net_col_vec 
-# legend_loc = 'topleft'
-# legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact') 
-# plot_lims = program_plot_lims
-
 overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, lwd_vec, 
                                  col_vec, legend_vec, legend_loc, plot_lims){
   if (length(unlist(plot_list)) == 0){
@@ -744,24 +611,22 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
 }
 
 
-
-# landscape_realisations = collated_realisations$landscape$net_landscape 
-# plot_type = 'landscape' 
+# current_outcome_set = collated_realisations$program_outcomes$net_outcome 
+# plot_type = 'program' 
 # enforce_limits = TRUE 
 # include_legend = FALSE 
-# y_lims = landscape_plot_lims
-# plot_title = 'Landscape Outcome' 
-# loss_stats = collated_realisations$landscape_loss 
-# realisation_num 
-# cfacs = collated_realisations$landscape$landscape_cfacs 
-# lwd_vec 
-# col_vec = c('red', 'blue') 
-# legend_vec = c('Outcome', 'Counterfactual') 
+# y_lims = plot_params$program_outcome_plot_lims_set[[plot_ind]]
+# plot_title = 'Program Outcome' 
+# loss_stats = collated_realisations$net_program_loss 
+# realisation_num = collated_realisations$realisation_num
+# cfacs = collated_realisations$program_cfacs$program_cfac_sum
+# lwd_vec = plot_params$program_outcome_lwd_vec 
+# col_vec = plot_params$program_outcome_col_vec 
+# legend_vec = c('Outcome', 'Counterfactual')
+# time_steps = run_params$time_steps
 
-# time_steps = time_steps
-
-plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, include_legend, y_lims, plot_title, loss_stats, realisation_num, 
-                          cfacs, lwd_vec, col_vec, legend_vec, time_steps){
+plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, include_legend, y_lims, plot_title, 
+                          loss_stats, realisation_num,  cfacs, lwd_vec, outcome_col, cfac_col, legend_vec, time_steps){
   
   #current_total_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$total_loss[[i]]))
   #loss_tit = paste0('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
@@ -778,20 +643,20 @@ plot_outcomes <- function(landscape_realisations, plot_type, enforce_limits, inc
   if (enforce_limits == TRUE){
     plot_lims = y_lims
   } else {
-    plot_vec = c(unlist(landscape_realisations), unlist(current_cfacs))
+    plot_vec = c(unlist(current_outcome_set), unlist(current_cfacs))
     plot_lims = c(min(plot_vec), max(plot_vec))
   }
-  plot_collated_realisation_set(landscape_realisations, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, lwd_vec, 
+  plot_collated_realisation_set(current_outcome_set, overlay_plots = FALSE, plot_col = outcome_col, realisation_num, lwd_vec, 
                                 x_lab = sub_tit, plot_title = plot_title, plot_lims)
   
   if (plot_type == 'program'){
-    plot_collated_realisation_set(cfacs, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, lwd_vec, 
+    plot_collated_realisation_set(cfacs, overlay_plots = TRUE, plot_col = cfac_col, realisation_num, lwd_vec, 
                                   x_lab = '', plot_title = '', plot_lims = y_lims)
   } else {
-    lines(cfacs, col = col_vec[2], lty = 2, lwd = 2)
+    lines(cfacs, col = cfac_col, lty = 2, lwd = 2)
   }
   
-  #abline(h = mean(landscape_realisations[1, , ]), lty = 2)
+  #abline(h = mean(current_outcome_set[1, , ]), lty = 2)
   if (include_legend == TRUE){
     legend('topright', legend_vec, bty="n", lty = c(2, 2), lwd = array(lwd_vec[1], 2), col = col_vec[1:2])
   }
