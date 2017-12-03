@@ -12,6 +12,11 @@ run_initialise_routines <- function(user_params_file){
   source('plot_routines.R')                                   # functions to plot collated outputs
   
   run_params <- initialise_run_params()
+  if (run_params$realisation_num > 1){
+    cl<-makeCluster(run_params$crs)  # allow parallel processing on n = 4 processors
+    registerDoParallel(cl)
+  }
+  
   policy_params <- initialise_policy_params() # list all program combinations to test
   if (run_params$overwrite_default_params == TRUE){
     run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
@@ -521,6 +526,9 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
+  index_object$parcel_indexes = vector('list', 5)
+  names(index_object$parcel_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
+  
   index_object$indexes_to_use = list()
   index_object$indexes_to_use$offsets = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
                                                              run_params$screen_offset_sites_by_size, run_params$screen_offset_site_zeros)
