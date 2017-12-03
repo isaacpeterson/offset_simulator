@@ -1,7 +1,7 @@
 #use_cfac_type_in_sim = TRUE
 
-run_collate_routines <- function(simulation_outputs, current_trajectories, decline_rates_initial, initial_ecology, current_data_dir, 
-                                 run_params, policy_params, realisation_ind, feature_ind){
+run_collate_routines <- function(simulation_outputs, current_trajectories, decline_rates_initial, initial_ecology, 
+                                 current_data_dir, run_params, policy_params, realisation_ind, feature_ind){
   
     current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
                                                          nested_ind = feature_ind, output_type = 'nested')
@@ -264,7 +264,7 @@ collate_program_scale_impacts <- function(collated_program){
 
 
 
-run_site_scale_collate_routine <- function(current_model_outputs, current_trajectories, current_decline_rates_initial, 
+run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_decline_rates_initial, 
                                            collate_type, run_params, policy_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
@@ -277,9 +277,9 @@ run_site_scale_collate_routine <- function(current_model_outputs, current_trajec
                                        feature_ind)
   
   if (length(collated_object) > 0){
-    collated_object$grouped_gains_degs = group_gains_degs(collated_object, current_model_outputs$parcel_indexes)
+    collated_object$grouped_gains_degs = group_gains_degs(collated_object, current_site_groups)
     collated_object$summed_gains_degs = sum_gains_degs(collated_object$grouped_gains_degs)
-    collated_object$parcel_indexes = current_model_outputs$parcel_indexes
+    collated_object$parcel_indexes = current_site_groups
     collated_object$offset_yrs = current_model_outputs$offset_yrs
   } else {
     collated_object = list()
@@ -413,7 +413,8 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
   
   collated_program = list()
   
-  collated_program$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object, 
+  collated_program$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
+                                                                      current_site_groups = simulation_outputs$index_object$parcel_indexes$offsets,
                                                                       current_trajectories, 
                                                                       current_decline_rates_initial, 
                                                                       collate_type = 'offsets', 
@@ -421,7 +422,8 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                       use_cfac_type_in_sim, 
                                                                       feature_ind)
   
-  collated_program$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object, 
+  collated_program$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
+                                                                  current_site_groups = simulation_outputs$index_object$parcel_indexes$devs,
                                                                   current_trajectories, 
                                                                   current_decline_rates_initial, 
                                                                   collate_type = 'devs', 
@@ -430,6 +432,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                   feature_ind)
   
   collated_program$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
+                                                                        current_site_groups = simulation_outputs$index_object$parcel_indexes$dev_credits,
                                                                         current_trajectories, 
                                                                         current_decline_rates_initial, 
                                                                         collate_type = 'dev_credit', 
@@ -438,6 +441,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                         feature_ind)
   
   collated_program$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
+                                                                         current_site_groups = simulation_outputs$index_object$parcel_indexes$banking,
                                                                          current_trajectories, 
                                                                          current_decline_rates_initial, 
                                                                          collate_type = 'offset_bank', 
@@ -445,7 +449,8 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                          use_cfac_type_in_sim, 
                                                                          feature_ind)
   
-  collated_program$collated_illegal_clearing = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$illegal_clearing_object, 
+  collated_program$collated_illegal_clearing = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$illegal_clearing_object,
+                                                                              current_site_groups = simulation_outputs$index_object$parcel_indexes$illegals,
                                                                               current_trajectories, 
                                                                               current_decline_rates_initial, 
                                                                               collate_type = 'illegal_clearing', 
@@ -473,7 +478,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
   collated_program$site_scale_NNL = assess_NNL(assess_type = 'site_scale', 
                                          impacts = collated_program$site_scale_impacts$net_impacts, 
                                          offset_yrs_to_use = collated_program$collated_offsets$offset_yrs, 
-                                         parcel_indexes = simulation_outputs$offsets_object$parcel_indexes)
+                                         parcel_indexes = simulation_outputs$index_object$parcel_indexes$offsets)
   
   collated_program$program_scale_NNL = assess_NNL(assess_type = 'program', 
                                             impacts = list(collated_program$program_scale_impacts$program_total), 
