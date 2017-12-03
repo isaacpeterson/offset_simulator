@@ -22,7 +22,7 @@ if (plot_params$output_type == 'scenarios'){
   scenario_ind = 1
   set_to_plot = plot_params$sets_to_plot
 } else if (plot_params$output_type == 'site_sets'){
-  scenario_ind = 8
+  scenario_ind = 11
   feature_ind = 1
   plot_params$plot_program = FALSE
   plot_params$plot_landscape = FALSE
@@ -81,9 +81,7 @@ for (plot_ind in seq_along(plot_params$plot_vec)){
                      set_to_plot)
 
   }
-  
-  print(paste0('policy ', scenario_ind, ' done'))
-  
+ 
 }
 
 
