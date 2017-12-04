@@ -73,14 +73,15 @@ run_initialise_routines <- function(user_params_file){
 check_policy_params <- function(policy_params){
   
   offset_action_set = policy_params$policy_params$offset_action_params
-  valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 
-                             'protected_condition', 'current_condition', 'restoration_condition_value')
+  valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
+                             'protected_condition', 'current_condition', 'restored_condition')
+  
   for (offset_action_ind in seq_along(offset_action_set)){
     check_current_param(offset_action_set[[offset_action_ind]][1], valid_offset_calc_type)
     current_offset_action = offset_action_set[[offset_action_ind]][2]
     if (current_offset_action == 'avoided_condition_decline'){
       valid_offset_action_type = 'maintain'
-    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
+    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restored_condition')){
       valid_offset_action_type = 'restore'
     } else if (current_offset_action %in% c('current_condition')){
       valid_offset_action_type = c('protect', 'maintain')
@@ -225,17 +226,6 @@ generate_current_policy <- function(policy_params_group, current_policy_param_in
 
 collate_current_policy <- function(current_policy_params, run_params){
   
-#   if (current_policy_params$offset_calc_type == 'avoided_condition_decline'){
-#     current_policy_params$offset_action_type = 'maintain'
-#   } else if (current_policy_params$offset_calc_type %in% c('net_gains', 'restoration_gains', 'restoration_condition_value')){
-#     current_policy_params$offset_action_type = 'restore'
-#   } else if (current_policy_params$offset_calc_type %in% c('protected_condition')){
-#     current_policy_params$offset_action_type = 'protect'
-#   } else if (current_policy_params$offset_calc_type %in% c('current_condition_maintain')){
-#     current_policy_params$offset_action_type = 'maintain'
-#   } else if (current_policy_params$offset_calc_type %in% c('current_condition_protect')){
-#     current_policy_params$offset_action_type = 'protect'
-#   } 
   current_policy_params$offset_calc_type = current_policy_params$offset_action_params[[1]][1]
   current_policy_params$offset_action_type = current_policy_params$offset_action_params[[1]][2]
   
@@ -249,13 +239,14 @@ collate_current_policy <- function(current_policy_params, run_params){
     current_policy_params$use_offset_time_horizon = FALSE
   } else {current_policy_params$use_offset_time_horizon = TRUE}
   
-  if( (current_policy_params$offset_calc_type == 'avoided_condition_decline') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'protected_condition') ){
-    current_policy_params$offset_cfacs_flag = TRUE
+  if( (current_policy_params$offset_calc_type == 'protected_condition') || (current_policy_params$offset_calc_type == 'current_condition') || (current_policy_params$offset_calc_type == 'restored_condition') ){
+     current_policy_params$offset_cfacs_flag = FALSE
   } else{
-    current_policy_params$offset_cfacs_flag = FALSE
+    current_policy_params$offset_cfacs_flag = TRUE
   }
   
-  if( (current_policy_params$offset_calc_type == 'restoration_gains') || (current_policy_params$offset_calc_type == 'net_gains') || (current_policy_params$offset_calc_type == 'restoration_condition_value') ){
+  if ( (current_policy_params$offset_calc_type == 'restoration_gains') || (current_policy_params$offset_calc_type == 'net_gains') 
+      || (current_policy_params$offset_calc_type == 'restored_condition')){
     current_policy_params$offset_restoration_flag = TRUE
   } else {
     current_policy_params$offset_restoration_flag = FALSE
