@@ -1065,30 +1065,6 @@ evaluate_parcel_vals <- function(calc_type, current_condition_vals, projected_va
 
 
 
-
-
-# evaluate_parcel_vals <- function(calc_type, parcel_sums_at_offset, projected_vals, cfac_vals){
-#   
-#   
-#   if (calc_type == 'current_condition'){
-#     parcel_vals_pool = parcel_sums_at_offset
-#   } else if (calc_type == 'restoration_gains'){
-#     parcel_vals_pool = subtract_nested_lists(projected_vals, parcel_sums_at_offset)
-#   } else if (calc_type == 'net_gains'){
-#     parcel_vals_pool = subtract_nested_lists(projected_vals, cfac_vals)
-#   } else if (calc_type == 'restoration_condition_value'){
-#     parcel_vals_pool = projected_vals
-#   } else if (calc_type == 'avoided_condition_decline'){
-#     parcel_vals_pool = subtract_nested_lists(parcel_sums_at_offset, cfac_vals)
-#   } else if ((calc_type == 'future_condition') || (calc_type == 'protected_condition')){
-#     parcel_vals_pool = cfac_vals 
-#   } else{
-#     parcel_vals_pool = list()
-#   }
-#   return(parcel_vals_pool)
-# }
-
-
 subtract_nested_lists <- function(list_a, list_b){
   list_c = lapply( seq_along(list_a), function(i)  mapply('-', list_a[[i]], list_b[[i]], SIMPLIFY = FALSE))
   return(list_c)
@@ -1522,6 +1498,20 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 }
 
 
+# determine current gains characteristics
+
+# pool_object = offset_pool_object 
+# pool_type = offset_pool_type 
+# calc_type = current_policy_params$offset_calc_type 
+# cfacs_flag = current_policy_params$offset_cfacs_flag 
+# adjust_cfacs_flag = current_policy_params$adjust_offset_cfacs_flag 
+# action_type = current_policy_params$offset_action_type
+# include_potential_developments = current_policy_params$include_potential_developments_in_offset_calc
+# include_potential_offsets = current_policy_params$include_potential_offsets_in_offset_calc
+# include_illegal_clearing = current_policy_params$include_illegal_clearing_in_offset_calc
+# time_horizon_type = current_policy_params$offset_time_horizon_type
+# time_horizon = current_policy_params$offset_time_horizon 
+
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_illegal_clearing,
@@ -1539,9 +1529,13 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
   if (calc_type == 'current_condition') {
     projected_vals = current_condition_vals
     cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), 1)
+    
   } else {
+    
     time_horizons <- generate_time_horizons(project_type = 'future', yr, offset_yrs, time_horizon, parcel_count)
+    
     if (cfacs_flag == TRUE){
+      
       cfacs_object = calc_cfacs(parcel_ecologies = pool_object$parcel_ecologies, 
                                 parcel_num_remaining = pool_object$parcel_num_remaining, 
                                 run_params, 
