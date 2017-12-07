@@ -5,6 +5,7 @@ source('collate_routines.R')
 #---------------------
 # User parameters
 #---------------------
+
 plot_params_file = 'user_params/plot_params.R'
 source(plot_params_file)
 plot_params <- initialise_plot_params()
@@ -22,7 +23,7 @@ if (plot_params$output_type == 'scenarios'){
   scenario_ind = 1
   set_to_plot = plot_params$sets_to_plot
 } else if (plot_params$output_type == 'site_sets'){
-  scenario_ind = 11
+  scenario_ind = 5
   feature_ind = 1
   plot_params$plot_program = FALSE
   plot_params$plot_landscape = FALSE
@@ -61,25 +62,28 @@ for (plot_ind in seq_along(plot_params$plot_vec)){
   
   collated_realisations = bind_collated_realisations(collated_filenames)
   
-  if (plot_params$plot_type == 'impacts'){
-    plot_impact_set(collated_realisations, 
-                    current_policy_params, 
-                    plot_params, 
-                    run_params, 
-                    realisation_num = collated_realisations$realisation_num,
-                    plot_ind, 
-                    feature_ind,
-                    set_to_plot) 
-  } else if (plot_params$plot_type == 'outcomes'){
-    plot_outcome_set(collated_realisations, 
-                     current_policy_params, 
-                     plot_params, 
-                     run_params, 
-                     realisation_num = collated_realisations$realisation_num,
-                     plot_ind, 
-                     feature_ind,
-                     set_to_plot)
-
+  param_inds_to_subset = match(plot_params$plot_subset_type, names(current_policy_params))
+  if (all(current_policy_params[param_inds_to_subset] == plot_params$plot_subset_param)){
+    if (plot_params$plot_type == 'impacts'){
+      plot_impact_set(collated_realisations, 
+                      current_policy_params, 
+                      plot_params, 
+                      run_params, 
+                      realisation_num = collated_realisations$realisation_num,
+                      plot_ind, 
+                      feature_ind,
+                      set_to_plot) 
+    } else if (plot_params$plot_type == 'outcomes'){
+      plot_outcome_set(collated_realisations, 
+                       current_policy_params, 
+                       plot_params, 
+                       run_params, 
+                       realisation_num = collated_realisations$realisation_num,
+                       plot_ind, 
+                       feature_ind,
+                       set_to_plot)
+      
+    }
   }
  
 }
