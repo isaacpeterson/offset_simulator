@@ -23,7 +23,7 @@ if (plot_params$output_type == 'scenarios'){
   scenario_ind = 1
   set_to_plot = plot_params$sets_to_plot
 } else if (plot_params$output_type == 'site_sets'){
-  scenario_ind = 2
+  scenario_ind = 1
   feature_ind = 1
   plot_params$plot_program = FALSE
   plot_params$plot_landscape = FALSE
@@ -32,6 +32,7 @@ if (plot_params$output_type == 'scenarios'){
 if (file.exists(plot_params$run_params_filename) == FALSE){
   stop (paste('no simulation run parameter file in pwd'))
 }
+
 run_params = readRDS(plot_params$run_params_filename)
 scenario_filenames <- list.files(path = plot_params$simulation_params_folder, pattern = '_policy_params', all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 

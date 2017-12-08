@@ -9,7 +9,7 @@ initialise_run_params <- function(){
   run_params$use_simulated_data = TRUE
   
   # The number of realizations to run
-  run_params$realisation_num = 2
+  run_params$realisation_num = 1
 
   # Specify how many cores to run on. Default setting here it to use all available
   run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)

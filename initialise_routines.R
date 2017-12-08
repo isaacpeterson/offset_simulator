@@ -24,6 +24,7 @@ run_initialise_routines <- function(user_params_file){
   }
 
   check_policy_params(policy_params)
+  check_run_params(run_params)
   policy_params_group = generate_policy_params_group(policy_params, run_params)
   run_params$strt = Sys.time()
   run_params <- write_simulation_folders(run_params, length(policy_params_group))
@@ -51,8 +52,8 @@ run_initialise_routines <- function(user_params_file){
                                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                                 include.dirs = FALSE, no.. = FALSE)
     if ( (length(current_filenames) == 0) | (run_params$run_from_saved == FALSE) ){
-      source('construct_simulated_ecology.R')
-      prepare_simulated_data(run_params)
+      source('simulate_landscape_routines.R')
+      construct_simulated_data(run_params)
     }
   }
 
@@ -92,6 +93,20 @@ check_policy_params <- function(policy_params){
   check_current_param(policy_params$dev_calc_type, valid_dev_calc_type)
   
 }
+
+
+check_run_params <- function(run_params){
+  
+  if (length(run_params$mean_decline_rates) != length(run_params$features_to_use_in_simulation)){
+    stop(cat('\n decline rates mean parameter does not match feature number'))
+  }
+  
+  if (length(run_params$decline_rate_std) != length(run_params$features_to_use_in_simulation)){
+    stop(cat('\n decline rates std parameter dpes not match feature number'))
+  }
+}
+
+
 
 check_current_param <- function(current_calc_type, valid_offset_calc_type){
   if(length(current_calc_type) == 0){
