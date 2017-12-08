@@ -682,6 +682,19 @@ assess_parcel_sets <- function(current_ecology, offsets_object, offset_parcel_se
 
 
 
+
+# pool_object = current_offset_object
+# pool_type = "offset_bank" 
+# calc_type = current_policy_params$offset_calc_type 
+# cfacs_flag = current_policy_params$offset_cfacs_flag 
+# adjust_cfacs_flag = current_policy_params$adjust_offset_cfacs_flag 
+# include_potential_developments = current_policy_params$include_potential_developments_in_offset_calc
+# include_potential_offsets = current_policy_params$include_potential_offsets_in_offset_calc
+# include_illegal_clearing = current_policy_params$include_illegal_clearing_in_offset_calc
+# time_horizon_type = current_policy_params$offset_time_horizon_type
+    
+
+
 assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, 
                                      include_potential_developments,include_potential_offsets,include_illegal_clearing,
                                      time_horizon_type, run_params, current_policy_params, decline_rates_initial, time_horizon, yr){
@@ -711,8 +724,7 @@ assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, ca
     
   }
   projected_vals = current_ecology[current_pool]
-  projected_vals = lapply(seq_along(projected_vals), function(i) lapply(seq_along(projected_vals[[i]]), function(j) sum(projected_vals[[i]][[j]] )))
-  
+  projected_vals = lapply(seq_along(projected_vals), function(i) lapply(seq_along(run_params$features_to_use_in_offset_calc), function(j) sum(projected_vals[[i]][[j]] )))
   parcel_vals_achieved = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, projected_vals, cfac_vals)
   
   return(parcel_vals_achieved)
@@ -985,6 +997,14 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
 }
 
 
+
+# current_ecology = simulation_outputs$current_ecology 
+# current_credit = simulation_outputs$current_credit
+# intervention_vec = run_params$intervention_vec 
+# dev_indexes_to_use = simulation_outputs$index_object$indexes_to_use$devs[[region_ind]] 
+# land_parcels = parcels$land_parcels
+# time_horizon = current_policy_params$offset_time_horizon
+
 develop_from_credit <- function(current_ecology, current_credit, dev_weights, run_params, current_policy_params, 
                                 intervention_vec, dev_indexes_to_use, decline_rates_initial, land_parcels, region_ind, yr, time_horizon){
   
@@ -1066,6 +1086,9 @@ evaluate_parcel_vals <- function(calc_type, current_condition_vals, projected_va
 
 
 subtract_nested_lists <- function(list_a, list_b){
+  length_a = unlist(lapply(seq_along(list_a), function(i) length(list_a[[i]])))
+  length_b = unlist(lapply(seq_along(list_b), function(i) length(list_b[[i]])))
+  stopifnot(all(length_a == length_b))
   list_c = lapply( seq_along(list_a), function(i)  mapply('-', list_a[[i]], list_b[[i]], SIMPLIFY = FALSE))
   return(list_c)
 }
@@ -1529,6 +1552,18 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 # time_horizon = current_policy_params$offset_time_horizon 
 
 
+# pool_object = dev_pool_object 
+# pool_type = 'devs' 
+# calc_type = current_policy_params$dev_calc_type 
+# cfacs_flag = current_policy_params$dev_cfacs_flag 
+# adjust_cfacs_flag = current_policy_params$adjust_dev_cfacs_flag 
+# action_type = current_policy_params$offset_action_type
+# include_potential_developments = current_policy_params$include_potential_developments_in_dev_calc
+# include_potential_offsets = current_policy_params$include_potential_offsets_in_dev_calc
+# include_illegal_clearing = current_policy_params$include_illegal_clearing_in_dev_calc
+# time_horizon_type = 'future'
+
+
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_illegal_clearing,
                                 time_horizon_type, run_params, current_policy_params, decline_rates_initial, time_horizon, yr){
@@ -1544,7 +1579,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
   
   if (calc_type == 'current_condition') {
     projected_vals = current_condition_vals
-    cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), 1)
+    cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(run_params$features_to_use_in_offset_calc))
     
   } else {
     
@@ -1568,7 +1603,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     } else if (calc_type == 'restoration_gains'){
       cfac_vals = current_condition_vals
     } else {
-      cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), 1)
+      cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(run_params$features_to_use_in_offset_calc))
     }
     
     if (pool_type == 'offsets') {
@@ -1599,7 +1634,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                               function(i) lapply(seq_along(projected_vals[[i]]), function(j) sum(projected_vals[[i]][[j]] )))
     } else if (pool_type == 'devs') {
       projected_vals = cfac_vals
-      cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), 1)
+      cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(run_params$features_to_use_in_offset_calc))
     }
   
   }
