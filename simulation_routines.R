@@ -1233,15 +1233,15 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   vals_to_test <- select_cols(vals_to_test, features_to_use_in_offset_calc)
   zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) == 0)  
   
-    vals_to_use <- remove_index(vals_to_use, zero_inds)
-    current_pool <- remove_index(current_pool, zero_inds)
-    vals_to_test <- remove_index(vals_to_test, zero_inds)
-    pool_num = length(vals_to_test)
-    if (length(current_pool) == 0){
-      cat('\nall parcels yield zero assessment')
-      pool_object$break_flag = TRUE
-      return(pool_object)
-    } 
+  vals_to_use <- remove_index(vals_to_use, zero_inds)
+  current_pool <- remove_index(current_pool, zero_inds)
+  vals_to_test <- remove_index(vals_to_test, zero_inds)
+  pool_num = nrow(vals_to_test)
+  if (length(current_pool) == 0){
+    cat('\nall parcels yield zero assessment')
+    pool_object$break_flag = TRUE
+    return(pool_object)
+  } 
   
   vals_to_use <- lapply(seq_along(vals_to_use), function(i) vals_to_use[[i]][features_to_use_in_offset_calc])
   
@@ -1269,7 +1269,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   
   if (all(inds_to_use == FALSE)){
     if (match_type == 'development'){
-      cat('\n current credit of', unlist(current_credit), 'is insufficient to allow development with min of ', min(vals_to_test), '\n')
+      cat('\n current credit of', unlist(current_credit), 'is insufficient to allow development', '\n')
     } else {
       cat('\n insufficient offset gains available to allow development \n')
     }
@@ -1292,6 +1292,22 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 }
 
 
+# match_type = 'development' 
+# match_procedure = 'random' 
+# current_pool = dev_pool_object$parcel_indexes 
+# vals_to_use = dev_pool_object$parcel_vals_used 
+# current_credit_to_use = current_credit
+# allow_developments_from_credit = FALSE
+# offset_multiplier = current_policy_params$offset_multiplier 
+# match_threshold = run_params$match_threshold 
+# vals_to_match_initial = current_credit 
+# site_for_site = TRUE 
+# features_to_use_in_offset_calc = run_params$features_to_use_in_offset_calc 
+# max_offset_parcel_num = run_params$max_offset_parcel_num 
+
+                 
+                 
+                 
 select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit_to_use, dev_weights, allow_developments_from_credit, 
                              offset_multiplier, match_threshold, vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
   
