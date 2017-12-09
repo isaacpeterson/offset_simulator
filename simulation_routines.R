@@ -2,12 +2,16 @@
 # realisation_ind = 1
 # policy_params = run_params$policy_params_group[[scenario_ind]]
 
-run_offset_simulation_routines <- function(policy_params, run_params, parcels, initial_ecology, decline_rates_initial, 
+run_offset_simulation_routines <- function(policy_params, run_params, parcels, initial_ecology, 
                                            dev_weights, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
-  if (run_params$set_seed == TRUE){
-    set.seed(123)
-  }
+  # list used to govern ecology rate changes
+  decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
+                                                  sample_decline_rate = TRUE, 
+                                                  mean_decline_rates = run_params$mean_decline_rates, 
+                                                  decline_rate_std = run_params$decline_rate_std, 
+                                                  feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
+  
   
   current_data_dir = write_nested_folder(paste0(run_params$output_folder, 
                                                 'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
@@ -40,13 +44,14 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
     # select current layer index
     current_feature = run_params$features_to_use_in_simulation[feature_ind]
     # read current feature layer files over time series and arrange into data stack
-    current_trajectories = form_data_stack(current_data_dir, 
+    current_data_stack = form_data_stack(current_data_dir, 
                                            feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
                                            land_parcels = parcels$land_parcels, 
                                            run_params$time_steps)
+    
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
     current_collated_realisation = run_collate_routines(simulation_outputs, 
-                                                        current_trajectories,
+                                                        current_data_stack,
                                                         decline_rates_initial, 
                                                         initial_ecology,  
                                                         current_data_dir, 
@@ -62,21 +67,10 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
     saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_', 
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
-    #     if ((run_params$write_offset_layer == TRUE) && (feature_ind == 1)){
-    #       write_offset_layer(paste0(file_prefix, '_offset_layer.png'), 
-    #                          current_trajectories, 
-    #                          parcels, 
-    #                          unlist(simulation_outputs$offsets_object$parcel_indexes), 
-    #                          color_vec = c('black', 'darkgreen'), 
-    #                          run_params)
-    #       write_offset_layer(paste0(file_prefix, '_dev_layer.png'),
-    #                          current_trajectories, 
-    #                          parcels, 
-    #                          unlist(simulation_outputs$dev_object$parcel_indexes), 
-    #                          color_vec = c('black', 'red'), 
-    #                          run_params)
-    #       
-    #     }
+    if ((feature_ind == 1) & ( run_params$write_movie == TRUE)){
+      write_frames(current_data_stack, filetype = 'png', mov_folder = run_params$collated_folder, parcels, run_params)
+    }
+    
   }
   
   
@@ -88,6 +82,7 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
   
   return(simulation_outputs)
 }  
+
 
 
 
@@ -339,6 +334,37 @@ form_data_stack <- function(current_data_dir, feature_string, land_parcels, time
 stack_current_yr <- function(current_parcel, current_parcel_ecology, yr){
   current_parcel[yr, ] = current_parcel_ecology
   return(current_parcel)
+}
+
+       
+write_frames <- function(data_stack, filetype, mov_folder, parcels, run_params){
+  # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
+  library(pixmap)
+  graphics.off()
+  rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
+  
+  if (!dir.exists(mov_folder)){
+    dir.create(mov_folder)
+  }
+  filename = paste0(mov_folder, "tmp%03d.", filetype, sep = '')
+
+  if (filetype == 'png'){
+    png(filename, height = parcels$landscape_dims[1], width = parcels$landscape_dims[2])
+  } else if (filetype == 'jpg'){
+    jpeg(filename, height = parcels$landscape_dims[1], width = parcels$landscape_dims[2])
+  }
+    
+  for (yr in seq(run_params$time_steps)){
+    current_ecology = lapply(seq_along(data_stack), function(i) data_stack[[i]][yr, ])
+    landscape = array(0, parcels$landscape_dims)
+    landscape[unlist(parcels$land_parcels)] = unlist(current_ecology)
+    
+    image(landscape, zlim = c(0, run_params$max_eco_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+    
+    cat('\n image ', yr, ' of ', run_params$time_steps, 'done\n')
+  }
+  dev.off()
+  
 }
 
 
@@ -930,7 +956,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
     return(match_object)
   }
   
-  while( (match_object$match_flag == FALSE) & length(current_match_pool > 1) ){   #any potential parcel set match requires a minimum of two sites
+  while( (match_object$match_flag == FALSE) & (length(current_match_pool) > 1) ){   #any potential parcel set match requires a minimum of two sites
     
     if (current_policy_params$development_selection_type == 'random'){
       sample_ind = sample(seq_along(current_match_pool), size = 1)
@@ -1029,7 +1055,7 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
                                          time_horizon, 
                                          yr)
   
-  if (length(unlist(dev_pool_object$parcel_indexes) > 0)){
+  if (length(unlist(dev_pool_object$parcel_indexes)) > 0){
     match_object <- select_from_pool(match_type = 'development', 
                                      match_procedure = 'random', 
                                      current_pool = dev_pool_object$parcel_indexes, 
@@ -1369,6 +1395,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
     } else if (match_procedure == 'weighted'){
       match_params = list()
       match_params$match_ind = sample(length(current_pool), 1, dev_weights[current_pool])
+      
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
     
@@ -1535,33 +1562,6 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
   }
   return(time_horizons)
 }
-
-
-# determine current gains characteristics
-
-# pool_object = offset_pool_object 
-# pool_type = offset_pool_type 
-# calc_type = current_policy_params$offset_calc_type 
-# cfacs_flag = current_policy_params$offset_cfacs_flag 
-# adjust_cfacs_flag = current_policy_params$adjust_offset_cfacs_flag 
-# action_type = current_policy_params$offset_action_type
-# include_potential_developments = current_policy_params$include_potential_developments_in_offset_calc
-# include_potential_offsets = current_policy_params$include_potential_offsets_in_offset_calc
-# include_illegal_clearing = current_policy_params$include_illegal_clearing_in_offset_calc
-# time_horizon_type = current_policy_params$offset_time_horizon_type
-# time_horizon = current_policy_params$offset_time_horizon 
-
-
-# pool_object = dev_pool_object 
-# pool_type = 'devs' 
-# calc_type = current_policy_params$dev_calc_type 
-# cfacs_flag = current_policy_params$dev_cfacs_flag 
-# adjust_cfacs_flag = current_policy_params$adjust_dev_cfacs_flag 
-# action_type = current_policy_params$offset_action_type
-# include_potential_developments = current_policy_params$include_potential_developments_in_dev_calc
-# include_potential_offsets = current_policy_params$include_potential_offsets_in_dev_calc
-# include_illegal_clearing = current_policy_params$include_illegal_clearing_in_dev_calc
-# time_horizon_type = 'future'
 
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
