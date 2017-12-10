@@ -97,11 +97,11 @@ check_policy_params <- function(policy_params){
 
 check_run_params <- function(run_params){
   
-  if (length(run_params$mean_decline_rates) != length(run_params$features_to_use_in_simulation)){
+  if ( (run_params$landscape_evolve_type == 'dynamic') & (length(run_params$mean_decline_rates) != length(run_params$features_to_use_in_simulation)) ){
     stop(cat('\n decline rates mean parameter does not match feature number'))
   }
   
-  if (length(run_params$decline_rate_std) != length(run_params$features_to_use_in_simulation)){
+  if ((run_params$landscape_evolve_type == 'dynamic') & (length(run_params$decline_rate_std) != length(run_params$features_to_use_in_simulation)) ){
     stop(cat('\n decline rates std parameter dpes not match feature number'))
   }
 }
@@ -334,7 +334,7 @@ generate_policy_params_group <- function(policy_params, run_params){
 
 
 
-initialise_output_object <- function(parcels, initial_ecology, run_params, decline_rates_initial, save_realisations){
+initialise_output_object <- function(parcels, initial_ecology, run_params, decline_rates_initial, dev_weights, offset_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -342,12 +342,14 @@ initialise_output_object <- function(parcels, initial_ecology, run_params, decli
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
   output_object$current_ecology = initial_ecology
-  output_object$index_object <- initialise_index_object(parcels, initial_ecology, run_params)
+  output_object$index_object <- initialise_index_object(parcels, 
+                                                        initial_ecology, 
+                                                        run_params, 
+                                                        offset_indexes_to_exclude = which(unlist(offset_weights) == 0), 
+                                                        dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
+  
   output_object$current_credit = list_of_zeros(run_params$feature_num, 1)
   output_object$decline_rates = decline_rates_initial
-  #   if (save_realisations == FALSE){
-  #     output_object$trajectories <- initialise_trajectories(run_params$feature_num, land_parcels = parcels$land_parcels, run_params$time_steps)    # initialise trajectories as a list of N 3D arrays to fill for each eco dimension
-  #   }
   return(output_object)
 }
 
@@ -528,7 +530,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 }  
 
 
-initialise_index_object <- function(parcels, initial_ecology, run_params){
+initialise_index_object <- function(parcels, initial_ecology, run_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
@@ -536,40 +538,50 @@ initialise_index_object <- function(parcels, initial_ecology, run_params){
   names(index_object$parcel_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$indexes_to_use = list()
-  index_object$indexes_to_use$offsets = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
-                                                             run_params$screen_offset_sites_by_size, run_params$screen_offset_site_zeros)
-  index_object$indexes_to_use$devs = set_available_indexes(indexes_to_use = parcels$regions, parcels, initial_ecology, 
-                                                          run_params$screen_dev_sites_by_size, run_params$screen_dev_site_zeros)
+  
+  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$regions, 
+                                                              offset_indexes_to_exclude, 
+                                                              parcels, 
+                                                              initial_ecology, 
+                                                              run_params$screen_offset_sites_by_size)
+  
+  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
+                                                           dev_indexes_to_exclude,
+                                                           parcels, initial_ecology, 
+                                                           run_params$screen_dev_sites_by_size)
   
   return(index_object)
   
 }
 
-set_available_indexes <- function(indexes_to_use, parcels, initial_ecology, screen_sites_by_size, screen_zeros){
+
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, screen_sites_by_size){
   
   initial_parcel_sums = lapply(seq_along(initial_ecology), 
                                function(i) lapply(seq_along(initial_ecology[[i]]), 
                                                   function(j) sum(initial_ecology[[i]][[j]]) ) )
   
-  parcels_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
+  zeros_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                         function(i) all(unlist(initial_parcel_sums[i]) == 0))))
   
   if (screen_sites_by_size == TRUE){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
     smalls_to_screen = which(parcel_lengths < run_params$site_screen_size)
-    parcels_to_screen = unique(append(parcels_to_screen, smalls_to_screen))
+  } else {
+    smalls_to_screen = vector()
   }
   
-  indexes_to_use = screen_available_sites(indexes_to_use, parcels_to_screen, parcels$region_num)
+  indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_screen, smalls_to_screen))
+  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude, parcels$region_num)
   
   return(indexes_to_use)
 }
 
-screen_available_sites <- function(indexes_to_use, parcels_to_screen, region_num){
+screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_num){
   
   for (region_ind in seq_len(region_num)){
     current_region = indexes_to_use[[region_ind]]
-    inds_to_remove = which(current_region %in% parcels_to_screen)
+    inds_to_remove = which(current_region %in% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
       indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
     }

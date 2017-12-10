@@ -830,10 +830,10 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
 
 combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_dims, feature_num){
   
-  landscape = array(0, array_dims = landscape_dims)
-  for (feature_ind in seq_len(feature_num)){
-    landscape[[feature_ind]][unlist(land_parcels)] = unlist(current_ecology[[feature_ind]])
-  }
+  landscape = array(0, array_dims = parcels$landscape_dims)
+  
+    landscape[unlist(land_parcels)] = unlist(current_ecology[[feature_ind]])
+
   return(landscape)
 }
 
@@ -843,7 +843,9 @@ combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_
 # image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
 # dev.off()
 
-build_offset_mask <- function(current_ecology, landscape_dims, land_parcels, current_parcel_indexes, mask_val){ #write all offset parcels to single layer to output as image
+#write all offset parcels to single layer to output as image
+
+build_offset_mask <- function(current_ecology, landscape_dims, land_parcels, current_parcel_indexes, mask_val){ 
   
   offset_mask = array(0, landscape_dims)
   offset_mask[ unlist(land_parcels[unlist(current_parcel_indexes)])] = unlist(current_ecology[unlist(current_parcel_indexes)])

@@ -70,6 +70,10 @@ initialise_run_params <- function(){
     # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
   run_params$illegal_clearing_prob = 1e-3
 
+  run_params$landscape_evolve_type = 'dynamic'
+  
+  run_params$rescale_ecology_to_feature_subset = TRUE
+  
   # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  run_params$decline_rate_std
   run_params$mean_decline_rates = rep(list(-1e-2), length(run_params$features_to_use_in_simulation)) 
   

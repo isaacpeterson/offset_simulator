@@ -6,7 +6,7 @@ source('collate_routines.R')
 # User parameters
 #---------------------
 
-plot_params_file = 'user_params/plot_params.R'
+plot_params_file = 'user_params/plot_params_hunter.R'
 source(plot_params_file)
 plot_params <- initialise_plot_params()
 

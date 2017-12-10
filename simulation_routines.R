@@ -3,7 +3,7 @@
 # policy_params = run_params$policy_params_group[[scenario_ind]]
 
 run_offset_simulation_routines <- function(policy_params, run_params, parcels, initial_ecology, 
-                                           dev_weights, scenario_ind, realisation_ind){  
+                                           dev_weights, offset_weights, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
   # list used to govern ecology rate changes
   decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
@@ -22,8 +22,8 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                                                 initial_ecology, 
                                                 run_params, 
                                                 decline_rates_initial, 
-                                                run_params$save_realisations)
-  
+                                                dev_weights, 
+                                                offset_weights)
   # run the model and return outputs
   simulation_outputs <- run_simulation(simulation_outputs, 
                                        run_params, 
@@ -963,6 +963,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
     } else if (current_policy_params$development_selection_type == 'weighted'){
       
       current_dev_weights = dev_weights[unlist(current_match_pool)]
+      
       current_dev_weights = lapply(seq_along(current_dev_weights), function(i) current_dev_weights[[i]]/sum(unlist(current_dev_weights)))
       sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_weights)
     }
@@ -1000,8 +1001,6 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
                                   function(i) all(unlist(subtract_nested_lists(dev_pool_object$parcel_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
       current_match_pool = dev_pool_object$parcel_indexes[inds_to_keep]     #remove current potential development from potential pool
       current_match_vals_pool = dev_pool_object$parcel_vals_used[inds_to_keep]
-      #       cat('\n', length(current_match_pool))
-      #       cat('\n', unlist(vals_to_match))
     }
   }
   

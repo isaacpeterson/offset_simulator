@@ -99,12 +99,13 @@ mcell <- function(Arr_in, vx, vy){       #used to break up array into samller se
 
 
 save_simulation_inputs <- function(simulation_input_folder, LGA_array, parcels, landscape_ecology,
-                                   parcel_ecology, dev_weights){
+                                   parcel_ecology, dev_weights, offset_weights){
   saveRDS(LGA_array, paste0(simulation_input_folder, 'LGA_array.rds')) 
   saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 
   saveRDS(landscape_ecology, paste0(simulation_input_folder, 'landscape_ecology.rds')) 
   saveRDS(parcel_ecology, paste0(simulation_input_folder, 'parcel_ecology.rds')) 
   saveRDS(dev_weights, paste0(simulation_input_folder, 'dev_weights.rds')) 
+  saveRDS(offset_weights, paste0(simulation_input_folder, 'offset_weights.rds')) 
 }
 
 
