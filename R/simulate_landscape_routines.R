@@ -73,18 +73,18 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
 }
 
 construct_simulated_data <- function(run_params){
-  source('data_prep_routines.R')
+
   simulated_ecology_params <- initialise_simulated_ecology_params()
   LGA_array <- simulate_LGA(simulated_ecology_params)
   parcels <- LGA_to_parcel_list(LGA_array)
   parcel_ecology <- simulate_ecology(simulated_ecology_params, land_parcels = parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   landscape_ecology = list()
-  dev_weights = list() 
-  
+  dev_weights = list(1/length(parcel_ecology), length(parcel_ecology)) 
+  offset_weights = dev_weights
   save_simulation_inputs(run_params$simulation_inputs_folder, LGA_array, parcels, landscape_ecology,
-                         parcel_ecology, dev_weights)
+                         parcel_ecology, dev_weights, offset_weights)
   if (run_params$backup_simulation_inputs == TRUE){
     save_simulation_inputs(run_params$simulation_params_folder, LGA_array, parcels, landscape_ecology,
-                           parcel_ecology, dev_weights)
+                           parcel_ecology, dev_weights, offset_weights)
   }
 }

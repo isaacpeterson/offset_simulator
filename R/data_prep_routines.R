@@ -72,7 +72,7 @@ read_pnm_layer <- function(filename){
 }
 
 
-mcell <- function(Arr_in, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
+mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
   
   rowsizes = vy;
   colsizes = vx;
@@ -141,7 +141,7 @@ simulate_LGA <- function(simulated_ecology_params){
   
   pixel_indexes = 1:(simulated_ecology_params$ecology_size[1]*simulated_ecology_params$ecology_size[2])     #index all elements of ecology array
   dim(pixel_indexes) = c(simulated_ecology_params$ecology_size[1], simulated_ecology_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 
-  parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
+  parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
   
   parcel_list = lapply(seq_along(parcels), function(i) array(i, dim(parcels[[i]])))
   parcel_array = array(0, dim(pixel_indexes))

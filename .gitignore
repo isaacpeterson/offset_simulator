@@ -1,7 +1,9 @@
 initialise_params.R
 .Rhistory
 .Rapp.history
+.RData
 .DS_Store
 user_params/
 simulation_routines_update.R
 
+.Rproj.user

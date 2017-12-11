@@ -73,7 +73,6 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
 }
 
 prepare_simulated_data <- function(run_params){
-  source('data_prep_routines.R')
   simulated_ecology_params <- initialise_simulated_ecology_params()
   LGA_array <- simulate_LGA(simulated_ecology_params)
   parcels <- LGA_to_parcel_list(LGA_array)

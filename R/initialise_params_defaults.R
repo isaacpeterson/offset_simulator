@@ -8,11 +8,14 @@ initialise_run_params <- function(){
  
   run_params$use_simulated_data = TRUE
   
+  # Fix the output directory (will overwrite existing files) instead of creating unique 
+  run_params$unique_simulation_folder = TRUE
+
   # The number of realizations to run
   run_params$realisation_num = 1
 
   # Specify how many cores to run on. Default setting here it to use all available
-  run_params$crs = detectCores(all.tests = FALSE, logical = TRUE)
+  run_params$crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
 
   # hHw long to run the simulaton in years
   run_params$time_steps = 50
@@ -86,7 +89,7 @@ initialise_run_params <- function(){
   # Max value that the logistic decline curve can reach. It will asypotote to this value
   run_params$max_eco_val = 100 
   
-  run_params$screen_offset_sites_by_size = TRUE 
+  run_params$screen_sites_by_size = TRUE 
   
   run_params$screen_dev_sites_by_size = TRUE 
   # Exclude parcels with less than this number of pixels.
