@@ -611,19 +611,6 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
 }
 
 
-# current_outcome_set = collated_realisations$program_outcomes$net_outcome 
-# plot_type = 'program' 
-# enforce_limits = TRUE 
-# include_legend = FALSE 
-# y_lims = plot_params$program_outcome_plot_lims_set[[plot_ind]]
-# plot_title = 'Program Outcome' 
-# loss_stats = collated_realisations$net_program_loss 
-# realisation_num = collated_realisations$realisation_num
-# cfacs = collated_realisations$program_cfacs$program_cfac_sum
-# lwd_vec = plot_params$program_outcome_lwd_vec 
-# col_vec = plot_params$program_outcome_col_vec 
-# legend_vec = c('Outcome', 'Counterfactual')
-# time_steps = run_params$time_steps
 
 plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, include_legend, y_lims, plot_title, 
                           loss_stats, realisation_num,  cfacs, lwd_vec, outcome_col, cfac_col, legend_vec, time_steps){
@@ -820,13 +807,6 @@ make_mov <- function(img_stack, filetype, mov_name, mov_folder){
 
 
 
-# output_filename = paste0(run_params$collated_folder, '/offset_layer.png') 
-# landscape_dims = parcels$landscape_dims
-# trajectories_to_use = current_trajectories
-# land_parcels = parcels$land_parcels
-# parcel_indexes = unlist(current_collated_realisation$collated_offsets$parcel_indexes)
-# color_vec = c('black', 'darkgreen')
-
 combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_dims, feature_num){
   
   landscape = array(0, parcels$landscape_dims)
@@ -837,19 +817,20 @@ combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_
 }
 
 
-# rgb.palette <- colorRampPalette(color_vec, space = "rgb")
-# png(filename = output_filename, height = dim(offset_layer$layer)[1], width = dim(offset_layer$layer)[2])
-# image(offset_layer$layer, zlim = c(0,1), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
-# dev.off()
+
 
 #write all offset parcels to single layer to output as image
 
-build_offset_mask <- function(current_ecology, landscape_dims, land_parcels, current_parcel_indexes, mask_val){ 
+
+write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_parcel_indexes){ 
   
-  offset_mask = array(0, landscape_dims)
-  offset_mask[ unlist(land_parcels[unlist(current_parcel_indexes)])] = unlist(current_ecology[unlist(current_parcel_indexes)])
-  offset_mask = (offset_mask > 0)*mask_val
-  return(offset_mask)
+  site_mask = array(0, landscape_dims)
+  site_mask[ unlist(land_parcels[unlist(current_parcel_indexes)])] = 1
+  # rgb.palette <- colorRampPalette(color_vec, space = "rgb")
+  png(filename = output_filename, height = dim(site_mask)[1], width = dim(site_mask)[2])
+  image(site_mask, zlim = c(0,1), col = rgb.palette(512))
+  dev.off()
+  return(site_mask)
 }
 
 

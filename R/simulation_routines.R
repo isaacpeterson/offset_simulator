@@ -23,9 +23,9 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                                                 decline_rates_initial, 
                                                 dev_weights, 
                                                 offset_weights)
-
+  
   flog.info('current data dir is %s', current_data_dir)
-
+  
   # run the model and return outputs
   simulation_outputs <- run_simulation(simulation_outputs,
                                        run_params,
@@ -34,25 +34,25 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                                        decline_rates_initial,
                                        dev_weights,
                                        current_data_dir)
-
+  
   # save raw simulation data
   if (run_params$save_simulation_outputs == TRUE){
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
                                        formatC(realisation_ind, width = 3, format = "d", flag = "0"),
                                        '_outputs.rds'))
   }
-
+  
   for (feature_ind in seq(run_params$feature_num)){
     # select current layer index
     current_feature = run_params$features_to_use_in_simulation[feature_ind]
     # read current feature layer files over time series and arrange into data stack
     current_data_stack = form_data_stack(current_data_dir, 
-                                           feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
-                                           land_parcels = parcels$land_parcels, 
-                                           run_params$time_steps)
+                                         feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
+                                         land_parcels = parcels$land_parcels, 
+                                         run_params$time_steps)
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
-
+    
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_data_stack,
                                                         decline_rates_initial, 
@@ -62,32 +62,48 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                                                         policy_params,
                                                         realisation_ind,
                                                         feature_ind)
-
+    
     file_prefix = paste0(run_params$collated_folder,
                          'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"),
                          '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"))
-
+    
     saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_',
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
-    if ((feature_ind == 1) & ( run_params$write_movie == TRUE)){
+    
+    if (feature_ind == 1){
       mov_folder = paste0(run_params$collated_folder, '/mov_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
-      if(!(file.exists(mov_folder))){
-        dir.create(mov_folder)
+      if( (run_params$write_movie == TRUE) || (run_params$write_offset_layer == TRUE) ){
+        if(!(file.exists(mov_folder))){
+          dir.create(mov_folder)
+        }
       }
-      write_frames(current_data_stack, filetype = 'png', 
-                   mov_folder, parcels, run_params)
+      if ( run_params$write_movie == TRUE){
+        write_frames(current_data_stack, filetype = 'png', 
+                     mov_folder, parcels, run_params)
+      }
+#     if (run_params$write_offset_layer == TRUE){
+#           
+#         write_site_mask(output_filename = paste0(mov_folder, 'offset_mask.png'),
+#                           parcels$landscape_dims, 
+#                           parcels$land_parcels, 
+#                           simulation_outputs$offsets$parcel_indexes)
+#         write_site_mask(output_filename = paste0(mov_folder, 'dev_mask.png'), 
+#                           parcels$landscape_dims, 
+#                           parcels$land_parcels, 
+#                           c(simulation_outputs$devs$parcel_indexes, simulation_outputs$dev))
+#       }
     }
     
   }
-
-
+  
+  
   # delete current temporary files and folder
-
+  
   if (run_params$save_simulation_outputs == FALSE){
     unlink(current_data_dir, recursive = TRUE)
   }
-
+  
   return(simulation_outputs)
 }
 

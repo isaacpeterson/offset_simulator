@@ -48,7 +48,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
             run_params$realisation_num,
             run_params$crs)
 
-  if (run_params$realisation_num > 1 && run_params$set_seed == TRUE){
+  if (run_params$crs > 1 && run_params$set_seed == TRUE){
     # case when running DETERMINISTIC realisations in parallel
     # doRNG needed to get deterministic foreach loops, dsingh 24/nov/17
     flog.info('will use doRNG with seed %d to get determinisitc parallel runs', 123)
@@ -64,7 +64,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
                                                                    scenario_ind,
                                                                    realisation_ind)
             }
-  } else if (run_params$realisation_num > 1){
+  } else if (run_params$crs > 1){
     # case when running NON-DETERMINISTIC realisations in parallel
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 
