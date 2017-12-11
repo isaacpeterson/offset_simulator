@@ -71,7 +71,12 @@ run_offset_simulation_routines <- function(policy_params, run_params, parcels, i
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
     if ((feature_ind == 1) & ( run_params$write_movie == TRUE)){
-      write_frames(current_data_stack, filetype = 'png', mov_folder = run_params$collated_folder, parcels, run_params)
+      mov_folder = paste0(run_params$collated_folder, '/mov_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
+      if(!(file.exists(mov_folder))){
+        dir.create(mov_folder)
+      }
+      write_frames(current_data_stack, filetype = 'png', 
+                   mov_folder, parcels, run_params)
     }
     
   }
