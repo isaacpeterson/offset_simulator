@@ -32,12 +32,10 @@ decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land
                                                 mean_decline_rates = run_params$mean_decline_rates, 
                                                 decline_rate_std = run_params$decline_rate_std, 
                                                 feature_num = run_params$feature_num)       # set up array of decline rates that are eassociated with each cell
+
 # select subset of ecology to use in current simulation 
 # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
 initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to_use_in_simulation)
-
-cl<-parallel::makeCluster(run_params$crs, output="")  # allow parallel processing on n = 4 processors
-registerDoParallel(cl)
 
 for (scenario_ind in seq_along(run_params$policy_params_group)){
 
@@ -64,7 +62,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
                                                                    scenario_ind,
                                                                    realisation_ind)
             }
-  } else if (run_params$crs > 1){
+  } else if (run_params$number_of_cores > 1){
     # case when running NON-DETERMINISTIC realisations in parallel
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 
