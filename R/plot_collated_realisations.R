@@ -46,11 +46,13 @@ if (file.exists(plot_params$run_params_filename) == FALSE){
 
 flog.info('reading %s', plot_params$run_params_filename)
 
+# get the parameters values for all scenarios in the run
 run_params = readRDS(plot_params$run_params_filename)
+
+# get the names of all the files containing the results
 scenario_filenames <- list.files(path = plot_params$simulation_params_folder, pattern = '_policy_params', all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                  include.dirs = FALSE, no.. = FALSE)
-
 check_plot_options(plot_params, run_params, scenario_filenames)
 
 if (!file.exists(plot_params$output_plot_folder)){
@@ -59,7 +61,7 @@ if (!file.exists(plot_params$output_plot_folder)){
 }
 
 for (plot_ind in seq_along(plot_params$plot_vec)){
-  flog.info('creating plot %d', plot_ind)
+  flog.info('_________________________________')
   if (plot_params$output_type == 'features'){
     feature_ind = plot_params$plot_vec[plot_ind]
   } else if (plot_params$output_type == 'scenarios'){
@@ -68,20 +70,24 @@ for (plot_ind in seq_along(plot_params$plot_vec)){
     set_to_plot = plot_params$plot_vec[plot_ind]
   }
   toRead = paste0(plot_params$simulation_params_folder, '/', scenario_filenames[scenario_ind])
-  flog.info(' reading %s', toRead)
+  flog.trace('reading %s', toRead)
   current_policy_params = readRDS(toRead)
-
-  collated_filenames = find_collated_files(file_path = plot_params$collated_folder,
-                                           scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
-                                           feature_string = formatC(run_params$features_to_use_in_simulation[feature_ind],
-                                                                    width = plot_params$string_width, format = "d", flag = "0"),
-                                           plot_params$realisation_num)
-
-  collated_realisations = bind_collated_realisations(collated_filenames)
-
+  
   param_inds_to_subset = match(plot_params$plot_subset_type, names(current_policy_params))
-  flog.info(' writing plot %d of type %s', plot_ind, plot_params$plot_type)
+  
   if (all(current_policy_params[param_inds_to_subset] == plot_params$plot_subset_param)){
+    flog.info(' generating plot %d of type: %s', plot_ind, plot_params$plot_type)  
+
+    collated_filenames = find_collated_files(file_path = plot_params$collated_folder,
+                                             scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
+                                             feature_string = formatC(run_params$features_to_use_in_simulation[feature_ind],
+                                                                      width = plot_params$string_width, format = "d", flag = "0"),
+                                             plot_params$realisation_num)
+
+    collated_realisations = bind_collated_realisations(collated_filenames)
+
+    
+    
     if (plot_params$plot_type == 'impacts'){
       plot_impact_set(collated_realisations,
                       current_policy_params,
@@ -102,9 +108,13 @@ for (plot_ind in seq_along(plot_params$plot_vec)){
                        set_to_plot)
 
     }
+    
+    #flog.info(' finished writing plot %d', plot_ind)
+  } else {
+    flog.info(' skipping plot %d', plot_ind )
   }
 
-  flog.info(' finished writing plot %d', plot_ind)
+  
 
 }
 
