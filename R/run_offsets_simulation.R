@@ -40,16 +40,16 @@ initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to
 for (scenario_ind in seq_along(run_params$policy_params_group)){
 
   loop_strt <- Sys.time()
-  flog.info('running scenario %d of %d with %d realisations on %d cores', 
+  flog.info('running scenario %s of %s with %s realisations on %s cores', 
             scenario_ind, 
             length(run_params$policy_params_group),  
             run_params$realisation_num,
-            run_params$crs)
+            run_params$number_of_cores)
 
-  if (run_params$crs > 1 && run_params$set_seed == TRUE){
+  if (run_params$number_of_cores > 1 && run_params$set_seed == TRUE){
     # case when running DETERMINISTIC realisations in parallel
     # doRNG needed to get deterministic foreach loops, dsingh 24/nov/17
-    flog.info('will use doRNG with seed %d to get determinisitc parallel runs', 123)
+    flog.info('will use doRNG with seed %s to get determinisitc parallel runs', 123)
     registerDoRNG(123) 
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dorng%{
               
@@ -88,7 +88,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
                                                          realisation_ind = 1)
   }
 
-  flog.info('scenario %d done in %s %s', 
+  flog.info('scenario %s done in %s %s', 
             scenario_ind,
             round(difftime(Sys.time(), loop_strt), 1), 
             units(difftime(Sys.time(), loop_strt)))

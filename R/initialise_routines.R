@@ -7,23 +7,46 @@ run_initialise_routines <- function(user_params_file = NULL){
   #' @import pixmap
 
   run_params <- initialise_run_params()
-  
-  cl<-parallel::makeCluster(run_params$number_of_cores, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
-  registerDoParallel(cl)
-
-  policy_params <- initialise_policy_params() # list all program combinations to test
-  if (!is.null(user_params_file) && run_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
-    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
-  }
-
   # run simulation with identical realisation instantiation
   if (run_params$set_seed == TRUE){
     seed=123
     flog.info('fixing random number seed to %d', 123)
     set.seed(seed)
   }
-
+  policy_params <- initialise_policy_params() # list all program combinations to test
+  
+  if (!is.null(user_params_file) && run_params$overwrite_default_params == TRUE){
+    run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
+    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
+  }
+  
+  max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
+  
+  if (is.character(run_params$number_of_cores)){
+    if (run_params$number_of_cores == 'all'){
+      current_crs = max_crs
+    }
+    else {
+      stop(flog.error('specified number of cores must be set to "all" or positive integer, currently set to %s', run_params$number_of_cores))
+    }
+    
+  } else {
+    if ( (run_params$number_of_cores %% 1 != 0) ||(run_params$number_of_cores <= 1) ){
+      stop(flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', run_params$number_of_cores))
+    } else { 
+      if (run_params$number_of_cores > max_crs){
+        flog.warn('specified %s of cores is greater than %s available cores', run_params$number_of_cores, max_crs)
+        current_crs = max_crs
+      } else if ((run_params$number_of_cores >= 1) & (run_params$number_of_cores <= max_crs)){
+        current_crs = run_params$number_of_cores
+      } 
+    }
+  }
+  run_params$number_of_cores = current_crs
+  flog.info('running on %s cores', current_crs)
+  
+  cl<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
+  registerDoParallel(cl)
 
   check_policy_params(policy_params)
   check_run_params(run_params)
@@ -85,9 +108,9 @@ check_policy_params <- function(policy_params){
     current_offset_action = offset_action_set[[offset_action_ind]][2]
     if (current_offset_action == 'avoided_condition_decline'){
       valid_offset_action_type = 'maintain'
-    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restored_condition')){
+    } else if (current_offset_action %sn% c('net_gains', 'restoration_gains', 'restored_condition')){
       valid_offset_action_type = 'restore'
-    } else if (current_offset_action %in% c('current_condition')){
+    } else if (current_offset_action %sn% c('current_condition')){
       valid_offset_action_type = c('protect', 'maintain')
     }
     check_current_param(current_offset_action, valid_offset_action_type)
@@ -587,7 +610,7 @@ screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_nu
 
   for (region_ind in seq_len(region_num)){
     current_region = indexes_to_use[[region_ind]]
-    inds_to_remove = which(current_region %in% indexes_to_exclude)
+    inds_to_remove = which(current_region %sn% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
       indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
     }
