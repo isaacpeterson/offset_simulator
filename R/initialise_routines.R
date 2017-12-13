@@ -108,9 +108,9 @@ check_policy_params <- function(policy_params){
     current_offset_action = offset_action_set[[offset_action_ind]][2]
     if (current_offset_action == 'avoided_condition_decline'){
       valid_offset_action_type = 'maintain'
-    } else if (current_offset_action %sn% c('net_gains', 'restoration_gains', 'restored_condition')){
+    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restored_condition')){
       valid_offset_action_type = 'restore'
-    } else if (current_offset_action %sn% c('current_condition')){
+    } else if (current_offset_action %in% c('current_condition')){
       valid_offset_action_type = c('protect', 'maintain')
     }
     check_current_param(current_offset_action, valid_offset_action_type)
@@ -610,7 +610,7 @@ screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_nu
 
   for (region_ind in seq_len(region_num)){
     current_region = indexes_to_use[[region_ind]]
-    inds_to_remove = which(current_region %sn% indexes_to_exclude)
+    inds_to_remove = which(current_region %in% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
       indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
     }
