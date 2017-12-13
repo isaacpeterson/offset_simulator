@@ -40,11 +40,12 @@ initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to
 for (scenario_ind in seq_along(run_params$policy_params_group)){
 
   loop_strt <- Sys.time()
-  flog.info('running scenario %s of %s with %s realisations on %s cores', 
+  flog.info('running scenario %s of %s with %s realisations on %s cores with %s features', 
             scenario_ind, 
             length(run_params$policy_params_group),  
             run_params$realisation_num,
-            run_params$number_of_cores)
+            run_params$number_of_cores, 
+            length(run_params$features_to_use_in_simulation))
 
   if (run_params$number_of_cores > 1 && run_params$set_seed == TRUE){
     # case when running DETERMINISTIC realisations in parallel
