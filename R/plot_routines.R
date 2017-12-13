@@ -131,7 +131,8 @@ plot_impact_set <- function(collated_realisations, current_policy_params, plot_p
                                           collated_realisations$program_scale_impacts$net_dev_losses,
                                           collated_realisations$program_scale_impacts$program_total),
                          plot_title = 'Program Impact', 
-                         x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean)),
+                         x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean, 
+                                                                    collated_realisations$program_scale_impacts$program_total)),
                          collated_realisations$realisation_num,
                          plot_params$program_lwd_vec, 
                          col_vec = plot_params$program_col_vec, 
@@ -190,13 +191,22 @@ check_plot_options <- function(plot_params, run_params, scenario_filenames) {
 
 
 
-write_NNL_label <- function(NNL_yrs){
+write_NNL_label <- function(NNL_yrs, NNL_amount){
+
+  # get the mean values of the list of vecs
+  means <- Reduce('+', NNL_amount) / length(NNL_amount)
+
+  # get the last elemet of the mean vec
+  last.val <- tail(means, n=1)
+
   if (length(unlist(NNL_yrs)) > 0){
     NNL_label = paste0('NNL at ', round(mean(unlist(NNL_yrs))), ' years')
   } else {
     NNL_label = 'All realisations faileld NNL'
   } 
   
+  # add the last vale of the impact to the plot lable
+  NNL_label <- paste0(NNL_label, ' (', format(last.val, scientific=TRUE, digits=3), ')')
   
   return(NNL_label)
 }
