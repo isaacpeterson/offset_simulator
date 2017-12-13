@@ -46,8 +46,8 @@ run_initialise_routines <- function(user_params_file = NULL){
   flog.info('running on %s cores', current_crs)
   
 
-  run_params$clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
-  registerDoParallel(run_params$clstr)
+  clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
+  registerDoParallel(clstr)
 
   check_policy_params(policy_params)
   check_run_params(run_params)
@@ -91,7 +91,7 @@ run_initialise_routines <- function(user_params_file = NULL){
     run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   }
   run_params$policy_params_group = policy_params_group
-
+  run_params$clstr = clstr
   return(run_params)
 
 }
