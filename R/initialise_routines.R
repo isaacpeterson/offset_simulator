@@ -45,8 +45,9 @@ run_initialise_routines <- function(user_params_file = NULL){
   run_params$number_of_cores = current_crs
   flog.info('running on %s cores', current_crs)
   
-  cl<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
-  registerDoParallel(cl)
+
+  run_params$clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
+  registerDoParallel(run_params$clstr)
 
   check_policy_params(policy_params)
   check_run_params(run_params)

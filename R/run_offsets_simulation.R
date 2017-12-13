@@ -106,7 +106,7 @@ flog.info('all scenarios done in %s %s',
           units(difftime(Sys.time(), run_params$strt)))
 
 flog.info('all outputs written into %s', run_params$run_folder)
-parallel::stopCluster(cl)
+parallel::stopCluster(run_params$clstr)
 }
 
 
