@@ -91,8 +91,8 @@ initialise_run_params <- function(){
   
   run_params$screen_sites_by_size = TRUE 
   
-  run_params$screen_dev_sites_by_size = TRUE 
-  # Exclude parcels with less than this number of pixels.
+  run_params$screen_site_zeros = TRUE
+  
   run_params$site_screen_size = 20 
 
   run_params$screen_dev_site_zeros = FALSE

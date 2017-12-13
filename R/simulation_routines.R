@@ -1040,6 +1040,13 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, ru
 }
 
 
+# current_ecology = simulation_outputs$current_ecology
+# current_credit = simulation_outputs$current_credit
+# intervention_vec = run_params$intervention_vec
+# dev_indexes_to_use = simulation_outputs$index_object$indexes_to_use$devs[[region_ind]]
+# land_parcels = parcels$land_parcels
+# time_horizon = current_policy_params$offset_time_horizon
+
 develop_from_credit <- function(current_ecology, current_credit, dev_weights, run_params, current_policy_params, 
                                 intervention_vec, dev_indexes_to_use, decline_rates_initial, land_parcels, region_ind, yr, time_horizon){
 

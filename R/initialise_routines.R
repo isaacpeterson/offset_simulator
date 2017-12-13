@@ -587,21 +587,23 @@ initialise_index_object <- function(parcels, initial_ecology, run_params, offset
 
 set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, run_params){
   
-  initial_parcel_sums = lapply(seq_along(initial_ecology), 
-                               function(i) lapply(seq_along(initial_ecology[[i]]), 
-                                                  function(j) sum(initial_ecology[[i]][[j]]) ) )
-  
-  zeros_to_screen = which(unlist(lapply(seq_along(initial_parcel_sums), 
-                                        function(i) all(unlist(initial_parcel_sums[i]) == 0))))
-
-  if (run_params$screen_sites_by_size == TRUE){
-    parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-    smalls_to_screen = which(parcel_lengths < run_params$site_screen_size)
-  } else {
-    smalls_to_screen = vector()
+  if (run_params$screen_site_zeros == TRUE){
+    
+    initial_parcel_sums = lapply(seq_along(initial_ecology), 
+                                 function(i) lapply(seq_along(initial_ecology[[i]]), 
+                                                    function(j) sum(initial_ecology[[i]][[j]]) ) )
+    
+    zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
+                                                               function(i) all(unlist(initial_parcel_sums[[i]][run_params$features_to_use_in_offset_calc]) == 0))))
+    indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_screen, smalls_to_screen))
+  if (run_params$screen_sites_by_size == TRUE){
+    parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
+    smalls_to_exclude = which(parcel_lengths < run_params$site_screen_size)
+    indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
+  } 
+  
   indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude, parcels$region_num)
   
   return(indexes_to_use)
