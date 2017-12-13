@@ -98,14 +98,17 @@ mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller s
 
 
 
-save_simulation_inputs <- function(simulation_input_folder, LGA_array, parcels, landscape_ecology,
-                                   parcel_ecology, dev_weights, offset_weights){
-  saveRDS(LGA_array, paste0(simulation_input_folder, 'LGA_array.rds')) 
-  saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 
-  saveRDS(landscape_ecology, paste0(simulation_input_folder, 'landscape_ecology.rds')) 
-  saveRDS(parcel_ecology, paste0(simulation_input_folder, 'parcel_ecology.rds')) 
-  saveRDS(dev_weights, paste0(simulation_input_folder, 'dev_weights.rds')) 
-  saveRDS(offset_weights, paste0(simulation_input_folder, 'offset_weights.rds')) 
+save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
+  filenames_to_save = names(objects_to_save)
+  for (file_ind in seq_len(files_to_save)){
+    saveRDS(objects_to_save[[file_ind]], paste0(simulation_inputs_folder, file_names_to_save[file_ind], '.rds')) 
+  }
+#   
+#   saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 
+#   saveRDS(landscape_ecology, paste0(simulation_input_folder, 'landscape_ecology.rds')) 
+#   saveRDS(parcel_ecology, paste0(simulation_input_folder, 'parcel_ecology.rds')) 
+#   saveRDS(dev_weights, paste0(simulation_input_folder, 'dev_weights.rds')) 
+#   saveRDS(offset_weights, paste0(simulation_input_folder, 'offset_weights.rds')) 
 }
 
 

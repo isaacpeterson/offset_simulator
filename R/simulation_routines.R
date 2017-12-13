@@ -1070,6 +1070,8 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, ru
                                          decline_rates_initial,
                                          time_horizon,
                                          yr)
+#   subset_pool =  list_intersect(dev_pool_object$parcel_indexes, match_object$match_indexes)
+#   match_object$development_object = select_pool_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
   
   if (length(unlist(dev_pool_object$parcel_indexes)) > 0){
     match_object <- select_from_pool(match_type = 'development', 
@@ -1303,6 +1305,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   current_pool <- remove_index(current_pool, zero_inds)
   vals_to_test <- remove_index(vals_to_test, zero_inds)
   pool_num = nrow(vals_to_test)
+  
   if (length(current_pool) == 0){
     cat('\nall parcels yield zero assessment')
     pool_object$break_flag = TRUE
