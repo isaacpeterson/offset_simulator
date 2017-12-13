@@ -3,6 +3,7 @@
 #' @param loglevel logging level to use, for instance futile.logger::INFO
 #' @import futile.logger
 #' @export
+#' 
 osim.plot <- function(plot_params_file, loglevel = INFO){
 
   if (is.null(plot_params_file)) {

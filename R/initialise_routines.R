@@ -31,7 +31,7 @@ run_initialise_routines <- function(user_params_file = NULL){
     }
     
   } else {
-    if ( (run_params$number_of_cores %% 1 != 0) ||(run_params$number_of_cores <= 1) ){
+    if ( (run_params$number_of_cores %% 1 != 0) ||(run_params$number_of_cores < 1) ){
       stop(flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', run_params$number_of_cores))
     } else { 
       if (run_params$number_of_cores > max_crs){
