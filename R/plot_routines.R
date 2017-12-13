@@ -205,7 +205,7 @@ write_NNL_label <- function(NNL_yrs, NNL_amount){
     NNL_label = 'All realisations faileld NNL'
   } 
   
-# add the last vale of the impact to the plot lable
+  # add the last vale of the impact to the plot lable
   NNL_label <- paste0(NNL_label, ' (', format(last.val, scientific=TRUE, digits=3), ')')
   
   return(NNL_label)
