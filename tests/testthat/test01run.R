@@ -23,38 +23,11 @@ initialise_run_params <- function(){
   run_params$dev_end = 5
 
   # Specify how many cores to run on. Default setting here it to use all available
-  run_params$crs = 1 #parallel::detectCores(all.tests = FALSE, logical = TRUE)
+  run_params$number_of_cores = 1 #parallel::detectCores(all.tests = FALSE, logical = TRUE)
 
   # How long to run the simulaton in years
   run_params$time_steps = 5
-  
-  # Makes a single pdf at the end of the simulation showing the locatons of all offsets
-  run_params$write_offset_layer = FALSE
-  
-  # The maxoimum number of parcels can be selected to offset a single development
-  run_params$max_offset_parcel_num = 20
 
-  # Stops the offset from delivering any further gains once it has acheived the gains required
-  run_params$limit_offset_restoration = TRUE
-
-  # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
-  run_params$illegal_clearing_prob = 1e-3
-
-  # Excludes offset sites by size limitations (in number of elements set by run_params$parcel_screen_size)
-  run_params$screen_offset_sites_by_size = TRUE 
-
-  # Excludes offset sites by size limitations (in number of elements set by run_params$parcel_screen_size)
-  run_params$screen_dev_sites_by_size = TRUE
-  
-  # Exclude parcels with less than this number of pixels.
-  run_params$site_screen_size = 50 
-
-  run_params$screen_offset_site_zeros = TRUE
-  
-  # The mean and the standard deviation of a normal distribution from which to sample the restoration parameters from
-  run_params$restoration_rate_params = c(0.02, 0.005)
-
-  
   return(run_params)
 }
 

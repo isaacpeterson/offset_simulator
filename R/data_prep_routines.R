@@ -100,8 +100,8 @@ mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller s
 
 save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
   filenames_to_save = names(objects_to_save)
-  for (file_ind in seq_len(files_to_save)){
-    saveRDS(objects_to_save[[file_ind]], paste0(simulation_inputs_folder, file_names_to_save[file_ind], '.rds')) 
+  for (file_ind in seq_along(objects_to_save)){
+    saveRDS(objects_to_save[[file_ind]], paste0(simulation_inputs_folder, filenames_to_save[file_ind], '.rds')) 
   }
 #   
 #   saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 

@@ -50,7 +50,7 @@ initialise_run_params <- function(){
   run_params$write_movie = FALSE
 
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
-  run_params$write_offset_layer = TRUE
+  run_params$write_offset_layer = FALSE
   
   # The total number of layers to use in the offset calcuation (iterating from the start)
   run_params$features_to_use_in_offset_calc = 1

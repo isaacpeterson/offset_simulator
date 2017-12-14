@@ -4,19 +4,16 @@
 #' @import futile.logger
 #' @export
 #' 
-osim.plot <- function(plot_params_file, loglevel = INFO){
+#' 
+osim.plot <- function(plot_params, loglevel = INFO){
 
-  if (is.null(plot_params_file)) {
+  if (is.null(plot_params)) {
     stop('please provide offsetsim plotting configuration')
-  } else if (!plot_is_config_valid(plot_params_file)) {
+  } else if (!plot_is_config_valid(plot_params)) {
     stop('please provide a valid offsetsim plotting configuration')
   }
 
-source(plot_params_file)
-plot_params <- initialise_plot_params()
-
   flog.threshold(loglevel)
-
 
 # Set the output filename, and open the pdf file for reading
 if (plot_params$write_pdf == TRUE){
@@ -35,7 +32,7 @@ if (plot_params$output_type == 'scenarios'){
   set_to_plot = plot_params$sets_to_plot
 } else if (plot_params$output_type == 'site_sets'){
   scenario_ind = 1
-  feature_ind = 4
+  feature_ind = 1
   plot_params$plot_program = FALSE
   plot_params$plot_landscape = FALSE
 }

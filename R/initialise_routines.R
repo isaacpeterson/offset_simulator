@@ -7,17 +7,19 @@ run_initialise_routines <- function(user_params_file = NULL){
   #' @import pixmap
 
   run_params <- initialise_run_params()
-  # run simulation with identical realisation instantiation
-  if (run_params$set_seed == TRUE){
-    seed=123
-    flog.info('fixing random number seed to %d', 123)
-    set.seed(seed)
-  }
+
   policy_params <- initialise_policy_params() # list all program combinations to test
   
   if (!is.null(user_params_file) && run_params$overwrite_default_params == TRUE){
     run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
     policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
+  }
+  
+  # run simulation with identical realisation instantiation
+  if (run_params$set_seed == TRUE){
+    seed=123
+    flog.info('fixing random number seed to %d', 123)
+    set.seed(seed)
   }
   
   max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
@@ -27,12 +29,14 @@ run_initialise_routines <- function(user_params_file = NULL){
       current_crs = max_crs
     }
     else {
-      stop(flog.error('specified number of cores must be set to "all" or positive integer, currently set to %s', run_params$number_of_cores))
+      flog.error('specified number of cores must be set to "all" or positive integer, currently set to %s', run_params$number_of_cores)
+      stop()
     }
     
   } else {
     if ( (run_params$number_of_cores %% 1 != 0) ||(run_params$number_of_cores < 1) ){
-      stop(flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', run_params$number_of_cores))
+      flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', run_params$number_of_cores)
+      stop()
     } else { 
       if (run_params$number_of_cores > max_crs){
         flog.warn('specified %s of cores is greater than %s available cores', run_params$number_of_cores, max_crs)
@@ -86,7 +90,8 @@ run_initialise_routines <- function(user_params_file = NULL){
 
   if (length(intersect(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation))
       != length(run_params$features_to_use_in_offset_calc)){
-    stop(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
+    flog.error(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
+    stop()
   } else {
     run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
   }
@@ -125,11 +130,13 @@ check_policy_params <- function(policy_params){
 check_run_params <- function(run_params){
   
   if ( (run_params$landscape_evolve_type == 'dynamic') & (length(run_params$mean_decline_rates) != length(run_params$features_to_use_in_simulation)) ){
-    stop(cat('\n decline rates mean parameter does not match feature number'))
+    flog.error(cat('\n decline rates mean parameter does not match feature number'))
+    stop()
   }
   
   if ((run_params$landscape_evolve_type == 'dynamic') & (length(run_params$decline_rate_std) != length(run_params$features_to_use_in_simulation)) ){
-    stop(cat('\n decline rates std parameter dpes not match feature number'))
+    flog.error(cat('\n decline rates std parameter dpes not match feature number'))
+    stop()
   }
 }
 
@@ -137,11 +144,13 @@ check_run_params <- function(run_params){
 
 check_current_param <- function(current_calc_type, valid_offset_calc_type){
   if(length(current_calc_type) == 0){
-    stop(cat('\n parameter ', valid_offset_calc_type, 'not set'))
+    flog.error(cat('\n parameter ', valid_offset_calc_type, 'not set'))
+    stop()
   }
   discriminant = setdiff(current_calc_type, valid_offset_calc_type)
   if ((length(discriminant) > 0)){
-    stop(cat('\n invalid parameter ', discriminant))
+    flog.error(cat('\n invalid parameter ', discriminant))
+    stop()
   }
 }
 
@@ -162,11 +171,13 @@ overwrite_current_params <- function(params_type, current_params, overwrite_para
 
     if (length(obsolete_param_inds) > 0){
       if (params_type == 'run'){
-      stop(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
+        flog.error(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
               '\nthe following parameters in run_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
+        stop()
       } else if (params_type == 'policy'){
-        stop(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
+        flog.error(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
                  '\nthe following parameters in policy_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
+        stop()
       }
       param_matches = param_matches[-obsolete_param_inds]
       param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
@@ -181,7 +192,8 @@ overwrite_current_params <- function(params_type, current_params, overwrite_para
 
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    stop( paste('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions'))
+    flog.error( cat('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions'))
+    stop()
   }
   output_object <- lapply(seq_along(input_object),
                           function(i) (input_object[[i]][features_to_use]))
