@@ -22,7 +22,7 @@ You will then require the R `devtools` package in order to install offsetsim. To
 ```
 To now install the `offsetsim` package, from inside R do:
 ```
-> devtools::install_github("dhixsingh/offset_simulator", ref="dev")
+> devtools::install_github("isaacpeterson/offset_simulator")
 ```
 This may take a while as R downloads, builds, and installs the package and all its dependencies.
 
