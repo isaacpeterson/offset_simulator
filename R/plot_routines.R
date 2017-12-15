@@ -161,9 +161,9 @@ plot_impact_set <- function(collated_realisations, current_policy_params, plot_p
 
 check_plot_options <- function(plot_params, run_params, scenario_filenames) {
   
-  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes')
+  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes'){
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
-  
+  }
   
   if (run_params$total_dev_num < plot_params$sets_to_plot){
     stop (paste('chosen example set to plot needs to be less than ', run_params$total_dev_num))

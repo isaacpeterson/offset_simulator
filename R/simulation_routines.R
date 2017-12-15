@@ -1850,7 +1850,6 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-
 find_weighted_counters <- function(current_cfacs, include_illegal_clearing, include_potential_developments, include_potential_offsets,
                                    intervention_vec, illegal_clearing_prob, offset_intervention_scale, feature_num, parcel_num_remaining,
                                    parcel_num, time_horizons, offset_yrs, time_steps){
@@ -1896,6 +1895,8 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
   counter_weights <- remove_neg_probs(counter_weights, inds_to_accept)
 
   weighted_counters_object = list()
+  
+  ######## POTENTIAL FLAW HERE ################
   weighted_counters_object$weighted_counters = lapply(seq_along(current_cfacs),
                                                       function(i) lapply(seq_along(current_cfacs[[i]]),
                                                                          function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
