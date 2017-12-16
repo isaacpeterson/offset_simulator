@@ -200,7 +200,7 @@ initialise_policy_params <- function(){
   policy_params$site_for_site = c(FALSE)
 
   # The time horizon in which the offset gains need to equal the devlopment impact
-  policy_params$offset_time_horizon = c(15,30)
+  policy_params$offset_time_horizon = c(15, 30)
 
 
   # Include future legal developments in calculating contribution of avoided

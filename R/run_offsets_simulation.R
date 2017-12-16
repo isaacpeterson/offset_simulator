@@ -1,5 +1,6 @@
 #' Runs the Offset Simulator
-#' @param config user configured parameters to use
+#' @param user_params user configured parameters to use
+#' @param policy_params user configured parameters to use
 #' @param loglevel logging level to use, for instance futile.logger::WARN
 #' @import doParallel
 #' @import doRNG
@@ -7,12 +8,12 @@
 #' @import futile.logger
 #' @export
 #' 
-osim.run <- function(config = NULL, loglevel = WARN){
+osim.run <- function(user_params = NULL, policy_params = NULL, loglevel = WARN){
 
 flog.threshold(loglevel)
-flog.info('starting offsetsim with config: %s', config )
+flog.info('starting offsetsim')
 
-run_params <- run_initialise_routines(config)
+run_params <- run_initialise_routines(user_params, policy_params)
 
 # nested list object containing ecological values by feature layer for all sites
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))

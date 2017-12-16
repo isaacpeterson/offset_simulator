@@ -1,18 +1,14 @@
 #generic set of initialisation routines that are called for every simulation
 
-run_initialise_routines <- function(user_params_file = NULL){
+run_initialise_routines <- function(user_params = NULL, policy_params = NULL){
   #' @import foreach
   #' @import doParallel
   #' @import abind
   #' @import pixmap
 
-  run_params <- initialise_run_params()
-
-  policy_params <- initialise_policy_params() # list all program combinations to test
-  
-  if (!is.null(user_params_file) && run_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_current_params(params_type = 'run', run_params, user_params_file)
-    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, user_params_file)
+  if (!is.null(user_params) && user_params$overwrite_default_params == TRUE){
+    run_params <- overwrite_current_params(params_type = 'run', user_params, default_params_file = 'R/initialise_params_defaults.R')
+    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, default_params_file = 'R/initialise_params_defaults.R')
   }
   
   # run simulation with identical realisation instantiation
@@ -154,40 +150,29 @@ check_current_param <- function(current_calc_type, valid_offset_calc_type){
   }
 }
 
-overwrite_current_params <- function(params_type, current_params, overwrite_params_file){
 
-    source(overwrite_params_file, local=TRUE)
-    if (params_type == 'run'){
-      flog.info('overwriting run_params defaults with %s', overwrite_params_file)
-      updated_params <- initialise_run_params()
-    } else {
-      flog.info('overwriting policy_params defaults with %s', overwrite_params_file)
-      updated_params <- initialise_policy_params()
-    }
-
-    param_matches = match(names(updated_params), names(current_params))
-    obsolete_param_inds = which(is.na(param_matches))
-    param_inds_to_use = seq_along(updated_params)
-
-    if (length(obsolete_param_inds) > 0){
-      if (params_type == 'run'){
-        flog.error(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
-              '\nthe following parameters in run_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
-        stop()
-      } else if (params_type == 'policy'){
-        flog.error(cat('\nERROR: only parameters defined in intialise_params_default.R can be overwritten by', overwrite_params_file,
-                 '\nthe following parameters in policy_params do not match: remove or rename \n', names(updated_params[obsolete_param_inds]), '\n'))
-        stop()
-      }
-      param_matches = param_matches[-obsolete_param_inds]
-      param_inds_to_use = param_inds_to_use[-obsolete_param_inds]
-
-    }
-    current_params[param_matches] = updated_params[param_inds_to_use]
-
-  return(current_params)
+overwrite_current_params <- function(params_type, user_params, default_params_file){
+  
+  source(default_params_file, local=TRUE)
+  if (params_type == 'run'){
+    default_params <- initialise_run_params()
+  } else {
+    default_params <- initialise_policy_params()
+  }
+  
+  param_matches = match(names(user_params), names(default_params))
+  obsolete_param_inds = which(is.na(param_matches))
+  
+  if (length(obsolete_param_inds) > 0){
+    flog.error(cat('remove or rename in user params file: \n', names(user_params[obsolete_param_inds]), '\n'))
+    stop()
+  }
+  updated_params = default_params
+  param_inds_to_use = seq_along(updated_params)
+  updated_params[param_matches] = user_params[param_inds_to_use]
+  
+  return(updated_params)
 }
-
 
 
 select_feature_subset <- function(input_object, features_to_use){
