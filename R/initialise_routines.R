@@ -7,8 +7,8 @@ run_initialise_routines <- function(user_params = NULL, policy_params = NULL){
   #' @import pixmap
 
   if (!is.null(user_params) && user_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_current_params(params_type = 'run', user_params, default_params_file = 'R/initialise_params_defaults.R')
-    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, default_params_file = 'R/initialise_params_defaults.R')
+    run_params <- overwrite_current_params(params_type = 'run', user_params, default_params_file = 'R/default_initialise_params.R')
+    policy_params <- overwrite_current_params(params_type = 'policy', policy_params, default_params_file = 'R/default_initialise_params.R')
   }
   
   # run simulation with identical realisation instantiation
@@ -156,8 +156,10 @@ overwrite_current_params <- function(params_type, user_params, default_params_fi
   source(default_params_file, local=TRUE)
   if (params_type == 'run'){
     default_params <- initialise_run_params()
-  } else {
+  } else if (params_type == 'policy'){
     default_params <- initialise_policy_params()
+  } else if (params_type == 'plot'){
+    default_params <- initialise_plot_params()
   }
   
   param_matches = match(names(user_params), names(default_params))
@@ -169,7 +171,7 @@ overwrite_current_params <- function(params_type, user_params, default_params_fi
   }
   updated_params = default_params
   param_inds_to_use = seq_along(updated_params)
-  updated_params[param_matches] = user_params[param_inds_to_use]
+  updated_params[param_matches] = user_params
   
   return(updated_params)
 }
@@ -215,17 +217,27 @@ write_folder <- function(current_folder){
   return(current_folder)
 }
 
+
+find_current_run <- function(base_run_folder){
+  filenames = list.files(path = base_run_folder, all.files = FALSE,
+                         full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                         include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
+  current_run = as.numeric(filenames[length(filenames)])
+  return(current_run)
+}
+  
 write_simulation_folders <- function(run_params, scenario_num){
   simulation_folder = write_nested_folder(run_params$simulation_folder)
   simulation_inputs_folder = write_folder(paste0(run_params$simulation_folder, '/simulation_inputs/'))
   base_run_folder = paste0(run_params$simulation_folder, '/simulation_runs/')
 
-  filenames = list.files(path = base_run_folder, all.files = FALSE,
-                         full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                         include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
-  if (run_params$unique_simulation_folder && length(filenames) > 0){
-    current_run = as.numeric(filenames[length(filenames)]) + 1
-  } else {
+  if (run_params$unique_simulation_folder){
+    current_run = find_current_run(base_run_folder)
+    if (length(current_run) > 0){
+      current_run = current_run + 1
+    } 
+  }
+  else {
     current_run = 1
   }
 

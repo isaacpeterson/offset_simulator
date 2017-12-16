@@ -4,7 +4,7 @@ initialise_run_params <- function(){
   run_params$overwrite_default_params = TRUE
   
   # Where simulation outputs will be written
-  run_params$simulation_folder = paste0(path.expand('~'), '/offset_data/simulated/')
+  run_params$simulation_folder = paste0(getwd(), '/simulated_data/')
  
   run_params$use_simulated_data = TRUE
   
