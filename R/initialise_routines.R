@@ -224,16 +224,14 @@ write_simulation_folders <- function(global_params, scenario_num){
   simulation_inputs_folder = write_folder(paste0(global_params$simulation_folder, '/simulation_inputs/'))
   base_run_folder = paste0(global_params$simulation_folder, '/simulation_runs/')
   
-  if (global_params$unique_simulation_folder){
-    current_run = find_current_run(base_run_folder)
-    if (length(current_run) > 0){
-      current_run = current_run + 1
-    } 
-  }
-  else {
-    current_run = 1
-  }
+  current_run = find_current_run(base_run_folder)
   
+  if ((global_params$unique_simulation_folder) & (length(current_run) > 0)){
+    current_run = current_run + 1
+  } else {
+    current_run = 1
+  } 
+
   global_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
   global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
   flog.info('writing simulation outputs into %s', global_params$run_folder)
