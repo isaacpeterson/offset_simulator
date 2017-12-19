@@ -1,18 +1,20 @@
 #generic set of initialisation routines that are called for every simulation
 
-run_initialise_routines <- function(user_run_params = NULL, user_variable_params = NULL){
+run_initialise_routines <- function(user_global_params = NULL, user_combination_params = NULL){
   #' @import foreach
   #' @import doParallel
   #' @import abind
   #' @import pixmap
   
-  if (!is.null(user_run_params) && user_run_params$overwrite_default_params == TRUE){
-    run_params <- overwrite_current_params(user_run_params, default_params = initialise_default_run_params())
-    variable_params <- overwrite_current_params(user_params = user_variable_params, default_params = initialise_default_variable_params())
+  if (!is.null(user_global_params) && user_global_params$overwrite_default_params == TRUE){
+    global_params <- overwrite_current_params(user_params = user_global_params, 
+                                              default_params = initialise_default_global_params())
+    combination_params <- overwrite_current_params(user_params = user_combination_params, 
+                                                   default_params = initialise_default_combination_params())
   }
   
   # run simulation with identical realisation instantiation
-  if (run_params$set_seed == TRUE){
+  if (global_params$set_seed == TRUE){
     seed=123
     flog.info('fixing random number seed to %d', 123)
     set.seed(seed)
@@ -20,123 +22,127 @@ run_initialise_routines <- function(user_run_params = NULL, user_variable_params
   
   max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
   
-  if (is.character(run_params$number_of_cores)){
-    if (run_params$number_of_cores == 'all'){
+  if (is.character(global_params$number_of_cores)){
+    if (global_params$number_of_cores == 'all'){
       current_crs = max_crs
     }
     else {
-      flog.error('specified number of cores must be set to "all" or positive integer, currently set to %s', run_params$number_of_cores)
+      flog.error('specified number of cores must be set to "all" or positive integer, currently set to %s', global_params$number_of_cores)
       stop()
     }
     
   } else {
-    if ( (run_params$number_of_cores %% 1 != 0) ||(run_params$number_of_cores < 1) ){
-      flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', run_params$number_of_cores)
+    if ( (global_params$number_of_cores %% 1 != 0) ||(global_params$number_of_cores < 1) ){
+      flog.error('specified number of cores must be set to "all" or positive integer currently set to %s', global_params$number_of_cores)
       stop()
     } else { 
-      if (run_params$number_of_cores > max_crs){
-        flog.warn('specified %s of cores is greater than %s available cores', run_params$number_of_cores, max_crs)
+      if (global_params$number_of_cores > max_crs){
+        flog.warn('specified %s of cores is greater than %s available cores', global_params$number_of_cores, max_crs)
         current_crs = max_crs
-      } else if ((run_params$number_of_cores >= 1) & (run_params$number_of_cores <= max_crs)){
-        current_crs = run_params$number_of_cores
+      } else if ((global_params$number_of_cores >= 1) & (global_params$number_of_cores <= max_crs)){
+        current_crs = global_params$number_of_cores
       } 
     }
   }
-  run_params$number_of_cores = current_crs
+  global_params$number_of_cores = current_crs
   flog.info('running on %s cores', current_crs)
   
   
-  clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = run_params$number_of_cores processors
+  clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = global_params$number_of_cores processors
   registerDoParallel(clstr)
   
-  check_variable_params(variable_params)
-  check_run_params(run_params)
-  variable_params_group = generate_variable_params_group(variable_params, run_params)
-  run_params$strt = Sys.time()
-  run_params <- write_simulation_folders(run_params, length(variable_params_group))
-  run_params$feature_num = length(run_params$features_to_use_in_simulation)   # The total number of features in the simulation
-  run_params$intervention_vec = generate_intervention_vec(time_steps = run_params$time_steps,
-                                                          prog_start = run_params$dev_start,
-                                                          prog_end = run_params$dev_end,
-                                                          run_params$total_dev_num,
+  check_combination_params(combination_params)
+  check_global_params(global_params)
+  combination_params_group = generate_combination_params_group(combination_params, global_params)
+  global_params$strt = Sys.time()
+  global_params <- write_simulation_folders(global_params, length(combination_params_group))
+  global_params$feature_num = length(global_params$features_to_use_in_simulation)   # The total number of features in the simulation
+  global_params$intervention_vec = generate_intervention_vec(time_steps = global_params$time_steps,
+                                                          prog_start = global_params$dev_start,
+                                                          prog_end = global_params$dev_end,
+                                                          global_params$total_dev_num,
                                                           sd = 1)
   
-  saveRDS(run_params, paste0(run_params$simulation_params_folder, 'run_params.rds'))
-  dump('run_params', paste0(run_params$simulation_params_folder, 'run_params.R'))
-  variable_params_file = paste0(run_params$simulation_params_folder, 'variable_params.R')
+  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
+  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
+  combination_params_file = paste0(global_params$simulation_params_folder, 'combination_params.R')
   
-  for (scenario_ind in seq_along(variable_params_group)){
-    current_variable_params = variable_params_group[[scenario_ind]]
-    file_prefix = paste0(run_params$simulation_params_folder, 'scenario_',
+  for (scenario_ind in seq_along(combination_params_group)){
+    current_combination_params = combination_params_group[[scenario_ind]]
+    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
                          formatC( scenario_ind, width = 3, format = "d", flag = "0"),
-                         '_variable_params')
-    saveRDS(current_variable_params, paste0(file_prefix, '.rds'))
-    dump('current_variable_params', variable_params_file, append = TRUE)
+                         '_combination_params')
+    saveRDS(current_combination_params, paste0(file_prefix, '.rds'))
+    dump('current_combination_params', combination_params_file, append = TRUE)
   }
   
-  if (run_params$use_simulated_data == TRUE) {
-    current_filenames <- list.files(path = run_params$simulation_inputs_folder, all.files = FALSE,
+  if (global_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (run_params$run_from_saved == FALSE) ){
+    if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE) ){
       default_simulated_ecology_params <- initialise_default_simulated_ecology_params()
-      if (length(run_params$simulated_ecology_user_params_file)){ 
-        user_simulated_ecology_params <- source(run_params$simulated_ecology_user_params_file)
+      if (length(global_params$simulated_ecology_user_params_file)){ 
+        user_simulated_ecology_params <- source(global_params$simulated_ecology_user_params_file)
         simulated_ecology_params <- overwrite_current_params(user_simulated_ecology_params, default_simulated_ecology_params)
       } else {
         simulated_ecology_params <- default_simulated_ecology_params
       }
-      construct_simulated_data(simulated_ecology_params, run_params$simulation_inputs_folder, run_params$simulation_params_folder, run_params$backup_simulation_inputs)
+      construct_simulated_data(simulated_ecology_params, global_params$simulation_inputs_folder, global_params$simulation_params_folder, global_params$backup_simulation_inputs)
     }
   }
   
-  if (length(intersect(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation))
-      != length(run_params$features_to_use_in_offset_calc)){
-    flog.error(paste('\n ERROR: run_params$features_to_use_in_offset_calc does not match run_params$features_to_use_in_simulation'))
+  if (length(intersect(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation))
+      != length(global_params$features_to_use_in_offset_calc)){
+    flog.error(paste('\n ERROR: global_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
     stop()
   } else {
-    run_params$features_to_use_in_offset_calc = match(run_params$features_to_use_in_offset_calc, run_params$features_to_use_in_simulation)
+    global_params$features_to_use_in_offset_calc = match(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
   }
-  run_params$variable_params_group = variable_params_group
-  run_params$clstr = clstr
-  return(run_params)
+  
+  params_object = list()
+  params_object$global_params = global_params
+  params_object$combination_params_group = combination_params_group
+  params_object$global_params$clstr = clstr
+  return(params_object)
   
 }
 
 
 
-check_variable_params <- function(variable_params){
+check_combination_params <- function(combination_params){
   
-  offset_action_set = variable_params$variable_params$offset_action_params
+  offset_action_set = combination_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
   
   for (offset_action_ind in seq_along(offset_action_set)){
-    check_current_param(offset_action_set[[offset_action_ind]][1], valid_offset_calc_type)
+    current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
+    check_current_param(current_offset_calc_type, valid_offset_calc_type)
     current_offset_action = offset_action_set[[offset_action_ind]][2]
-    if (current_offset_action == 'avoided_condition_decline'){
+    if (current_offset_calc_type == 'avoided_condition_decline'){
       valid_offset_action_type = 'maintain'
-    } else if (current_offset_action %in% c('net_gains', 'restoration_gains', 'restored_condition')){
+    } else if (current_offset_calc_type %in% c('net_gains', 'restoration_gains', 'restored_condition')){
       valid_offset_action_type = 'restore'
-    } else if (current_offset_action %in% c('current_condition')){
+    } else if (current_offset_calc_type %in% c('current_condition')){
       valid_offset_action_type = c('protect', 'maintain')
     }
     check_current_param(current_offset_action, valid_offset_action_type)
   }
   valid_dev_calc_type = c('future_condition', 'current_condition')
-  check_current_param(variable_params$dev_calc_type, valid_dev_calc_type)
+  check_current_param(combination_params$dev_calc_type, valid_dev_calc_type)
   
 }
 
 
-check_run_params <- function(run_params){
+check_global_params <- function(global_params){
   
-  if ( (run_params$landscape_evolve_type == 'dynamic') & (length(run_params$mean_decline_rates) != length(run_params$features_to_use_in_simulation)) ){
+  if ( (global_params$landscape_evolve_type == 'dynamic') & (length(global_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
     flog.error(cat('\n decline rates mean parameter does not match feature number'))
     stop()
   }
   
-  if ((run_params$landscape_evolve_type == 'dynamic') & (length(run_params$decline_rate_std) != length(run_params$features_to_use_in_simulation)) ){
+  if ((global_params$landscape_evolve_type == 'dynamic') & (length(global_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
     stop()
   }
@@ -176,7 +182,7 @@ overwrite_current_params <- function(user_params, default_params){
 
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    flog.error( cat('\nERROR: features in run_params$features_to_use do not match initial_ecology_dimensions'))
+    flog.error( cat('\nERROR: features in global_params$features_to_use do not match initial_ecology_dimensions'))
     stop()
   }
   output_object <- lapply(seq_along(input_object),
@@ -184,16 +190,6 @@ select_feature_subset <- function(input_object, features_to_use){
   return(output_object)
 }
 
-
-
-
-bind_params <- function(variable_params, run_params, ecology_params){
-  simulation_params = list(variable_params, run_params, ecology_params)
-  names(simulation_params) = c('variable_params', 'run_params', 'ecology_params')
-  simulation_params$sim_characteristics <- get_current_sim_characteristics(simulation_params$variable_params,
-                                                                           simulation_params$run_params$realisation_num)
-  return(simulation_params)
-}
 
 write_nested_folder <- function(current_folder){
   while (!(file.exists(current_folder))){
@@ -223,12 +219,12 @@ find_current_run <- function(base_run_folder){
   return(current_run)
 }
 
-write_simulation_folders <- function(run_params, scenario_num){
-  simulation_folder = write_nested_folder(run_params$simulation_folder)
-  simulation_inputs_folder = write_folder(paste0(run_params$simulation_folder, '/simulation_inputs/'))
-  base_run_folder = paste0(run_params$simulation_folder, '/simulation_runs/')
+write_simulation_folders <- function(global_params, scenario_num){
+  simulation_folder = write_nested_folder(global_params$simulation_folder)
+  simulation_inputs_folder = write_folder(paste0(global_params$simulation_folder, '/simulation_inputs/'))
+  base_run_folder = paste0(global_params$simulation_folder, '/simulation_runs/')
   
-  if (run_params$unique_simulation_folder){
+  if (global_params$unique_simulation_folder){
     current_run = find_current_run(base_run_folder)
     if (length(current_run) > 0){
       current_run = current_run + 1
@@ -238,26 +234,26 @@ write_simulation_folders <- function(run_params, scenario_num){
     current_run = 1
   }
   
-  run_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
-  run_params$output_folder = write_folder(paste0(run_params$run_folder, '/simulation_outputs/'))
-  flog.info('writing simulation outputs into %s', run_params$run_folder)
+  global_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
+  global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
+  flog.info('writing simulation outputs into %s', global_params$run_folder)
   
   for (scenario_ind in (seq(scenario_num))){
-    write_folder(paste0(run_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
+    write_folder(paste0(global_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
   }
   
-  run_params$simulation_params_folder = write_folder(paste0(run_params$run_folder, '/simulation_params/'))
-  run_params$simulation_inputs_folder = simulation_inputs_folder
-  run_params$collated_folder = write_folder(paste0(run_params$run_folder, 'collated_outputs/'))
+  global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
+  global_params$simulation_inputs_folder = simulation_inputs_folder
+  global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
   
-  return(run_params)
+  return(global_params)
 }
 
 
 
-generate_policy_combs <- function(variable_params_group){
+generate_policy_combs <- function(combination_params_group){
   
-  param_inds <- lapply(seq_along(variable_params_group), function(i) 1:length(variable_params_group[[i]]))
+  param_inds <- lapply(seq_along(combination_params_group), function(i) 1:length(combination_params_group[[i]]))
   param_combs <- expand.grid(param_inds)
   
   return(param_combs)
@@ -265,109 +261,109 @@ generate_policy_combs <- function(variable_params_group){
 }
 
 
-generate_current_policy <- function(variable_params_group, current_policy_param_inds){
-  current_policy <- lapply(seq_along(variable_params_group), function(i) variable_params_group[[i]][current_policy_param_inds[i]])
-  names(current_policy) <- names(variable_params_group)
+generate_current_policy <- function(combination_params_group, current_policy_param_inds){
+  current_policy <- lapply(seq_along(combination_params_group), function(i) combination_params_group[[i]][current_policy_param_inds[i]])
+  names(current_policy) <- names(combination_params_group)
   return(current_policy)
 }
 
 
-collate_current_policy <- function(current_variable_params, run_params){
+collate_current_policy <- function(current_combination_params, global_params){
   
-  current_variable_params$offset_calc_type = current_variable_params$offset_action_params[[1]][1]
-  current_variable_params$offset_action_type = current_variable_params$offset_action_params[[1]][2]
+  current_combination_params$offset_calc_type = current_combination_params$offset_action_params[[1]][1]
+  current_combination_params$offset_action_type = current_combination_params$offset_action_params[[1]][2]
   
-  current_variable_params$allow_developments_from_credit = (current_variable_params$allow_developments_from_credit) || (current_variable_params$offset_bank_type == 'credit')
+  current_combination_params$allow_developments_from_credit = (current_combination_params$allow_developments_from_credit) || (current_combination_params$offset_bank_type == 'credit')
   
-  current_variable_params$use_parcel_sets = (current_variable_params$offset_bank_type == 'parcel_set') || (current_variable_params$use_offset_bank == FALSE)
-  if ((current_variable_params$offset_bank_type == 'parcel_set') || (current_variable_params$use_offset_bank == FALSE)){
-    current_variable_params$match_type = 'parcel_set'
+  current_combination_params$use_parcel_sets = (current_combination_params$offset_bank_type == 'parcel_set') || (current_combination_params$use_offset_bank == FALSE)
+  if ((current_combination_params$offset_bank_type == 'parcel_set') || (current_combination_params$use_offset_bank == FALSE)){
+    current_combination_params$match_type = 'parcel_set'
   }
-  if ((current_variable_params$offset_calc_type == 'current_condition') && (current_variable_params$dev_calc_type == 'current_condition')){
-    current_variable_params$use_offset_time_horizon = FALSE
-  } else {current_variable_params$use_offset_time_horizon = TRUE}
+  if ((current_combination_params$offset_calc_type == 'current_condition') && (current_combination_params$dev_calc_type == 'current_condition')){
+    current_combination_params$use_offset_time_horizon = FALSE
+  } else {current_combination_params$use_offset_time_horizon = TRUE}
   
-  if( (current_variable_params$offset_calc_type == 'protected_condition') || (current_variable_params$offset_calc_type == 'current_condition') || (current_variable_params$offset_calc_type == 'restored_condition') ){
-    current_variable_params$offset_cfacs_flag = FALSE
+  if( (current_combination_params$offset_calc_type == 'protected_condition') || (current_combination_params$offset_calc_type == 'current_condition') || (current_combination_params$offset_calc_type == 'restored_condition') ){
+    current_combination_params$offset_cfacs_flag = FALSE
   } else{
-    current_variable_params$offset_cfacs_flag = TRUE
+    current_combination_params$offset_cfacs_flag = TRUE
   }
   
-  if ( (current_variable_params$offset_calc_type == 'restoration_gains') || (current_variable_params$offset_calc_type == 'net_gains')
-       || (current_variable_params$offset_calc_type == 'restored_condition')){
-    current_variable_params$offset_restoration_flag = TRUE
+  if ( (current_combination_params$offset_calc_type == 'restoration_gains') || (current_combination_params$offset_calc_type == 'net_gains')
+       || (current_combination_params$offset_calc_type == 'restored_condition')){
+    current_combination_params$offset_restoration_flag = TRUE
   } else {
-    current_variable_params$offset_restoration_flag = FALSE
+    current_combination_params$offset_restoration_flag = FALSE
   }
   
-  if( (current_variable_params$dev_calc_type == 'future_condition')){
-    current_variable_params$dev_cfacs_flag = TRUE
+  if( (current_combination_params$dev_calc_type == 'future_condition')){
+    current_combination_params$dev_cfacs_flag = TRUE
   } else{
-    current_variable_params$dev_cfacs_flag = FALSE
+    current_combination_params$dev_cfacs_flag = FALSE
   }
   
-  if (current_variable_params$use_offset_bank == TRUE){
-    current_variable_params$banked_offset_vec = generate_intervention_vec(time_steps = run_params$time_steps,
-                                                                          prog_start = current_variable_params$offset_bank_start,
-                                                                          prog_end = current_variable_params$offset_bank_end,
-                                                                          total_policy_num = current_variable_params$offset_bank_num,
+  if (current_combination_params$use_offset_bank == TRUE){
+    current_combination_params$banked_offset_vec = generate_intervention_vec(time_steps = global_params$time_steps,
+                                                                          prog_start = current_combination_params$offset_bank_start,
+                                                                          prog_end = current_combination_params$offset_bank_end,
+                                                                          total_policy_num = current_combination_params$offset_bank_num,
                                                                           sd = 1)
   } else {
-    current_variable_params$banked_offset_vec = list()
+    current_combination_params$banked_offset_vec = list()
   }
   
-  if (current_variable_params$dev_counterfactual_adjustment == 'as_offset'){
-    current_variable_params$include_potential_developments_in_dev_calc = current_variable_params$include_potential_developments_in_offset_calc
-    current_variable_params$include_potential_offsets_in_dev_calc = current_variable_params$include_potential_offsets_in_offset_calc
-    current_variable_params$include_illegal_clearing_in_dev_calc = current_variable_params$include_illegal_clearing_in_offset_calc
+  if (current_combination_params$dev_counterfactual_adjustment == 'as_offset'){
+    current_combination_params$include_potential_developments_in_dev_calc = current_combination_params$include_potential_developments_in_offset_calc
+    current_combination_params$include_potential_offsets_in_dev_calc = current_combination_params$include_potential_offsets_in_offset_calc
+    current_combination_params$include_illegal_clearing_in_dev_calc = current_combination_params$include_illegal_clearing_in_offset_calc
   } else {
     flog.info('using independent adjustment of cfacs in development impact calculation')
   }
-  current_variable_params$adjust_offset_cfacs_flag = any(current_variable_params$include_potential_developments_in_offset_calc,
-                                                         current_variable_params$include_potential_offsets_in_offset_calc,
-                                                         current_variable_params$include_illegal_clearing_in_offset_calc) == TRUE
-  current_variable_params$adjust_dev_cfacs_flag = any(current_variable_params$include_potential_developments_in_dev_calc,
-                                                      current_variable_params$include_potential_offsets_in_dev_calc,
-                                                      current_variable_params$include_illegal_clearing_in_dev_calc) == TRUE
+  current_combination_params$adjust_offset_cfacs_flag = any(current_combination_params$include_potential_developments_in_offset_calc,
+                                                         current_combination_params$include_potential_offsets_in_offset_calc,
+                                                         current_combination_params$include_illegal_clearing_in_offset_calc) == TRUE
+  current_combination_params$adjust_dev_cfacs_flag = any(current_combination_params$include_potential_developments_in_dev_calc,
+                                                      current_combination_params$include_potential_offsets_in_dev_calc,
+                                                      current_combination_params$include_illegal_clearing_in_dev_calc) == TRUE
   
-  return(current_variable_params)
+  return(current_combination_params)
   
 }
 
 
-generate_variable_params_group <- function(variable_params, run_params){
+generate_combination_params_group <- function(combination_params, global_params){
   
   
-  if (variable_params$use_offset_bank == TRUE){
-    variable_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
+  if (combination_params$use_offset_bank == TRUE){
+    combination_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
   } else {
-    variable_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
+    combination_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
-  policy_combs <- generate_policy_combs(variable_params)  #generate all combinations of offset programs
+  policy_combs <- generate_policy_combs(combination_params)  #generate all combinations of offset programs
   policy_num = dim(policy_combs)[1] #how many combinations there are in total
   
-  variable_params_group = vector('list', policy_num)
+  combination_params_group = vector('list', policy_num)
   
   for (policy_ind in seq(policy_num)){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
-    current_policy <- generate_current_policy(variable_params, current_policy_param_inds) #write current policy as a list
+    current_policy <- generate_current_policy(combination_params, current_policy_param_inds) #write current policy as a list
     
     if ((policy_ind == 1) & (current_policy$dev_counterfactual_adjustment == 'as_offset')){
       flog.info('using same adjustment of cfacs in development impact calculation as in offset calculation')
     }
     
-    variable_params_group[[policy_ind]] <- collate_current_policy(current_policy, run_params)  #setup flags for cfacs, cfac adjustment etc.
+    combination_params_group[[policy_ind]] <- collate_current_policy(current_policy, global_params)  #setup flags for cfacs, cfac adjustment etc.
     
   }
   
-  return(variable_params_group)
+  return(combination_params_group)
   
 }
 
 
 
-initialise_output_object <- function(parcels, initial_ecology, run_params, decline_rates_initial, dev_weights, offset_weights){
+initialise_output_object <- function(parcels, initial_ecology, global_params, decline_rates_initial, dev_weights, offset_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -377,11 +373,11 @@ initialise_output_object <- function(parcels, initial_ecology, run_params, decli
   output_object$current_ecology = initial_ecology
   output_object$index_object <- initialise_index_object(parcels, 
                                                         initial_ecology, 
-                                                        run_params, 
+                                                        global_params, 
                                                         offset_indexes_to_exclude = which(unlist(offset_weights) == 0), 
                                                         dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
   
-  output_object$current_credit = list_of_zeros(run_params$feature_num, 1)
+  output_object$current_credit = list_of_zeros(global_params$feature_num, 1)
   output_object$decline_rates = decline_rates_initial
   return(output_object)
 }
@@ -564,7 +560,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(parcels, initial_ecology, run_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(parcels, initial_ecology, global_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
@@ -577,13 +573,13 @@ initialise_index_object <- function(parcels, initial_ecology, run_params, offset
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_ecology, 
-                                                              run_params)
+                                                              global_params)
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_ecology, 
-                                                           run_params)
+                                                           global_params)
   
   return(index_object)
   
@@ -591,22 +587,22 @@ initialise_index_object <- function(parcels, initial_ecology, run_params, offset
 
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, run_params){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, global_params){
   
-  if (run_params$screen_site_zeros == TRUE){
+  if (global_params$screen_site_zeros == TRUE){
     
     initial_parcel_sums = lapply(seq_along(initial_ecology), 
                                  function(i) lapply(seq_along(initial_ecology[[i]]), 
                                                     function(j) sum(initial_ecology[[i]][[j]]) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
-                                           function(i) all(unlist(initial_parcel_sums[[i]][run_params$features_to_use_in_offset_calc]) == 0))))
+                                           function(i) all(unlist(initial_parcel_sums[[i]][global_params$features_to_use_in_offset_calc]) == 0))))
     indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  if (run_params$screen_sites_by_size == TRUE){
+  if (global_params$screen_sites_by_size == TRUE){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-    smalls_to_exclude = which(parcel_lengths < run_params$site_screen_size)
+    smalls_to_exclude = which(parcel_lengths < global_params$site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
