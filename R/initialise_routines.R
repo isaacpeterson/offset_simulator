@@ -8,7 +8,7 @@ run_initialise_routines <- function(user_run_params = NULL, user_variable_params
   
   if (!is.null(user_run_params) && user_params$overwrite_default_params == TRUE){
     run_params <- overwrite_current_params(user_run_params, default_params = initialise_default_run_params())
-    variable_params <- overwrite_current_params(user_variable_params, default_params = initialise_default_variable_params())
+    variable_params <- overwrite_current_params(user_params = user_variable_params, default_params = initialise_default_variable_params())
   }
   
   # run simulation with identical realisation instantiation

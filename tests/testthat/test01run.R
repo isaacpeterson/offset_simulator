@@ -1,4 +1,4 @@
-initialise_run_params <- function(){
+initialise_user_params <- function(){
   run_params = list()
 
   # Fix the random seed so we get deterministic results
@@ -33,7 +33,7 @@ initialise_run_params <- function(){
 
 
 
-initialise_policy_params <- function(){ 
+initialise_variable_params <- function(){ 
   
   policy_params = list()
 

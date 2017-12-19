@@ -5,7 +5,7 @@ source_offset_simulation <- function(simulation_user_params_file, plot_user_para
   source(simulation_user_params_file)
   
   user_variable_params = initialise_default_variable_params()
-  user_params = initialise_default_user_params()
+  user_params = initialise_default_run_params()
   
   osim.run(user_params, user_variable_params, loglevel = 'TRACE')
   

@@ -149,6 +149,8 @@ initialise_default_variable_params <- function(){
   
   default_variable_params$offset_action_params = list(c('net_gains', 'restore'))
   
+  #default_variable_params$offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline') 
+  #default_variable_params$offset_action_type = c('restore', 'restore', 'maintain')
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of

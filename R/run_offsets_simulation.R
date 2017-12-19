@@ -65,6 +65,7 @@ for (scenario_ind in seq_along(run_params$variable_params_group)){
                                                                    realisation_ind)
             }
   } else if (run_params$number_of_cores > 1){
+
     # case when running NON-DETERMINISTIC realisations in parallel
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 

@@ -11,7 +11,13 @@ test_that("running test01", {
   flog.info('___________ TEST 1 __________ ')
   
   Sys.setenv("R_TESTS" = "") # needed for R CMD CHECK to run correctly
-  offsetsim::osim.run('test01run.R', loglevel)
+  
+  source('test01run.R')
+  
+  user_variable_params = initialise_variable_params()
+  user_params = initialise_user_params()
+  
+  offsetsim::osim.run(user_params, user_variable_params, loglevel)
   
   expected <- md5sum('../expected/test01out/collated_scenario_001_realisation_001_feature_001.rds')
   

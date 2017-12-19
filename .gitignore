@@ -5,5 +5,5 @@ initialise_params.R
 .DS_Store
 user_params/
 simulation_routines_update.R
-
+user_examples/simulated_data/
 .Rproj.user
