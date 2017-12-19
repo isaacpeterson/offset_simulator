@@ -6,7 +6,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
   #' @import abind
   #' @import pixmap
   
-  if (!is.null(user_global_params) && user_global_params$overwrite_default_params == TRUE){
+  if (!is.null(user_global_params) == TRUE){
     global_params <- overwrite_current_params(user_params = user_global_params, 
                                               default_params = initialise_default_global_params())
     combination_params <- overwrite_current_params(user_params = user_combination_params, 

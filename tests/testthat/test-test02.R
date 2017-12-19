@@ -10,7 +10,12 @@ test_that("running test02", {
   
   flog.info('___________ TEST 2 __________ ')
   Sys.setenv("R_TESTS" = "") # needed for R CMD CHECK to run correctly
-  offsetsim::osim.run('test02run.R', futile.logger::INFO)
+  source('test02run.R')
+  
+  user_global_params = initialise_user_global_params()
+  user_combination_params = initialise_user_combination_params()
+  
+  offsetsim::osim.run(user_global_params, user_combination_params, futile.logger::INFO)
 
   # dsingh, 17/Nov/17
   # the hash comes out different on the travis server for some reason
