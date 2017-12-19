@@ -39,7 +39,7 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
   }
   
   if (plot_params$plot_type == 'impacts'){
-    output_pdf_filename = paste0(plot_params$output_plot_folder, '/impacts.pdf')
+    output_pdf_filename = paste0(output_plot_folder, '/impacts.pdf')
   } else if (plot_params$plot_type == 'outcomes'){
     output_pdf_filename = paste0(output_plot_folder, '/outcomes.pdf')
   }
