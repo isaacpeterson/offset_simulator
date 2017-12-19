@@ -4,10 +4,12 @@
 \alias{osim.run}
 \title{Runs the Offset Simulator}
 \usage{
-osim.run(config = NULL, loglevel = WARN)
+osim.run(user_params = NULL, variable_params = NULL, loglevel = WARN)
 }
 \arguments{
-\item{config}{user configured parameters to use}
+\item{user_params}{user configured parameters to use}
+
+\item{variable_params}{user configured parameters to use}
 
 \item{loglevel}{logging level to use, for instance futile.logger::WARN}
 }
