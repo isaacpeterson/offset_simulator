@@ -28,7 +28,7 @@ test_that("running test01", {
   # dsingh, 17/Nov/17
   # the hash comes out different on the travis server for some reason
   # haven't worked out why, so accepting two possibilities for now
-  expect_true((actual == expected) || (actual == '171823d9b1eee9b65688f0a8e63b856c'))
+  expect_true((actual == expected) || (actual == '4a00eddbfef3b222188c7788e293c422'))
 })
 
 test_that("plotting test01", {
