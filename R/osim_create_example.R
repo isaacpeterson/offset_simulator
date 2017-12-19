@@ -2,7 +2,6 @@
 #' @param outdir the output directory to create the user example file in (default is '.')
 #' @param loglevel logging level to use, for instance futile.logger::INFO
 #' @import futile.logger
-#' @import rprojroot
 #' @export
 osim.create.example <- function(outdir = '.', loglevel = INFO) {
   
