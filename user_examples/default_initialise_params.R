@@ -16,7 +16,7 @@ initialise_default_run_params <- function(){
   default_run_params$realisation_num = 1
 
   # Specify how many cores to run on. Default setting here it to use all available
-  default_run_params$number_of_cores = 'all'
+  default_run_params$number_of_cores = 1
 
   # hHw long to run the simulaton in years
   default_run_params$time_steps = 50
@@ -200,7 +200,7 @@ initialise_default_variable_params <- function(){
   default_variable_params$site_for_site = c(FALSE)
 
   # The time horizon in which the offset gains need to equal the devlopment impact
-  default_variable_params$offset_time_horizon = c(15, 30)
+  default_variable_params$offset_time_horizon = c(15)
 
 
   # Include future legal developments in calculating contribution of avoided

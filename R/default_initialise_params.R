@@ -198,7 +198,7 @@ initialise_default_variable_params <- function(){
   default_variable_params$site_for_site = c(FALSE)
 
   # The time horizon in which the offset gains need to equal the devlopment impact
-  default_variable_params$offset_time_horizon = c(15, 30)
+  default_variable_params$offset_time_horizon = c(15)
 
 
   # Include future legal developments in calculating contribution of avoided

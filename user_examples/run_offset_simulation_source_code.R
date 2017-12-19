@@ -1,3 +1,4 @@
+rm(list = ls())
 library(offsetsim)
 
 source_offset_simulation <- function(simulation_user_params_file, plot_user_params_file){
@@ -10,7 +11,7 @@ source_offset_simulation <- function(simulation_user_params_file, plot_user_para
   osim.run(user_params, user_variable_params, loglevel = 'TRACE')
   
   source(plot_user_params_file)
-  plot_params <- initialise_plot_params()
+  plot_params <- initialise_default_plot_params()
   osim.plot(plot_params, user_params, loglevel = 'TRACE')
 }
 
