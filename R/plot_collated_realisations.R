@@ -13,9 +13,8 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
     stop()
   } 
     
-  plot_params = overwrite_current_params(params_type = 'plot', 
-                                         user_params = user_plot_params, 
-                                         default_params_file = 'R/default_plot_params.R')
+  plot_params = overwrite_current_params(user_plot_params, 
+                                         default_params = initialise_default_plot_params())
     
   if (!is.null(user_params$simulation_folder)){
     base_folder = paste0(user_params$simulation_folder, '/simulation_runs/')
@@ -85,7 +84,7 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
 
   
   # get the names of all the files containing the results
-  scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_policy_params', all.files = FALSE,
+  scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_variable_params', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
   check_plot_options(plot_params, run_params, scenario_filenames)
@@ -106,14 +105,21 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
     }
     toRead = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', toRead)
-    current_policy_params = readRDS(toRead)
+    current_variable_params = readRDS(toRead)
     
-    param_inds_to_subset = match(plot_params$plot_subset_type, names(current_policy_params))
+    if (!is.na(match('all', plot_params$plot_subset_type))){
+      plot_flag = TRUE
+    } else {
+      param_inds_to_subset = match(plot_params$plot_subset_type, names(current_variable_params))
     
-    if (length(param_inds_to_subset) > 0) {
-      subset_flag = TRUE 
+      if (any(!is.na(param_inds_to_subset)) & all(current_variable_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
+        plot_flag = TRUE 
+      } else {
+        plot_flag = FALSE
+      }
+      
     }
-    if ( (subset_flag = TRUE) & all(current_policy_params[param_inds_to_subset] == plot_params$plot_subset_param)){
+    if (plot_flag == TRUE){
       flog.info(' generating plot %d of type: %s', plot_ind, plot_params$plot_type)  
       
       collated_filenames = find_collated_files(file_path = collated_folder,
@@ -128,7 +134,7 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
       
       if (plot_params$plot_type == 'impacts'){
         plot_impact_set(collated_realisations,
-                        current_policy_params,
+                        current_variable_params,
                         plot_params,
                         run_params,
                         realisation_num = collated_realisations$realisation_num,
@@ -137,7 +143,7 @@ osim.plot <- function(user_plot_params, user_params, loglevel = INFO){
                         set_to_plot)
       } else if (plot_params$plot_type == 'outcomes'){
         plot_outcome_set(collated_realisations,
-                         current_policy_params,
+                         current_variable_params,
                          plot_params,
                          run_params,
                          realisation_num = collated_realisations$realisation_num,

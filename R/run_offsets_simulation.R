@@ -1,6 +1,6 @@
 #' Runs the Offset Simulator
 #' @param user_params user configured parameters to use
-#' @param policy_params user configured parameters to use
+#' @param variable_params user configured parameters to use
 #' @param loglevel logging level to use, for instance futile.logger::WARN
 #' @import doParallel
 #' @import doRNG
@@ -8,12 +8,12 @@
 #' @import futile.logger
 #' @export
 #' 
-osim.run <- function(user_params = NULL, policy_params = NULL, loglevel = WARN){
+osim.run <- function(user_params = NULL, variable_params = NULL, loglevel = WARN){
 
 flog.threshold(loglevel)
 flog.info('starting offsetsim')
 
-run_params <- run_initialise_routines(user_params, policy_params)
+run_params <- run_initialise_routines(user_params, variable_params)
 
 # nested list object containing ecological values by feature layer for all sites
 initial_ecology <- readRDS(paste0(run_params$simulation_inputs_folder, 'parcel_ecology.rds'))
@@ -38,12 +38,12 @@ decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land
 # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
 initial_ecology <- select_feature_subset(initial_ecology, run_params$features_to_use_in_simulation)
 
-for (scenario_ind in seq_along(run_params$policy_params_group)){
+for (scenario_ind in seq_along(run_params$variable_params_group)){
 
   loop_strt <- Sys.time()
   flog.info('running scenario %s of %s with %s realisations on %s cores with %s features', 
             scenario_ind, 
-            length(run_params$policy_params_group),  
+            length(run_params$variable_params_group),  
             run_params$realisation_num,
             run_params$number_of_cores, 
             length(run_params$features_to_use_in_simulation))
@@ -55,7 +55,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
     registerDoRNG(123) 
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dorng%{
               
-              simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]],
+              simulation_outputs <- run_offset_simulation_routines(variable_params = run_params$variable_params_group[[scenario_ind]],
                                                                    run_params,
                                                                    parcels,
                                                                    initial_ecology,
@@ -68,7 +68,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
     # case when running NON-DETERMINISTIC realisations in parallel
     foreach(realisation_ind = seq_len(run_params$realisation_num)) %dopar%{
 
-      simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]],
+      simulation_outputs <- run_offset_simulation_routines(variable_params = run_params$variable_params_group[[scenario_ind]],
                                                            run_params,
                                                            parcels,
                                                            initial_ecology,
@@ -80,7 +80,7 @@ for (scenario_ind in seq_along(run_params$policy_params_group)){
   } else {
     # case when running single realisation
     # bypasses foreach, but could be merged into earlier case of non-determinisitc realisations in parallel, dsingh 24/nov/17
-    simulation_outputs <- run_offset_simulation_routines(policy_params = run_params$policy_params_group[[scenario_ind]],
+    simulation_outputs <- run_offset_simulation_routines(variable_params = run_params$variable_params_group[[scenario_ind]],
                                                          run_params,
                                                          parcels,
                                                          initial_ecology,
