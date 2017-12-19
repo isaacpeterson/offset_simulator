@@ -5,7 +5,7 @@ initialise_default_simulated_ecology_params <- function(){
   default_simulated_ecology_params = list()
   
   #how many feature layers to generate
-  default_simulated_ecology_params$feature_num = 3
+  default_simulated_ecology_params$feature_num = 1
   
   # Number of pixels in (y, x) for the feature layes 
   default_simulated_ecology_params$ecology_size = c(300, 400)
