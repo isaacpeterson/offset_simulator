@@ -1,5 +1,3 @@
-rm(list = ls())
-
 library(offsetsim)
 
 source('user_params/initialise_params_testing_new.R')
