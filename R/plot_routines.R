@@ -10,7 +10,7 @@
 # 
 
 
-plot_outcome_set <- function(collated_realisations, current_variable_params, plot_params, run_params, 
+plot_outcome_set <- function(collated_realisations, current_combination_params, plot_params, global_params, 
                              realisation_num, plot_ind, feature_ind,  set_to_plot){
 
   if (plot_params$plot_site == TRUE){
@@ -18,7 +18,7 @@ plot_outcome_set <- function(collated_realisations, current_variable_params, plo
                        plot_params$plot_site_offset, 
                        plot_params$plot_site_dev, 
                        plot_params$output_type, 
-                       current_variable_params, 
+                       current_combination_params, 
                        set_to_plot, 
                        plot_params$site_outcome_plot_lims_set[[plot_ind]], 
                        feature_ind,  
@@ -40,7 +40,7 @@ plot_outcome_set <- function(collated_realisations, current_variable_params, plo
                   outcome_col = plot_params$landscape_col, 
                   cfac_col = plot_params$cfac_col,
                   legend_vec = c('Outcome', 'Counterfactual'), 
-                  run_params$time_steps)
+                  global_params$time_steps)
   }
   if (plot_params$plot_landscape == TRUE){ 
     plot_outcomes(collated_realisations$landscape$net_landscape, 
@@ -56,17 +56,17 @@ plot_outcome_set <- function(collated_realisations, current_variable_params, plo
                   outcome_col = plot_params$landscape_col, 
                   cfac_col = plot_params$cfac_col,
                   legend_vec = c('Outcome', 'Counterfactual'), 
-                  time_steps = run_params$time_steps)
+                  time_steps = global_params$time_steps)
     
   }
 }
 
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
-                               output_type, current_variable_params, set_to_plot, site_plot_lims, feature_ind, site_lwd){
-  y_lab = get_y_lab(output_type, current_variable_params, feature_ind)
+                               output_type, current_combination_params, set_to_plot, site_plot_lims, feature_ind, site_lwd){
+  y_lab = get_y_lab(output_type, current_combination_params, feature_ind)
   
-  if (current_variable_params$use_offset_bank == TRUE){
+  if (current_combination_params$use_offset_bank == TRUE){
     offset_parcel_indexes_to_use = collated_realisations$collated_offset_bank$parcel_indexes
     dev_parcel_indexes_to_use = collated_realisations$collated_dev_credit$parcel_indexes
   } else{
@@ -77,7 +77,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
     overlay_trajectories(dev_parcel_indexes_to_use,
-                         current_variable_params$use_offset_bank,
+                         current_combination_params$use_offset_bank,
                          trajectories = collated_realisations$landscape$summed_site_trajectories, 
                          realisation_ind = 1, 
                          plot_col = 'red', 
@@ -91,7 +91,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   }
   if (plot_site_offset_outcome == TRUE){
     overlay_trajectories(offset_parcel_indexes_to_use, 
-                         current_variable_params$use_offset_bank,
+                         current_combination_params$use_offset_bank,
                          trajectories = collated_realisations$landscape$summed_site_trajectories, 
                          realisation_ind = 1, 
                          plot_col = 'darkgreen', 
@@ -105,7 +105,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 }
 
 
-plot_impact_set <- function(collated_realisations, current_variable_params, plot_params, run_params, realisation_num, plot_ind, feature_ind, set_to_plot){
+plot_impact_set <- function(collated_realisations, current_combination_params, plot_params, global_params, realisation_num, plot_ind, feature_ind, set_to_plot){
   
   # Plot the site scale impacts
   if (plot_params$plot_site == TRUE){
@@ -115,13 +115,13 @@ plot_impact_set <- function(collated_realisations, current_variable_params, plot
                          plot_params$plot_site_dev, 
                          plot_params$plot_site_net, 
                          plot_params$output_type,
-                         current_variable_params,
+                         current_combination_params,
                          realisation_ind = 1, 
-                         run_params$features_to_use_in_simulation[feature_ind], 
+                         global_params$features_to_use_in_simulation[feature_ind], 
                          plot_from_impact_yr = FALSE, 
                          set_to_plot,
                          plot_params$site_impact_plot_lims_set[[plot_ind]],
-                         run_params$time_steps, 
+                         global_params$time_steps, 
                          plot_params$site_impact_col_vec, 
                          plot_params$site_impact_lwd)
   }
@@ -159,30 +159,30 @@ plot_impact_set <- function(collated_realisations, current_variable_params, plot
 
 
 
-check_plot_options <- function(plot_params, run_params, scenario_filenames) {
+check_plot_options <- function(plot_params, global_params, scenario_filenames) {
   
   if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes'){
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
   }
   
-  if (run_params$total_dev_num < plot_params$sets_to_plot){
-    stop (paste('chosen example set to plot needs to be less than ', run_params$total_dev_num))
+  if (global_params$total_dev_num < plot_params$sets_to_plot){
+    stop (paste('chosen example set to plot needs to be less than ', global_params$total_dev_num))
   }
   
   if (plot_params$output_type == 'scenarios'){
     if (length(scenario_filenames) == 0){
-      stop( paste('\nERROR: No files that match _variable_params found in', plot_params$simulation_params_folder) )
+      stop( paste('\nERROR: No files that match _combination_params found in', plot_params$simulation_params_folder) )
     } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
       stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
     }
   } else if (plot_params$output_type == 'features'){
-    if (run_params$feature_num < max(plot_params$plot_vec)){
-      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', run_params$feature_num, ')'))
+    if (global_params$feature_num < max(plot_params$plot_vec)){
+      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', global_params$feature_num, ')'))
     }
     
   } else if (plot_params$output_type == 'multiple_sets'){
-    if ( max(plot_params$sets_to_plot) > run_params$total_dev_num){
-      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', run_params$total_dev_num, ')'))
+    if ( max(plot_params$sets_to_plot) > global_params$total_dev_num){
+      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', global_params$total_dev_num, ')'))
     }
   }
   
@@ -215,7 +215,7 @@ write_NNL_label <- function(NNL_yrs, NNL_amount){
 
 
 # parcel_indexes = collated_realisations$collated_devs$parcel_indexes
-# offset_bank = current_variable_params$use_offset_bank
+# offset_bank = current_combination_params$use_offset_bank
 # trajectories = collated_realisations$landscape$summed_site_trajectories
 # realisation_ind = 1
 # plot_col = 'red' 
@@ -239,29 +239,29 @@ overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectorie
 
 
 
-get_y_lab <- function(output_type, current_variable_params, feature_ind){
+get_y_lab <- function(output_type, current_combination_params, feature_ind){
   
   if (output_type == 'scenarios'){
-    y_lab = paste( 'off:', current_variable_params$offset_calc_type, '\ndev:', current_variable_params$dev_calc_type )
+    y_lab = paste( 'off:', current_combination_params$offset_calc_type, '\ndev:', current_combination_params$dev_calc_type )
   } else {
     y_lab = paste0('Feature ', feature_ind, ', ')
   }
-  if (current_variable_params$use_offset_bank == FALSE){
-    y_lab = cbind(y_lab, paste0('T.H. ', current_variable_params$offset_time_horizon, ', ill_clear ', current_variable_params$include_illegal_clearing_in_offset_calc))
+  if (current_combination_params$use_offset_bank == FALSE){
+    y_lab = cbind(y_lab, paste0('T.H. ', current_combination_params$offset_time_horizon, ', ill_clear ', current_combination_params$include_illegal_clearing_in_offset_calc))
   } else{
-    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_variable_params$include_illegal_clearing_in_offset_calc))
+    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_combination_params$include_illegal_clearing_in_offset_calc))
   }
   y_lab = t(y_lab)
   return(y_lab)
 }
 
 
-overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_variable_params, realisation_ind, 
+overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_combination_params, realisation_ind, 
                                  feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps, col_vec, plot_lwd){
-  y_lab = get_y_lab(output_type, current_variable_params, feature_ind)
+  y_lab = get_y_lab(output_type, current_combination_params, feature_ind)
   plot_lwd = 1
   
-  if (current_variable_params$use_offset_bank == FALSE){
+  if (current_combination_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
     if (max(set_to_plot) > length(dev_set$parcel_indexes[[realisation_ind]])){
@@ -281,7 +281,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   if (plot_site_offset_impact == TRUE){
     
     overlay_parcel_set_element(collated_object = offset_set,
-                               current_variable_params$use_offset_bank,
+                               current_combination_params$use_offset_bank,
                                visualisation_type = 'stacked', 
                                realisation_ind, 
                                plot_col = col_vec[1], 
@@ -302,7 +302,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   if (plot_site_dev_impact == TRUE){
     
     overlay_parcel_set_element(dev_set,
-                               current_variable_params$use_offset_bank,
+                               current_combination_params$use_offset_bank,
                                visualisation_type = 'non-stacked', 
                                realisation_ind, 
                                plot_col = col_vec[2],
@@ -326,7 +326,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 
 
 # collated_object = dev_set
-# offset_bank = current_variable_params$use_offset_bank
+# offset_bank = current_combination_params$use_offset_bank
 # visualisation_type = 'non-stacked' 
 # 
 # plot_col = 'red' 
@@ -416,16 +416,16 @@ plot_collated_realisation_set <- function(current_collated_real, overlay_plots, 
 
 
 
-generate_single_realisation_plots <- function(run_params, realisations, net_cfac_sum, feature_ind){
-  time_horizon = run_params$time_steps
-  feature_num = run_params$feature_num
+generate_single_realisation_plots <- function(global_params, realisations, net_cfac_sum, feature_ind){
+  time_horizon = global_params$time_steps
+  feature_num = global_params$feature_num
   realisation_ind = sample(length(realisations), 1)
   collated_parcel_sets_object = realisations[[realisation_ind]]$collated_parcel_sets_object
   # plot_sample_parcel_sets(collated_parcel_sets_object, plot_num = 9, global_params)
   
   setup_sub_plots(nx = 1, ny = 3, x_space = 2, y_space = 2)
   
-  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(variable_params$total_dev_num), time_horizon, run_params$feature_num, 
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(combination_params$total_dev_num), time_horizon, global_params$feature_num, 
                                        headings = c('Single Realisation Net Program Developments', 'Single Realisation Net Program Offsets', 'Single Realisation Net Program Outcomes'))
   
   parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, feature_num, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon)
@@ -487,13 +487,13 @@ plot_NNL_hist <- function(NNL_plot_object, plot_tit, x_lim, feature_ind){
 
 
 
-plot_mean_gains_degs <- function(summed_realisations, variable_params, realisation_num){
+plot_mean_gains_degs <- function(summed_realisations, combination_params, realisation_num){
   
   rest_gains = sum_cols_multi(summed_realisations$rest_gains)/realisation_num
   net_degs = sum_cols_multi(summed_realisations$avoided_loss)/realisation_num
   net_gains = net_degs + rest_gains
   
-  if (variable_params$adjust_cfacs_flag == TRUE){
+  if (combination_params$adjust_cfacs_flag == TRUE){
     net_degs_adjusted = sum_cols_multi(summed_realisations$avoided_loss_adjusted)/realisation_num
     net_gains_adjusted = net_degs_adjusted + rest_gains
     adjusted_contribution = net_degs_adjusted - net_degs
@@ -530,7 +530,7 @@ plot_mean_gains_degs <- function(summed_realisations, variable_params, realisati
 
 
 # collated_summed_reals = split_list[[1]]
-# cfac_type = variable_params$cfac_type_in_offset_calc
+# cfac_type = combination_params$cfac_type_in_offset_calc
 # plot_type = 'offsets'
 # legend_vec = c('Restoration Gains', 'Avoided Degredation', 'Net Gains')
 # legend_pos = 'topleft'
@@ -564,13 +564,13 @@ null_plot <- function(){
 # parcel_set_NNL = collated_realisations$parcel_set_NNL 
 # parcel_sums_at_offset = collated_realisations$collated_offsets$parcel_sums_at_offset
 # parcel_sum_lims = c(0, 20000)
-# use_parcel_sets = variable_params$use_parcel_sets
+# use_parcel_sets = combination_params$use_parcel_sets
 
 
 
 # plot_realisation_hists(collated_realisations$landscape_NNL, collated_realisations$parcel_set_NNL, 
 #                        collated_realisations$collated_offsets$parcel_sums_at_offset, parcel_sum_lims = c(0, 20000), 
-#                        use_parcel_sets = variable_params$use_parcel_sets, parcel_set_set_NNL_object, feature_ind)
+#                        use_parcel_sets = combination_params$use_parcel_sets, parcel_set_set_NNL_object, feature_ind)
 
 plot_parcel_sums_hist <- function(parcel_sums_at_offset, feature_ind, parcel_sum_lims){
   current_parcel_sums_at_offset = unlist(parcel_sums_at_offset, recursive = FALSE)
@@ -666,8 +666,8 @@ plot_parcel_set_parcels <- function(current_set_object){
   
   
   parcel_num = length(current_set_object$parcel_indexes)
-  sub_plots = 1:(parcel_num*run_params$feature_num)
-  dim(sub_plots) = c(run_params$feature_num, parcel_num)
+  sub_plots = 1:(parcel_num*global_params$feature_num)
+  dim(sub_plots) = c(global_params$feature_num, parcel_num)
   layout(sub_plots)
   
   rest_gains = current_set_object$rest_gains
@@ -677,7 +677,7 @@ plot_parcel_set_parcels <- function(current_set_object){
   mn = min(lim_vec)
   
   for (parcel_ind in seq_len(parcel_num)){
-    for (feature_ind in seq_len(run_params$feature_num)){
+    for (feature_ind in seq_len(global_params$feature_num)){
       graphics::plot(rest_gains[, feature_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste0('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste0('dim = ', feature_ind))
       lines(degs[, feature_ind, parcel_ind], col = 'blue')
       lines(rest_gains[, feature_ind, parcel_ind] + degs[, feature_ind, parcel_ind], col = 'red')
@@ -690,12 +690,12 @@ plot_parcel_set_parcels <- function(current_set_object){
 
 
 
-plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, run_params, variable_params){
+plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, global_params, combination_params){
   
-  parcel_indexes = sample(variable_params$total_dev_num, plot_num)
+  parcel_indexes = sample(combination_params$total_dev_num, plot_num)
   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
   for (parcel_set_index in parcel_indexes){
-    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = run_params$time_steps, run_params$feature_num, 
+    plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = global_params$time_steps, global_params$feature_num, 
                                          headings = c('Parcel Set Developments', 'Parcel Set Offsets', 'Parcel Set Outcome'))
   }
 }
@@ -851,10 +851,10 @@ write_site_mask <- function(output_filename, landscape_dims, land_parcels, curre
 make_movie <- function(){
   if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
     net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = run_params$feature_num)
+                                    time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = global_params$feature_num)
     graphics.off()
-    for (yr in seq_len(run_params$time_steps)){
-      image(net_traj[[1]][, , yr], zlim = c(run_params$min_eco_val, run_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
+    for (yr in seq_len(global_params$time_steps)){
+      image(net_traj[[1]][, , yr], zlim = c(global_params$min_eco_val, global_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
       Sys.sleep(0.1)
       print(paste0('year = ', yr))
     }
@@ -863,7 +863,7 @@ make_movie <- function(){
   
   if (write_movie == TRUE){
     net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = run_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = run_params$feature_num)
+                                    time_steps = global_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = global_params$feature_num)
     make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste0(output_folder, 'offset_time_slice/'))
   }
   

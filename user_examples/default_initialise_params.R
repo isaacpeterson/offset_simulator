@@ -16,7 +16,7 @@ initialise_default_global_params <- function(){
   default_global_params$realisation_num = 1
 
   # Specify how many cores to run on. Default setting here it to use all available
-  default_global_params$number_of_cores = 'all'
+  default_global_params$number_of_cores = 1
 
   # hHw long to run the simulaton in years
   default_global_params$time_steps = 50
