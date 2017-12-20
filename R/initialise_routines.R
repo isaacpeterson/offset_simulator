@@ -82,7 +82,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
                                     include.dirs = FALSE, no.. = FALSE)
     if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE) ){
       default_simulated_ecology_params <- initialise_default_simulated_ecology_params()
-      if (length(global_params$simulated_ecology_user_params_file)){ 
+      if (global_params$simulated_ecology_user_params_file != 'default'){ 
         user_simulated_ecology_params <- source(global_params$simulated_ecology_user_params_file)
         simulated_ecology_params <- overwrite_current_params(user_simulated_ecology_params, default_simulated_ecology_params)
       } else {
@@ -109,6 +109,23 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
 }
 
 
+split_vector <- function(N, M, sd, min_width) {               # make a vector of length N where the elements sum to M and with values normally distributed about M/N with std dev "sd"
+  
+  vec <- rnorm(N, M/N, sd)                                    # select vector from normal distribution
+  vec <- round(vec / sum(vec) * M)                             
+  deviation <- M - sum(vec)
+  for (. in seq_len(abs(deviation))) {
+    vec[i] <- vec[i <- sample(N, 1)] + sign(deviation)
+  }
+  while (any(vec <= min_width)) {
+    negs <- vec <= min_width
+    pos  <- vec > min_width
+    vec[negs][i] <- vec[negs][i <- sample(sum(negs), 1)] + 1
+    vec[pos][i]  <- vec[pos ][i <- sample(sum(pos ), 1)] - 1
+  }
+  vec
+}
+
 
 check_combination_params <- function(combination_params){
   
@@ -125,6 +142,8 @@ check_combination_params <- function(combination_params){
     } else if (current_offset_calc_type %in% c('net_gains', 'restoration_gains', 'restored_condition')){
       valid_offset_action_type = 'restore'
     } else if (current_offset_calc_type %in% c('current_condition')){
+      valid_offset_action_type = c('protect', 'maintain')
+    } else if (current_offset_calc_type %in% c('avoided_loss')){
       valid_offset_action_type = c('protect', 'maintain')
     }
     check_current_param(current_offset_action, valid_offset_action_type)

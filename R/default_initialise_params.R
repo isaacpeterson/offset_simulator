@@ -1,6 +1,7 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
-  default_global_params$simulated_ecology_user_params_file = vector()
+  
+  default_global_params$simulated_ecology_user_params_file = 'default'  # path to file
   
   default_global_params$overwrite_default_params = TRUE
   
