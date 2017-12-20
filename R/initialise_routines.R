@@ -45,9 +45,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
     }
   }
   global_params$number_of_cores = current_crs
-  flog.info('running on %s cores', current_crs)
-  
-  
+
   clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = global_params$number_of_cores processors
   registerDoParallel(clstr)
   
