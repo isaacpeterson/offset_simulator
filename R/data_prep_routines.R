@@ -38,31 +38,11 @@ load_rasters <- function(current_data_path, current_filenames, layer_num){
 }
 
 
-
-split_vector <- function(N, M, sd, min_width) {               # make a vector of length N where the elements sum to M and with values normally distributed about M/N with std dev "sd"
-  
-  vec <- rnorm(N, M/N, sd)                                    # select vector from normal distribution
-  vec <- round(vec / sum(vec) * M)                             
-  deviation <- M - sum(vec)
-  for (. in seq_len(abs(deviation))) {
-    vec[i] <- vec[i <- sample(N, 1)] + sign(deviation)
-  }
-  while (any(vec <= min_width)) {
-    negs <- vec <= min_width
-    pos  <- vec > min_width
-    vec[negs][i] <- vec[negs][i <- sample(sum(negs), 1)] + 1
-    vec[pos][i]  <- vec[pos ][i <- sample(sum(pos ), 1)] - 1
-  }
-  vec
-}
-
-
 raster_to_array <- function(raster_object){
   raster_array = as.matrix(raster_object, ncol = ncol(raster_object))
   raster_array[is.na(raster_array)] = 0
   return(raster_array)
 }
-
 
 
 read_pnm_layer <- function(filename){
@@ -72,43 +52,12 @@ read_pnm_layer <- function(filename){
 }
 
 
-mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
-  
-  rowsizes = vy;
-  colsizes = vx;
-  rows = length(rowsizes);
-  cols = length(colsizes);
-  
-  a = 1
-  output_list = vector('list', rows*cols)   # make an array composed of lists with dimenisons that define the land parcels/regions. The list format allows arrays of different sizes to be stored
-  colStart = 0
-  for (i in seq_len(cols)){       # run down through the columns of input array 
-    rowStart = 0
-    for (j in seq_len(rows)){ #group elements of input array into sub arrays and assign to output_list
-      output_list[[a]] = Arr_in[rowStart+(1:rowsizes[j]), colStart+(1:colsizes[i])]
-      rowStart = rowStart + rowsizes[j]
-      a = a + 1
-    }
-    colStart = colStart + colsizes[i]
-  }
-  
-  return(output_list)
-  
-}  
-
-
-
 save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
+  write_nested_folder(simulation_inputs_folder)
   filenames_to_save = names(objects_to_save)
   for (file_ind in seq_along(objects_to_save)){
     saveRDS(objects_to_save[[file_ind]], paste0(simulation_inputs_folder, filenames_to_save[file_ind], '.rds')) 
   }
-#   
-#   saveRDS(parcels, paste0(simulation_input_folder, 'parcels.rds')) 
-#   saveRDS(landscape_ecology, paste0(simulation_input_folder, 'landscape_ecology.rds')) 
-#   saveRDS(parcel_ecology, paste0(simulation_input_folder, 'parcel_ecology.rds')) 
-#   saveRDS(dev_weights, paste0(simulation_input_folder, 'dev_weights.rds')) 
-#   saveRDS(offset_weights, paste0(simulation_input_folder, 'offset_weights.rds')) 
 }
 
 
@@ -130,36 +79,6 @@ generate_nested_list <- function(outer_dim, inner_dim){
   }
   return(nested_list)
 }
-
-
-
-
-
-simulate_LGA <- function(simulated_ecology_params){
-  
-  parcel_num_x = simulated_ecology_params$parcel_num_x   #length in parcels of array in x 
-  parcel_num_y = simulated_ecology_params$parcel_num_y #length in parcels of array in y 
-  parcel_vx = split_vector(parcel_num_x, simulated_ecology_params$ecology_size[2], sd = 5, min_width = 3) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, simulated_ecology_params$ecology_size[1], sd = 5, min_width = 3) # as above for y
-  
-  pixel_indexes = 1:(simulated_ecology_params$ecology_size[1]*simulated_ecology_params$ecology_size[2])     #index all elements of ecology array
-  dim(pixel_indexes) = c(simulated_ecology_params$ecology_size[1], simulated_ecology_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 
-  parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
-  
-  parcel_list = lapply(seq_along(parcels), function(i) array(i, dim(parcels[[i]])))
-  parcel_array = array(0, dim(pixel_indexes))
-  parcel_array[unlist(parcels)] = unlist(parcel_list)
-  
-  region_vx = split_vector(simulated_ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
-  region_vy = split_vector(simulated_ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
-  
-  parcel_indexes = seq(length(parcel_list))
-  dim(parcel_indexes) = c(region_vy, region_vx)
-
-  
-  return(parcel_array)
-}
-
 
 
 LGA_to_parcel_list <- function(LGA_array){
