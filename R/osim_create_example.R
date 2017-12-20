@@ -13,7 +13,8 @@ osim.create.example <- function(outdir = '.', loglevel = INFO) {
   flog.info(paste0("Ensuring output directory '", outdir, "' exists"))
   outfolder <- write_nested_folder(outdir)
   
-  outRunScript <- paste0(outfolder,'/offsetsim_example.R')
+  runFile <- 'offsetsim_example.R'
+  outRunScript <- paste0(outfolder,'/', runFile)
   outRunParams <- paste0(outfolder,'/default_initialise_params.R')
   outPlotParams <- paste0(outfolder,'/default_plot_params.R')
   
@@ -45,7 +46,7 @@ osim.create.example <- function(outdir = '.', loglevel = INFO) {
   )
   
   cat('User example downloaded to folder "', outfolder, 
-      '";". To run the example do:\nsetwd("',outfolder,'"); source("',outRunScript,'")\n'
+      '";". To run the example do:\nsetwd("',outfolder,'"); source("',runFile,'")\n'
       , sep = "")
 }
 
