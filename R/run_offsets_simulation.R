@@ -41,12 +41,14 @@ initial_ecology <- select_feature_subset(initial_ecology, params_object$global_p
 for (scenario_ind in seq_along(params_object$combination_params_group)){
 
   loop_strt <- Sys.time()
-  flog.info('running scenario %s of %s with %s realisations on %s cores with %s features', 
+  flog.info('running scenario %s of %s with %s realisations on %s cores with %s features on a landscape with size %s x %s', 
             scenario_ind, 
             length(params_object$combination_params_group),  
             params_object$global_params$realisation_num,
             params_object$global_params$number_of_cores, 
-            length(params_object$global_params$features_to_use_in_simulation))
+            length(params_object$global_params$features_to_use_in_simulation), 
+            parcels$landscape_dims[1], 
+            parcels$landscape_dims[2])
 
   if (params_object$global_params$number_of_cores > 1 && params_object$global_params$set_seed == TRUE){
     # case when running DETERMINISTIC realisations in parallel
