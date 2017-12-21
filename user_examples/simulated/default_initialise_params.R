@@ -93,6 +93,13 @@ initialise_default_global_params <- function(){
   # Max value that the logistic decline curve can reach. It will asypotote to this value
   default_global_params$max_eco_val = 100 
   
+  default_global_params$screen_sites_by_size = TRUE 
+  
+  default_global_params$screen_dev_zeros = TRUE
+  
+  default_global_params$site_screen_size = 20 
+
+  default_global_params$screen_dev_site_zeros = TRUE
   
   default_global_params$screen_offset_site_zeros = TRUE
   # set the random number seed
