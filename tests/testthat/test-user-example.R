@@ -26,7 +26,7 @@ test_that("running user-example", {
   # FORCE number_of_cores<-2 as maxCores will fail on Travis (not allowed to spawn that many)
   f <- paste0(outdir, '/offsetsim_example.R')
   x <- readLines(f)
-  y <- gsub( "osim.run", "user_global_params$number_of_cores<-2; osim.run", x )
+  y <- gsub( "osim.run", "user_global_params$number_of_cores<-1; osim.run", x )
   cat(y, file=f, sep="\n")
   
   # run it
