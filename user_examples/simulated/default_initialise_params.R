@@ -150,7 +150,7 @@ initialise_default_combination_params <- function(){
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
   
-  default_combination_params$offset_action_params = list(c('net_gains')
+  default_combination_params$offset_action_params = list(c('net_gains', 'restore'))
   
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
