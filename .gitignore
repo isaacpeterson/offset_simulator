@@ -6,6 +6,5 @@ initialise_params.R
 user_params/
 simulation_routines_update.R
 user_examples/simulated/simulated_data/
-user_examples/grasslands/simulation_inputs
-user_examples/simulation_runs/
+user_examples/grasslands
 .Rproj.user
