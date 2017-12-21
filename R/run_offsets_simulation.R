@@ -49,7 +49,8 @@ for (scenario_ind in seq_along(params_object$combination_params_group)){
             length(params_object$global_params$features_to_use_in_simulation), 
             parcels$landscape_dims[1], 
             parcels$landscape_dims[2])
-
+  flog.info(paste('running in ', params_object$combination_params_group[[scenario_ind]]$offset_calc_type, 'mode with', 
+                   params_object$combination_params_group[[scenario_ind]]$offset_action_type, 'offsets'))
   if (params_object$global_params$number_of_cores > 1 && params_object$global_params$set_seed == TRUE){
     # case when running DETERMINISTIC realisations in parallel
     # doRNG needed to get deterministic foreach loops, dsingh 24/nov/17
