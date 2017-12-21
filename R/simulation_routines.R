@@ -1005,6 +1005,7 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, gl
                                      current_credit,
                                      dev_weights,
                                      allow_developments_from_credit = current_combination_params$allow_developments_from_credit,
+                                     screen_site_zeros = global_params$screen_offset_zeros,
                                      offset_multiplier = current_combination_params$offset_multiplier,
                                      match_threshold = global_params$match_threshold,
                                      vals_to_match_initial = vals_to_match,
@@ -1081,6 +1082,7 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, gl
                                      current_credit,
                                      dev_weights,
                                      allow_developments_from_credit = FALSE,
+                                     screen_site_zeros = global_params$screen_dev_site_zeros,
                                      offset_multiplier = current_combination_params$offset_multiplier,
                                      match_threshold = global_params$match_threshold,
                                      vals_to_match_initial = current_credit,
@@ -1286,7 +1288,7 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold,
-                                 current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type){
+                                 current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros){
 
   pool_object = list()
 
@@ -1301,10 +1303,19 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 
   zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) == 0)  
   
-  vals_to_use <- remove_index(vals_to_use, zero_inds)
-  current_pool <- remove_index(current_pool, zero_inds)
-  vals_to_test <- remove_index(vals_to_test, zero_inds)
-  pool_num = nrow(vals_to_test)
+  if ((screen_site_zeros == FALSE) & (length(zero_inds) > 0)){
+    vals_to_use = vals_to_use(zero_inds)
+    current_pool = current_pool(zero_inds)
+    pool_object$break_flag = FALSE
+    pool_object$vals_to_use = vals_to_use
+    pool_object$current_pool = current_pool
+    return(pool_object)
+  } else {
+    vals_to_use <- remove_index(vals_to_use, zero_inds)
+    current_pool <- remove_index(current_pool, zero_inds)
+    vals_to_test <- remove_index(vals_to_test, zero_inds)
+    pool_num = nrow(vals_to_test)
+  }
   
   if (length(current_pool) == 0){
     cat('\nall parcels yield zero assessment')
@@ -1364,7 +1375,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 
 
                
-select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit_to_use, dev_weights, allow_developments_from_credit, 
+select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit_to_use, dev_weights, allow_developments_from_credit, screen_site_zeros,
                              offset_multiplier, match_threshold, vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
 
   ndims = length(features_to_use_in_offset_calc)
@@ -1374,13 +1385,18 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   vals_to_match = offset_multiplier*unlist(vals_to_match_initial[features_to_use_in_offset_calc])
 
   pool_object <- select_pool_to_match(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold,
-                                      current_pool, allow_developments_from_credit, current_credit_to_use, site_for_site, match_type)
+                                      current_pool, allow_developments_from_credit, current_credit_to_use, site_for_site, match_type, screen_site_zeros)
 
   if (pool_object$break_flag == TRUE){
     match_object = false_match()
     return(match_object)
   }
 
+  if (screen_site_zeros == FALSE){
+    match_procedure = 'random'
+    site_for_site = 'TRUE'
+  }
+  
   parcel_vals_pool = pool_object$vals_to_use
   current_pool = pool_object$current_pool
   match_flag = FALSE

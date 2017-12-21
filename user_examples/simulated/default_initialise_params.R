@@ -1,6 +1,6 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
-  default_global_params$simulated_ecology_user_params_file = 'default'
+  default_global_params$simulated_ecology_user_params_file = 'user_simulated_ecology_params.R'
   
   default_global_params$overwrite_default_params = TRUE
   
@@ -92,7 +92,7 @@ initialise_default_global_params <- function(){
   
   default_global_params$screen_sites_by_size = TRUE 
   
-  default_global_params$screen_site_zeros = TRUE
+  default_global_params$screen_dev_zeros = FALSE
   
   default_global_params$site_screen_size = 20 
 
