@@ -23,6 +23,12 @@ test_that("running user-example", {
   flog.info(paste('creating user example in', outdir))
   offsetsim::osim.create.example(outdir, futile.logger::WARN)
   
+  # FORCE number_of_cores<-2 as maxCores will fail on Travis (not allowed to spawn that many)
+  f <- paste0(outdir, '/offsetsim_example.R')
+  x <- readLines(f)
+  y <- gsub( "osim.run", "user_global_params$number_of_cores<-2; osim.run", x )
+  cat(y, file=f, sep="\n")
+  
   # run it
   testrundir <- getwd()
   flog.info(paste0('running the user example in ',outdir))
