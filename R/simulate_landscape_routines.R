@@ -63,8 +63,8 @@ simulate_LGA <- function(simulated_ecology_params){
   
   parcel_num_x = simulated_ecology_params$parcel_num_x   #length in parcels of array in x 
   parcel_num_y = simulated_ecology_params$parcel_num_y #length in parcels of array in y 
-  parcel_vx = split_vector(parcel_num_x, simulated_ecology_params$ecology_size[2], sd = 5, min_width = 3) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, simulated_ecology_params$ecology_size[1], sd = 5, min_width = 3) # as above for y
+  parcel_vx = split_vector(parcel_num_x, simulated_ecology_params$ecology_size[2], sd = simulated_ecology_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
+  parcel_vy = split_vector(parcel_num_y, simulated_ecology_params$ecology_size[1], sd = simulated_ecology_params$site_width_variation_param, min_width = 1) # as above for y
   
   pixel_indexes = 1:(simulated_ecology_params$ecology_size[1]*simulated_ecology_params$ecology_size[2])     #index all elements of ecology array
   dim(pixel_indexes) = c(simulated_ecology_params$ecology_size[1], simulated_ecology_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 

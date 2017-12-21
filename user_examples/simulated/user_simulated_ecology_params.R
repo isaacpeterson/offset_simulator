@@ -16,7 +16,7 @@ initialise_simulated_ecology_params <- function(){
   simulated_ecology_params$parcel_num_x = 50 
   
   # Numnber of parcels in y (but total size varies)
-  simulated_ecology_params$parcel_num_y = 40 
+  simulated_ecology_params$parcel_num_y = 100 
   
   # Minimum allowable initial ecological value of smallest ecological element
   # (pixel) ie min value to sample from

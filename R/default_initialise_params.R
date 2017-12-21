@@ -91,11 +91,17 @@ initialise_default_global_params <- function(){
   # Max value that the logistic decline curve can reach. It will asypotote to this value
   default_global_params$max_eco_val = 100 
   
-  default_global_params$screen_sites_by_size = TRUE 
+  # use number of elements to determine what sites are used in program
+  default_global_params$screen_sites_by_size = FALSE 
   
+  #ignore offset sites with zero value
   default_global_params$screen_offset_zeros = TRUE
+  
+  # ignore development sites with zero value
   default_global_params$screen_dev_zeros = FALSE
-  default_global_params$site_screen_size = 20 
+  
+  # ignore parcels with size below this number of elements 
+  default_global_params$site_screen_size = 0 
 
   default_global_params$screen_dev_site_zeros = TRUE
   

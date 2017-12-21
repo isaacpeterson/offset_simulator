@@ -16,6 +16,9 @@ initialise_default_simulated_ecology_params <- function(){
   # Numnber of parcels in y (but total size varies)
   default_simulated_ecology_params$parcel_num_y = 40 
   
+  #how much the site dimensions should vary
+  
+  default_simulated_ecology_params$site_width_variation_param = 1
   # Minimum allowable initial ecological value of smallest ecological element
   # (pixel) ie min value to sample from
   default_simulated_ecology_params$min_initial_eco_val = 20
