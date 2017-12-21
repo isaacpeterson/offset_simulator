@@ -1304,8 +1304,9 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   zero_inds <- which(apply(vals_to_test, MARGIN = 1, sum) == 0)  
   
   if ((screen_site_zeros == FALSE) & (length(zero_inds) > 0)){
-    vals_to_use = vals_to_use(zero_inds)
-    current_pool = current_pool(zero_inds)
+    
+    vals_to_use = vals_to_use[zero_inds]
+    current_pool = current_pool[zero_inds]
     pool_object$break_flag = FALSE
     pool_object$vals_to_use = vals_to_use
     pool_object$current_pool = current_pool
@@ -1393,6 +1394,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   }
 
   if (screen_site_zeros == FALSE){
+    flog.info('developing zero val site')
     match_procedure = 'random'
     site_for_site = 'TRUE'
   }

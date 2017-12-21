@@ -1,7 +1,10 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
-  default_global_params$simulated_ecology_user_params_file = 'user_simulated_ecology_params.R'
   
+  # to use user simulated landscape params label file, to use default landscape params label as 'default'
+  default_global_params$simulated_ecology_user_params_file = 'user_simulated_ecology_params.R' # use 
+  
+  # set to TRUE to overwrite default params wih user params and FALASE otherwise
   default_global_params$overwrite_default_params = TRUE
   
   # Where simulation outputs will be written
@@ -147,7 +150,7 @@ initialise_default_combination_params <- function(){
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
   
-  default_combination_params$offset_action_params = list(c('net_gains', 'restore'))
+  default_combination_params$offset_action_params = list(c('net_gains')
   
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
@@ -199,7 +202,6 @@ initialise_default_combination_params <- function(){
 
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_combination_params$offset_time_horizon = c(15)
-
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the

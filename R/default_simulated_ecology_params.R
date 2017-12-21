@@ -24,6 +24,9 @@ initialise_default_simulated_ecology_params <- function(){
   # value to sample from
   default_simulated_ecology_params$max_initial_eco_val = 90
   
+  default_simulated_ecology_params$include_zeros = FALSE
+  
+  default_simulated_ecology_params$zero_site_num = 10
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45

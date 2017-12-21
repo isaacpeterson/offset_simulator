@@ -18,7 +18,13 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
                                                           simulated_ecology_params$max_initial_eco_val, 
                                                           simulated_ecology_params$initial_eco_noise, 
                                                           land_parcels)
+    if (simulated_ecology_params$include_zeros == TRUE){
+      
+      zero_site_inds = sample(length(current_simulated_ecology), simulated_ecology_params$zero_site_num)
+      current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) array(0, dim(current_simulated_ecology[[i]])))
+    }
     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
+    
     if (eco_ind == 1){
       simulated_ecology <- current_simulated_ecology
     } else {

@@ -4,6 +4,8 @@ initialise_simulated_ecology_params <- function(){
   
   simulated_ecology_params = list()
   
+  simulated_ecology_params$include_zeros = TRUE
+  
   #how many feature layers to generate
   simulated_ecology_params$feature_num = 1
   
