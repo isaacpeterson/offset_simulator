@@ -1,5 +1,5 @@
 #' Plots the results of the Offset Simulator run
-#' @param plot_params user configured plotting parameters to use
+#' @param user_plot_params user configured plotting parameters to use
 #' @param simulation_folder user configured simulation folder to use
 #' @param loglevel logging level to use, for instance futile.logger::INFO
 #' @import futile.logger
