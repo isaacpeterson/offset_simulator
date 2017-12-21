@@ -7,7 +7,7 @@ osim.create.example <- function(outdir = '.', loglevel = INFO) {
   
   urlRunParams <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/R/default_initialise_params.R'
   urlPlotParams <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/R/default_plot_params.R'
-  urlRunScript <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/user_examples/run_offset_simulation_source_code.R'
+  urlRunScript <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/user_examples/simulated/run_offset_simulation_source_code.R'
 
   flog.threshold(loglevel)
   flog.info(paste0("Ensuring output directory '", outdir, "' exists"))
