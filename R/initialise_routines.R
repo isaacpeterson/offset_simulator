@@ -81,7 +81,8 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
     if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE) ){
       default_simulated_ecology_params <- initialise_default_simulated_ecology_params()
       if (global_params$simulated_ecology_user_params_file != 'default'){ 
-        user_simulated_ecology_params <- source(global_params$simulated_ecology_user_params_file)
+        source(global_params$simulated_ecology_user_params_file)
+        user_simulated_ecology_params <- initialise_simulated_ecology_params()
         simulated_ecology_params <- overwrite_current_params(user_simulated_ecology_params, default_simulated_ecology_params)
       } else {
         simulated_ecology_params <- default_simulated_ecology_params
@@ -588,23 +589,24 @@ initialise_index_object <- function(parcels, initial_ecology, global_params, off
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_ecology, 
-                                                              global_params)
+                                                              global_params, 
+                                                              screen_site_zeros = global_params$screen_offset_zeros)
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_ecology, 
-                                                           global_params)
-  
+                                                           global_params, 
+                                                           screen_site_zeros = global_params$screen_dev_zeros)
   return(index_object)
   
 }
 
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, global_params){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, global_params, screen_site_zeros){
   
-  if (global_params$screen_site_zeros == TRUE){
+  if (screen_site_zeros == TRUE){
     
     initial_parcel_sums = lapply(seq_along(initial_ecology), 
                                  function(i) lapply(seq_along(initial_ecology[[i]]), 
