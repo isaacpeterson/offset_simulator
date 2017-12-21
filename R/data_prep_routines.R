@@ -6,10 +6,17 @@ write_folder <- function(current_folder){
 }
 
 
-scale_ecology <- function(landscape_ecology, max_eco_val){
-  landscape_ecology <- lapply(seq_along(landscape_ecology), 
-                              function (i) landscape_ecology[[i]]/max(landscape_ecology[[i]]) * max_eco_val)
-  return(landscape_ecology)
+scale_ecology <- function(landscape_ecology, max_eco_val, landscape_dims){
+  
+  scaled_landscape_ecology <- list_of_zeros(length(landscape_ecology), landscape_dims) 
+  
+  for (feature_ind in seq_along(landscape_ecology)){
+    if (max(landscape_ecology[[feature_ind]]) > 0){
+      scaled_landscape_ecology[[feature_ind]] = landscape_ecology[[feature_ind]]/max(landscape_ecology[[feature_ind]]) * max_eco_val
+    }
+  }
+  
+  return(scaled_landscape_ecology)
 }
 
 shp_to_raster <- function(shp, raster_dims){
