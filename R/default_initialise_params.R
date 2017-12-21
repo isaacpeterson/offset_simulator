@@ -34,7 +34,7 @@ initialise_default_global_params <- function(){
   # mean number using a normal distribution such that the total number of
   # developments will always equal the total number (Note sd for this
   # distribution is set in the code the currently isn't user settable)
-  default_global_params$total_dev_num = 200
+  default_global_params$total_dev_num = 5
   
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.

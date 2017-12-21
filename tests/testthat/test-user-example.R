@@ -10,7 +10,7 @@ library(futile.logger)
 
 test_that("running user-example", {
   
-  loglevel <- futile.logger::INFO
+  loglevel <- futile.logger::TRACE
   flog.threshold(loglevel)
   
   flog.info('___________ TEST USER EXAMPLE __________ ')
