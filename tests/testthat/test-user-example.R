@@ -35,7 +35,7 @@ test_that("running user-example", {
 
   # check that we got some plot as PDF
   actual <- '../output/user-example/simulated_data/simulation_runs/00001/collated_outputs/user-example.pdf'
-  dev.print(pdf, actual)
+  dev.copy(pdf, actual)
   flog.info(paste('checking if', actual , 'exists'))
   expect_true(file.exists(actual))
   
