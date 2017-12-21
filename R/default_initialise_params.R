@@ -97,7 +97,7 @@ initialise_default_global_params <- function(){
   default_global_params$screen_dev_zeros = FALSE
   default_global_params$site_screen_size = 20 
 
-  default_global_params$screen_dev_site_zeros = FALSE
+  default_global_params$screen_dev_site_zeros = TRUE
   
   default_global_params$screen_offset_site_zeros = TRUE
   # set the random number seed
