@@ -366,7 +366,6 @@ stack_current_yr <- function(current_parcel, current_parcel_ecology, yr){
        
 write_frames <- function(data_stack, filetype, mov_folder, parcels, global_params){
   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
-  library(pixmap)
   graphics.off()
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
   

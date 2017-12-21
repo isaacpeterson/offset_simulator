@@ -1,14 +1,14 @@
-offsetsim
-================
+# offsetsim
 
 Software for simulating the impacts of biodiversity offsetting
 
- [![Travis build status](https://travis-ci.org/dhixsingh/offset_simulator.svg?branch=dev)](https://travis-ci.org/dhixsingh/offset_simulator)
+ [![Travis build status](https://travis-ci.org/isaacpeterson/offset_simulator.svg)](https://travis-ci.org/isaacpeterson/offset_simulator)
 
-How to install and run
----------------------------------
+----------
 
-Download and install the latest version of R. If you are running from a linux-type system this can be done using:
+## How to install
+
+Download and install the latest version of R. On Ubuntu or another debian-based linux system, this can be done on the terminal as follows:
 
 ```
 sudo apt-get update
@@ -18,24 +18,42 @@ sudo apt-get install git
 
 You will then require the R `devtools` package in order to install offsetsim. To install `devtools`, from inside R do:
 ```
-> install.packages('devtools')
+install.packages('devtools')
 ```
 To now install the `offsetsim` package, from inside R do:
 ```
-> devtools::install_github("isaacpeterson/offset_simulator")
+devtools::install_github("isaacpeterson/offset_simulator")
 ```
 This may take a while as R downloads, builds, and installs the package and all its dependencies.
 
-Once installed, to run the simulator and plot the results, from inside R do:
+----------
+
+## How to run
+
+Once `offsetsim` is installed, the easiest way to get started is to generate an offset simulation example that you can customise. To create the user example from inside R do:
 ```
-> library(offsetsim)
-> osim.run('/path/to/your/init-params.R')
-> osim.plot('/path/to/your/plot-params.R')
+library(offsetsim)
+osim.create.example('./my-osim-example')
+```
+This will download the example files (make sure you have an active internet connection) into the directory `./my-osim-example`. To now run the example from inside R do:
+```
+setwd('./my-osim-example'); source('offsetsim_example.R')
 ```
 
+----------
 
-Description on the files
-------------------------
+## How to get more help
+
+You can get more information on `offsetsim` functionality, from inside R do:
+```
+??offsetsim
+```
+
+----------
+
+
+## Description on the files
+
 
 ### initialise_params_defaults.R
 

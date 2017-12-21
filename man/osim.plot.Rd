@@ -4,12 +4,14 @@
 \alias{osim.plot}
 \title{Plots the results of the Offset Simulator run}
 \usage{
-osim.plot(plot_params_file, loglevel = INFO)
+osim.plot(user_plot_params, simulation_folder, loglevel = INFO)
 }
 \arguments{
-\item{loglevel}{logging level to use, for instance futile.logger::INFO}
+\item{user_plot_params}{user configured plotting parameters to use}
 
-\item{plot_params}{user configured plotting parameters to use}
+\item{simulation_folder}{user configured simulation folder to use}
+
+\item{loglevel}{logging level to use, for instance futile.logger::INFO}
 }
 \description{
 Plots the results of the Offset Simulator run
