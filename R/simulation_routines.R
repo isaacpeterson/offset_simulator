@@ -1439,16 +1439,18 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
         match_flag = FALSE
         break
       }
+      
+      if (match_type == 'offset'){
+        match_flag = all(vals_to_match < thresh)
+      } else if (match_type == 'development'){
+        match_flag = all(vals_to_match > thresh)
+      }   
     } else {
       match_indexes = list(current_match_index)
       match_vals = list(current_match_val)
+      match_flag = TRUE
     }
-
-    if (match_type == 'offset'){
-      match_flag = all(vals_to_match < thresh)
-    } else if (match_type == 'development'){
-      match_flag = all(vals_to_match > thresh)
-    }
+    
   }
 
   current_credit_to_use = vals_to_match
