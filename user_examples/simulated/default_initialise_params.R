@@ -8,7 +8,7 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_default_params = TRUE
   
   # Where simulation outputs will be written
-  default_global_params$simulation_folder = paste0(getwd(), '/simulated_data/')
+  default_global_params$simulation_folder = paste0('simulated_data/')
  
   default_global_params$use_simulated_data = TRUE
   
