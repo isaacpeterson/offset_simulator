@@ -968,16 +968,16 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
     indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  parcel_lengths <- unlist(lapply(seq_along(land_parcels), function(i) length(land_parcels[[i]])))
+  site_element_num <- unlist(lapply(seq_along(land_parcels), function(i) length(land_parcels[[i]])))
   
   if (min_site_screen_size > 0){
-    smalls_to_exclude = which(parcel_lengths < min_site_screen_size)
+    smalls_to_exclude = which(site_element_num < min_site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
   if (max_site_screen_size_quantile < 1){
     browser()
-    bigs_to_exclude = which(parcel_lengths > quantile(parcel_lengths, probs = max_site_screen_size_quantile))
+    bigs_to_exclude = which(site_element_num > quantile(site_element_num, probs = max_site_screen_size_quantile))
     indexes_to_exclude = unique(c(indexes_to_exclude, bigs_to_exclude))
   }
   
