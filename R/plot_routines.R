@@ -67,16 +67,16 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   y_lab = get_y_lab(output_type, current_combination_params, feature_ind)
   
   if (current_combination_params$use_offset_bank == TRUE){
-    offset_parcel_indexes_to_use = collated_realisations$collated_offset_bank$parcel_indexes
-    dev_parcel_indexes_to_use = collated_realisations$collated_dev_credit$parcel_indexes
+    offset_site_indexes_to_use = collated_realisations$collated_offset_bank$site_indexes
+    dev_site_indexes_to_use = collated_realisations$collated_dev_credit$site_indexes
   } else{
-    offset_parcel_indexes_to_use = collated_realisations$collated_offsets$parcel_indexes
-    dev_parcel_indexes_to_use = collated_realisations$collated_devs$parcel_indexes
+    offset_site_indexes_to_use = collated_realisations$collated_offsets$site_indexes
+    dev_site_indexes_to_use = collated_realisations$collated_devs$site_indexes
   }
   
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
-    overlay_trajectories(dev_parcel_indexes_to_use,
+    overlay_trajectories(dev_site_indexes_to_use,
                          current_combination_params$use_offset_bank,
                          trajectories = collated_realisations$landscape$summed_site_trajectories, 
                          realisation_ind = 1, 
@@ -90,7 +90,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     plot_type = 'overlay'
   }
   if (plot_site_offset_outcome == TRUE){
-    overlay_trajectories(offset_parcel_indexes_to_use, 
+    overlay_trajectories(offset_site_indexes_to_use, 
                          current_combination_params$use_offset_bank,
                          trajectories = collated_realisations$landscape$summed_site_trajectories, 
                          realisation_ind = 1, 
@@ -214,7 +214,7 @@ write_NNL_label <- function(NNL_yrs, NNL_amount){
 
 
 
-# parcel_indexes = collated_realisations$collated_devs$parcel_indexes
+# site_indexes = collated_realisations$collated_devs$site_indexes
 # offset_bank = current_combination_params$use_offset_bank
 # trajectories = collated_realisations$landscape$summed_site_trajectories
 # realisation_ind = 1
@@ -223,14 +223,14 @@ write_NNL_label <- function(NNL_yrs, NNL_amount){
 # overlay_type = 'single' 
 
 
-overlay_trajectories <- function(parcel_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
+overlay_trajectories <- function(site_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
                                  overlay_type, sets_to_plot, y_lab, site_plot_lims, lwd){
   if (offset_bank == FALSE){
-    parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]][sets_to_plot])
-    plot_list = trajectories[[realisation_ind]][parcel_indexes_to_use]
+    site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]][sets_to_plot])
+    plot_list = trajectories[[realisation_ind]][site_indexes_to_use]
   } else{
-    parcel_indexes_to_use = unlist(parcel_indexes_to_use[[realisation_ind]])
-    plot_list = list(Reduce('+', trajectories[[realisation_ind]][parcel_indexes_to_use]))
+    site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]])
+    plot_list = list(Reduce('+', trajectories[[realisation_ind]][site_indexes_to_use]))
   }
   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = y_lab, x_lab = '', 
                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(lwd, length(plot_list)), 
@@ -264,8 +264,8 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   if (current_combination_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
-    if (max(set_to_plot) > length(dev_set$parcel_indexes[[realisation_ind]])){
-      stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$parcel_indexes[[realisation_ind]]), ' sites'))
+    if (max(set_to_plot) > length(dev_set$site_indexes[[realisation_ind]])){
+      stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$site_indexes[[realisation_ind]]), ' sites'))
     }
     net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][set_to_plot]
     
@@ -340,8 +340,8 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, visualisati
   
   if (offset_bank == FALSE){
     collated_traj_set = collated_object$nets[[realisation_ind]]
-    parcel_indexes = unlist(collated_object$parcel_indexes[[realisation_ind]][set_to_plot])
-    inds_to_plot = which(unlist(collated_object$parcel_indexes[[realisation_ind]]) %in% parcel_indexes)
+    site_indexes = unlist(collated_object$site_indexes[[realisation_ind]][set_to_plot])
+    inds_to_plot = which(unlist(collated_object$site_indexes[[realisation_ind]]) %in% site_indexes)
     if (plot_from_impact_yr){
       offset_yrs = collated_object$offset_yrs[[realisation_ind]][inds_to_plot]
     } else {
@@ -425,10 +425,10 @@ generate_single_realisation_plots <- function(global_params, realisations, net_c
   
   setup_sub_plots(nx = 1, ny = 3, x_space = 2, y_space = 2)
   
-  plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_indexes = seq(combination_params$total_dev_num), time_horizon, global_params$feature_num, 
+  plot_parcel_set_from_collated_object(collated_parcel_sets_object, site_indexes = seq(combination_params$total_dev_num), time_horizon, global_params$feature_num, 
                                        headings = c('Single Realisation Net Program Developments', 'Single Realisation Net Program Offsets', 'Single Realisation Net Program Outcomes'))
   
-  parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, feature_num, parcel_indexes = 1:(parcels$land_parcel_num), time_horizon)
+  parcel_trajs <- sum_parcel_trajectories(collated_parcel_sets_object$traj_list, feature_num, site_indexes = 1:(parcels$land_parcel_num), time_horizon)
   
   
   par(mfrow = c(2, 1))
@@ -665,7 +665,7 @@ plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, includ
 plot_parcel_set_parcels <- function(current_set_object){
   
   
-  parcel_num = length(current_set_object$parcel_indexes)
+  parcel_num = length(current_set_object$site_indexes)
   sub_plots = 1:(parcel_num*global_params$feature_num)
   dim(sub_plots) = c(global_params$feature_num, parcel_num)
   layout(sub_plots)
@@ -678,7 +678,7 @@ plot_parcel_set_parcels <- function(current_set_object){
   
   for (parcel_ind in seq_len(parcel_num)){
     for (feature_ind in seq_len(global_params$feature_num)){
-      graphics::plot(rest_gains[, feature_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste0('parcel index =', current_set_object$parcel_indexes[parcel_ind]), ylab = '', xlab = paste0('dim = ', feature_ind))
+      graphics::plot(rest_gains[, feature_ind, parcel_ind], type = 'l', ylim = c(mn, mx), main = paste0('parcel index =', current_set_object$site_indexes[parcel_ind]), ylab = '', xlab = paste0('dim = ', feature_ind))
       lines(degs[, feature_ind, parcel_ind], col = 'blue')
       lines(rest_gains[, feature_ind, parcel_ind] + degs[, feature_ind, parcel_ind], col = 'red')
     }
@@ -692,9 +692,9 @@ plot_parcel_set_parcels <- function(current_set_object){
 
 plot_sample_parcel_sets <- function(collated_parcel_sets_object, plot_num, global_params, combination_params){
   
-  parcel_indexes = sample(combination_params$total_dev_num, plot_num)
+  site_indexes = sample(combination_params$total_dev_num, plot_num)
   setup_sub_plots(nx = 3, ny = 3, x_space = 5, y_space = 5)
-  for (parcel_set_index in parcel_indexes){
+  for (parcel_set_index in site_indexes){
     plot_parcel_set_from_collated_object(collated_parcel_sets_object, parcel_set_index, time_horizon = global_params$time_steps, global_params$feature_num, 
                                          headings = c('Parcel Set Developments', 'Parcel Set Offsets', 'Parcel Set Outcome'))
   }
@@ -825,26 +825,6 @@ combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_
 
   return(landscape)
 }
-
-
-
-
-#write all offset parcels to single layer to output as image
-
-
-write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_parcel_indexes){ 
-  
-  site_mask = array(0, landscape_dims)
-  site_mask[ unlist(land_parcels[unlist(current_parcel_indexes)])] = 1
-  # rgb.palette <- colorRampPalette(color_vec, space = "rgb")
-  png(filename = output_filename, height = dim(site_mask)[1], width = dim(site_mask)[2])
-  image(site_mask, zlim = c(0,1), col = rgb.palette(512))
-  dev.off()
-  return(site_mask)
-}
-
-
-
 
 
 
