@@ -1314,7 +1314,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
     vals_to_use <- remove_index(vals_to_use, zero_inds)
     current_pool <- remove_index(current_pool, zero_inds)
     vals_to_test <- remove_index(vals_to_test, zero_inds)
-    pool_num = nrow(vals_to_test)
+    pool_num = length(current_pool)
   }
   
   if (length(current_pool) == 0){
