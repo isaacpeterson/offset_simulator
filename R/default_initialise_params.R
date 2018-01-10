@@ -98,14 +98,11 @@ initialise_default_global_params <- function(){
   default_global_params$screen_offset_zeros = TRUE
   
   # ignore development sites with zero value
-  default_global_params$screen_dev_zeros = FALSE
+  default_global_params$screen_dev_zeros = TRUE
   
   # ignore parcels with size below this number of elements 
   default_global_params$site_screen_size = 0 
 
-  default_global_params$screen_dev_site_zeros = TRUE
-  
-  default_global_params$screen_offset_site_zeros = TRUE
   # set the random number seed
   default_global_params$set_seed = FALSE
   
