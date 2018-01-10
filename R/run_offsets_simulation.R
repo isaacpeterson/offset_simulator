@@ -38,7 +38,7 @@ decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land
 # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
 initial_ecology <- select_feature_subset(initial_ecology, params_object$global_params$features_to_use_in_simulation)
 
-flog.info('developing %s of %s sites in a landscape with size %s x %s', 
+flog.info('developing %s of %s sites in a landscape with %s x %s elements', 
           params_object$global_params$total_dev_num, 
           length(parcels$land_parcels),
           parcels$landscape_dims[1], 
@@ -53,8 +53,9 @@ flog.info('running %s scenarios with %s realisations on %s cores with %s feature
 for (scenario_ind in seq_along(params_object$combination_params_group)){
 
   loop_strt <- Sys.time()
-  flog.info('running scenario %s', 
-            scenario_ind)
+  flog.info('running scenario %s of %s', 
+            scenario_ind, 
+            length(params_object$combination_params_group))
   flog.info(paste('running in ', params_object$combination_params_group[[scenario_ind]]$offset_calc_type, 'mode with', 
                    params_object$combination_params_group[[scenario_ind]]$offset_action_type, 'offsets'))
   if (params_object$global_params$number_of_cores > 1 && params_object$global_params$set_seed == TRUE){

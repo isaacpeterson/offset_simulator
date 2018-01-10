@@ -83,17 +83,6 @@ run_offset_simulation_routines <- function(combination_params, global_params, pa
                      offset_site_indexes = unlist(simulation_outputs$offsets$site_indexes), 
                      offset_yrs = unlist(simulation_outputs$offsets$offset_yrs))
       }
-#     if (global_params$write_offset_layer == TRUE){
-#           
-#         write_site_mask(output_filename = paste0(mov_folder, 'offset_mask.png'),
-#                           parcels$landscape_dims, 
-#                           parcels$land_parcels, 
-#                           simulation_outputs$offsets$site_indexes)
-#         write_site_mask(output_filename = paste0(mov_folder, 'dev_mask.png'), 
-#                           parcels$landscape_dims, 
-#                           parcels$land_parcels, 
-#                           c(simulation_outputs$devs$site_indexes, simulation_outputs$dev))
-#       }
     }
     
   }
