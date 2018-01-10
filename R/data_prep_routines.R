@@ -95,8 +95,8 @@ LGA_to_parcel_list <- function(LGA_array){
   
   parcels = list()
   parcels$landscape_dims = dim(LGA_array)
-  parcels$parcel_indexes = seq_along(land_parcels)
-  parcels$regions = list(parcels$parcel_indexes) #use only one region - if necessary this can be split up into multi-region
+  parcels$site_indexes = seq_along(land_parcels)
+  parcels$regions = list(parcels$site_indexes) #use only one region - if necessary this can be split up into multi-region
   parcels$region_num = length(parcels$regions)
   parcels$land_parcel_num = length(land_parcels)
   parcels$land_parcels = land_parcels

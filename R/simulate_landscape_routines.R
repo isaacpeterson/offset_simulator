@@ -77,8 +77,8 @@ simulate_LGA <- function(simulated_ecology_params){
   region_vx = split_vector(simulated_ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
   region_vy = split_vector(simulated_ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
   
-  parcel_indexes = seq(length(parcel_list))
-  dim(parcel_indexes) = c(region_vy, region_vx)
+  site_indexes = seq(length(parcel_list))
+  dim(site_indexes) = c(region_vy, region_vx)
   
   
   return(parcel_array)

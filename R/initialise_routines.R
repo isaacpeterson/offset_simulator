@@ -412,7 +412,7 @@ initialise_trajectories <- function(feature_num, land_parcels, time_steps){
 
 
 parcel_set_list_names <- function(){
-  list_names = c("parcel_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
+  list_names = c("site_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
                  "restoration_vals", "cfac_vals", "region_ind")
   return(list_names)
 }
@@ -464,7 +464,7 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 #   region_num = length(regions)
 #   parcels = list()
 #   parcels$landscape_dims = landscape_dims
-#   parcels$parcel_indexes = seq_along(land_parcels)
+#   parcels$site_indexes = seq_along(land_parcels)
 #   parcels$land_parcel_num = length(land_parcels)
 #   parcels$land_parcels = land_parcels
 #   parcels$regions = regions
@@ -523,16 +523,16 @@ initialise_shape_parcels <- function(ecology_params){
   dim(pixel_indexes) = c(ecology_params$ecology_size, ecology_params$ecology_size)  # arrange ecology array index vector into array of landscape dimensions
   land_parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
   land_parcel_num = length(land_parcels$elements) #total number of parcels
-  parcel_indexes = 1:land_parcel_num #index all parcels
-  dim(parcel_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
+  site_indexes = 1:land_parcel_num #index all parcels
+  dim(site_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
   region_vx = split_vector(ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
   region_vy = split_vector(ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
   
-  regions = mcell(parcel_indexes, region_vx, region_vy)   # split land parcel indexes into regions
+  regions = mcell(site_indexes, region_vx, region_vy)   # split land parcel indexes into regions
   
   region_num = length(regions$elements)
   
-  parcels$parcel_indexes = parcel_indexes
+  parcels$site_indexes = site_indexes
   parcels$land_parcel_num = land_parcel_num
   parcels$land_parcels = land_parcels$elements
   parcels$land_parcel_dims = land_parcels$dims
@@ -580,8 +580,8 @@ initialise_index_object <- function(parcels, initial_ecology, global_params, off
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
-  index_object$parcel_indexes = vector('list', 5)
-  names(index_object$parcel_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
+  index_object$site_indexes = vector('list', 5)
+  names(index_object$site_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$indexes_to_use = list()
   
