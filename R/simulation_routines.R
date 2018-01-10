@@ -166,8 +166,10 @@ run_simulation <- function(simulation_outputs, global_params, combination_params
           if (credit_match_object$match_flag == TRUE){
 
             simulation_outputs$current_credit = credit_match_object$current_credit
-            flog.info('developed site with value %s from credit', round(unlist(credit_match_object$development_object$parcel_vals_used), 1))
-            flog.info('remaining %f', unlist(credit_match_object$current_credit))
+            flog.info('developed site %s with value %s from credit, remaining = %s', 
+                      credit_match_object$development_object$site_indexes,
+                      round(unlist(credit_match_object$development_object$parcel_vals_used), 1), 
+                      round(unlist(credit_match_object$current_credit), 1))
 
             simulation_outputs <- perform_clearing_routine(simulation_outputs,
                                                            simulation_outputs$index_object,
@@ -1368,7 +1370,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   if (all(inds_to_use == FALSE)){
     if (match_type == 'development'){
 
-      flog.info('current credit of %s is insufficient to allow development with min of %s', 
+      flog.info('current credit of %s is insufficient to allow development with min loss of %s', 
                 round(unlist(current_credit), 1), round(min(vals_to_test), 1))
     } else {
       flog.info('insufficient offset gains available to allow development')
@@ -1411,7 +1413,6 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   }
 
   if (screen_site_zeros == FALSE){
-    flog.info('developing zero val site')
     match_procedure = 'random'
     site_for_site = 'TRUE'
   }
