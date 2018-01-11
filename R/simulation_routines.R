@@ -1,33 +1,15 @@
-# scenario_ind = 1
-# realisation_ind = 1
-# combination_params = global_params$combination_params_group[[scenario_ind]]
-
-run_offset_simulation_routines <- function(combination_params, global_params, parcels, initial_ecology, 
-                                           dev_weights, offset_weights, scenario_ind, realisation_ind){  
+run_offset_simulation_routines <- function(simulation_inputs, combination_params, global_params, parcels, initial_ecology,
+                                           decline_rates_initial, dev_weights, offset_weights, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
   # list used to govern ecology rate changes
-  decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
-                                                  sample_decline_rate = TRUE, 
-                                                  mean_decline_rates = global_params$mean_decline_rates, 
-                                                  decline_rate_std = global_params$decline_rate_std, 
-                                                  feature_num = global_params$feature_num)       # set up array of decline rates that are eassociated with each cell
-  
   current_data_dir = write_nested_folder(paste0(global_params$output_folder, 
                                                 'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
                                                 '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
-  # set object used to store simulation outputs 
-  simulation_outputs = initialise_output_object(parcels, 
-                                                initial_ecology, 
-                                                global_params, 
-                                                decline_rates_initial, 
-                                                dev_weights, 
-                                                offset_weights)
-  
   flog.info('current data dir is %s', current_data_dir)
   
   # run the model and return outputs
-  simulation_outputs <- run_simulation(simulation_outputs,
+  simulation_outputs <- run_simulation(simulation_inputs,
                                        global_params,
                                        combination_params,
                                        parcels,
@@ -52,7 +34,6 @@ run_offset_simulation_routines <- function(combination_params, global_params, pa
                                          global_params$time_steps)
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
-    
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_data_stack,
                                                         decline_rates_initial, 
@@ -84,9 +65,7 @@ run_offset_simulation_routines <- function(combination_params, global_params, pa
                      offset_yrs = unlist(simulation_outputs$offsets$offset_yrs))
       }
     }
-    
   }
-  
   
   # delete current temporary files and folder
   
@@ -94,7 +73,6 @@ run_offset_simulation_routines <- function(combination_params, global_params, pa
     unlink(current_data_dir, recursive = TRUE)
   }
   
-  return(simulation_outputs)
 }
 
 
