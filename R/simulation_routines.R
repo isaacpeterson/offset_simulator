@@ -194,10 +194,8 @@ run_simulation <- function(simulation_outputs, global_params, combination_params
 
           if (match_object$match_flag == TRUE){
 
-            flog.info(paste('matched development site',
-                      unlist(match_object$development_object$site_indexes),
-                      'with offset sites',
-                      unlist(match_object$offset_object$site_indexes)))
+            flog.info(cat('matched development site', paste(match_object$development_object$site_indexes),
+                      'with offset sites', paste(match_object$offset_object$site_indexes), '\n'))
 
             #update available credit
             simulation_outputs$current_credit = match_object$current_credit

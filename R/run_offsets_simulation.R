@@ -75,7 +75,7 @@ for (scenario_ind in seq_along(params_object$combination_params_group)){
                                                                    scenario_ind,
                                                                    realisation_ind)
             }
-  } else if (params_object$global_params$number_of_cores > 1){
+  } else if ((params_object$global_params$number_of_cores > 1) && (params_object$global_params$realisation_num > 1)){
 
     # case when running NON-DETERMINISTIC realisations in parallel
     foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dopar%{
