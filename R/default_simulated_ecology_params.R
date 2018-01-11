@@ -1,4 +1,4 @@
-initialise_default_simulated_ecology_params <- function(){
+initialise_simulated_ecology_params <- function(){
   
   # Construct the static initial landscape 
   
@@ -8,13 +8,13 @@ initialise_default_simulated_ecology_params <- function(){
   default_simulated_ecology_params$feature_num = 1
   
   # Number of pixels in (y, x) for the feature layes 
-  default_simulated_ecology_params$ecology_size = c(300, 400)
+  default_simulated_ecology_params$ecology_size = c(300, 300)
   
   # Numnber of parcels in x (but total size varies)
   default_simulated_ecology_params$parcel_num_x = 30 
   
   # Numnber of parcels in y (but total size varies)
-  default_simulated_ecology_params$parcel_num_y = 40 
+  default_simulated_ecology_params$parcel_num_y = 30 
   
   #how much the site dimensions should vary
   
