@@ -1359,8 +1359,11 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   if (all(inds_to_use == FALSE)){
     if (match_type == 'development'){
 
-      flog.info('current credit of %s is insufficient to allow development with min loss of %s', 
-                round(unlist(current_credit), 1), round(min(vals_to_test), 1))
+#       flog.info('current credit of %s is insufficient to allow development with min loss of %s', 
+#                 round(unlist(current_credit), 1), round(min(vals_to_test), 1))
+      
+      flog.info(cat('current credit of', paste(current_credit), 'is insufficient to allow development \n'))
+      
     } else {
       flog.info('insufficient offset gains available to allow development')
     }

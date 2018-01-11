@@ -1,25 +1,117 @@
 #generic set of initialisation routines that are called for every simulation
 
-run_initialise_routines <- function(user_global_params = NULL, user_combination_params = NULL){
+run_initialise_routines <- function(user_global_params = NULL, user_combination_params = NULL, user_simulated_ecology_params = NULL){
   #' @import foreach
   #' @import doParallel
   #' @import abind
   #' @import pixmap
+
+  default_global_params = initialise_default_global_params()
+  default_combination_params = initialise_default_combination_params()
+  default_simulated_ecology_params = initialise_default_simulated_ecology_params()
   
+  params_object = list()
   if (!is.null(user_global_params) == TRUE){
-    global_params <- overwrite_current_params(user_params = user_global_params, 
-                                              default_params = initialise_default_global_params())
-    combination_params <- overwrite_current_params(user_params = user_combination_params, 
-                                                   default_params = initialise_default_combination_params())
+    params_object$global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
+    check_global_params(params_object$global_params)
+  } else {
+    params_object$global_params = default_global_params
+  }
+
+  if (!is.null(user_combination_params) == TRUE){  
+    params_object$combination_params <- overwrite_current_params(user_params = user_combination_params, default_params = default_combination_params)
+    check_combination_params(params_object$combination_params)
+  } else{
+    params_object$combination_params = default_combination_params
+  }
+  
+  if (!is.null(user_simulated_ecology_params) == TRUE){  
+    params_object$simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
+  } else {
+    params_object$simulated_ecology_params = default_simulated_ecology_params
   }
   
   # run simulation with identical realisation instantiation
-  if (global_params$set_seed == TRUE){
+  if (params_object$global_params$set_seed == TRUE){
     seed=123
     flog.info('fixing random number seed to %d', 123)
     set.seed(seed)
   }
   
+  params_object <- check_param_conflicts(params_object$global_params, params_object$combination_params, params_object$simulated_ecology_params)
+  
+  params_object$combination_params_group = generate_combination_params_group(params_object$combination_params, 
+                                                               params_object$global_params)
+  
+  params_object$global_params <- write_simulation_folders(params_object$global_params, length(params_object$combination_params_group))
+  
+  # generate simulated ecology
+  if (params_object$global_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                    include.dirs = FALSE, no.. = FALSE)
+    if ( (length(current_filenames) == 0) | (params_object$global_params$run_from_saved == FALSE)){
+      construct_simulated_data(params_object$simulated_ecology_params, 
+                               params_object$global_params$simulation_inputs_folder, 
+                               params_object$global_params$simulation_params_folder, 
+                               params_object$global_params$backup_simulation_inputs)
+    }
+  }
+  
+  params_object$global_params$intervention_vec = generate_intervention_vec(time_steps = params_object$global_params$time_steps,
+                                                          prog_start = params_object$global_params$dev_start,
+                                                          prog_end = params_object$global_params$dev_end,
+                                                          params_object$global_params$total_dev_num,
+                                                          sd = 1)
+  
+  saveRDS(params_object$global_params, paste0(params_object$global_params$simulation_params_folder, 'global_params.rds'))
+  dump('params_object$global_params', paste0(params_object$global_params$simulation_params_folder, 'global_params.R'))
+  combination_params_file = paste0(params_object$global_params$simulation_params_folder, 'combination_params.R')
+  
+  for (scenario_ind in seq_along(params_object$combination_params_group)){
+    current_combination_params = params_object$combination_params_group[[scenario_ind]]
+    file_prefix = paste0(params_object$global_params$simulation_params_folder, 'scenario_',
+                         formatC( scenario_ind, width = 3, format = "d", flag = "0"),
+                         '_combination_params')
+    saveRDS(current_combination_params, paste0(file_prefix, '.rds'))
+    dump('current_combination_params', combination_params_file, append = TRUE)
+  }
+  
+  params_object$global_params <- initialise_cores(params_object$global_params)
+  params_object$global_params$strt = Sys.time()
+
+  return(params_object)
+  
+}
+
+
+check_param_conflicts <- function(global_params, combination_params, simulated_ecology_params){
+  
+  feature_test = match(global_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
+  if (any(is.na(feature_test))){
+    flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
+    stop()
+  } else {
+    global_params$feature_num = length(global_params$features_to_use_in_simulation)   # The total number of features in the simulation
+  }
+  
+  offset_calc_test = match(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
+  if (any(is.na(global_params$features_to_use_in_offset_calc))){
+    flog.error(paste('\n ERROR: global_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
+    stop()
+  } else {
+    global_params$features_to_use_in_offset_calc = offset_calc_test
+  }
+  
+  params_object = list()
+  params_object$global_params = global_params
+  params_object$combination_params = combination_params
+  params_object$simulated_ecology_params = simulated_ecology_params
+  return(params_object)
+}
+
+
+initialise_cores <- function(global_params){
   max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
   
   if (is.character(global_params$number_of_cores)){
@@ -45,66 +137,11 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
     }
   }
   global_params$number_of_cores = current_crs
-
+  
   clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = global_params$number_of_cores processors
   registerDoParallel(clstr)
-  
-  check_combination_params(combination_params)
-  check_global_params(global_params)
-  combination_params_group = generate_combination_params_group(combination_params, global_params)
-  global_params$strt = Sys.time()
-  global_params <- write_simulation_folders(global_params, length(combination_params_group))
-  global_params$feature_num = length(global_params$features_to_use_in_simulation)   # The total number of features in the simulation
-  global_params$intervention_vec = generate_intervention_vec(time_steps = global_params$time_steps,
-                                                          prog_start = global_params$dev_start,
-                                                          prog_end = global_params$dev_end,
-                                                          global_params$total_dev_num,
-                                                          sd = 1)
-  
-  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
-  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
-  combination_params_file = paste0(global_params$simulation_params_folder, 'combination_params.R')
-  
-  for (scenario_ind in seq_along(combination_params_group)){
-    current_combination_params = combination_params_group[[scenario_ind]]
-    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
-                         formatC( scenario_ind, width = 3, format = "d", flag = "0"),
-                         '_combination_params')
-    saveRDS(current_combination_params, paste0(file_prefix, '.rds'))
-    dump('current_combination_params', combination_params_file, append = TRUE)
-  }
-  
-  if (global_params$use_simulated_data == TRUE) {
-    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
-                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                    include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE) ){
-      default_simulated_ecology_params <- initialise_default_simulated_ecology_params()
-      if (global_params$simulated_ecology_user_params_file != 'default'){ 
-        source(global_params$simulated_ecology_user_params_file)
-        user_simulated_ecology_params <- initialise_simulated_ecology_params()
-        simulated_ecology_params <- overwrite_current_params(user_simulated_ecology_params, default_simulated_ecology_params)
-      } else {
-        simulated_ecology_params <- default_simulated_ecology_params
-      }
-      construct_simulated_data(simulated_ecology_params, global_params$simulation_inputs_folder, global_params$simulation_params_folder, global_params$backup_simulation_inputs)
-    }
-  }
-  
-  if (length(intersect(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation))
-      != length(global_params$features_to_use_in_offset_calc)){
-    flog.error(paste('\n ERROR: global_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
-    stop()
-  } else {
-    global_params$features_to_use_in_offset_calc = match(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
-  }
-  
-  params_object = list()
-  params_object$global_params = global_params
-  params_object$combination_params_group = combination_params_group
-  params_object$global_params$clstr = clstr
-  return(params_object)
-  
+  global_params$clstr = clstr
+  return(global_params)
 }
 
 
@@ -155,12 +192,12 @@ check_combination_params <- function(combination_params){
 
 check_global_params <- function(global_params){
   
-  if ( (global_params$landscape_evolve_type == 'dynamic') & (length(global_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
+  if ( (length(global_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
     flog.error(cat('\n decline rates mean parameter does not match feature number'))
     stop()
   }
   
-  if ((global_params$landscape_evolve_type == 'dynamic') & (length(global_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
+  if ( (length(global_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
     stop()
   }
