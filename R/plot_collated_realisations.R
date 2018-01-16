@@ -6,10 +6,10 @@
 #' @export
 #' 
 #' 
-osim.plot <- function(user_plot_params, simulation_folder, loglevel = INFO){
+osim.plot <- function(user_plot_params, simulation_folder, run_number, loglevel = INFO){
   
   if (is.null(user_plot_params)) {
-    flog.error('please provide offsetsim plotting configuration')
+    flog.error('provide plot params file')
     stop()
   } 
     
@@ -19,16 +19,25 @@ osim.plot <- function(user_plot_params, simulation_folder, loglevel = INFO){
   if (!is.null(simulation_folder)){
     base_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
-    base_folder = find_current_run(paste0(getwd(), '/simulated_data/simulation_runs'))
+    base_folder = paste0(getwd(), '/simulated_data/simulation_runs')
   }
   
-  filenames = list.files(path = base_folder, all.files = FALSE,
+  if (!is.null(run_number)){
+    current_run = run_number
+  } else {
+    filenames = list.files(path = base_folder, all.files = FALSE,
                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                          include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
-  current_run = as.numeric(filenames[length(filenames)])
   
+    current_run = as.numeric(filenames[length(filenames)])
+  }
+  
+ 
   base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
-  
+  if (!dir.exists(base_folder)){
+    flog.error('simulation folder does not exist')
+    stop()
+  } 
   collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
   simulation_params_folder = paste0(base_folder, '/simulation_params/')
   

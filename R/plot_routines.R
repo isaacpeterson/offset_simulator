@@ -9,7 +9,6 @@
 # landscape_plot_lims = landscape_outcome_plot_lims_set[[plot_ind]]
 # 
 
-
 plot_outcome_set <- function(collated_realisations, current_combination_params, plot_params, global_params, 
                              realisation_num, plot_ind, feature_ind,  set_to_plot){
 
@@ -165,7 +164,7 @@ check_plot_options <- function(plot_params, global_params, scenario_filenames) {
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
   }
   
-  if (global_params$total_dev_num < plot_params$sets_to_plot){
+  if (global_params$total_dev_num < max(plot_params$sets_to_plot)){
     stop (paste('chosen example set to plot needs to be less than ', global_params$total_dev_num))
   }
   

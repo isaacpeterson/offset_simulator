@@ -47,7 +47,7 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
                                                dev_weights, 
                                                offset_weights)
   
-  flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements and ', 
+  flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
             params_object$global_params$total_dev_num, 
             length(unlist(simulation_inputs$index_object$indexes_to_use$devs)),
             length(unlist(simulation_inputs$index_object$indexes_to_use$offsets)),
