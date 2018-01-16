@@ -20,8 +20,8 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
                                                           land_parcels)
     if (simulated_ecology_params$include_zeros == TRUE){
       
-      zero_site_inds = sample(length(current_simulated_ecology), simulated_ecology_params$zero_site_num)
-      current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) array(0, dim(current_simulated_ecology[[i]])))
+      zero_site_inds = which(runif(length(current_simulated_ecology)) < simulated_ecology_params$zero_site_prob[[eco_ind]])
+      current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_ecology[[i]]))
     }
     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
     
