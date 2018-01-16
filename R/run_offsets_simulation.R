@@ -52,7 +52,6 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
             length(unlist(simulation_inputs$index_object$indexes_to_use$devs)),
             length(unlist(simulation_inputs$index_object$indexes_to_use$offsets)),
             length(parcels$land_parcels),
-            length(parcels$land_parcels),
             parcels$landscape_dims[1], 
             parcels$landscape_dims[2])
   

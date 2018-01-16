@@ -96,7 +96,7 @@ check_param_conflicts <- function(global_params, combination_params, simulated_e
   }
   
   offset_calc_test = match(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
-  if (any(is.na(global_params$features_to_use_in_offset_calc))){
+  if (any(is.na(offset_calc_test))){
     flog.error(paste('\n ERROR: global_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
     stop()
   } else {
