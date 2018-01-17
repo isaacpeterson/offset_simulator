@@ -51,7 +51,7 @@ run_offset_simulation_routines <- function(simulation_inputs, combination_params
     saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_',
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
-    if (feature_ind == 1){
+    if ((realisation_ind == 1) && (feature_ind == 1)){
       mov_folder = paste0(global_params$collated_folder, '/mov_', 
                           formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
       if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
