@@ -1,12 +1,13 @@
 #' Plots the results of the Offset Simulator run
 #' @param user_plot_params user configured plotting parameters to use
 #' @param simulation_folder user configured simulation folder to use
+#' @param run_number
 #' @param loglevel logging level to use, for instance futile.logger::INFO
 #' @import futile.logger
 #' @export
 #' 
 #' 
-osim.plot <- function(user_plot_params, simulation_folder, run_number, loglevel = INFO){
+osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_number = NULL, loglevel = INFO){
   
   if (is.null(user_plot_params)) {
     flog.error('provide plot params file')
