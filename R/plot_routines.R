@@ -126,26 +126,36 @@ plot_impact_set <- function(collated_realisations, current_combination_params, p
   }
   # Plot the program scale impacts
   if (plot_params$plot_program == TRUE){
+  
+    NNL_object <- find_NNL_characteristics(collated_realisations$program_scale_NNL$NNL_mean, 
+                                           collated_realisations$program_scale_impacts$program_total)
     overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
                                           collated_realisations$program_scale_impacts$net_dev_losses,
                                           collated_realisations$program_scale_impacts$program_total),
                          plot_title = 'Program Impact', 
-                         x_lab = paste0('Program ', write_NNL_label(collated_realisations$program_scale_NNL$NNL_mean, 
-                                                                    collated_realisations$program_scale_impacts$program_total)),
+                         x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
                          plot_params$program_lwd_vec, 
                          col_vec = plot_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                          plot_lims = plot_params$program_plot_lims[[plot_ind]])
+    if (length(NNL_object$mean_NNL) >0){
+      abline(v = NNL_object$mean_NNL, lty = 2)
+    }
     
+    dev_yrs = collated_realisations$collated_devs$offset_yrs
+    last_dev_yrs =  lapply(seq_along(dev_yrs), function(i) dev_yrs[[i]][ length(dev_yrs[[i]] )])
+    abline(v = mean(unlist(last_dev_yrs)), lty = 3)
   }
   
   # Plot the landscape scale impacts
   if (plot_params$plot_landscape == TRUE){
+    NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale_NNL$NNL_mean, 
+                                           collated_realisations$landscape$landscape_impact)
     overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
                          plot_title = 'Landscape Impact', 
-                         x_lab = '',
+                         x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
                          plot_params$landscape_lwd_vec, 
                          plot_params$landscape_col,
@@ -154,7 +164,6 @@ plot_impact_set <- function(collated_realisations, current_combination_params, p
                          plot_params$landscape_impact_plot_lims_set[[plot_ind]]) 
   }
 }
-
 
 
 
@@ -188,26 +197,42 @@ check_plot_options <- function(plot_params, global_params, scenario_filenames) {
 }
 
 
+NNL_test <- function(NNL_set, collated_impacts){
+  inds_to_use = which(unlist(lapply(seq_along(NNL_set), function(i) length(NNL_set[[i]]) > 0)))
+  NNL_to_use = NNL_set[inds_to_use]
+  last_vals = lapply(inds_to_use, function(i) collated_impacts[[i]][ length(collated_impacts[[i]]) ])
+  inds_to_reject = which(unlist(last_vals) < 0)
+  if (length(inds_to_reject) > 0){
+    NNL_to_use = NNL_to_use[-inds_to_reject]
+  }
+
+  return(NNL_to_use)
+}
 
 
-write_NNL_label <- function(NNL_yrs, collated_impacts){
 
+find_NNL_characteristics <- function(NNL_set, collated_impacts){
+
+  NNL_to_use <- NNL_test(NNL_set, collated_impacts)
   # get the mean values of the list of vecs
-  means <- Reduce('+', collated_impacts) / length(collated_impacts)
+  mean_collated_impact <- Reduce('+', collated_impacts) / length(collated_impacts)
 
   # get the last elemet of the mean vec
-  last.val <- tail(means, n=1)
+  final_collated_impact <- tail(mean_collated_impact, n=1)
 
-  if (length(unlist(NNL_yrs)) > 0){
-    NNL_label = paste0('NNL at ', round(mean(unlist(NNL_yrs))), ' years')
+  if (length(NNL_to_use) > 0){
+    mean_NNL = round(mean(unlist(NNL_to_use)))
+    NNL_label = paste0(length(unlist(NNL_to_use)), ' realisations achieved NNL at ', mean_NNL, ' years')
   } else {
+    mean_NNL = vector()
     NNL_label = 'All realisations faileld NNL'
   } 
   
+  NNL_object = list()
   # add the last vale of the impact to the plot lable
-  NNL_label <- paste0(NNL_label, ' (', format(last.val, scientific=TRUE, digits=3), ')')
-  
-  return(NNL_label)
+  NNL_object$NNL_label <- cbind(NNL_label, paste0('mean final impact = ', format(final_collated_impact, scientific=TRUE, digits=3)))
+  NNL_object$mean_NNL <- mean_NNL
+  return(NNL_object)
 }
 
 
