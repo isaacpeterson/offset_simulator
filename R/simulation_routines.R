@@ -135,9 +135,10 @@ run_simulation <- function(simulation_outputs, global_params, combination_params
             simulation_outputs$current_credit = credit_match_object$current_credit
             flog.info('developed site %s with value %s from credit, remaining = %s', 
                       credit_match_object$development_object$site_indexes,
-                      round(unlist(credit_match_object$development_object$parcel_vals_used), 1), 
-                      round(unlist(credit_match_object$current_credit), 1))
+                      paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
+                      paste(round(unlist(credit_match_object$current_credit), 1)))
 
+            
             simulation_outputs <- perform_clearing_routine(simulation_outputs,
                                                            simulation_outputs$index_object,
                                                            simulation_outputs$decline_rates,
