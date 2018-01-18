@@ -991,7 +991,8 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, gl
                                      allow_developments_from_credit = current_combination_params$allow_developments_from_credit,
                                      screen_site_zeros = global_params$screen_offset_zeros,
                                      offset_multiplier = current_combination_params$offset_multiplier,
-                                     match_threshold = global_params$match_threshold,
+                                     match_threshold_ratio = global_params$match_threshold_ratio,
+                                     match_threshold_noise = global_params$match_threshold_noise, 
                                      vals_to_match_initial = vals_to_match,
                                      current_combination_params$site_for_site,
                                      features_to_use_in_offset_calc = global_params$features_to_use_in_offset_calc,
@@ -1068,7 +1069,8 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, gl
                                      allow_developments_from_credit = FALSE,
                                      screen_site_zeros = global_params$screen_dev_zeros,
                                      offset_multiplier = current_combination_params$offset_multiplier,
-                                     match_threshold = global_params$match_threshold,
+                                     match_threshold_ratio = global_params$match_threshold_ratio,
+                                     match_threshold_noise = global_params$match_threshold_noise, 
                                      vals_to_match_initial = current_credit,
                                      site_for_site = TRUE,
                                      global_params$features_to_use_in_offset_calc,
@@ -1271,7 +1273,7 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold,
+select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match,
                                  current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros){
 
   pool_object = list()
@@ -1364,15 +1366,15 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 
                
 select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit_to_use, dev_weights, allow_developments_from_credit, screen_site_zeros,
-                             offset_multiplier, match_threshold, vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
+                             offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
 
   ndims = length(features_to_use_in_offset_calc)
-  thresh = array(match_threshold, ndims)         #create an array of threshold values with length equal to the dimensions to match to
   pool_num = length(current_pool)
 
   vals_to_match = offset_multiplier*unlist(vals_to_match_initial[features_to_use_in_offset_calc])
-
-  pool_object <- select_pool_to_match(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match, match_threshold,
+  thresh = array(match_threshold_ratio*vals_to_match + match_threshold_noise)         #create an array of threshold values with length equal to the dimensions to match to
+  
+  pool_object <- select_pool_to_match(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match,
                                       current_pool, allow_developments_from_credit, current_credit_to_use, site_for_site, match_type, screen_site_zeros)
 
   if (pool_object$break_flag == TRUE){
@@ -1448,7 +1450,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   match_object$match_indexes = match_indexes
   match_object$match_vals = match_vals
   match_object$match_flag = match_flag
-  #match_object$current_credit_to_use = -vals_to_match * (abs(vals_to_match) > match_threshold)
+  #match_object$current_credit_to_use = -vals_to_match * (abs(vals_to_match) > match_threshold_ratio)
   match_object$current_credit = as.list(current_credit_to_use)
   match_object$vals_to_match = vals_to_match_initial
 

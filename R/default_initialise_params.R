@@ -111,8 +111,9 @@ initialise_default_global_params <- function(){
   # development losses by this amount are accepted. Negative value means
   # offset value will be accepted that are smaller than dev value by this
   # ammount
-  default_global_params$match_threshold = 0 
+  default_global_params$match_threshold_ratio = 0.01 
   
+  default_global_params$match_noise = 1e-10
   # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
   default_global_params$max_restoration_eco_val = 70
 
