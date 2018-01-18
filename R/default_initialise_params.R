@@ -60,6 +60,8 @@ initialise_default_global_params <- function(){
   # what subset of features to use in the simulation
   default_global_params$features_to_use_in_simulation = 1 
  
+  # what features are affected by the offset intervention
+  default_global_params$features_to_use_in_offset_intervention = default_global_params$features_to_use_in_offset_calc
   # The maxoimum number of parcels can be selected to offset a single development
   default_global_params$max_offset_parcel_num = 10
 
@@ -282,9 +284,7 @@ initialise_default_simulated_ecology_params <- function(){
   # value to sample from
   default_simulated_ecology_params$max_initial_eco_val = 90
   
-  default_simulated_ecology_params$include_zeros = FALSE
-  
-  default_simulated_ecology_params$zero_site_prob = list(0.01)
+  default_simulated_ecology_params$occupation_ratio = list(1)
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45

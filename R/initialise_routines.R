@@ -511,16 +511,7 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 #   return(parcels)
 # }
 
-# initialise_ecology_from_grassland_data <- function(filename, land_parcels, feature_num){
-#   img = read.pnm(file = filename, cellres = 1)
-#   landscape_ecology = list()
-#   img_to_use = img@grey
-#   #   zero_inds = which(img_to_use == 0)
-#   #   img_to_use[zero_inds] = runif(length(zero_inds), 0, 1e-10)
-#   landscape_ecology[[1]] = 100*img_to_use
-#   current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, feature_num)
-#   return(current_ecology)
-# }
+
 
 
 

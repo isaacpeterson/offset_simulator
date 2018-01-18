@@ -18,11 +18,13 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
                                                           simulated_ecology_params$max_initial_eco_val, 
                                                           simulated_ecology_params$initial_eco_noise, 
                                                           land_parcels)
-    if (simulated_ecology_params$include_zeros == TRUE){
-      
-      zero_site_inds = which(runif(length(current_simulated_ecology)) < simulated_ecology_params$zero_site_prob[[eco_ind]])
+    current_occuption_ratio = simulated_ecology_params$occupation_ratio[[eco_ind]]
+    
+    if (current_occuption_ratio > 0){
+      zero_site_inds = which(runif(length(current_simulated_ecology)) > current_occupation_ratio)
       current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_ecology[[i]]))
     }
+    
     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
     
     if (eco_ind == 1){
