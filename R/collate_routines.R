@@ -475,17 +475,17 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                          collated_program$collated_offset_bank, 
                                                          collated_program$collated_illegal_clearing)
   
-  collated_program$site_scale_NNL = assess_NNL(assess_type = 'site_scale', 
+  collated_program$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
                                          impacts = collated_program$site_scale_impacts$net_impacts, 
                                          offset_yrs_to_use = collated_program$collated_offsets$offset_yrs, 
                                          site_indexes = simulation_outputs$index_object$site_indexes$offsets)
   
-  collated_program$program_scale_NNL = assess_NNL(assess_type = 'program', 
+  collated_program$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
                                             impacts = list(collated_program$program_scale_impacts$program_total), 
                                             offset_yrs_to_use = list(1), 
                                             site_indexes = vector())
   
-  collated_program$landscape_scale_NNL = assess_NNL(assess_type = 'landscape', 
+  collated_program$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
                                               impacts = list(collated_program$landscape$landscape_impact), 
                                               offset_yrs_to_use = list(1), 
                                               site_indexes = vector())
@@ -616,17 +616,20 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
 
 
 
-min_catch <- function(a){
-  if (length(a) > 0){
-    min_a = min(a)
-  } else {
-    min_a = vector()
+assess_NNL <- function(current_impacts){
+  potential_NNL <- which(current_impacts > 0)
+  for (NNL_yr in potential_NNL){
+    if (all(current_impacts[NNL_yr:length(current_impacts)] > 0)){
+      return(NNL_yr)
+      break
+    }
   }
-  return(min_a)
+  NNL_yr = vector()
+  return(NNL_yr)
 }
 
 
-assess_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_indexes){
+assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_indexes){
   NNL_object <- list()
   
   if (length(unlist(impacts)) == 0){
@@ -638,7 +641,7 @@ assess_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_indexes){
     offset_yrs_to_use = offset_yrs_to_use[site_indexes_to_use]
   } 
   
-  NNL_absolute = lapply(seq_along(impacts), function(i) min_catch(which(impacts[[i]] > 0)))
+  NNL_absolute = lapply(seq_along(impacts), function(i) assess_NNL(impacts[[i]]) )
   
   NNL_object$NNL = lapply(seq_along(NNL_absolute), function(i) (NNL_absolute[[i]] - offset_yrs_to_use[[i]]))
   NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
