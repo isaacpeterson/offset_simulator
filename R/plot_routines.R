@@ -190,10 +190,10 @@ check_plot_options <- function(plot_params, global_params, scenario_filenames) {
 
 
 
-write_NNL_label <- function(NNL_yrs, NNL_amount){
+write_NNL_label <- function(NNL_yrs, collated_impacts){
 
   # get the mean values of the list of vecs
-  means <- Reduce('+', NNL_amount) / length(NNL_amount)
+  means <- Reduce('+', collated_impacts) / length(collated_impacts)
 
   # get the last elemet of the mean vec
   last.val <- tail(means, n=1)

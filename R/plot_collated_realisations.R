@@ -5,8 +5,7 @@
 #' @param loglevel logging level to use, for instance futile.logger::INFO
 #' @import futile.logger
 #' @export
-#' 
-#' 
+
 osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_number = NULL, loglevel = INFO){
   
   if (is.null(user_plot_params)) {

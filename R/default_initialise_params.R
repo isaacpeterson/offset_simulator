@@ -113,7 +113,7 @@ initialise_default_global_params <- function(){
   # ammount
   default_global_params$match_threshold_ratio = 0.01 
   
-  default_global_params$match_noise = 1e-10
+  default_global_params$match_threshold_noise = 1e-10
   # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
   default_global_params$max_restoration_eco_val = 70
 
