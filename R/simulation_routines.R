@@ -155,7 +155,7 @@ run_simulation <- function(simulation_outputs, global_params, combination_params
         #if insufficient credits accumulated to allow development attempt development with offset match.
 
         if ( (credit_match_object$match_flag == FALSE && current_combination_params$use_parcel_sets == TRUE)){
-          match_object <- match_parcel_set(offset_pool_object = simulation_outputs$offset_pool_object,
+          match_object <- match_sites(offset_pool_object = simulation_outputs$offset_pool_object,
                                            simulation_outputs$current_credit,
                                            dev_weights,
                                            global_params,
@@ -904,7 +904,7 @@ remove_index <- function(object_list, ind_to_remove){
   return(object_list)
 }
 
-match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, global_params, current_combination_params,
+match_sites <- function(offset_pool_object, current_credit, dev_weights, global_params, current_combination_params,
                              intervention_vec, indexes_to_use, current_ecology, decline_rates_initial,
                              land_parcels, yr, time_horizon, region_ind){
   match_object = false_match()
@@ -960,7 +960,6 @@ match_parcel_set <- function(offset_pool_object, current_credit, dev_weights, gl
   
   while( (match_object$match_flag == FALSE) & (length(current_match_pool) > 1) ){   #any potential parcel set match requires a minimum of two sites
     
-
     if (current_combination_params$development_selection_type == 'random'){
       sample_ind = sample(seq_along(current_match_pool), size = 1)
     } else if (current_combination_params$development_selection_type == 'weighted'){
@@ -1274,9 +1273,10 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match,
+select_pool_to_match <- function(features_to_use_in_offset_calc, thresh, pool_num, vals_to_use, vals_to_match,
                                  current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros){
 
+  ndims = length(features_to_use_in_offset_calc)
   pool_object = list()
 
   if (length(unlist(vals_to_use)) > 0){
@@ -1306,7 +1306,7 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
   }
   
   if (length(current_pool) == 0){
-    cat('\nall parcels yield zero assessment')
+    cat('\nall sites yield zero assessment')
     pool_object$break_flag = TRUE
     return(pool_object)
   } 
@@ -1369,13 +1369,22 @@ select_pool_to_match <- function(features_to_use_in_offset_calc, ndims, thresh, 
 select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit_to_use, dev_weights, allow_developments_from_credit, screen_site_zeros,
                              offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
 
-  ndims = length(features_to_use_in_offset_calc)
   pool_num = length(current_pool)
 
   vals_to_match = offset_multiplier*unlist(vals_to_match_initial[features_to_use_in_offset_calc])
-  thresh = array(match_threshold_ratio*vals_to_match + match_threshold_noise)         #create an array of threshold values with length equal to the dimensions to match to
   
-  pool_object <- select_pool_to_match(features_to_use_in_offset_calc, ndims, thresh, pool_num, vals_to_use, vals_to_match,
+  #remove dimension with zero val from offset calc
+  features_to_use_in_offset_calc = which(vals_to_match > 0)
+  vals_to_match = vals_to_match[features_to_use_in_offset_calc]
+  
+  if (length(vals_to_match) == 0){
+    match_object = false_match()
+    return(match_object)
+  }
+  
+  thresh = array(match_threshold_ratio*vals_to_match)         #create an array of threshold values with length equal to the dimensions to match to
+  
+  pool_object <- select_pool_to_match(features_to_use_in_offset_calc, thresh, pool_num, vals_to_use, vals_to_match,
                                       current_pool, allow_developments_from_credit, current_credit_to_use, site_for_site, match_type, screen_site_zeros)
 
   if (pool_object$break_flag == TRUE){
