@@ -198,14 +198,16 @@ check_plot_options <- function(plot_params, global_params, scenario_filenames) {
 
 
 NNL_test <- function(NNL_set, collated_impacts){
+  
   inds_to_use = which(unlist(lapply(seq_along(NNL_set), function(i) length(NNL_set[[i]]) > 0)))
+  
   NNL_to_use = NNL_set[inds_to_use]
   last_vals = lapply(inds_to_use, function(i) collated_impacts[[i]][ length(collated_impacts[[i]]) ])
   inds_to_reject = which(unlist(last_vals) < 0)
   if (length(inds_to_reject) > 0){
     NNL_to_use = NNL_to_use[-inds_to_reject]
   }
-
+  
   return(NNL_to_use)
 }
 

@@ -243,7 +243,7 @@ run_simulation <- function(simulation_outputs, global_params, combination_params
       # update ecology change parameters
       simulation_outputs$decline_rates <- update_decline_rates(simulation_outputs$decline_rates,
                                                                restoration_rate = current_combination_params$restoration_rate,
-                                                               features_to_use_in_offset_calc = global_params$features_to_use_in_offset_calc,
+                                                               features_to_use_in_offset_intervention = global_params$features_to_use_in_offset_intervention,
                                                                feature_num = global_params$feature_num,
                                                                decline_rate_type = 'offset',
                                                                action_type = 'maintain',
@@ -467,7 +467,7 @@ perform_offset_routine <- function(simulation_outputs, index_object, decline_rat
     simulation_outputs$decline_rates <- update_decline_rates(decline_rates,
                                                              restoration_rate_params = global_params$restoration_rate_params,
                                                              sample_restoration_rate = global_params$sample_restoration_rate,
-                                                             features_to_use_in_offset_calc = global_params$features_to_use_in_offset_calc,
+                                                             features_to_use_in_offset_intervention = global_params$features_to_use_in_offset_intervention,
                                                              feature_num = global_params$feature_num,
                                                              decline_rate_type = 'offset',
                                                              action_type = current_combination_params$offset_action_type,
@@ -520,7 +520,7 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
   simulation_outputs$decline_rates <- update_decline_rates(decline_rates,
                                                            restoration_rate_params = vector(),
                                                            sample_restoration_rate = vector(),
-                                                           features_to_use_in_offset_calc = global_params$features_to_use_in_offset_calc,
+                                                           features_to_use_in_offset_intervention = global_params$features_to_use_in_offset_intervention,
                                                            feature_num = global_params$feature_num,
                                                            decline_rate_type = 'development',
                                                            action_type = vector(),
@@ -654,7 +654,7 @@ perform_banking_routine <- function(simulation_outputs, current_combination_para
   simulation_outputs$decline_rates <- update_decline_rates(simulation_outputs$decline_rates,     # set decline rate parameters to offset
                                                            restoration_rate_params = global_params$restoration_rate_params,
                                                            sample_restoration_rate = global_params$sample_restoration_rate,
-                                                           features_to_use_in_offset_calc = global_params$features_to_use_in_offset_calc,
+                                                           features_to_use_in_offset_intervention = global_params$features_to_use_in_offset_intervention,
                                                            feature_num = global_params$feature_num,
                                                            decline_rate_type = 'offset',
                                                            action_type = current_combination_params$offset_action_type,
@@ -1516,8 +1516,9 @@ update_index_object <- function(index_object, update_type, site_indexes, region_
 # update ecology change parameters
 # routine to label offset and development sites - updates decline_rates with 0 entry for developments,
 # and 1/restoration_parameter for maintain/restoration offset. Protection offset leaves decline_rates unaffected
-update_decline_rates <- function(decline_rates, restoration_rate_params, sample_restoration_rate, features_to_use_in_offset_calc, feature_num, decline_rate_type, action_type, site_indexes){
-
+update_decline_rates <- function(decline_rates, restoration_rate_params, sample_restoration_rate, 
+                                 features_to_use_in_offset_intervention, feature_num, decline_rate_type, action_type, site_indexes){
+  
   for (current_parcel_ind in unlist(site_indexes)){
 
     if (decline_rate_type == 'development'){
@@ -1525,14 +1526,14 @@ update_decline_rates <- function(decline_rates, restoration_rate_params, sample_
     } else if (decline_rate_type == 'offset'){
 
       if (action_type == 'maintain'){
-        decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = rep(list(1), length(features_to_use_in_offset_calc))
+        decline_rates[[current_parcel_ind]][features_to_use_in_offset_intervention] = rep(list(1), length(features_to_use_in_offset_intervention))
       } else if (action_type == 'restore'){
         if (sample_restoration_rate == TRUE){
           # spread restoration rates about mean
-          decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = as.list(rnorm(length(features_to_use_in_offset_calc), mean = restoration_rate_params[1], sd = restoration_rate_params[2]))
+          decline_rates[[current_parcel_ind]][features_to_use_in_offset_intervention] = as.list(rnorm(length(features_to_use_in_offset_intervention), mean = restoration_rate_params[1], sd = restoration_rate_params[2]))
         } else{
           # use identical restoration rates for each site
-          decline_rates[[current_parcel_ind]][features_to_use_in_offset_calc] = rep(list(restoration_rate_params[1]), length(features_to_use_in_offset_calc))
+          decline_rates[[current_parcel_ind]][features_to_use_in_offset_intervention] = rep(list(restoration_rate_params[1]), length(features_to_use_in_offset_intervention))
         }
 
       }
