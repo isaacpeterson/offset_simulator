@@ -10,99 +10,89 @@ run_initialise_routines <- function(user_global_params = NULL, user_combination_
   default_combination_params = initialise_default_combination_params()
   default_simulated_ecology_params = initialise_default_simulated_ecology_params()
   
-  params_object = list()
   if (!is.null(user_global_params) == TRUE){
-    params_object$global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
-    check_global_params(params_object$global_params)
+    global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
+    #check_global_params(global_params)
   } else {
-    params_object$global_params = default_global_params
+    global_params = default_global_params
   }
 
   if (!is.null(user_combination_params) == TRUE){  
-    params_object$combination_params <- overwrite_current_params(user_params = user_combination_params, default_params = default_combination_params)
-    check_combination_params(params_object$combination_params)
+    combination_params <- overwrite_current_params(user_params = user_combination_params, default_params = default_combination_params)
+    check_combination_params(combination_params)
   } else{
-    params_object$combination_params = default_combination_params
+    combination_params = default_combination_params
   }
   
   if (!is.null(user_simulated_ecology_params) == TRUE){  
-    params_object$simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
+    simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
   } else {
-    params_object$simulated_ecology_params = default_simulated_ecology_params
+    simulated_ecology_params = default_simulated_ecology_params
   }
   
   # run simulation with identical realisation instantiation
-  if (params_object$global_params$set_seed == TRUE){
+  if (global_params$set_seed == TRUE){
     seed=123
     flog.info('fixing random number seed to %d', 123)
     set.seed(seed)
   }
   
-  params_object <- check_param_conflicts(params_object$global_params, params_object$combination_params, params_object$simulated_ecology_params)
+  #params_object <- check_param_conflicts(global_params, combination_params, simulated_ecology_params)
   
-  params_object$combination_params_group = generate_combination_params_group(params_object$combination_params, 
-                                                               params_object$global_params)
+  combination_params_group = generate_combination_params_group(combination_params)
   
-  params_object$global_params <- write_simulation_folders(params_object$global_params, length(params_object$combination_params_group))
+  global_params <- write_simulation_folders(global_params, length(combination_params_group))
   
   # generate simulated ecology
-  if (params_object$global_params$use_simulated_data == TRUE) {
-    current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
+  if (global_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (params_object$global_params$run_from_saved == FALSE)){
-      construct_simulated_data(params_object$simulated_ecology_params, 
-                               params_object$global_params$simulation_inputs_folder, 
-                               params_object$global_params$simulation_params_folder, 
-                               params_object$global_params$backup_simulation_inputs)
+    if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE)){
+      construct_simulated_data(simulated_ecology_params, 
+                               global_params$simulation_inputs_folder, 
+                               global_params$simulation_params_folder, 
+                               global_params$backup_simulation_inputs)
     }
   }
   
-  params_object$global_params$intervention_vec = generate_intervention_vec(time_steps = params_object$global_params$time_steps,
-                                                          prog_start = params_object$global_params$dev_start,
-                                                          prog_end = params_object$global_params$dev_end,
-                                                          params_object$global_params$total_dev_num,
-                                                          sd = 1)
+  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
+  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
+  combination_params_file = paste0(global_params$simulation_params_folder, 'combination_params.R')
   
-  saveRDS(params_object$global_params, paste0(params_object$global_params$simulation_params_folder, 'global_params.rds'))
-  dump('params_object$global_params', paste0(params_object$global_params$simulation_params_folder, 'global_params.R'))
-  combination_params_file = paste0(params_object$global_params$simulation_params_folder, 'combination_params.R')
-  
-  for (scenario_ind in seq_along(params_object$combination_params_group)){
-    current_combination_params = params_object$combination_params_group[[scenario_ind]]
-    file_prefix = paste0(params_object$global_params$simulation_params_folder, 'scenario_',
+  for (scenario_ind in seq_along(combination_params_group)){
+    current_combination_params = combination_params_group[[scenario_ind]]
+    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
                          formatC( scenario_ind, width = 3, format = "d", flag = "0"),
                          '_combination_params')
     saveRDS(current_combination_params, paste0(file_prefix, '.rds'))
     dump('current_combination_params', combination_params_file, append = TRUE)
   }
   
-  params_object$global_params <- initialise_cores(params_object$global_params)
-  params_object$global_params$strt = Sys.time()
+  global_params <- initialise_cores(global_params)
+  global_params$strt = Sys.time()
 
+  params_object = list()
+  params_object$global_params = global_params
+  params_object$combination_params_group = combination_params_group
   return(params_object)
   
 }
 
 
-check_param_conflicts <- function(global_params, combination_params, simulated_ecology_params){
+check_param_conflicts <- function(combination_params, simulated_ecology_params){
   
-  feature_test = match(global_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
+  feature_test = match(combination_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
   if (any(is.na(feature_test))){
-    flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
+    flog.error(paste('\n ERROR: combination_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
     stop()
-  } else {
-    global_params$feature_num = length(global_params$features_to_use_in_simulation)   # The total number of features in the simulation
-  }
+  } 
   
-  offset_calc_test = match(global_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
+  offset_calc_test = 
   if (any(is.na(offset_calc_test))){
-    flog.error(paste('\n ERROR: global_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
+    flog.error(paste('\n ERROR: combination_params$features_to_use_in_offset_calc does not match combination_params$features_to_use_in_simulation'))
     stop()
-  } else {
-    global_params$features_to_use_in_offset_calc = offset_calc_test
-  }
-  
+  } 
   params_object = list()
   params_object$global_params = global_params
   params_object$combination_params = combination_params
@@ -187,20 +177,16 @@ check_combination_params <- function(combination_params){
   valid_dev_calc_type = c('future_condition', 'current_condition')
   check_current_param(combination_params$dev_calc_type, valid_dev_calc_type)
   
-}
-
-
-check_global_params <- function(global_params){
+#   if ( (length(combination_params$mean_decline_rates) != length(combination_params$features_to_use_in_simulation)) ){
+#     flog.error(cat('\n decline rates mean parameter does not match feature number'))
+#     stop()
+#   }
+#   
+#   if ( (length(combination_params$decline_rate_std) != length(combination_params$features_to_use_in_simulation)) ){
+#     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
+#     stop()
+#   }
   
-  if ( (length(global_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
-    flog.error(cat('\n decline rates mean parameter does not match feature number'))
-    stop()
-  }
-  
-  if ( (length(global_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
-    flog.error(cat('\n decline rates std parameter dpes not match feature number'))
-    stop()
-  }
 }
 
 
@@ -237,7 +223,7 @@ overwrite_current_params <- function(user_params, default_params){
 
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    flog.error( cat('\nERROR: features in global_params$features_to_use do not match initial_ecology_dimensions'))
+    flog.error( cat('\nERROR: features in combination_params$features_to_use do not match initial_ecology_dimensions'))
     stop()
   }
   output_object <- lapply(seq_along(input_object),
@@ -315,16 +301,29 @@ generate_policy_combs <- function(combination_params_group){
 
 
 generate_current_policy <- function(combination_params_group, current_policy_param_inds){
+
   current_policy <- lapply(seq_along(combination_params_group), function(i) combination_params_group[[i]][current_policy_param_inds[i]])
+  list_inds = which(unlist(lapply(seq_along(combination_params_group), function(i) is.list(combination_params_group[[i]][current_policy_param_inds[i]]))))
+  current_policy[list_inds] <- lapply(list_inds, function(i) current_policy[[i]][[1]])
   names(current_policy) <- names(combination_params_group)
+
   return(current_policy)
 }
 
 
-collate_current_policy <- function(current_combination_params, global_params){
+collate_current_policy <- function(current_combination_params){
   
-  current_combination_params$offset_calc_type = current_combination_params$offset_action_params[[1]][1]
-  current_combination_params$offset_action_type = current_combination_params$offset_action_params[[1]][2]
+  if (current_combination_params$use_offset_bank == TRUE){
+    current_combination_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
+  } else {
+    current_combination_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
+  }
+  
+  current_combination_params$feature_num = length(current_combination_params$features_to_use_in_simulation)   # The total number of features in the simulation
+  current_combination_params$features_to_use_in_offset_calc = match(current_combination_params$features_to_use_in_offset_calc, current_combination_params$features_to_use_in_simulation)
+  
+  current_combination_params$offset_calc_type = current_combination_params$offset_action_params[1]
+  current_combination_params$offset_action_type = current_combination_params$offset_action_params[2]
   
   current_combination_params$allow_developments_from_credit = (current_combination_params$allow_developments_from_credit) || (current_combination_params$offset_bank_type == 'credit')
   
@@ -356,7 +355,7 @@ collate_current_policy <- function(current_combination_params, global_params){
   }
   
   if (current_combination_params$use_offset_bank == TRUE){
-    current_combination_params$banked_offset_vec = generate_intervention_vec(time_steps = global_params$time_steps,
+    current_combination_params$banked_offset_vec = generate_intervention_vec(time_steps = combination_params$time_steps,
                                                                           prog_start = current_combination_params$offset_bank_start,
                                                                           prog_end = current_combination_params$offset_bank_end,
                                                                           total_policy_num = current_combination_params$offset_bank_num,
@@ -384,29 +383,31 @@ collate_current_policy <- function(current_combination_params, global_params){
 }
 
 
-generate_combination_params_group <- function(combination_params, global_params){
+generate_combination_params_group <- function(combination_params){
   
   
-  if (combination_params$use_offset_bank == TRUE){
-    combination_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
-  } else {
-    combination_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
-  }
   policy_combs <- generate_policy_combs(combination_params)  #generate all combinations of offset programs
   policy_num = dim(policy_combs)[1] #how many combinations there are in total
   
   combination_params_group = vector('list', policy_num)
   
+  # when the interventions are set to take place
+  intervention_vec = generate_intervention_vec(time_steps = combination_params$time_steps,
+                                                              prog_start = combination_params$dev_start,
+                                                              prog_end = combination_params$dev_end,
+                                                              combination_params$total_dev_num,
+                                                              sd = 1)
   for (policy_ind in seq(policy_num)){
     
     current_policy_param_inds = unlist(policy_combs[policy_ind, ])
     current_policy <- generate_current_policy(combination_params, current_policy_param_inds) #write current policy as a list
+    current_policy$intervention_vec = intervention_vec
     
     if ((policy_ind == 1) & (current_policy$dev_counterfactual_adjustment == 'as_offset')){
       flog.info('using same adjustment of cfacs in development impact calculation as in offset calculation')
     }
     
-    combination_params_group[[policy_ind]] <- collate_current_policy(current_policy, global_params)  #setup flags for cfacs, cfac adjustment etc.
+    combination_params_group[[policy_ind]] <- collate_current_policy(current_policy)  #setup flags for cfacs, cfac adjustment etc.
     
   }
   
@@ -416,7 +417,7 @@ generate_combination_params_group <- function(combination_params, global_params)
 
 
 
-initialise_output_object <- function(parcels, initial_ecology, global_params, decline_rates_initial, dev_weights, offset_weights){
+initialise_output_object <- function(parcels, initial_ecology, combination_params, decline_rates_initial, dev_weights, offset_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -426,11 +427,11 @@ initialise_output_object <- function(parcels, initial_ecology, global_params, de
   output_object$current_ecology = initial_ecology
   output_object$index_object <- initialise_index_object(parcels, 
                                                         initial_ecology, 
-                                                        global_params, 
+                                                        combination_params, 
                                                         offset_indexes_to_exclude = which(unlist(offset_weights) == 0), 
                                                         dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
   
-  output_object$current_credit = list_of_zeros(global_params$feature_num, 1)
+  output_object$current_credit = array(0, length(combination_params$features_to_use_in_offset_calc))
   output_object$decline_rates = decline_rates_initial
   return(output_object)
 }
@@ -521,23 +522,7 @@ raster_to_array <- function(raster_object){
   return(raster_array)
 }
 
-#
-# initialise_ecology_from_hunter_data <- function(data_folder, land_parcels, feature_num){
-#   #veg_raster <- readRDS(paste0(data_folder, 'veg_raster.rds'))
-#   animal_raster <- readRDS(paste0(data_folder, 'animal_raster.rds'))
-#   #species_raster = stack(veg_raster, animal_raster)
-#   landscape_ecology = vector('list', feature_num)
-#
-#   for (eco_ind in seq(feature_num)){
-#     current_species_layer = raster_to_array(subset(animal_raster, eco_ind))/992*100
-#     current_species_layer[current_species_layer == 0] = 1e-10
-#     current_species_layer[current_species_layer == 100] = 100 - 1e-10
-#     landscape_ecology[[eco_ind]] = current_species_layer
-#   }
-#
-#   current_ecology <- split_ecology_to_land_parcels(landscape_ecology, land_parcels, feature_num)
-#   return(current_ecology)
-# }
+
 
 initialise_shape_parcels <- function(ecology_params){
   parcels = list()
@@ -604,7 +589,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(parcels, initial_ecology, global_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(parcels, initial_ecology, combination_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector('list', parcels$region_num)
@@ -617,22 +602,22 @@ initialise_index_object <- function(parcels, initial_ecology, global_params, off
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_ecology, 
-                                                              global_params, 
-                                                              screen_site_zeros = global_params$screen_offset_zeros)
+                                                              combination_params, 
+                                                              screen_site_zeros = combination_params$screen_offset_zeros)
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_ecology, 
-                                                           global_params, 
-                                                           screen_site_zeros = global_params$screen_dev_zeros)
+                                                           combination_params, 
+                                                           screen_site_zeros = combination_params$screen_dev_zeros)
   return(index_object)
   
 }
 
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, global_params, screen_site_zeros){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, combination_params, screen_site_zeros){
   
   if (screen_site_zeros == TRUE){
     
@@ -641,13 +626,13 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
                                                     function(j) sum(initial_ecology[[i]][[j]]) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
-                                           function(i) all(unlist(initial_parcel_sums[[i]][global_params$features_to_use_in_offset_calc]) == 0))))
+                                           function(i) all(unlist(initial_parcel_sums[[i]][combination_params$features_to_use_in_offset_calc]) == 0))))
     indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  if (global_params$screen_sites_by_size == TRUE){
+  if (combination_params$site_screen_size > 0){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-    smalls_to_exclude = which(parcel_lengths < global_params$site_screen_size)
+    smalls_to_exclude = which(parcel_lengths < combination_params$site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   

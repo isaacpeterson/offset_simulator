@@ -28,47 +28,43 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
   # list containing probabilities of sites being developed
   offset_weights <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_weights.rds'))
   
-  # list used to govern ecology rate changes
-  decline_rates_initial <- simulate_decline_rates(parcel_num = length(parcels$land_parcels), 
-                                                  sample_decline_rate = TRUE, 
-                                                  mean_decline_rates = params_object$global_params$mean_decline_rates, 
-                                                  decline_rate_std = params_object$global_params$decline_rate_std, 
-                                                  feature_num = params_object$global_params$feature_num)       # set up array of decline rates that are eassociated with each cell
+  decline_rates_initial <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'decline_rates_initial.rds'))
   
-  # select subset of ecology to use in current simulation 
-  # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
-  initial_ecology <- select_feature_subset(initial_ecology, params_object$global_params$features_to_use_in_simulation)
-  
-  # set object used to store simulation outputs 
-  simulation_inputs = initialise_output_object(parcels, 
-                                               initial_ecology, 
-                                               params_object$global_params, 
-                                               decline_rates_initial, 
-                                               dev_weights, 
-                                               offset_weights)
-  
-  flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
-            params_object$global_params$total_dev_num, 
-            length(unlist(simulation_inputs$index_object$indexes_to_use$devs)),
-            length(unlist(simulation_inputs$index_object$indexes_to_use$offsets)),
-            length(parcels$land_parcels),
-            parcels$landscape_dims[1], 
-            parcels$landscape_dims[2])
-  
-  flog.info('running %s scenarios with %s realisations on %s cores with %s features', 
+  flog.info('running %s scenarios with %s realisations on %s cores', 
             length(params_object$combination_params_group),  
             params_object$global_params$realisation_num,
-            params_object$global_params$number_of_cores, 
-            length(params_object$global_params$features_to_use_in_simulation)) 
-  
+            params_object$global_params$number_of_cores ) 
+
   for (scenario_ind in seq_along(params_object$combination_params_group)){
     
     loop_strt <- Sys.time()
-    flog.info('running scenario %s of %s', 
-              scenario_ind, 
-              length(params_object$combination_params_group))
-    flog.info(paste('running in ', params_object$combination_params_group[[scenario_ind]]$offset_calc_type, 'mode with', 
-                    params_object$combination_params_group[[scenario_ind]]$offset_action_type, 'offsets'))
+    
+    current_combination_params = params_object$combination_params_group[[scenario_ind]]
+    flog.info('running scenario %s of %s',  scenario_ind, length(params_object$combination_params_group))
+    flog.info(paste('running in ', current_combination_params$offset_calc_type, 'mode with', current_combination_params$offset_action_type, 'offsets'))
+    
+    # list used to govern ecology rate changes
+    
+    # select subset of ecology to use in current simulation 
+    # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
+    initial_ecology <- select_feature_subset(initial_ecology, current_combination_params$features_to_use_in_simulation)
+    
+    # set object used to store simulation outputs 
+    simulation_inputs = initialise_output_object(parcels, 
+                                                 initial_ecology, 
+                                                 current_combination_params, 
+                                                 decline_rates_initial, 
+                                                 dev_weights, 
+                                                 offset_weights)
+    
+    flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
+              current_combination_params$total_dev_num, 
+              length(unlist(simulation_inputs$index_object$indexes_to_use$devs)),
+              length(unlist(simulation_inputs$index_object$indexes_to_use$offsets)),
+              length(parcels$land_parcels),
+              parcels$landscape_dims[1], 
+              parcels$landscape_dims[2])
+    
     if (params_object$global_params$number_of_cores > 1 && params_object$global_params$set_seed == TRUE){
       # case when running DETERMINISTIC realisations in parallel
       # doRNG needed to get deterministic foreach loops, dsingh 24/nov/17
@@ -77,7 +73,7 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
       foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dorng%{
         
         run_offset_simulation_routines(simulation_inputs, 
-                                       combination_params = params_object$combination_params_group[[scenario_ind]],
+                                       current_combination_params,
                                        params_object$global_params,
                                        parcels,
                                        initial_ecology,
@@ -93,7 +89,7 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
       foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dopar%{
         
         run_offset_simulation_routines(simulation_inputs, 
-                                       combination_params = params_object$combination_params_group[[scenario_ind]],
+                                       current_combination_params,
                                        params_object$global_params,
                                        parcels,
                                        initial_ecology,
@@ -107,7 +103,7 @@ osim.run <- function(user_global_params = NULL, user_combination_params = NULL, 
       # case when running single realisation
       # bypasses foreach, but could be merged into earlier case of non-determinisitc realisations in parallel, dsingh 24/nov/17
       run_offset_simulation_routines(simulation_inputs, 
-                                     combination_params = params_object$combination_params_group[[scenario_ind]],
+                                     current_combination_params,
                                      params_object$global_params,
                                      parcels,
                                      initial_ecology,

@@ -1,14 +1,14 @@
 #use_cfac_type_in_sim = TRUE
 
 run_collate_routines <- function(simulation_outputs, current_trajectories, decline_rates_initial, initial_ecology, 
-                                 current_data_dir, run_params, policy_params, realisation_ind, feature_ind){
+                                 current_data_dir, combination_params, realisation_ind, feature_ind){
   
     current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
                                                          nested_ind = feature_ind, output_type = 'nested')
     current_initial_ecology = select_nested_subset(nested_object = initial_ecology, 
                                                    nested_ind = feature_ind, output_type = 'nested')
     
-    landscape_cfacs_object = collate_cfacs(run_params, policy_params,
+    landscape_cfacs_object = collate_cfacs(combination_params,
                                            current_parcel_ecologies = current_initial_ecology,
                                            current_decline_rates = current_decline_rates_initial, 
                                            current_offset_yrs = rep(1, length(current_initial_ecology)), 
@@ -20,7 +20,7 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, decli
     
     collated_realisation = collate_program(simulation_outputs, current_trajectories, 
                                             landscape_cfacs_object, current_decline_rates_initial, current_initial_ecology, 
-                                            run_params, policy_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
+                                            combination_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
     
     return(collated_realisation)
   
@@ -169,10 +169,10 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 # collate_type = vector() 
 # use_cfac_type_in_sim = FALSE
 
-collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, current_decline_rates, current_offset_yrs, 
+collate_cfacs <- function(combination_params, current_parcel_ecologies, current_decline_rates, current_offset_yrs, 
                           current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
-  cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, policy_params)
+  cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, combination_params)
   
   parcel_count = length(current_parcel_ecologies)
   
@@ -180,7 +180,7 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
     time_horizons <- generate_time_horizons(project_type = 'future', 
                                             yr = 1, 
                                             offset_yrs = rep(1, parcel_count), 
-                                            time_horizon = (run_params$time_steps - 1), 
+                                            time_horizon = (combination_params$time_steps - 1), 
                                             parcel_count)
     adjust_cfacs_flag = TRUE
     include_potential_developments = FALSE
@@ -189,9 +189,9 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
     
   } else {
     time_horizons = generate_time_horizons(project_type = 'current', 
-                                           yr = run_params$time_steps, 
+                                           yr = combination_params$time_steps, 
                                            offset_yrs = current_offset_yrs, 
-                                           time_horizon = (run_params$time_steps - 1), 
+                                           time_horizon = (combination_params$time_steps - 1), 
                                            parcel_count)
     adjust_cfacs_flag = cfac_params$adjust_cfacs_flag
     include_potential_developments = cfac_params$include_potential_developments
@@ -201,8 +201,7 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
   
   cfacs_object = calc_cfacs(parcel_ecologies = current_parcel_ecologies, 
                             parcel_num_remaining = current_parcel_num_remaining,
-                            run_params,
-                            policy_params,
+                            combination_params,
                             current_decline_rates, 
                             time_horizons, 
                             offset_yrs = current_offset_yrs, 
@@ -210,7 +209,7 @@ collate_cfacs <- function(run_params, policy_params, current_parcel_ecologies, c
                             include_potential_offsets,
                             include_illegal_clearing,
                             adjust_cfacs_flag,
-                            features_to_use = feature_ind)
+                            features_to_project = 1)
   
   if (cfac_type == 'landscape'){
     background_cfacs = lapply(seq_along(cfacs_object$cfacs), function(i) cfacs_object$cfacs[[i]][[1]])    #extract from nested list
@@ -265,14 +264,14 @@ collate_program_scale_impacts <- function(collated_program){
 
 
 run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_decline_rates_initial, 
-                                           collate_type, run_params, policy_params, use_cfac_type_in_sim, feature_ind){
+                                           collate_type, combination_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
   collated_object = collate_gains_degs(current_model_outputs, 
                                        current_trajectories,
                                        current_decline_rates_initial ,
                                        collate_type, 
-                                       run_params, policy_params,
+                                       combination_params,
                                        use_cfac_type_in_sim, 
                                        feature_ind)
   
@@ -314,7 +313,7 @@ group_gains_degs <- function(collated_object, site_indexes){
 
 
 collate_gains_degs <- function(current_model_outputs, current_trajectories, current_decline_rates_initial, 
-                               collate_type, run_params, policy_params, use_cfac_type_in_sim, feature_ind){ 
+                               collate_type, combination_params, use_cfac_type_in_sim, feature_ind){ 
   
   
   if (length(unlist(current_model_outputs$site_indexes)) == 0){
@@ -323,7 +322,7 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
   
   current_parcel_ecologies = select_nested_subset(nested_object = current_model_outputs$parcel_ecologies, nested_ind = feature_ind, output_type = 'nested') 
   
-  current_cfacs = collate_cfacs(run_params, policy_params, 
+  current_cfacs = collate_cfacs(combination_params, 
                                 current_parcel_ecologies,
                                 current_decline_rates = current_decline_rates_initial[unlist(current_model_outputs$site_indexes)], 
                                 current_offset_yrs =  unlist(current_model_outputs$offset_yrs),
@@ -340,8 +339,8 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
                                            parcel_ecologies_to_use,
                                            current_offset_yrs = unlist(current_model_outputs$offset_yrs),
                                            collate_type, 
-                                           policy_params,
-                                           time_steps = run_params$time_steps)
+                                           combination_params,
+                                           time_steps = combination_params$time_steps)
   
   collated_gains_degs$cfacs = lapply(seq_along(current_cfacs$cfacs_to_use), function(i) current_cfacs$cfacs_to_use[[i]][[1]])
   
@@ -357,7 +356,7 @@ merge_vectors <- function(vec_a, vec_b, start_ind){
 }
 
 
-assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologies_to_use, current_offset_yrs, collate_type, policy_params, time_steps){
+assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologies_to_use, current_offset_yrs, collate_type, combination_params, time_steps){
   
   tmp_object = list()
   parcel_num = length(trajectories_to_use)
@@ -376,17 +375,17 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_ecologie
   names(collated_object) = names(tmp_object)
   
   if ((collate_type == 'offsets') | (collate_type == 'offset_bank')){
-    if (policy_params$offset_calc_type == 'restoration_gains'){
+    if (combination_params$offset_calc_type == 'restoration_gains'){
       collated_object$nets = collated_object$rest_gains
-    } else if (policy_params$offset_calc_type == 'avoided_loss'){
+    } else if (combination_params$offset_calc_type == 'avoided_loss'){
       collated_object$nets = collated_object$avoided_loss
-    } else if (policy_params$offset_calc_type == 'net_gains'){
+    } else if (combination_params$offset_calc_type == 'net_gains'){
       collated_object$nets = collated_object$nets
     }
   } else {
-    if (policy_params$dev_calc_type == 'future_condition'){
+    if (combination_params$dev_calc_type == 'future_condition'){
       collated_object$nets = collated_object$nets
-    } else if (policy_params$dev_calc_type == 'current_condition'){
+    } else if (combination_params$dev_calc_type == 'current_condition'){
       collated_object$nets = collated_object$rest_gains
     }
     
@@ -409,7 +408,7 @@ select_nested_subset <- function(nested_object, nested_ind, output_type){
 
 
 collate_program <- function(simulation_outputs, current_trajectories, landscape_cfacs_object, 
-                            current_decline_rates_initial, current_initial_ecology, run_params, policy_params, use_cfac_type_in_sim, parcels, feature_ind){
+                            current_decline_rates_initial, current_initial_ecology, combination_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_program = list()
   
@@ -418,7 +417,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                       current_trajectories, 
                                                                       current_decline_rates_initial, 
                                                                       collate_type = 'offsets', 
-                                                                      run_params, policy_params,
+                                                                      combination_params,
                                                                       use_cfac_type_in_sim, 
                                                                       feature_ind)
   
@@ -427,7 +426,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                   current_trajectories, 
                                                                   current_decline_rates_initial, 
                                                                   collate_type = 'devs', 
-                                                                  run_params, policy_params,
+                                                                  combination_params,
                                                                   use_cfac_type_in_sim, 
                                                                   feature_ind)
   
@@ -436,7 +435,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                         current_trajectories, 
                                                                         current_decline_rates_initial, 
                                                                         collate_type = 'dev_credit', 
-                                                                        run_params, policy_params,
+                                                                        combination_params,
                                                                         use_cfac_type_in_sim, 
                                                                         feature_ind)
   
@@ -445,7 +444,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                          current_trajectories, 
                                                                          current_decline_rates_initial, 
                                                                          collate_type = 'offset_bank', 
-                                                                         run_params, policy_params,
+                                                                         combination_params,
                                                                          use_cfac_type_in_sim, 
                                                                          feature_ind)
   
@@ -454,7 +453,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                               current_trajectories, 
                                                                               current_decline_rates_initial, 
                                                                               collate_type = 'illegal_clearing', 
-                                                                              run_params, policy_params,
+                                                                              combination_params,
                                                                               use_cfac_type_in_sim, 
                                                                               feature_ind)
   
@@ -502,6 +501,13 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
 }
 
 
+# offset_yrs = collated_realisations$collated_offsets$offset_yrs
+# offset_sites_used = lapply(seq_along(offset_yrs), function(i) length(offset_yrs[[i]]))
+# dev_sites_used = lapply(seq_along(dev_yrs), function(i) length(dev_yrs[[i]]))
+# net_sites_used = sum_lists(offset_sites_used, dev_sites_used)
+# lapply(seq_along(net_sites_used), function(i) net_sites_used[[i]] > length(parcels$land_parcels))
+
+
 find_sites_used <- function(collated_program){
   sites_used = list()
   sites_used$offset_sites = find_current_sites_used(collated_program$collated_offsets$site_indexes)
@@ -541,44 +547,44 @@ collate_site_scale_impacts <- function(collated_site_scale_offsets, collated_sit
   return(site_scale_impacts)
 }
 
-get_current_sim_characteristics <- function(current_policy_params, realisation_num){
+get_current_sim_characteristics <- function(current_combination_params, realisation_num){
   
   sim_characteristics = vector()
-  sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_calc_type, '_')
-  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_policy_params$use_offset_bank, '_')
-  if ((current_policy_params$use_offset_time_horizon == TRUE) & (current_policy_params$use_offset_bank == FALSE)){                                   
-    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_policy_params$offset_time_horizon)
+  sim_characteristics = paste0(sim_characteristics, current_combination_params$offset_calc_type, '_')
+  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_combination_params$use_offset_bank, '_')
+  if ((current_combination_params$use_offset_time_horizon == TRUE) & (current_combination_params$use_offset_bank == FALSE)){                                   
+    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_combination_params$offset_time_horizon)
   }
-  sim_characteristics = paste0(sim_characteristics, '_include_illegal_clearing_', current_policy_params$include_illegal_clearing_in_offset_calc)
+  sim_characteristics = paste0(sim_characteristics, '_include_illegal_clearing_', current_combination_params$include_illegal_clearing_in_offset_calc)
   
   sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
-  #   sim_characteristics = paste0(current_policy_params$offset_calc_type, '_', current_policy_params$dev_calc_type, '_', current_policy_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                current_policy_params$use_offset_bank, '_')
+  #   sim_characteristics = paste0(current_combination_params$offset_calc_type, '_', current_combination_params$dev_calc_type, '_', current_combination_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
+  #                                current_combination_params$use_offset_bank, '_')
   #   
-  #   if (current_policy_params$use_offset_bank == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$offset_bank_start, '_', current_policy_params$offset_bank_end, '_', 
-  #                                  current_policy_params$offset_bank_num, '_', current_policy_params$match_type)
+  #   if (current_combination_params$use_offset_bank == TRUE){                                   
+  #     sim_characteristics = paste0(sim_characteristics, current_combination_params$offset_bank_start, '_', current_combination_params$offset_bank_end, '_', 
+  #                                  current_combination_params$offset_bank_num, '_', current_combination_params$match_type)
   #   }
   #   
-  #   sim_characteristics = paste0(sim_characteristics, '_', current_policy_params$offset_action_type, '_')
-  #   if (current_policy_params$offset_action_type == 'restore'){
-  #     sim_characteristics = paste0(sim_characteristics, current_policy_params$restoration_rate, '_')
+  #   sim_characteristics = paste0(sim_characteristics, '_', current_combination_params$offset_action_type, '_')
+  #   if (current_combination_params$offset_action_type == 'restore'){
+  #     sim_characteristics = paste0(sim_characteristics, current_combination_params$restoration_rate, '_')
   #   }
   #   
-  #   if (current_policy_params$use_offset_time_horizon == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_policy_params$offset_time_horizon)
+  #   if (current_combination_params$use_offset_time_horizon == TRUE){                                   
+  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_combination_params$offset_time_horizon)
   #   }
   
   
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_policy_params$include_potential_developments_in_offset_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_combination_params$include_potential_developments_in_offset_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_policy_params$include_potential_offsets_in_offset_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_combination_params$include_potential_offsets_in_offset_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_illegal_clearing_', current_policy_params$include_illegal_clearing_in_dev_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_illegal_clearing_', current_combination_params$include_illegal_clearing_in_dev_calc)
   
-  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_policy_params$include_potential_developments_in_dev_calc)
+  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_combination_params$include_potential_developments_in_dev_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_policy_params$include_potential_offsets_in_dev_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_combination_params$include_potential_offsets_in_dev_calc)
   
   
   return(sim_characteristics)
@@ -664,7 +670,7 @@ assess_landscape_loss <- function(landscape_vals, NNL_yr){
 }
 
 
-select_cfac_type <- function(collate_type, use_cfac_type_in_sim, policy_params){
+select_cfac_type <- function(collate_type, use_cfac_type_in_sim, combination_params){
   cfac_params = list()
   
   if (use_cfac_type_in_sim == FALSE){
@@ -675,15 +681,15 @@ select_cfac_type <- function(collate_type, use_cfac_type_in_sim, policy_params){
   } else {
     
     if ((collate_type == 'devs') | (collate_type == 'dev_credit')){
-      include_illegal_clearing = policy_params$include_illegal_clearing_in_dev_calc
-      include_potential_developments = policy_params$include_potential_developments_in_dev_calc
-      include_potential_offsets = policy_params$include_potential_offsets_in_dev_calc
-      adjust_cfacs_flag = policy_params$adjust_dev_cfacs_flag
+      include_illegal_clearing = combination_params$include_illegal_clearing_in_dev_calc
+      include_potential_developments = combination_params$include_potential_developments_in_dev_calc
+      include_potential_offsets = combination_params$include_potential_offsets_in_dev_calc
+      adjust_cfacs_flag = combination_params$adjust_dev_cfacs_flag
     } else {
-      include_illegal_clearing = policy_params$include_illegal_clearing_in_offset_calc
-      include_potential_developments = policy_params$include_potential_developments_in_offset_calc
-      include_potential_offsets = policy_params$include_potential_offsets_in_offset_calc
-      adjust_cfacs_flag = policy_params$adjust_offset_cfacs_flag
+      include_illegal_clearing = combination_params$include_illegal_clearing_in_offset_calc
+      include_potential_developments = combination_params$include_potential_developments_in_offset_calc
+      include_potential_offsets = combination_params$include_potential_offsets_in_offset_calc
+      adjust_cfacs_flag = combination_params$adjust_offset_cfacs_flag
     }
   }
   cfac_params$include_illegal_clearing = include_illegal_clearing
@@ -709,7 +715,6 @@ sum_cols <- function(array_to_sum){
   }
   return(summed_array)
 }
-
 
 
 threshold_array <- function(arr_in, thresh_level){

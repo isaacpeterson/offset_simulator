@@ -1,6 +1,9 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
   
+  # set the random number seed
+  default_global_params$set_seed = FALSE
+  
   default_global_params$user_simulated_ecology_params_file = 'default'  # path to file
   
   default_global_params$overwrite_default_params = TRUE
@@ -19,23 +22,6 @@ initialise_default_global_params <- function(){
   # Specify how many cores to run on. Default setting here it to use all available
   default_global_params$number_of_cores = 'all'
 
-  # hHw long to run the simulaton in years
-  default_global_params$time_steps = 50
-  
-  # The time step at which development starts
-  default_global_params$dev_start = 1
-  
-  # The time at which development ends
-  default_global_params$dev_end = 50
-  
-  # The total number of parcel that will be developed. The number of
-  # developments per time step is determined as follows: First the mean number
-  # number per time step is determined, then sampling is done around this
-  # mean number using a normal distribution such that the total number of
-  # developments will always equal the total number (Note sd for this
-  # distribution is set in the code the currently isn't user settable)
-  default_global_params$total_dev_num = 5
-  
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
   # Setting to fale saves a lot of space
@@ -54,79 +40,6 @@ initialise_default_global_params <- function(){
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
   default_global_params$write_offset_layer = FALSE
   
-  # The total number of layers to use in the offset calcuation (iterating from the start)
-  default_global_params$features_to_use_in_offset_calc = 1
-
-  # what subset of features to use in the simulation
-  default_global_params$features_to_use_in_simulation = 1 
- 
-  # what features are affected by the offset intervention
-  default_global_params$features_to_use_in_offset_intervention = default_global_params$features_to_use_in_offset_calc
-  # The maxoimum number of parcels can be selected to offset a single development
-  default_global_params$max_offset_parcel_num = 10
-
-  # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
-  default_global_params$sample_restoration_rate = FALSE
-
-  # Sample the decline rates from a normal distribution to they vary per parcel and per feature
-  default_global_params$sample_decline_rate = FALSE
-
-  # Stops the offset from delivering any further gains once it has acheived the gains required
-  default_global_params$limit_offset_restoration = TRUE
-
-    # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
-  default_global_params$illegal_clearing_prob = 1e-3
-
-  default_global_params$landscape_evolve_type = 'dynamic'
-  
-  default_global_params$rescale_ecology_to_feature_subset = TRUE
-  
-  # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_global_params$decline_rate_std
-  default_global_params$mean_decline_rates = rep(list(-1e-2), length(default_global_params$features_to_use_in_simulation)) 
-  
-  #set this parameter to zero to yield no noise
-  default_global_params$decline_rate_std = rep(list(1e-3), length(default_global_params$features_to_use_in_simulation))
-
-  # Lowest value that the logistic decline curve can reach. It will asypotote to this value
-  default_global_params$min_eco_val = 0  
-  
-  # Max value that the logistic decline curve can reach. It will asypotote to this value
-  default_global_params$max_eco_val = 100 
-  
-  # use number of elements to determine what sites are used in program
-  default_global_params$screen_sites_by_size = FALSE 
-  
-  #ignore offset sites with zero value
-  default_global_params$screen_offset_zeros = TRUE
-  
-  # ignore development sites with zero value
-  default_global_params$screen_dev_zeros = TRUE
-  
-  # ignore parcels with size below this number of elements 
-  default_global_params$site_screen_size = 0 
-
-  # set the random number seed
-  default_global_params$set_seed = FALSE
-  
-  # Acceptable level above which to accept parcel match for offset and
-  # development calcs. Positive value means offset gains greater than
-  # development losses by this amount are accepted. Negative value means
-  # offset value will be accepted that are smaller than dev value by this
-  # ammount
-  default_global_params$match_threshold_ratio = 0.01 
-  
-  default_global_params$match_threshold_noise = 1e-10
-  # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
-  default_global_params$max_restoration_eco_val = 70
-
-  # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
-  default_global_params$restoration_rate_params = c(0.02, 0.005)
-
-  default_global_params$apply_offset_exclusion_layer = TRUE
-  default_global_params$offset_exclusion_layer_filename = 'protected_areas.rds'
-  default_global_params$apply_development_exclusion_layer = TRUE
-  default_global_params$dev_exclusion_layer_filename = 'protected_areas.rds'
-  
   return(default_global_params)
 }
 
@@ -144,6 +57,71 @@ initialise_default_combination_params <- function(){
 
     default_combination_params = list()
 
+    # how long to run the simulaton in years
+    default_combination_params$time_steps = 50
+    
+    # The time step at which development starts
+    default_combination_params$dev_start = 1
+    
+    # The time at which development ends
+    default_combination_params$dev_end = 50
+    
+    # The total number of parcel that will be developed. The number of
+    # developments per time step is determined as follows: First the mean number
+    # number per time step is determined, then sampling is done around this
+    # mean number using a normal distribution such that the total number of
+    # developments will always equal the total number (Note sd for this
+    # distribution is set in the code the currently isn't user settable)
+    default_combination_params$total_dev_num = 5
+    
+    # what subset of features to use in the simulation
+    default_combination_params$features_to_use_in_simulation = 1 
+    
+    # The total number of layers to use in the offset calcuation (iterating from the start)
+    default_combination_params$features_to_use_in_offset_calc = 1
+    
+    # what features are affected by the offset intervention
+    default_combination_params$features_to_use_in_offset_intervention = default_combination_params$features_to_use_in_offset_calc
+    # The maxoimum number of parcels can be selected to offset a single development
+    
+    default_combination_params$max_offset_parcel_num = 10
+    
+    # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
+    default_combination_params$sample_restoration_rate = FALSE
+    
+    # Sample the decline rates from a normal distribution to they vary per parcel and per feature
+    default_combination_params$sample_decline_rate = FALSE
+    
+    # Stops the offset from delivering any further gains once it has acheived the gains required
+    default_combination_params$limit_offset_restoration = TRUE
+    
+    # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
+    default_combination_params$illegal_clearing_prob = 1e-3
+    
+    # Lowest value that the logistic decline curve can reach. It will asypotote to this value
+    default_combination_params$min_eco_val = 0  
+    
+    # Max value that the logistic decline curve can reach. It will asypotote to this value
+    default_combination_params$max_eco_val = 100 
+    
+    #ignore offset sites with zero value
+    default_combination_params$screen_offset_zeros = TRUE
+    
+    # ignore development sites with zero value
+    default_combination_params$screen_dev_zeros = TRUE
+    
+    # ignore parcels with size below this number of elements 
+    default_combination_params$site_screen_size = 0 
+    
+    default_combination_params$match_threshold_ratio = 0.01 
+    
+    default_combination_params$match_threshold_noise = 1e-10
+    # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
+    default_combination_params$max_restoration_eco_val = 70
+    
+    # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
+    default_combination_params$restoration_rate_params = list(c(0.02, 0.005))
+    
   # The Options are 'restoration_gains' - the gains are calculated relative to
   # the site value at the time of the intervention above  - forces offsets to restore sites
   # 'avoided_condition_decline - the gains are calculated relative to the biodiversity
@@ -153,9 +131,7 @@ initialise_default_combination_params <- function(){
   # 'current_condition_protect' is the present condition of the site assuming the site is protected
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
-  
   default_combination_params$offset_action_params = list(c('net_gains', 'restore'))
-  
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
@@ -207,7 +183,6 @@ initialise_default_combination_params <- function(){
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_combination_params$offset_time_horizon = c(15)
 
-
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
@@ -233,12 +208,14 @@ initialise_default_combination_params <- function(){
   # to the impact of the development. This reduces the development impact because
   # projected future value of the site is lower if there is some probability
   # the site may be developed in the future
+  
   # default_combination_params$include_potential_developments_in_dev_calc = c(FALSE)
 
   # Include illegal clearing in the calculating the contribution of avoided
   # losses to the impact of the development. This reduces the development
   # impact because projected future value of the site is lower if there is
   # some probability the site may be illegally developed in the future
+  
   # default_combination_params$include_illegal_clearing_in_dev_calc = default_combination_params$include_illegal_clearing_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
@@ -263,6 +240,12 @@ initialise_default_simulated_ecology_params <- function(){
   
   #how many feature layers to generate
   default_simulated_ecology_params$feature_num = 1
+  
+  # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_combination_params$decline_rate_std
+  default_simulated_ecology_params$mean_decline_rates = list(rep(list(-1e-2), length(default_simulated_ecology_params$features_to_use_in_simulation)) )
+  
+  #set this parameter to zero to yield no noise
+  default_simulated_ecology_params$decline_rate_std = list(rep(list(1e-3), length(default_simulated_ecology_params$features_to_use_in_simulation)))
   
   # Number of pixels in (y, x) for the feature layes 
   default_simulated_ecology_params$ecology_size = c(300, 300)

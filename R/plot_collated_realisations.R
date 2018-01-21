@@ -89,14 +89,12 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     global_params = readRDS(global_params_filename)
   }
   
-  
-
-  
   # get the names of all the files containing the results
   scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_combination_params', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
-  check_plot_options(plot_params, global_params, scenario_filenames)
+  
+  # check_plot_options(plot_params, global_params, scenario_filenames)
   
   if (!file.exists(output_plot_folder)){
     flog.info('creating output plot folder %s', output_plot_folder)
@@ -133,7 +131,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
       
       collated_filenames = find_collated_files(file_path = collated_folder,
                                                scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
-                                               feature_string = formatC(global_params$features_to_use_in_simulation[feature_ind],
+                                               feature_string = formatC(current_combination_params$features_to_use_in_simulation[feature_ind],
                                                                         width = plot_params$string_width, format = "d", flag = "0"),
                                                plot_params$realisation_num)
       

@@ -18,9 +18,9 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
                                                           simulated_ecology_params$max_initial_eco_val, 
                                                           simulated_ecology_params$initial_eco_noise, 
                                                           land_parcels)
-    current_occuption_ratio = simulated_ecology_params$occupation_ratio[[eco_ind]]
+    current_occupation_ratio = simulated_ecology_params$occupation_ratio[[eco_ind]]
     
-    if (current_occuption_ratio > 0){
+    if (current_occupation_ratio > 0){
       zero_site_inds = which(runif(length(current_simulated_ecology)) > current_occupation_ratio)
       current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_ecology[[i]]))
     }
@@ -97,8 +97,14 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
   objects_to_save$parcels <- LGA_to_parcel_list(objects_to_save$LGA_array)
   objects_to_save$parcel_ecology <- simulate_ecology(objects_to_save$simulated_ecology_params, land_parcels = objects_to_save$parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
-  objects_to_save$dev_weights = list(1/length(objects_to_save$parcel_ecology), length(objects_to_save$parcel_ecology)) 
+  objects_to_save$dev_weights = rep(list(1/length(objects_to_save$parcel_ecology)), length(objects_to_save$parcel_ecology))
   objects_to_save$offset_weights = objects_to_save$dev_weights
+  
+  objects_to_save$decline_rates_initial <- simulate_decline_rates(parcel_num = length(objects_to_save$parcels$land_parcels), 
+                                                  sample_decline_rate = TRUE, 
+                                                  mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
+                                                  decline_rate_std = simulated_ecology_params$decline_rate_std, 
+                                                  feature_num = simulated_ecology_params$feature_num)       # set up array of decline rates that are eassociated with each cell
   
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
 
