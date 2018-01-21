@@ -12,10 +12,10 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     flog.error('provide plot params file')
     stop()
   } 
-    
+  
   plot_params = overwrite_current_params(user_plot_params, 
                                          default_params = initialise_default_plot_params())
-    
+  
   if (!is.null(simulation_folder)){
     base_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
@@ -26,13 +26,13 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     current_run = run_number
   } else {
     filenames = list.files(path = base_folder, all.files = FALSE,
-                         full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                         include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
-  
+                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                           include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
+    
     current_run = as.numeric(filenames[length(filenames)])
   }
   
- 
+  
   base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
   if (!dir.exists(base_folder)){
     flog.error('simulation folder does not exist')
@@ -64,18 +64,18 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   # write plots to nx * ny subplots
   setup_sub_plots(plot_params$nx, plot_params$ny, x_space = 5, y_space = 5)
   
-  if (plot_params$output_type == 'scenarios'){
-    feature_ind = 1
-    set_to_plot = plot_params$sets_to_plot
-  } else if (plot_params$output_type == 'features'){
-    scenario_ind = 1
-    set_to_plot = plot_params$sets_to_plot
-  } else if (plot_params$output_type == 'site_sets'){
-    scenario_ind = 1
-    feature_ind = 1
-    plot_params$plot_program = FALSE
-    plot_params$plot_landscape = FALSE
-  }
+  #   if (plot_params$output_type == 'scenarios'){
+  #     feature_ind = 1
+  #     set_to_plot = plot_params$sets_to_plot
+  #   } else if (plot_params$output_type == 'features'){
+  #     scenario_ind = 1
+  #     set_to_plot = plot_params$sets_to_plot
+  #   } else if (plot_params$output_type == 'site_sets'){
+  #     scenario_ind = 1
+  #     feature_ind = 1
+  #     plot_params$plot_program = FALSE
+  #     plot_params$plot_landscape = FALSE
+  #   }
   
   
   global_params_filename <- paste0(simulation_params_folder, '/global_params.rds')
@@ -101,24 +101,26 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     dir.create(output_plot_folder)
   }
   
-  for (plot_ind in seq_along(plot_params$plot_vec)){
+  for (scenario_ind in seq_along(plot_params$plot_vec)){
+    
     flog.info('_________________________________')
-    if (plot_params$output_type == 'features'){
-      feature_ind = plot_params$plot_vec[plot_ind]
-    } else if (plot_params$output_type == 'scenarios'){
-      scenario_ind = plot_params$plot_vec[plot_ind]
-    } else if (plot_params$output_type == 'site_sets'){
-      set_to_plot = plot_params$plot_vec[plot_ind]
-    }
-    toRead = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
-    flog.trace('reading %s', toRead)
-    current_simulation_params = readRDS(toRead)
+    #     if (plot_params$output_type == 'features'){
+    #       feature_ind = plot_params$plot_vec[scenario_ind]
+    #     } else if (plot_params$output_type == 'scenarios'){
+    #       scenario_ind = plot_params$plot_vec[scenario_ind]
+    #     } else if (plot_params$output_type == 'site_sets'){
+    #       set_to_plot = plot_params$plot_vec[scenario_ind]
+    #     }
+    
+    file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
+    flog.trace('reading %s', file_to_Read)
+    current_simulation_params = readRDS(file_to_Read)
     
     if (!is.na(match('all', plot_params$plot_subset_type))){
       plot_flag = TRUE
     } else {
       param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
-    
+      
       if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
         plot_flag = TRUE 
       } else {
@@ -126,49 +128,49 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
       }
       
     }
-    if (plot_flag == TRUE){
-      flog.info(' generating plot %d of type: %s', plot_ind, plot_params$plot_type)  
-      
-      collated_filenames = find_collated_files(file_path = collated_folder,
-                                               scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
-                                               feature_string = formatC(current_simulation_params$features_to_use_in_simulation[feature_ind],
-                                                                        width = plot_params$string_width, format = "d", flag = "0"),
-                                               plot_params$realisation_num)
-      
-      collated_realisations = bind_collated_realisations(collated_filenames)
-      
-      
-      
-      if (plot_params$plot_type == 'impacts'){
-        plot_impact_set(collated_realisations,
-                        current_simulation_params,
-                        plot_params,
-                        global_params,
-                        realisation_num = collated_realisations$realisation_num,
-                        plot_ind,
-                        feature_ind,
-                        set_to_plot)
-      } else if (plot_params$plot_type == 'outcomes'){
-        plot_outcome_set(collated_realisations,
-                         current_simulation_params,
-                         plot_params,
-                         global_params,
-                         realisation_num = collated_realisations$realisation_num,
-                         plot_ind,
-                         feature_ind,
-                         set_to_plot)
-        
-      }
-      
-      #flog.info(' finished writing plot %d', plot_ind)
+    
+    if (plot_flag == FALSE){
+        flog.info(' skipping plot %d', scenario_ind )
     } else {
-      flog.info(' skipping plot %d', plot_ind )
+      flog.info(' generating plot %d of type: %s', scenario_ind, plot_params$plot_type)  
+      
+      feature_num = length(current_simulation_params$features_to_use_in_simulation)
+      
+      for (feature_ind in seq(feature_num)){
+        collated_filenames = find_collated_files(file_path = collated_folder,
+                                                 scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
+                                                 feature_string = formatC(feature_ind, width = plot_params$string_width, format = "d", flag = "0"),
+                                                 plot_params$realisation_num)
+        
+        collated_realisations = bind_collated_realisations(collated_filenames)
+        
+        if (plot_params$plot_type == 'impacts'){
+          plot_impact_set(collated_realisations,
+                          current_simulation_params,
+                          plot_params,
+                          global_params,
+                          realisation_num = collated_realisations$realisation_num,
+                          scenario_ind,
+                          feature_ind,
+                          plot_params$sets_to_plot)
+        } else if (plot_params$plot_type == 'outcomes'){
+          plot_outcome_set(collated_realisations,
+                           current_simulation_params,
+                           plot_params,
+                           global_params,
+                           realisation_num = collated_realisations$realisation_num,
+                           scenario_ind,
+                           feature_ind,
+                           plot_params$sets_to_plot)
+          
+        }
+        
+        #flog.info(' finished writing plot %d', scenario_ind)
+      } 
+      
     }
     
-    
-    
   }
-  
   
   # Close the pdf file for reading
   if (plot_params$write_pdf == TRUE) {

@@ -664,7 +664,9 @@ assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_in
 
 assess_landscape_loss <- function(landscape_vals, NNL_yr){
   landscape_loss = list()
-  landscape_loss$NNL_loss = 1 - landscape_vals[NNL_yr]/landscape_vals[1]
+  if (length(NNL_yr)>0){
+    landscape_loss$NNL_loss = 1 - landscape_vals[NNL_yr]/landscape_vals[1]
+  }
   landscape_loss$total_loss = 1 - landscape_vals[length(landscape_vals)]/landscape_vals[1]
   return(landscape_loss)
 }
