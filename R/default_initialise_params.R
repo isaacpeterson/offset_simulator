@@ -45,7 +45,7 @@ initialise_default_global_params <- function(){
 
 
 
-initialise_default_combination_params <- function(){ 
+initialise_default_simulation_params <- function(){ 
 
   # Parameters controlling offset policy settings. Note that any of these
   # parameters can take an arbitrary number of values, and the code will then
@@ -55,16 +55,16 @@ initialise_default_combination_params <- function(){
   # 'scenario'. There caution should be used when specifying multiple values
   # as it's easy to create a large number scenarios.
 
-    default_combination_params = list()
+    default_simulation_params = list()
 
     # how long to run the simulaton in years
-    default_combination_params$time_steps = 50
+    default_simulation_params$time_steps = 50
     
     # The time step at which development starts
-    default_combination_params$dev_start = 1
+    default_simulation_params$dev_start = 1
     
     # The time at which development ends
-    default_combination_params$dev_end = 50
+    default_simulation_params$dev_end = 50
     
     # The total number of parcel that will be developed. The number of
     # developments per time step is determined as follows: First the mean number
@@ -72,55 +72,56 @@ initialise_default_combination_params <- function(){
     # mean number using a normal distribution such that the total number of
     # developments will always equal the total number (Note sd for this
     # distribution is set in the code the currently isn't user settable)
-    default_combination_params$total_dev_num = 5
+    default_simulation_params$total_dev_num = 5
     
     # what subset of features to use in the simulation
-    default_combination_params$features_to_use_in_simulation = 1 
+    default_simulation_params$features_to_use_in_simulation = 1 
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
-    default_combination_params$features_to_use_in_offset_calc = 1
+    default_simulation_params$features_to_use_in_offset_calc = 1
     
     # what features are affected by the offset intervention
-    default_combination_params$features_to_use_in_offset_intervention = default_combination_params$features_to_use_in_offset_calc
+    default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
     # The maxoimum number of parcels can be selected to offset a single development
     
-    default_combination_params$max_offset_parcel_num = 10
+    default_simulation_params$max_offset_parcel_num = 10
     
     # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
-    default_combination_params$sample_restoration_rate = FALSE
+    default_simulation_params$sample_restoration_rate = FALSE
     
     # Sample the decline rates from a normal distribution to they vary per parcel and per feature
-    default_combination_params$sample_decline_rate = FALSE
+    default_simulation_params$sample_decline_rate = FALSE
     
     # Stops the offset from delivering any further gains once it has acheived the gains required
-    default_combination_params$limit_offset_restoration = TRUE
+    default_simulation_params$limit_offset_restoration = TRUE
     
     # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
-    default_combination_params$illegal_clearing_prob = 1e-3
+    default_simulation_params$illegal_clearing_prob = 1e-3
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
-    default_combination_params$min_eco_val = 0  
+    default_simulation_params$min_eco_val = 0  
     
     # Max value that the logistic decline curve can reach. It will asypotote to this value
-    default_combination_params$max_eco_val = 100 
+    default_simulation_params$max_eco_val = 100 
     
     #ignore offset sites with zero value
-    default_combination_params$screen_offset_zeros = TRUE
+    default_simulation_params$screen_offset_zeros = TRUE
     
     # ignore development sites with zero value
-    default_combination_params$screen_dev_zeros = TRUE
+    default_simulation_params$screen_dev_zeros = TRUE
     
     # ignore parcels with size below this number of elements 
-    default_combination_params$site_screen_size = 0 
+    default_simulation_params$site_screen_size = 0 
     
-    default_combination_params$match_threshold_ratio = 0.01 
+    default_simulation_params$match_threshold_ratio = 0.01 
     
-    default_combination_params$match_threshold_noise = 1e-10
+    default_simulation_params$match_threshold_noise = 1e-10
     # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
-    default_combination_params$max_restoration_eco_val = 70
+    default_simulation_params$max_restoration_eco_val = 70
     
     # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
-    default_combination_params$restoration_rate_params = list(c(0.02, 0.005))
+    default_simulation_params$restoration_rate = 0.02
+    default_simulation_params$restoration_rate_std = 0.005
     
   # The Options are 'restoration_gains' - the gains are calculated relative to
   # the site value at the time of the intervention above  - forces offsets to restore sites
@@ -131,33 +132,33 @@ initialise_default_combination_params <- function(){
   # 'current_condition_protect' is the present condition of the site assuming the site is protected
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
-  default_combination_params$offset_action_params = list(c('net_gains', 'restore'))
+  default_simulation_params$offset_action_params = c('net_gains', 'restore')
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
   # 'future_condition' - is the do nothing trjectory of the development site.
-  default_combination_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
+  default_simulation_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
 
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
-  default_combination_params$allow_developments_from_credit = TRUE
+  default_simulation_params$allow_developments_from_credit = TRUE
   
   # How the development parcels are selected options are 'random' or
   # 'weighted'. Note tha weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
-  default_combination_params$development_selection_type = 'random'  
+  default_simulation_params$development_selection_type = 'random'  
 
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
-  default_combination_params$use_offset_bank = c(FALSE)
+  default_simulation_params$use_offset_bank = c(FALSE)
 
   # The time at which the offset in the bank offsets are first are implemented and start acurring grains, 
-  default_combination_params$offset_bank_start = 1 
+  default_simulation_params$offset_bank_start = 1 
 
   # The time at which no more offsets are added to the bank. The number of
   # offsets per time step is determined as follows: First the mean number
@@ -165,71 +166,71 @@ initialise_default_combination_params <- function(){
   # mean number using a normal distribution such that the total number of
   # developments will always equal the total number (Note sd for this
   # distribution is set in the code the currently isn't user settable)
-  default_combination_params$offset_bank_end = 1 
+  default_simulation_params$offset_bank_end = 1 
 
   # THe number parcels to include in banking scheme. These are randomly selected.
-  default_combination_params$offset_bank_num = 200 
+  default_simulation_params$offset_bank_num = 200 
 
   # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
-  default_combination_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
+  default_simulation_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
   
   # TRUE - one-to-one selection of offset parcels for one development, FALSE =
   # many-to-one selection of offset parcels for one development
-  default_combination_params$site_for_site = c(FALSE)
+  default_simulation_params$site_for_site = c(FALSE)
 
   # The time horizon in which the offset gains need to equal the devlopment impact
-  default_combination_params$offset_time_horizon = c(15)
+  default_simulation_params$offset_time_horizon = c(15)
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_combination_params$include_potential_developments_in_offset_calc = c(FALSE)
+  default_simulation_params$include_potential_developments_in_offset_calc = c(FALSE)
 
   # Include future illegal developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_combination_params$include_illegal_clearing_in_offset_calc = c(FALSE)
+  default_simulation_params$include_illegal_clearing_in_offset_calc = c(FALSE)
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
   # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
-  default_combination_params$include_potential_offsets_in_offset_calc = c(FALSE)
+  default_simulation_params$include_potential_offsets_in_offset_calc = c(FALSE)
 
   # include ability to set the counterfactual adjustment (include/exclude illegal clearing, 
   # potential developments, and potential offsets) to be the same as the offset calculations or independent
   # settings are 'as_offset' or 'independent_to_offset'
   
-  default_combination_params$dev_counterfactual_adjustment = 'as_offset' 
+  default_simulation_params$dev_counterfactual_adjustment = 'as_offset' 
   
   # Include future developments in calculating contribution of avoided losses
   # to the impact of the development. This reduces the development impact because
   # projected future value of the site is lower if there is some probability
   # the site may be developed in the future
   
-  # default_combination_params$include_potential_developments_in_dev_calc = c(FALSE)
+  # default_simulation_params$include_potential_developments_in_dev_calc = c(FALSE)
 
   # Include illegal clearing in the calculating the contribution of avoided
   # losses to the impact of the development. This reduces the development
   # impact because projected future value of the site is lower if there is
   # some probability the site may be illegally developed in the future
   
-  # default_combination_params$include_illegal_clearing_in_dev_calc = default_combination_params$include_illegal_clearing_in_offset_calc
+  # default_simulation_params$include_illegal_clearing_in_dev_calc = default_simulation_params$include_illegal_clearing_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
   # future gains are avoided
   
-  # default_combination_params$include_potential_offsets_in_dev_calc = c(FALSE)
+  # default_simulation_params$include_potential_offsets_in_dev_calc = c(FALSE)
   
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
-  default_combination_params$offset_multiplier = 1
+  default_simulation_params$offset_multiplier = 1
 
-  return(default_combination_params)
+  return(default_simulation_params)
 }
 
 initialise_default_simulated_ecology_params <- function(){
@@ -241,7 +242,7 @@ initialise_default_simulated_ecology_params <- function(){
   #how many feature layers to generate
   default_simulated_ecology_params$feature_num = 1
   
-  # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_combination_params$decline_rate_std
+  # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_simulation_params$decline_rate_std
   default_simulated_ecology_params$mean_decline_rates = list(rep(list(-1e-2), length(default_simulated_ecology_params$features_to_use_in_simulation)) )
   
   #set this parameter to zero to yield no noise
