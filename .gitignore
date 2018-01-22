@@ -3,7 +3,7 @@ initialise_params.R
 .Rapp.history
 .RData
 .DS_Store
-user_params/
+user_files/
 simulation_routines_update.R
 user_examples/simulated/simulated_data/
 user_examples/grasslands

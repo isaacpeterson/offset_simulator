@@ -153,11 +153,16 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-check_simulation_params <- function(simulation_params){
+check_simulation_params <- function(simulation_params, decline_rates_initial){
   
   offset_action_set = simulation_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
+  
+  if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
+    flog.error('restoration parameter set below decline rate')
+    stop()
+  }
   
   for (offset_action_ind in seq_along(offset_action_set)){
     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]

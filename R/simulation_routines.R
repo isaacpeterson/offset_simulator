@@ -1647,6 +1647,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     }
 
   }
+  
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
 
   return(pool_object)

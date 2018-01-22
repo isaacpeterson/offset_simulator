@@ -1,5 +1,5 @@
 ^\.travis\.yml$
-^user_params/
+^user_files/
 ^user_examples/
 ^.*\.Rproj$
 ^\.RData$
