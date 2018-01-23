@@ -10,7 +10,7 @@
 # 
 
 plot_outcome_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, 
-                             realisation_num, plot_ind, feature_ind,  set_to_plot){
+                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
   if (plot_params$plot_site == TRUE){
     plot_site_outcomes(collated_realisations, 
@@ -19,7 +19,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                        plot_params$output_type, 
                        current_simulation_params, 
                        set_to_plot, 
-                       plot_params$site_outcome_plot_lims_set[[plot_ind]], 
+                       site_plot_lims, 
                        feature_ind,  
                        plot_params$site_outcome_lwd_vec)
   }
@@ -30,7 +30,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   plot_type = 'program', 
                   enforce_limits = TRUE, 
                   include_legend = FALSE, 
-                  y_lims = plot_params$program_outcome_plot_lims_set[[plot_ind]] ,
+                  y_lims = program_plot_lims ,
                   plot_title = 'Program Outcome', 
                   loss_stats = collated_realisations$net_program_loss, 
                   collated_realisations$realisation_num, 
@@ -46,7 +46,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   plot_type = 'landscape', 
                   enforce_limits = TRUE, 
                   include_legend = FALSE, 
-                  y_lims = plot_params$landscape_outcome_plot_lims_set[[plot_ind]],
+                  y_lims =landscape_plot_lims,
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
@@ -104,7 +104,8 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 }
 
 
-plot_impact_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, realisation_num, plot_ind, feature_ind, set_to_plot){
+plot_impact_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, realisation_num, 
+                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, set_to_plot){
   
   # Plot the site scale impacts
   if (plot_params$plot_site == TRUE){
@@ -116,10 +117,10 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          plot_params$output_type,
                          current_simulation_params,
                          realisation_ind = 1, 
-                         current_simulation_params$features_to_use_in_simulation[feature_ind], 
+                         current_feature, 
                          plot_from_impact_yr = FALSE, 
                          set_to_plot,
-                         plot_params$site_impact_plot_lims_set[[plot_ind]],
+                         site_plot_lims,
                          current_simulation_params$time_steps, 
                          plot_params$site_impact_col_vec, 
                          plot_params$site_impact_lwd)
@@ -139,7 +140,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          col_vec = plot_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-                         plot_lims = plot_params$program_plot_lims[[plot_ind]])
+                         plot_lims = program_plot_lims)
     if (length(NNL_object$mean_NNL) >0){
       abline(v = NNL_object$mean_NNL, lty = 2)
     }
@@ -167,7 +168,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          plot_params$landscape_col,
                          legend_loc = 'topright',
                          legend_vec = 'NA', 
-                         plot_params$landscape_impact_plot_lims_set[[plot_ind]]) 
+                         landscape_plot_lims) 
   }
 }
 

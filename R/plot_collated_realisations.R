@@ -106,7 +106,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   } else {
     scenario_vec = plot_params$scenario_vec
   }
-  for (scenario_ind in scenario_vec){
+  for (scenario_ind in seq(scenario_vec)){
     
     flog.info('_________________________________')
     #     if (plot_params$output_type == 'features'){
@@ -150,22 +150,35 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
         collated_realisations = bind_collated_realisations(collated_filenames)
         
         if (plot_params$plot_type == 'impacts'){
+          site_plot_lims = plot_params$site_impact_plot_lims_set[[feature_ind]]
+          program_plot_lims = plot_params$program_impact_plot_lims_set[[feature_ind]]
+          landscape_plot_lims = plot_params$landscape_impact_plot_lims_set[[feature_ind]]
+          
           plot_impact_set(collated_realisations,
                           current_simulation_params,
                           plot_params,
                           global_params,
                           realisation_num = collated_realisations$realisation_num,
-                          scenario_ind,
-                          feature_ind,
+                          site_plot_lims, 
+                          program_plot_lims,
+                          landscape_plot_lims,
+                          current_simulation_params$features_to_use_in_simulation[feature_ind],
                           plot_params$sets_to_plot)
         } else if (plot_params$plot_type == 'outcomes'){
+          
+          site_plot_lims = plot_params$site_outcome_plot_lims_set[[feature_ind]]
+          program_plot_lims = plot_params$program_outcome_plot_lims_set[[feature_ind]]
+          landscape_plot_lims = plot_params$landscape_outcome_plot_lims_set[[feature_ind]]
+          
           plot_outcome_set(collated_realisations,
                            current_simulation_params,
                            plot_params,
                            global_params,
                            realisation_num = collated_realisations$realisation_num,
-                           scenario_ind,
-                           feature_ind,
+                           site_plot_lims, 
+                           program_plot_lims,
+                           landscape_plot_lims,
+                           current_simulation_params$features_to_use_in_simulation[feature_ind],
                            plot_params$sets_to_plot)
           
         }
