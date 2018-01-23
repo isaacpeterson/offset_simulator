@@ -232,6 +232,9 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                         yr)
 
       # update ecology change parameters
+      if (!(current_simulation_params$offset_action_tye == 'protect')){
+        action_type = 'maintain'
+        
       simulation_outputs$decline_rates <- update_decline_rates(simulation_outputs$decline_rates,
                                                                restoration_rate = current_simulation_params$restoration_rate,
                                                                restoration_rate_std = current_simulation_params$restoration_rate_std,
