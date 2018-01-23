@@ -238,7 +238,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                                features_to_use_in_offset_intervention = current_simulation_params$features_to_use_in_offset_intervention,
                                                                feature_num = current_simulation_params$feature_num,
                                                                decline_rate_type = 'offset',
-                                                               action_type = 'maintain',
+                                                               action_type = 'protect',
                                                                site_indexes = assessed_parcel_sets_object$site_success_inds)
     }
 

@@ -101,15 +101,20 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     dir.create(output_plot_folder)
   }
   
-  for (scenario_ind in seq_along(plot_params$plot_vec)){
+  if (plot_params$scenario_vec == 'all'){
+    scenario_vec = length(scenario_filenames)
+  } else {
+    scenario_vec = plot_params$scenario_vec
+  }
+  for (scenario_ind in scenario_vec){
     
     flog.info('_________________________________')
     #     if (plot_params$output_type == 'features'){
-    #       feature_ind = plot_params$plot_vec[scenario_ind]
+    #       feature_ind = plot_params$scenario_vec[scenario_ind]
     #     } else if (plot_params$output_type == 'scenarios'){
-    #       scenario_ind = plot_params$plot_vec[scenario_ind]
+    #       scenario_ind = plot_params$scenario_vec[scenario_ind]
     #     } else if (plot_params$output_type == 'site_sets'){
-    #       set_to_plot = plot_params$plot_vec[scenario_ind]
+    #       set_to_plot = plot_params$scenario_vec[scenario_ind]
     #     }
     
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])

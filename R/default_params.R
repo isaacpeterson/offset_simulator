@@ -292,7 +292,7 @@ initialise_default_plot_params <- function(base_folder){
   default_plot_params$realisation_num = 'all' # 'all' or number to plot
   default_plot_params$write_pdf = FALSE
   default_plot_params$sets_to_plot = 1 # example site to plot
-  default_plot_params$plot_vec = 1 #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
+  default_plot_params$scenario_vec = 'all' #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
   default_plot_params$site_impact_col_vec = c('darkgreen', 'red', 'black')
   default_plot_params$program_col_vec = c('darkgreen', 'red', 'black') 
   default_plot_params$cfac_col = 'blue' 
@@ -319,13 +319,13 @@ initialise_default_plot_params <- function(base_folder){
   default_plot_params$nx = 3 
   default_plot_params$ny = 4
   
-  default_plot_params$site_outcome_plot_lims_set = rep(list(c(0, 3e4)), length(default_plot_params$plot_vec))
-  default_plot_params$program_outcome_plot_lims_set = rep(list(c(0e6, 1e7)), length(default_plot_params$plot_vec))
-  default_plot_params$landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(default_plot_params$plot_vec))
+  default_plot_params$site_outcome_plot_lims_set = rep(list(c(0, 3e4)), length(default_plot_params$scenario_vec))
+  default_plot_params$program_outcome_plot_lims_set = rep(list(c(0e6, 1e7)), length(default_plot_params$scenario_vec))
+  default_plot_params$landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(default_plot_params$scenario_vec))
   
-  default_plot_params$site_impact_plot_lims_set = rep(list(c(-1e3, 1e3)), length(default_plot_params$plot_vec))
-  default_plot_params$program_impact_plot_lims_set = rep(list(c(-1e6, 1e6)), length(default_plot_params$plot_vec)) 
-  default_plot_params$landscape_impact_plot_lims_set = rep(list(c(-1e6, 0)), length(default_plot_params$plot_vec))
+  default_plot_params$site_impact_plot_lims_set = rep(list(c(-1e3, 1e3)), length(default_plot_params$scenario_vec))
+  default_plot_params$program_impact_plot_lims_set = rep(list(c(-1e6, 1e6)), length(default_plot_params$scenario_vec)) 
+  default_plot_params$landscape_impact_plot_lims_set = rep(list(c(-1e6, 0)), length(default_plot_params$scenario_vec))
   
   return(default_plot_params)
 }
