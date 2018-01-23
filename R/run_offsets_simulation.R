@@ -40,8 +40,11 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     loop_strt <- Sys.time()
     
     current_simulation_params = params_object$simulation_params_group[[scenario_ind]]
-    flog.info('running scenario %s of %s',  scenario_ind, length(params_object$simulation_params_group))
-    flog.info(paste('running in ', current_simulation_params$offset_calc_type, 'mode with', current_simulation_params$offset_action_type, 'offsets'))
+    flog.info('running scenario %s of %s in %s mode with %s offsets',  
+              scenario_ind, 
+              length(params_object$simulation_params_group), 
+              current_simulation_params$offset_calc_type, 
+              current_simulation_params$offset_action_type)
     
     # list used to govern ecology rate changes
     
