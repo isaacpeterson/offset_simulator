@@ -19,7 +19,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   if (!is.null(simulation_folder)){
     base_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
-    base_folder = 'simulation_runs'
+    base_folder = 'simulation_runs/'
   }
   
   if (!is.null(run_number)){
