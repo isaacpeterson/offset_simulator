@@ -1,3 +1,4 @@
+#' @export 
 write_folder <- function(current_folder){
   if (!file.exists(current_folder)){
     dir.create(current_folder)
@@ -5,7 +6,7 @@ write_folder <- function(current_folder){
   return(current_folder)
 }
 
-
+#' @export
 scale_ecology <- function(landscape_ecology, max_eco_val, landscape_dims){
   
   scaled_landscape_ecology <- list_of_zeros(length(landscape_ecology), landscape_dims) 
@@ -19,6 +20,7 @@ scale_ecology <- function(landscape_ecology, max_eco_val, landscape_dims){
   return(scaled_landscape_ecology)
 }
 
+#' @export
 shp_to_raster <- function(shp, raster_dims){
   r <- raster(ncol=raster_dims[2], nrow=raster_dims[1])
   extent(r) <- extent(shp)
@@ -26,7 +28,7 @@ shp_to_raster <- function(shp, raster_dims){
   return(raster_object)
 }
 
-
+#' @export
 load_rasters <- function(current_data_path, current_filenames, layer_num){
   if (layer_num == 'all'){
     layer_num = length(current_filenames)
@@ -44,21 +46,21 @@ load_rasters <- function(current_data_path, current_filenames, layer_num){
   
 }
 
-
+#' @export
 raster_to_array <- function(raster_object){
   raster_array = as.matrix(raster_object, ncol = ncol(raster_object))
   raster_array[is.na(raster_array)] = 0
   return(raster_array)
 }
 
-
+#' @export
 read_pnm_layer <- function(filename){
   img = read.pnm(file = filename, cellres = 1)
   array_to_use = img@grey
   return(array_to_use)
 }
 
-
+#' @export
 save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
   write_nested_folder(simulation_inputs_folder)
   filenames_to_save = names(objects_to_save)
@@ -67,7 +69,7 @@ save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
   }
 }
 
-
+#' @export
 split_ecology <- function(landscape_ecology, land_parcels){
   current_ecology = lapply(seq_along(land_parcels), 
                            function(i) lapply(seq_along(landscape_ecology), 
@@ -75,6 +77,7 @@ split_ecology <- function(landscape_ecology, land_parcels){
   return(current_ecology)
 }
 
+#' @export
 generate_nested_list <- function(outer_dim, inner_dim){
   if (outer_dim > 0){
     nested_list <- vector('list', outer_dim)
@@ -87,7 +90,7 @@ generate_nested_list <- function(outer_dim, inner_dim){
   return(nested_list)
 }
 
-
+#' @export
 LGA_to_parcel_list <- function(LGA_array){
 
   site_group_vals = unique(as.vector(LGA_array))

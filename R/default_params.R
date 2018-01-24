@@ -268,7 +268,9 @@ initialise_default_simulated_ecology_params <- function(){
   # value to sample from
   default_simulated_ecology_params$max_initial_eco_val = 90
   
+  # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
   default_simulated_ecology_params$occupation_ratio = list(1)
+  
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45
