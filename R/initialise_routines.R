@@ -266,9 +266,15 @@ find_current_run <- function(base_run_folder){
 }
 
 write_simulation_folders <- function(global_params, scenario_num){
-  simulation_folder = write_nested_folder(global_params$simulation_folder)
-  simulation_inputs_folder = write_folder(paste0(global_params$simulation_folder, '/simulation_inputs/'))
-  base_run_folder = paste0(global_params$simulation_folder, '/simulation_runs/')
+  
+  if (global_params$simulation_folder != 'default'){
+    simulation_folder = write_nested_folder(global_params$simulation_folder)
+    simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
+    base_run_folder = paste0(simulation_folder, '/simulation_runs/')
+  } else {
+    simulation_inputs_folder = 'simulation_inputs/'
+    base_run_folder = 'simulation_runs/'
+  }
   
   current_run = find_current_run(base_run_folder)
   
