@@ -463,7 +463,7 @@ initialise_trajectories <- function(feature_num, land_parcels, time_steps){
 
 parcel_set_list_names <- function(){
   list_names = c("site_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
-                 "restoration_vals", "cfac_vals", "region_ind")
+                 "restoration_vals", "cfac_vals")
   return(list_names)
 }
 
@@ -654,15 +654,12 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
 }
 
 screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_num){
-  
-  for (region_ind in seq_len(region_num)){
-    current_region = indexes_to_use[[region_ind]]
-    inds_to_remove = which(current_region %in% indexes_to_exclude)
+
+    inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
-      indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
+      indexes_to_use = indexes_to_use[-inds_to_remove]
     }
-  }
-  
+
   return(indexes_to_use)
 }
 
