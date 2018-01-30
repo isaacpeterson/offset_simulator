@@ -49,8 +49,9 @@ initialise_default_simulation_params <- function(){
 
   # Parameters controlling offset policy settings. Note that any of these
   # parameters can take an arbitrary number of values, and the code will then
-  # every combination of parameter values over all these variables. For
-  # example  x=(a,b); y=(c,d) will then run the model with x=a y=c, x=a y=d,
+  # every combination of parameter values over all these variables. To do this the user
+  # must pass the variable combinations in as a list structure 
+  # example  x=list(a,b); y=list(c,d) will then run the model with x=a y=c, x=a y=d,
   # x=b y=c, x=b y=d. Each of these combinations will be designated a
   # 'scenario'. There caution should be used when specifying multiple values
   # as it's easy to create a large number scenarios.
@@ -138,7 +139,7 @@ initialise_default_simulation_params <- function(){
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
   # 'future_condition' - is the do nothing trjectory of the development site.
-  default_simulation_params$dev_calc_type = c('future_condition')    #'future_condition', 'current_condition' 
+  default_simulation_params$dev_calc_type = 'future_condition'    #'future_condition', 'current_condition' 
 
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
@@ -155,7 +156,7 @@ initialise_default_simulation_params <- function(){
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
-  default_simulation_params$use_offset_bank = c(FALSE)
+  default_simulation_params$use_offset_bank = FALSE
 
   # The time at which the offset in the bank offsets are first are implemented and start acurring grains, 
   default_simulation_params$offset_bank_start = 1 
@@ -175,29 +176,29 @@ initialise_default_simulation_params <- function(){
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
-  default_simulation_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
+  default_simulation_params$offset_bank_type = 'credit'     
   
   # TRUE - one-to-one selection of offset parcels for one development, FALSE =
   # many-to-one selection of offset parcels for one development
-  default_simulation_params$site_for_site = c(FALSE)
+  default_simulation_params$site_for_site = FALSE
 
   # The time horizon in which the offset gains need to equal the devlopment impact
-  default_simulation_params$offset_time_horizon = c(15)
+  default_simulation_params$offset_time_horizon = 15
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_potential_developments_in_offset_calc = c(FALSE)
+  default_simulation_params$include_potential_developments_in_offset_calc = FALSE
 
   # Include future illegal developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_illegal_clearing_in_offset_calc = c(FALSE)
+  default_simulation_params$include_illegal_clearing_in_offset_calc = FALSE
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
   # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
-  default_simulation_params$include_potential_offsets_in_offset_calc = c(FALSE)
+  default_simulation_params$include_potential_offsets_in_offset_calc = FALSE
 
   # include ability to set the counterfactual adjustment (include/exclude illegal clearing, 
   # potential developments, and potential offsets) to be the same as the offset calculations or independent
@@ -210,7 +211,7 @@ initialise_default_simulation_params <- function(){
   # projected future value of the site is lower if there is some probability
   # the site may be developed in the future
   
-  # default_simulation_params$include_potential_developments_in_dev_calc = c(FALSE)
+  # default_simulation_params$include_potential_developments_in_dev_calc = FALSE
 
   # Include illegal clearing in the calculating the contribution of avoided
   # losses to the impact of the development. This reduces the development
@@ -223,7 +224,7 @@ initialise_default_simulation_params <- function(){
   # impact of the development. This increases the impact of the development as
   # future gains are avoided
   
-  # default_simulation_params$include_potential_offsets_in_dev_calc = c(FALSE)
+  # default_simulation_params$include_potential_offsets_in_dev_calc = FALSE
   
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
