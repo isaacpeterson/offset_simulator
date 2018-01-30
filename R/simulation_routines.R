@@ -263,6 +263,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
 # development and offset intervention. List length is determined by how many sites and list depth is determined by
 # how many features are currently in use
 
+#' @export 
 simulate_decline_rates <- function(parcel_num, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
   
   
