@@ -407,7 +407,7 @@ perform_illegal_clearing <- function(current_ecology, index_object, yr, current_
   illegally_cleared_object <- record_current_parcel_set(current_ecology[inds_to_clear],
                                                         inds_to_clear,
                                                         parcel_num_remaining,
-                                                        yr 
+                                                        yr)
   
   # record characteristics of illegally cleared site
   illegally_cleared_object <- assess_current_pool(pool_object = illegally_cleared_object,

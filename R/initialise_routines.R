@@ -490,42 +490,6 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
   vec
 }
 
-#
-#
-# initialise_parcels_from_data <- function(data_folder, data_type){
-#
-#   if (data_type == 'grassland'){
-#     filename = paste0(data_folder, 'planning.units.uid_20ha.pgm')
-#     img = read.pnm(file = filename, cellres = 1)
-#     parcel_array = img@grey
-#   } else if (data_type == 'hunter'){
-#     parcels_raster <- readRDS(paste0(data_folder, 'parcels_raster.rds'))
-#     LGA_raster <- readRDS(paste0(data_folder, 'LGA_raster.rds'))
-#     parcels_mask_raster <- readRDS(paste0(data_folder, 'parcels_mask_raster.rds'))
-#     parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
-#     parcel_array[is.na(parcel_array)] = 0
-#   }
-#
-#   land_index_vals = unique(as.vector(parcel_array))
-#   landscape_dims = dim(parcel_array)
-#   land_parcels <- lapply(seq_along(land_index_vals), function(i) which(parcel_array == land_index_vals[i]))
-#   regions = list()
-#   regions[[1]] = seq_len(length(land_parcels))
-#   region_num = length(regions)
-#   parcels = list()
-#   parcels$landscape_dims = landscape_dims
-#   parcels$site_indexes = seq_along(land_parcels)
-#   parcels$land_parcel_num = length(land_parcels)
-#   parcels$land_parcels = land_parcels
-#   parcels$regions = regions
-#   parcels$region_num = region_num
-#   parcels$parcel_array = parcel_array
-#
-#   return(parcels)
-# }
-
-
-
 
 
 raster_to_array <- function(raster_object){
@@ -550,20 +514,10 @@ initialise_shape_parcels <- function(ecology_params){
   land_parcel_num = length(land_parcels$elements) #total number of parcels
   site_indexes = 1:land_parcel_num #index all parcels
   dim(site_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
-  region_vx = split_vector(ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
-  region_vy = split_vector(ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
-  
-  regions = mcell(site_indexes, region_vx, region_vy)   # split land parcel indexes into regions
-  
-  region_num = length(regions$elements)
-  
   parcels$site_indexes = site_indexes
   parcels$land_parcel_num = land_parcel_num
   parcels$land_parcels = land_parcels$elements
   parcels$land_parcel_dims = land_parcels$dims
-  parcels$regions = regions$elements
-  parcels$region_dims = regions$dims
-  parcels$region_num = region_num
   parcels$parcel_vx = parcel_vx
   parcels$parcel_vy = parcel_vy
   
@@ -604,20 +558,20 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(parcels, initial_ecology, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
-  index_object$banked_offset_pool = vector('list', parcels$region_num)
+  index_object$banked_offset_pool = vector()
   index_object$site_indexes = vector('list', 5)
   names(index_object$site_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$indexes_to_use = list()
   
-  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$regions, 
+  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_ecology, 
                                                               simulation_params, 
                                                               screen_site_zeros = simulation_params$screen_offset_zeros)
   
-  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
+  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_ecology, 
@@ -648,12 +602,12 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
-  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude, parcels$region_num)
+  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude)
   
   return(indexes_to_use)
 }
 
-screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_num){
+screen_available_sites <- function(indexes_to_use, indexes_to_exclude){
 
     inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
