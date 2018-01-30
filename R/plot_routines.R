@@ -146,13 +146,16 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     }
     
     dev_yrs = collated_realisations$collated_devs$offset_yrs
-    last_dev_yrs =  lapply(seq_along(dev_yrs), function(i) dev_yrs[[i]][ length(dev_yrs[[i]] )])
-    abline(v = mean(unlist(last_dev_yrs)), lty = 3)
-    
-
-    
-    last_dev_yrs =  lapply(seq_along(dev_yrs), function(i) dev_yrs[[i]][ length(dev_yrs[[i]] )])
-    abline(v = mean(unlist(last_dev_yrs)), lty = 3)
+    last_dev_yr =  mean(unlist(lapply(seq_along(dev_yrs), function(i) dev_yrs[[i]][ length(dev_yrs[[i]] )])))
+    dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
+    if (last_dev_yr < dev_end){
+      line_to_use = last_dev_yr
+      plot_col = 'red'
+    } else {
+      line_to_use = dev_end
+      plot_col = 'black'
+    }
+    abline(v = line_to_use, lty = 3, col = plot_col)
     
   }
   
