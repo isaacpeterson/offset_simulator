@@ -7,6 +7,7 @@
 #' @import doRNG
 #' @import foreach
 #' @import futile.logger
+#' @import raster
 #' @export
 #' 
 osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_simulated_ecology_params = NULL, loglevel = WARN){
