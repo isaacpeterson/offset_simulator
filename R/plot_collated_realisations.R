@@ -101,11 +101,13 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     dir.create(output_plot_folder)
   }
   
-  if (plot_params$scenario_vec == 'all'){
+  if ( (class(plot_params$scenario_vec) == 'character')){
     scenario_vec = length(scenario_filenames)
   } else {
     scenario_vec = plot_params$scenario_vec
   }
+  
+    
   for (scenario_ind in seq(scenario_vec)){
     
     flog.info('_________________________________')
@@ -132,9 +134,13 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     } else {
       flog.info(' generating plot %d of type: %s', scenario_ind, plot_params$plot_type)  
       
-      feature_num = length(current_simulation_params$features_to_use_in_simulation)
-      
-      for (feature_ind in seq(feature_num)){
+      if (class(plot_params$features_to_plot) == 'character'){
+        features_to_plot = seq(current_simulation_params$feature_num)
+      }  else {
+        features_to_plot = plot_params$features_to_plot
+      }
+        
+      for (feature_ind in features_to_plot){
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
                                                  feature_string = formatC(feature_ind, width = plot_params$string_width, format = "d", flag = "0"),
