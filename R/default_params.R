@@ -133,6 +133,10 @@ initialise_default_simulation_params <- function(){
   # 'current_condition_protect' is the present condition of the site assuming the site is protected
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
+  # parameters to control the offset calculation and how the intervention is implemented
+  # later internally processed into two additional parameters as (offset_calc_type, offset_action_type)
+    
+  
   default_simulation_params$offset_action_params = c('net_gains', 'restore')
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
@@ -310,7 +314,7 @@ initialise_default_plot_params <- function(base_folder){
   default_plot_params$plot_site = TRUE
   default_plot_params$plot_program = TRUE
   default_plot_params$plot_landscape = TRUE
-  
+  default_plot_params$features_to_plot = 'all'
   default_plot_params$site_impact_lwd = 0.5
   default_plot_params$site_outcome_lwd_vec = c(0.5)
   default_plot_params$program_lwd_vec = c(3, 0.5)
