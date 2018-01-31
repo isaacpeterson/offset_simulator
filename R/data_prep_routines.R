@@ -48,7 +48,7 @@ load_rasters <- function(current_data_path, current_filenames, layer_num){
 
 #' @export
 raster_to_array <- function(raster_object){
-  raster_array = as.matrix(raster_object, ncol = ncol(raster_object))
+  raster_array = raster::as.matrix(raster_object, ncol = ncol(raster_object))
   raster_array[is.na(raster_array)] = 0
   return(raster_array)
 }
