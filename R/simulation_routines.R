@@ -190,21 +190,21 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
       }
     }
     
-    #select sites for illegal clearing
-    illegally_cleared_object <- perform_illegal_clearing(simulation_outputs$current_ecology,
+    #select sites for clearing
+    stochastic_loss_object <- perform_stochastic_loss_(simulation_outputs$current_ecology,
                                                          simulation_outputs$index_object,
                                                          yr,
                                                          current_simulation_params,
                                                          decline_rates_initial,
                                                          current_simulation_params$offset_time_horizon)
     
-    # remove selected illegal sites from available pool, save illegal site characteristics, update decline rates to implement loss.
-    if (!is.null(illegally_cleared_object)){
+    # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
+    if (!is.null(stochastic_loss_object)){
       simulation_outputs <- perform_clearing_routine(simulation_outputs,
                                                      index_object = simulation_outputs$index_object,
                                                      decline_rates = simulation_outputs$decline_rates,
-                                                     current_dev_object = illegally_cleared_object,
-                                                     clearing_type = 'illegal',
+                                                     current_dev_object = stochastic_loss_object,
+                                                     clearing_type = 'stochastic',
                                                      current_simulation_params)
     }
     
@@ -374,10 +374,10 @@ remove_site_from_pool <- function(offset_pool_object, current_site_indexes){
 }
 
 
-#sample over uniform random vector, indicies less than the threshold level are selected for illegal clearing
-select_sites_to_illegally_clear <- function(site_indexes, current_simulation_params){
+#sample over uniform random vector, indicies less than the threshold level are selected for clearing
+select_sites_to_clear <- function(site_indexes, current_simulation_params){
   
-  clearing_thresh <- rep(current_simulation_params$illegal_clearing_prob, length(site_indexes))
+  clearing_thresh <- rep(current_simulation_params$stochastic_loss_prob, length(site_indexes))
   discrim <- runif(length(clearing_thresh)) < clearing_thresh
   inds_to_clear <- site_indexes[discrim]
   
@@ -386,32 +386,32 @@ select_sites_to_illegally_clear <- function(site_indexes, current_simulation_par
 
 
 
-perform_illegal_clearing <- function(current_ecology, index_object, yr, current_simulation_params, decline_rates_initial, time_horizon){
+perform_stochastic_loss_ <- function(current_ecology, index_object, yr, current_simulation_params, decline_rates_initial, time_horizon){
   
-  if (current_simulation_params$illegal_clearing_prob == 0){
-    # return null object when illegal clearing is inactive
+  if (current_simulation_params$stochastic_loss_prob == 0){
+    # return null object when clearing is inactive
     return()
   }
   site_indexes = as.vector(unlist(index_object$indexes_to_use))
-  inds_to_clear <- select_sites_to_illegally_clear(site_indexes, current_simulation_params)
+  inds_to_clear <- select_sites_to_clear(site_indexes, current_simulation_params)
   
-  if (length(inds_to_clear) == 0){ #return null for no sites selected for illegal clearing
+  if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return()
   } else {
-    flog.info('illegally cleared sites %s' , as.vector(inds_to_clear))
+    flog.info('cleared sites %s' , as.vector(inds_to_clear))
   }
   
   # current remaining sites - used for calculation of cfac
   parcel_num_remaining = length(site_indexes)
   
   # store group of site characteristics in site characteristics object
-  illegally_cleared_object <- record_current_parcel_set(current_ecology[inds_to_clear],
+  stochastic_loss_object <- record_current_parcel_set(current_ecology[inds_to_clear],
                                                         inds_to_clear,
                                                         parcel_num_remaining,
                                                         yr)
   
-  # record characteristics of illegally cleared site
-  illegally_cleared_object <- assess_current_pool(pool_object = illegally_cleared_object,
+  # record characteristics of cleared site
+  stochastic_loss_object <- assess_current_pool(pool_object = stochastic_loss_object,
                                                   pool_type = 'devs',
                                                   calc_type = current_simulation_params$dev_calc_type,
                                                   cfacs_flag = current_simulation_params$dev_cfacs_flag,
@@ -419,13 +419,13 @@ perform_illegal_clearing <- function(current_ecology, index_object, yr, current_
                                                   action_type = current_simulation_params$offset_action_type,
                                                   include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                                   include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                  include_illegal_clearing = current_simulation_params$include_illegal_clearing_in_dev_calc,
+                                                  include_stochastic_loss_ = current_simulation_params$include_stochastic_loss__in_dev_calc,
                                                   time_horizon_type = 'future',
                                                   current_simulation_params,
                                                   decline_rates_initial,
                                                   time_horizon,
                                                   yr)  #determine future development parcel attributes
-  return(illegally_cleared_object)
+  return(stochastic_loss_object)
 }
 
 
@@ -479,7 +479,7 @@ remove_parcel_from_current_pool <- function(offset_pool_object, current_site_ind
 
 
 
-# routines to mark and destroy ecology in cleared sites e.g. Development or illegal
+# routines to mark and destroy ecology in cleared sites e.g. Development or stochastic
 
 perform_clearing_routine <- function(simulation_outputs, index_object, decline_rates, current_dev_object, clearing_type, current_simulation_params){
   #remove development parcels from available pool
@@ -492,10 +492,10 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
     simulation_outputs$credit_object <- append_current_group(simulation_outputs$credit_object, current_dev_object, append_routine = 'standard')
-  } else if (clearing_type == 'illegal'){
-    #record current illegally cleared site characteristics
+  } else if (clearing_type == 'stochastic'){
+    #record current cleared site characteristics
     
-    simulation_outputs$illegal_clearing_object <- append_current_group(simulation_outputs$illegal_clearing_object, current_dev_object, append_routine = 'standard')
+    simulation_outputs$stochastic_loss__object <- append_current_group(simulation_outputs$stochastic_loss__object, current_dev_object, append_routine = 'standard')
   }
   # set elements corresponding to developed parcels in decline rates array to zero
   simulation_outputs$decline_rates <- update_decline_rates(decline_rates,
@@ -588,7 +588,7 @@ prepare_offset_pool <- function(simulation_outputs, current_simulation_params,
                                             action_type = current_simulation_params$offset_action_type,
                                             include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc,
                                             include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc,
-                                            include_illegal_clearing = current_simulation_params$include_illegal_clearing_in_offset_calc,
+                                            include_stochastic_loss_ = current_simulation_params$include_stochastic_loss__in_offset_calc,
                                             time_horizon_type = current_simulation_params$offset_time_horizon_type,
                                             current_simulation_params,
                                             decline_rates_initial,
@@ -675,7 +675,7 @@ assess_parcel_sets <- function(current_ecology, offsets_object, offset_parcel_se
                                                      adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                                                      include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc,
                                                      include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                     include_illegal_clearing = current_simulation_params$include_illegal_clearing_in_offset_calc,
+                                                     include_stochastic_loss_ = current_simulation_params$include_stochastic_loss__in_offset_calc,
                                                      time_horizon_type = current_simulation_params$offset_time_horizon_type,
                                                      current_simulation_params,
                                                      decline_rates_initial,
@@ -701,7 +701,7 @@ assess_parcel_sets <- function(current_ecology, offsets_object, offset_parcel_se
 
 
 assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, 
-                                     include_potential_developments,include_potential_offsets,include_illegal_clearing,
+                                     include_potential_developments,include_potential_offsets,include_stochastic_loss_,
                                      time_horizon_type, current_simulation_params, decline_rates_initial, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
@@ -720,7 +720,7 @@ assess_current_gain_pool <- function(current_ecology, pool_object, pool_type, ca
                               offset_yrs,
                               include_potential_developments,
                               include_potential_offsets,
-                              include_illegal_clearing,
+                              include_stochastic_loss_,
                               adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                               features_to_project = current_simulation_params$features_to_use_in_offset_calc)
     
@@ -918,7 +918,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
                                          action_type = current_simulation_params$offset_action_type,
                                          include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                          include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                         include_illegal_clearing = current_simulation_params$include_illegal_clearing_in_dev_calc,
+                                         include_stochastic_loss_ = current_simulation_params$include_stochastic_loss__in_dev_calc,
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          decline_rates_initial,
@@ -1024,7 +1024,7 @@ develop_from_credit <- function(current_ecology, current_credit, dev_weights, cu
                                          action_type = current_simulation_params$offset_action_type,
                                          include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                          include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                         include_illegal_clearing = current_simulation_params$include_illegal_clearing_in_dev_calc,
+                                         include_stochastic_loss_ = current_simulation_params$include_stochastic_loss__in_dev_calc,
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          decline_rates_initial,
@@ -1468,8 +1468,8 @@ update_index_object <- function(index_object, update_type, site_indexes){
     index_object$site_indexes$offsets = append(index_object$site_indexes$offsets, list(site_indexes))
   } else if (update_type == 'development'){
     index_object$site_indexes$devs = append(index_object$site_indexes$devs, list(site_indexes))
-  } else if (update_type == 'illegal'){
-    index_object$site_indexes$illegals = append(index_object$site_indexes$illegals, list(site_indexes))
+  } else if (update_type == 'stochastic'){
+    index_object$site_indexes$stochastics = append(index_object$site_indexes$stochastics, list(site_indexes))
   } else if (update_type == 'develop_from_credit'){
     index_object$site_indexes$dev_credit = append(index_object$site_indexes$dev_credits, list(site_indexes))
   } else if (update_type == 'banking'){
@@ -1559,7 +1559,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
-                                include_potential_developments, include_potential_offsets, include_illegal_clearing,
+                                include_potential_developments, include_potential_offsets, include_stochastic_loss_,
                                 time_horizon_type, current_simulation_params, decline_rates_initial, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
@@ -1589,7 +1589,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                                 offset_yrs,
                                 include_potential_developments,
                                 include_potential_offsets,
-                                include_illegal_clearing,
+                                include_stochastic_loss_,
                                 adjust_cfacs_flag,
                                 features_to_project = current_simulation_params$features_to_use_in_offset_calc)
       
@@ -1717,7 +1717,7 @@ kill_development_ecology <- function(current_ecology, decline_rates, feature_num
 
 
 calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, current_simulation_params,
-                       decline_rates, time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_illegal_clearing,
+                       decline_rates, time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_stochastic_loss_,
                        adjust_cfacs_flag, features_to_project){
   
   cfacs_object = list()
@@ -1736,7 +1736,7 @@ calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, current_simulatio
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
                                                include_potential_developments,
                                                include_potential_offsets,
-                                               include_illegal_clearing,
+                                               include_stochastic_loss_,
                                                current_simulation_params,
                                                parcel_num_remaining,
                                                decline_rates,
@@ -1753,17 +1753,17 @@ calc_cfacs <- function(parcel_ecologies, parcel_num_remaining, current_simulatio
 }
 
 
-adjust_cfacs <- function(current_cfacs, include_potential_developments,include_potential_offsets, include_illegal_clearing,
+adjust_cfacs <- function(current_cfacs, include_potential_developments,include_potential_offsets, include_stochastic_loss_,
                          current_simulation_params, parcel_num_remaining, decline_rates, time_horizons, offset_yrs){
   
   time_horizons = unlist(time_horizons)
   
   weighted_counters_object <- find_weighted_counters(current_cfacs,
-                                                     include_illegal_clearing,
+                                                     include_stochastic_loss_,
                                                      include_potential_developments,
                                                      include_potential_offsets,
                                                      intervention_vec = current_simulation_params$intervention_vec,
-                                                     illegal_clearing_prob = current_simulation_params$illegal_clearing_prob,
+                                                     stochastic_loss_prob = current_simulation_params$stochastic_loss_prob,
                                                      offset_intervention_scale = current_simulation_params$max_offset_parcel_num,
                                                      current_simulation_params$feature_num,
                                                      parcel_num_remaining,
@@ -1812,10 +1812,10 @@ remove_neg_probs <- function(weight_list, inds_to_accept){
 
 
 generate_weights <- function(perform_weight, calc_type, offset_intervention_scale, intervention_vec, offset_yrs, time_horizons,
-                             parcel_num, parcel_num_remaining, time_steps, illegal_clearing_prob){
+                             parcel_num, parcel_num_remaining, time_steps, stochastic_loss_prob){
   if (perform_weight == TRUE){
-    if (calc_type == 'illegal_clearing'){
-      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(illegal_clearing_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_simulation_params$illegal_clearing_prob)
+    if (calc_type == 'stochastic_loss_'){
+      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(stochastic_loss_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_simulation_params$stochastic_loss_prob)
     } else {
       weighted_probs <- find_intervention_probability(intervention_vec,
                                                       offset_yrs,
@@ -1839,13 +1839,13 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-find_weighted_counters <- function(current_cfacs, include_illegal_clearing, include_potential_developments, include_potential_offsets,
-                                   intervention_vec, illegal_clearing_prob, offset_intervention_scale, feature_num, parcel_num_remaining,
+find_weighted_counters <- function(current_cfacs, include_stochastic_loss_, include_potential_developments, include_potential_offsets,
+                                   intervention_vec, stochastic_loss_prob, offset_intervention_scale, feature_num, parcel_num_remaining,
                                    parcel_num, time_horizons, offset_yrs, time_steps){
   
   
-  illegal_clearing_weights <- generate_weights(include_illegal_clearing,
-                                               calc_type = 'illegal_clearing',
+  stochastic_loss__weights <- generate_weights(include_stochastic_loss_,
+                                               calc_type = 'stochastic_loss_',
                                                offset_intervention_scale,
                                                intervention_vec,
                                                offset_yrs,
@@ -1853,7 +1853,7 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
                                                parcel_num,
                                                parcel_num_remaining,
                                                time_steps,
-                                               illegal_clearing_prob)
+                                               stochastic_loss_prob)
   
   dev_weights <- generate_weights(include_potential_developments,
                                   calc_type = 'development',
@@ -1864,7 +1864,7 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
                                   parcel_num,
                                   parcel_num_remaining,
                                   time_steps,
-                                  illegal_clearing_prob)
+                                  stochastic_loss_prob)
   
   offset_weights <- generate_weights(include_potential_offsets,
                                      calc_type = 'offset',
@@ -1875,9 +1875,9 @@ find_weighted_counters <- function(current_cfacs, include_illegal_clearing, incl
                                      parcel_num,
                                      parcel_num_remaining,
                                      time_steps,
-                                     illegal_clearing_prob)
+                                     stochastic_loss_prob)
   
-  counter_weights <- lapply(seq_len(parcel_num), function(i) (1 - (dev_weights$weights[[i]] + offset_weights$weights[[i]] + illegal_clearing_weights$weights[[i]])))
+  counter_weights <- lapply(seq_len(parcel_num), function(i) (1 - (dev_weights$weights[[i]] + offset_weights$weights[[i]] + stochastic_loss__weights$weights[[i]])))
   
   inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
   offset_intervention_probs <- remove_neg_probs(offset_weights$weighted_probs, inds_to_accept)
