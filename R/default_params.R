@@ -96,8 +96,8 @@ initialise_default_simulation_params <- function(){
     # Stops the offset from delivering any further gains once it has acheived the gains required
     default_simulation_params$limit_offset_restoration = TRUE
     
-    # The probability per parcel of it being illegally cleared, every parcel gets set to this number - set to zero to turn off
-    default_simulation_params$illegal_clearing_prob = 1e-3
+    # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
+    default_simulation_params$stochastic_clearing_prob = 1e-3
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
     default_simulation_params$min_eco_val = 0  
@@ -194,17 +194,17 @@ initialise_default_simulation_params <- function(){
   # offset (due to future losses that are avoided)
   default_simulation_params$include_potential_developments_in_offset_calc = FALSE
 
-  # Include future illegal developments in calculating contribution of avoided losses
+  # Include future stochastic developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_illegal_clearing_in_offset_calc = FALSE
+  default_simulation_params$include_stochastic_clearing_in_offset_calc = FALSE
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
   # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
   default_simulation_params$include_potential_offsets_in_offset_calc = FALSE
 
-  # include ability to set the counterfactual adjustment (include/exclude illegal clearing, 
+  # include ability to set the counterfactual adjustment (include/exclude stochastic clearing, 
   # potential developments, and potential offsets) to be the same as the offset calculations or independent
   # settings are 'as_offset' or 'independent_to_offset'
   
@@ -217,12 +217,12 @@ initialise_default_simulation_params <- function(){
   
   # default_simulation_params$include_potential_developments_in_dev_calc = FALSE
 
-  # Include illegal clearing in the calculating the contribution of avoided
+  # Include stochastic clearing in the calculating the contribution of avoided
   # losses to the impact of the development. This reduces the development
   # impact because projected future value of the site is lower if there is
-  # some probability the site may be illegally developed in the future
+  # some probability the site may be stochasticly developed in the future
   
-  # default_simulation_params$include_illegal_clearing_in_dev_calc = default_simulation_params$include_illegal_clearing_in_offset_calc
+  # default_simulation_params$include_stochastic_clearing_in_dev_calc = default_simulation_params$include_stochastic_clearing_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
