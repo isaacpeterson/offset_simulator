@@ -5,16 +5,16 @@
 \title{Plots the results of the Offset Simulator run}
 \usage{
 osim.plot(user_plot_params = NULL, simulation_folder = NULL,
-  run_number = NULL, loglevel = INFO)
+  loglevel = INFO)
 }
 \arguments{
 \item{user_plot_params}{user configured plotting parameters to use}
 
 \item{simulation_folder}{user configured simulation folder to use}
 
-\item{run_number}{user defined folder}
-
 \item{loglevel}{logging level to use, for instance futile.logger::INFO}
+
+\item{run_number}{user defined folder}
 }
 \description{
 Plots the results of the Offset Simulator run

@@ -6,40 +6,17 @@
 #' @import futile.logger
 #' @export
 
-osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_number = NULL, loglevel = INFO){
+osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, loglevel = INFO){
   
   if (is.null(user_plot_params)) {
     flog.error('provide plot params file')
     stop()
   } 
   
-  plot_params = overwrite_current_params(user_plot_params, 
-                                         default_params = initialise_default_plot_params())
+  plot_params = overwrite_current_params(user_plot_params, default_params = initialise_default_plot_params())
   
-  if (!is.null(simulation_folder)){
-    base_folder = paste0(simulation_folder, '/simulation_runs/')
-  } else {
-    base_folder = 'simulation_runs/'
-  }
-  
-  if (!is.null(run_number)){
-    current_run = run_number
-  } else {
-    filenames = list.files(path = base_folder, all.files = FALSE,
-                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                           include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
-    
-    current_run = as.numeric(filenames[length(filenames)])
-  }
-  
-  
-  base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
-  if (!dir.exists(base_folder)){
-    flog.error('Looking for base_folder in %s, and this directory does not exist.', base_folder)
-    stop()
-  } 
-  collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
-  simulation_params_folder = paste0(base_folder, '/simulation_params/')
+  collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
+  simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   
   if (length(plot_params$output_plot_folder) == 0){
     output_plot_folder = collated_folder
@@ -199,4 +176,28 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   flog.info('all done')
 }
 
-
+#' @export
+find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
+  if (!is.null(simulation_folder) & (length(base_folder) > 0)){
+    simulation_folder = paste0(base_folder, '/simulation_runs/')
+  } else {
+    simulation_folder = 'simulation_runs/'
+  }
+  
+  if (!is.null(run_number)){
+    current_run = run_number
+  } else {
+    filenames = list.files(path = simulation_folder, all.files = FALSE,
+                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                           include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
+    current_run = as.numeric(filenames[length(filenames)])
+  }
+  
+  simulation_folder = paste0(simulation_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
+  if (!dir.exists(simulation_folder)){
+    flog.error('simulation_folder %s does not exist.', simulation_folder)
+    stop()
+  } else{
+    return(simulation_folder)
+  }
+}
