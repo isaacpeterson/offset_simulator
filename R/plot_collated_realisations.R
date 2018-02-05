@@ -35,7 +35,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   
   base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
   if (!dir.exists(base_folder)){
-    flog.error('simulation folder does not exist')
+    flog.error('Looking for base_folder in %s, and this directory does not exist.', base_folder)
     stop()
   } 
   collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
@@ -107,7 +107,8 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     scenario_vec = plot_params$scenario_vec
   }
   
-    
+  plot.ctr <- 1
+
   for (scenario_ind in seq(scenario_vec)){
     
     flog.info('_________________________________')
@@ -130,9 +131,10 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     }
     
     if (plot_flag == FALSE){
-        flog.info(' skipping plot %d', scenario_ind )
+        flog.trace(' skipping scenario %d', scenario_ind )
     } else {
-      flog.info(' generating plot %d of type: %s', scenario_ind, plot_params$plot_type)  
+      
+      flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
       
       if (class(plot_params$features_to_plot) == 'character'){
         features_to_plot = seq(current_simulation_params$feature_num)
@@ -181,7 +183,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
                            plot_params$sets_to_plot)
           
         }
-        
+        plot.ctr <- plot.ctr + 1
         #flog.info(' finished writing plot %d', scenario_ind)
       } 
       
