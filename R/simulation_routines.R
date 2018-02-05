@@ -126,8 +126,8 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
         if (credit_match_object$match_flag == TRUE){
           
           simulation_outputs$current_credit = credit_match_object$current_credit
-          flog.info(paste('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)),
-                          'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1))))
+          flog.info(cat('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
+                        'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1)), '\n'))
           
           
           simulation_outputs <- perform_clearing_routine(simulation_outputs,
@@ -250,7 +250,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                        simulation_outputs$decline_rates,
                                                        current_time_horizons = rep(list(1), length(simulation_outputs$current_ecology)),
                                                        current_simulation_params,
-                                                       features_to_project = current_simulation_params$features_to_use_in_simulation,
+                                                       features_to_project = seq_along(current_simulation_params$features_to_use_in_simulation),
                                                        time_fill = FALSE)
   }
   
@@ -552,7 +552,7 @@ prepare_offset_pool <- function(simulation_outputs, current_simulation_params,
   
   # if pool is empty return null object and print error
   if (length(current_offset_pool) == 0){
-    print('empty offset pool flag')
+    flog.error('empty offset pool flag')
     offset_pool_object = list()
     return(offset_pool_object)
   }
@@ -1211,7 +1211,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   
   if (length(match_ind) > 1){
     #list where the duplicate occurred
-    paste0('duplicate match flag on ', parcel_vals_pool[match_ind])
+    flog.error(cat('duplicate match flag on ', parcel_vals_pool[match_ind]), '\n')
     # chose first site of the multiple match
     match_ind = sample(match_ind, 1)
   }

@@ -53,6 +53,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
     initial_ecology <- select_feature_subset(initial_ecology, current_simulation_params$features_to_use_in_simulation)
     
+    decline_rates_initial <- select_feature_subset(decline_rates_initial, current_simulation_params$features_to_use_in_simulation)
     # set object used to store simulation outputs 
     simulation_inputs = initialise_output_object(parcels, 
                                                  initial_ecology, 

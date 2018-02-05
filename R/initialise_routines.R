@@ -330,7 +330,7 @@ collate_current_policy <- function(current_simulation_params){
   
   current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)   # The total number of features in the simulation
   current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
-  
+  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
