@@ -330,7 +330,7 @@ collate_current_policy <- function(current_simulation_params){
   
   current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)   # The total number of features in the simulation
   current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
-  
+  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
@@ -376,16 +376,16 @@ collate_current_policy <- function(current_simulation_params){
   if (current_simulation_params$dev_counterfactual_adjustment == 'as_offset'){
     current_simulation_params$include_potential_developments_in_dev_calc = current_simulation_params$include_potential_developments_in_offset_calc
     current_simulation_params$include_potential_offsets_in_dev_calc = current_simulation_params$include_potential_offsets_in_offset_calc
-    current_simulation_params$include_illegal_clearing_in_dev_calc = current_simulation_params$include_illegal_clearing_in_offset_calc
+    current_simulation_params$include_stochastic_loss_in_dev_calc = current_simulation_params$include_stochastic_loss_in_offset_calc
   } else {
     flog.info('using independent adjustment of cfacs in development impact calculation')
   }
   current_simulation_params$adjust_offset_cfacs_flag = any(current_simulation_params$include_potential_developments_in_offset_calc,
                                                          current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                         current_simulation_params$include_illegal_clearing_in_offset_calc) == TRUE
+                                                         current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE
   current_simulation_params$adjust_dev_cfacs_flag = any(current_simulation_params$include_potential_developments_in_dev_calc,
                                                       current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                      current_simulation_params$include_illegal_clearing_in_dev_calc) == TRUE
+                                                      current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE
   
   return(current_simulation_params)
   
@@ -433,7 +433,7 @@ initialise_output_object <- function(parcels, initial_ecology, simulation_params
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
-  output_object$illegal_clearing_object <- list()
+  output_object$stochastic_loss_object <- list()
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
   output_object$current_ecology = initial_ecology
@@ -463,7 +463,7 @@ initialise_trajectories <- function(feature_num, land_parcels, time_steps){
 
 parcel_set_list_names <- function(){
   list_names = c("site_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
-                 "restoration_vals", "cfac_vals", "region_ind")
+                 "restoration_vals", "cfac_vals")
   return(list_names)
 }
 
@@ -490,51 +490,6 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
   vec
 }
 
-#
-#
-# initialise_parcels_from_data <- function(data_folder, data_type){
-#
-#   if (data_type == 'grassland'){
-#     filename = paste0(data_folder, 'planning.units.uid_20ha.pgm')
-#     img = read.pnm(file = filename, cellres = 1)
-#     parcel_array = img@grey
-#   } else if (data_type == 'hunter'){
-#     parcels_raster <- readRDS(paste0(data_folder, 'parcels_raster.rds'))
-#     LGA_raster <- readRDS(paste0(data_folder, 'LGA_raster.rds'))
-#     parcels_mask_raster <- readRDS(paste0(data_folder, 'parcels_mask_raster.rds'))
-#     parcel_array = as.matrix(parcels_raster*parcels_mask_raster)
-#     parcel_array[is.na(parcel_array)] = 0
-#   }
-#
-#   land_index_vals = unique(as.vector(parcel_array))
-#   landscape_dims = dim(parcel_array)
-#   land_parcels <- lapply(seq_along(land_index_vals), function(i) which(parcel_array == land_index_vals[i]))
-#   regions = list()
-#   regions[[1]] = seq_len(length(land_parcels))
-#   region_num = length(regions)
-#   parcels = list()
-#   parcels$landscape_dims = landscape_dims
-#   parcels$site_indexes = seq_along(land_parcels)
-#   parcels$land_parcel_num = length(land_parcels)
-#   parcels$land_parcels = land_parcels
-#   parcels$regions = regions
-#   parcels$region_num = region_num
-#   parcels$parcel_array = parcel_array
-#
-#   return(parcels)
-# }
-
-
-
-
-
-raster_to_array <- function(raster_object){
-  raster_array = as.matrix(raster_object)
-  raster_array[is.na(raster_array)] = 0
-  return(raster_array)
-}
-
-
 
 initialise_shape_parcels <- function(ecology_params){
   parcels = list()
@@ -550,20 +505,10 @@ initialise_shape_parcels <- function(ecology_params){
   land_parcel_num = length(land_parcels$elements) #total number of parcels
   site_indexes = 1:land_parcel_num #index all parcels
   dim(site_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
-  region_vx = split_vector(ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
-  region_vy = split_vector(ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
-  
-  regions = mcell(site_indexes, region_vx, region_vy)   # split land parcel indexes into regions
-  
-  region_num = length(regions$elements)
-  
   parcels$site_indexes = site_indexes
   parcels$land_parcel_num = land_parcel_num
   parcels$land_parcels = land_parcels$elements
   parcels$land_parcel_dims = land_parcels$dims
-  parcels$regions = regions$elements
-  parcels$region_dims = regions$dims
-  parcels$region_num = region_num
   parcels$parcel_vx = parcel_vx
   parcels$parcel_vy = parcel_vy
   
@@ -604,20 +549,20 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(parcels, initial_ecology, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
-  index_object$banked_offset_pool = vector('list', parcels$region_num)
+  index_object$banked_offset_pool = vector()
   index_object$site_indexes = vector('list', 5)
   names(index_object$site_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$indexes_to_use = list()
   
-  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$regions, 
+  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_ecology, 
                                                               simulation_params, 
                                                               screen_site_zeros = simulation_params$screen_offset_zeros)
   
-  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$regions, 
+  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_ecology, 
@@ -648,21 +593,18 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
-  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude, parcels$region_num)
+  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude)
   
   return(indexes_to_use)
 }
 
-screen_available_sites <- function(indexes_to_use, indexes_to_exclude, region_num){
-  
-  for (region_ind in seq_len(region_num)){
-    current_region = indexes_to_use[[region_ind]]
-    inds_to_remove = which(current_region %in% indexes_to_exclude)
+screen_available_sites <- function(indexes_to_use, indexes_to_exclude){
+
+    inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
     if (length(inds_to_remove) > 0){
-      indexes_to_use[[region_ind]] = indexes_to_use[[region_ind]][-inds_to_remove]
+      indexes_to_use = indexes_to_use[-inds_to_remove]
     }
-  }
-  
+
   return(indexes_to_use)
 }
 

@@ -48,7 +48,7 @@ load_rasters <- function(current_data_path, current_filenames, layer_num){
 
 #' @export
 raster_to_array <- function(raster_object){
-  raster_array = as.matrix(raster_object, ncol = ncol(raster_object))
+  raster_array = raster::as.matrix(raster_object, ncol = ncol(raster_object))
   raster_array[is.na(raster_array)] = 0
   return(raster_array)
 }
@@ -99,8 +99,6 @@ LGA_to_parcel_list <- function(LGA_array){
   parcels = list()
   parcels$landscape_dims = dim(LGA_array)
   parcels$site_indexes = seq_along(land_parcels)
-  parcels$regions = list(parcels$site_indexes) #use only one region - if necessary this can be split up into multi-region
-  parcels$region_num = length(parcels$regions)
   parcels$land_parcel_num = length(land_parcels)
   parcels$land_parcels = land_parcels
   parcels$parcel_array = LGA_array

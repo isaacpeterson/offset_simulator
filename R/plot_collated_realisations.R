@@ -101,29 +101,23 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     dir.create(output_plot_folder)
   }
   
-  if (plot_params$scenario_vec == 'all'){
+  if ( (class(plot_params$scenario_vec) == 'character')){
     scenario_vec = length(scenario_filenames)
   } else {
     scenario_vec = plot_params$scenario_vec
   }
   
   plot.ctr <- 1
+
   for (scenario_ind in seq(scenario_vec)){
     
     flog.info('_________________________________')
-    #     if (plot_params$output_type == 'features'){
-    #       feature_ind = plot_params$scenario_vec[scenario_ind]
-    #     } else if (plot_params$output_type == 'scenarios'){
-    #       scenario_ind = plot_params$scenario_vec[scenario_ind]
-    #     } else if (plot_params$output_type == 'site_sets'){
-    #       set_to_plot = plot_params$scenario_vec[scenario_ind]
-    #     }
-    
+
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
     
-    if (!is.na(match('all', plot_params$plot_subset_type))){
+    if (plot_params$plot_subset_type == 'all'){
       plot_flag = TRUE
     } else {
       param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
@@ -142,9 +136,13 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
       
       flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
       
-      feature_num = length(current_simulation_params$features_to_use_in_simulation)
-      
-      for (feature_ind in seq(feature_num)){
+      if (class(plot_params$features_to_plot) == 'character'){
+        features_to_plot = seq(current_simulation_params$feature_num)
+      }  else {
+        features_to_plot = plot_params$features_to_plot
+      }
+        
+      for (feature_ind in features_to_plot){
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
                                                  feature_string = formatC(feature_ind, width = plot_params$string_width, format = "d", flag = "0"),
