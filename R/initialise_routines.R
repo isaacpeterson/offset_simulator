@@ -376,16 +376,16 @@ collate_current_policy <- function(current_simulation_params){
   if (current_simulation_params$dev_counterfactual_adjustment == 'as_offset'){
     current_simulation_params$include_potential_developments_in_dev_calc = current_simulation_params$include_potential_developments_in_offset_calc
     current_simulation_params$include_potential_offsets_in_dev_calc = current_simulation_params$include_potential_offsets_in_offset_calc
-    current_simulation_params$include_illegal_clearing_in_dev_calc = current_simulation_params$include_illegal_clearing_in_offset_calc
+    current_simulation_params$include_stochastic_loss_in_dev_calc = current_simulation_params$include_stochastic_loss_in_offset_calc
   } else {
     flog.info('using independent adjustment of cfacs in development impact calculation')
   }
   current_simulation_params$adjust_offset_cfacs_flag = any(current_simulation_params$include_potential_developments_in_offset_calc,
                                                          current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                         current_simulation_params$include_illegal_clearing_in_offset_calc) == TRUE
+                                                         current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE
   current_simulation_params$adjust_dev_cfacs_flag = any(current_simulation_params$include_potential_developments_in_dev_calc,
                                                       current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                      current_simulation_params$include_illegal_clearing_in_dev_calc) == TRUE
+                                                      current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE
   
   return(current_simulation_params)
   
@@ -433,7 +433,7 @@ initialise_output_object <- function(parcels, initial_ecology, simulation_params
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
-  output_object$illegal_clearing_object <- list()
+  output_object$stochastic_loss_object <- list()
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
   output_object$current_ecology = initial_ecology

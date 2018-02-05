@@ -141,7 +141,7 @@ merge_lists <- function(list_a, list_b, merge_indexes){
 #background_cfacs = landscape_cfacs_object$background_cfacs
 
 collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated_offsets, collated_devs, collated_dev_credit, 
-                                  collated_offset_bank, collated_stochastic_clearing){
+                                  collated_offset_bank, collated_stochastic_loss){
   
   program_cfacs_object = list()
   program_cfacs_object$offset_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$offsets_object$site_indexes)], collated_offsets$cfacs, unlist(simulation_outputs$offsets_object$offset_yrs))
@@ -185,7 +185,7 @@ collate_cfacs <- function(combination_params, current_parcel_ecologies, current_
     adjust_cfacs_flag = TRUE
     include_potential_developments = FALSE
     include_potential_offsets = FALSE
-    include_stochastic_clearing = TRUE
+    include_stochastic_loss = TRUE
     
   } else {
     time_horizons = generate_time_horizons(project_type = 'current', 
@@ -196,7 +196,7 @@ collate_cfacs <- function(combination_params, current_parcel_ecologies, current_
     adjust_cfacs_flag = cfac_params$adjust_cfacs_flag
     include_potential_developments = cfac_params$include_potential_developments
     include_potential_offsets = cfac_params$include_potential_offsets
-    include_stochastic_clearing = cfac_params$include_stochastic_clearing
+    include_stochastic_loss = cfac_params$include_stochastic_loss
   }
   
   cfacs_object = calc_cfacs(parcel_ecologies = current_parcel_ecologies, 
@@ -207,7 +207,7 @@ collate_cfacs <- function(combination_params, current_parcel_ecologies, current_
                             offset_yrs = current_offset_yrs, 
                             include_potential_developments,
                             include_potential_offsets,
-                            include_stochastic_clearing,
+                            include_stochastic_loss,
                             adjust_cfacs_flag,
                             features_to_project = 1)
   
@@ -251,7 +251,7 @@ collate_program_scale_impacts <- function(collated_program){
   program_scale_impacts$offset_bank_gains = Reduce('+', collated_program$collated_offset_bank$summed_gains_degs$nets)
   program_scale_impacts$dev_site_losses = Reduce('+', collated_program$collated_devs$summed_gains_degs$nets)
   program_scale_impacts$dev_credit_losses = Reduce('+', collated_program$collated_dev_credit$summed_gains_degs$nets)
-  program_scale_impacts$stochastic_clearing <- Reduce('+', collated_program$collated_stochastic_clearing$summed_gains_degs$nets)
+  program_scale_impacts$stochastic_loss <- Reduce('+', collated_program$collated_stochastic_loss$summed_gains_degs$nets)
   
   program_scale_impacts$net_offset_gains = sum_list(list(program_scale_impacts$offset_site_gains, program_scale_impacts$offset_bank_gains))
   program_scale_impacts$net_dev_losses = sum_list(list(program_scale_impacts$dev_site_losses, program_scale_impacts$dev_credit_losses))
@@ -448,11 +448,11 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                                          use_cfac_type_in_sim, 
                                                                          feature_ind)
   
-  collated_program$collated_stochastic_clearing = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$stochastic_clearing_object,
+  collated_program$collated_stochastic_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$stochastic_loss_object,
                                                                               current_site_groups = simulation_outputs$index_object$site_indexes$stochastics,
                                                                               current_trajectories, 
                                                                               current_decline_rates_initial, 
-                                                                              collate_type = 'stochastic_clearing', 
+                                                                              collate_type = 'stochastic_loss', 
                                                                               combination_params,
                                                                               use_cfac_type_in_sim, 
                                                                               feature_ind)
@@ -472,7 +472,7 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
                                                          collated_program$collated_devs, 
                                                          collated_program$collated_dev_credit, 
                                                          collated_program$collated_offset_bank, 
-                                                         collated_program$collated_stochastic_clearing)
+                                                         collated_program$collated_stochastic_loss)
   
   collated_program$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
                                          impacts = collated_program$site_scale_impacts$net_impacts, 
@@ -516,7 +516,7 @@ find_sites_used <- function(collated_program){
   sites_used$offset_bank = find_current_sites_used(collated_program$collated_offset_bank$site_indexes)
   sites_used$dev_credit = find_current_sites_used(collated_program$collated_dev_credit$site_indexes)
   
-  sites_used$stochastic_sites_cleared = find_current_sites_used(collated_program$collated_stochastic_clearing$site_indexes)
+  sites_used$stochastic_sites_cleared = find_current_sites_used(collated_program$collated_stochastic_loss$site_indexes)
   sites_used$total_offset_sites = sum_list(list(sites_used$offset_sites, sites_used$offset_bank))
   sites_used$total_dev_sites = sum_list(list(sites_used$dev_sites, sites_used$dev_credit))
   
@@ -555,7 +555,7 @@ get_current_sim_characteristics <- function(current_combination_params, realisat
   if ((current_combination_params$use_offset_time_horizon == TRUE) & (current_combination_params$use_offset_bank == FALSE)){                                   
     sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_combination_params$offset_time_horizon)
   }
-  sim_characteristics = paste0(sim_characteristics, '_include_stochastic_clearing_', current_combination_params$include_stochastic_clearing_in_offset_calc)
+  sim_characteristics = paste0(sim_characteristics, '_include_stochastic_loss_', current_combination_params$include_stochastic_loss_in_offset_calc)
   
   sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
   #   sim_characteristics = paste0(current_combination_params$offset_calc_type, '_', current_combination_params$dev_calc_type, '_', current_combination_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
@@ -580,7 +580,7 @@ get_current_sim_characteristics <- function(current_combination_params, realisat
   
   #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_combination_params$include_potential_offsets_in_offset_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_stochastic_clearing_', current_combination_params$include_stochastic_clearing_in_dev_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_stochastic_loss_', current_combination_params$include_stochastic_loss_in_dev_calc)
   
   # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_combination_params$include_potential_developments_in_dev_calc)
   
@@ -676,25 +676,25 @@ select_cfac_type <- function(collate_type, use_cfac_type_in_sim, combination_par
   cfac_params = list()
   
   if (use_cfac_type_in_sim == FALSE){
-    include_stochastic_clearing = FALSE
+    include_stochastic_loss = FALSE
     include_potential_developments = FALSE
     include_potential_offsets = FALSE
     adjust_cfacs_flag = FALSE
   } else {
     
     if ((collate_type == 'devs') | (collate_type == 'dev_credit')){
-      include_stochastic_clearing = combination_params$include_stochastic_clearing_in_dev_calc
+      include_stochastic_loss = combination_params$include_stochastic_loss_in_dev_calc
       include_potential_developments = combination_params$include_potential_developments_in_dev_calc
       include_potential_offsets = combination_params$include_potential_offsets_in_dev_calc
       adjust_cfacs_flag = combination_params$adjust_dev_cfacs_flag
     } else {
-      include_stochastic_clearing = combination_params$include_stochastic_clearing_in_offset_calc
+      include_stochastic_loss = combination_params$include_stochastic_loss_in_offset_calc
       include_potential_developments = combination_params$include_potential_developments_in_offset_calc
       include_potential_offsets = combination_params$include_potential_offsets_in_offset_calc
       adjust_cfacs_flag = combination_params$adjust_offset_cfacs_flag
     }
   }
-  cfac_params$include_stochastic_clearing = include_stochastic_clearing
+  cfac_params$include_stochastic_loss = include_stochastic_loss
   cfac_params$include_potential_developments = include_potential_developments
   cfac_params$include_potential_offsets = include_potential_offsets
   cfac_params$adjust_cfacs_flag = adjust_cfacs_flag

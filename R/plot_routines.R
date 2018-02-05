@@ -280,9 +280,9 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
   y_lab = paste('Feature', feature_ind, '\n', current_simulation_params$offset_calc_type, '/', current_simulation_params$dev_calc_type )
   
   if (current_simulation_params$use_offset_bank == FALSE){
-    y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_stochastic_clearing_in_offset_calc))
+    y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_stochastic_loss_in_offset_calc))
   } else{
-    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_simulation_params$include_stochastic_clearing_in_offset_calc))
+    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_simulation_params$include_stochastic_loss_in_offset_calc))
   }
   y_lab = t(y_lab)
   return(y_lab)
