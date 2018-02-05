@@ -35,7 +35,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   
   base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
   if (!dir.exists(base_folder)){
-    flog.error('simulation folder does not exist')
+    flog.error('Looking for base_folder in %s, and this directory does not exist.', base_folder)
     stop()
   } 
   collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
@@ -106,9 +106,11 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   } else {
     scenario_vec = plot_params$scenario_vec
   }
+  
+  plot.ctr <- 1
   for (scenario_ind in seq(scenario_vec)){
     
-    flog.info('_________________________________')
+    flog.info('_________________________________') # AG
     #     if (plot_params$output_type == 'features'){
     #       feature_ind = plot_params$scenario_vec[scenario_ind]
     #     } else if (plot_params$output_type == 'scenarios'){
@@ -118,7 +120,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     #     }
     
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
-    flog.trace('reading %s', file_to_Read)
+    flog.trace('reading %s', file_to_Read) #AG
     current_simulation_params = readRDS(file_to_Read)
     
     if (!is.na(match('all', plot_params$plot_subset_type))){
@@ -135,9 +137,10 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     }
     
     if (plot_flag == FALSE){
-        flog.info(' skipping plot %d', scenario_ind )
+        flog.trace(' skipping scenario %d', scenario_ind )
     } else {
-      flog.info(' generating plot %d of type: %s', scenario_ind, plot_params$plot_type)  
+      
+      flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
       
       feature_num = length(current_simulation_params$features_to_use_in_simulation)
       
@@ -182,7 +185,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
                            plot_params$sets_to_plot)
           
         }
-        
+        plot.ctr <- plot.ctr + 1
         #flog.info(' finished writing plot %d', scenario_ind)
       } 
       
