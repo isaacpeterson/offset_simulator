@@ -110,7 +110,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   plot.ctr <- 1
   for (scenario_ind in seq(scenario_vec)){
     
-    flog.info('_________________________________') # AG
+    flog.info('_________________________________')
     #     if (plot_params$output_type == 'features'){
     #       feature_ind = plot_params$scenario_vec[scenario_ind]
     #     } else if (plot_params$output_type == 'scenarios'){
@@ -120,7 +120,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     #     }
     
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
-    flog.trace('reading %s', file_to_Read) #AG
+    flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
     
     if (!is.na(match('all', plot_params$plot_subset_type))){
