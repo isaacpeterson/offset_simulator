@@ -96,8 +96,7 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
   objects_to_save$decline_rates_initial <- simulate_decline_rates(parcel_num = length(objects_to_save$parcels$land_parcels), 
                                                   sample_decline_rate = TRUE, 
                                                   mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
-                                                  decline_rate_std = simulated_ecology_params$decline_rate_std, 
-                                                  feature_num = simulated_ecology_params$feature_num)       # set up array of decline rates that are eassociated with each cell
+                                                  decline_rate_std = simulated_ecology_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
   
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
 
