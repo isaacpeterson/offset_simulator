@@ -264,9 +264,9 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
 # how many features are currently in use
 
 #' @export 
-simulate_decline_rates <- function(parcel_num, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
+simulate_decline_rates <- function(parcel_num, sample_decline_rate, mean_decline_rates, decline_rate_std){
   
-  
+  feature_num = length(mean_decline_rates)
   if (sample_decline_rate == TRUE){
     # sample change rate from normal distribution
     decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
@@ -1605,14 +1605,12 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
         current_decline_rates = simulate_decline_rates(length(pool_object$parcel_ecologies),
                                                        sample_decline_rate = FALSE,
                                                        mean_decline_rates = rep(list(1), feature_num),
-                                                       decline_rate_std = vector(),
-                                                       feature_num)
+                                                       decline_rate_std = vector())
       } else if (action_type == 'restore'){
         current_decline_rates = simulate_decline_rates(length(pool_object$parcel_ecologies),
                                                        sample_decline_rate = FALSE,
                                                        mean_decline_rates = rep(list(current_simulation_params$restoration_rate), feature_num),
-                                                       decline_rate_std = rep(list(current_simulation_params$restoration_rate_std), feature_num),
-                                                       feature_num)
+                                                       decline_rate_std = rep(list(current_simulation_params$restoration_rate_std), feature_num))
       } else if (action_type == 'protect'){
         current_decline_rates = decline_rates_initial[current_pool]
       }
