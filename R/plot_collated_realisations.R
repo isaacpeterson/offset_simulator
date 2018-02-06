@@ -178,7 +178,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
 
 #' @export
 find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
-  if (!is.null(simulation_folder) & (length(base_folder) > 0)){
+  if (!is.null(base_folder) & (length(base_folder) > 0)){
     simulation_folder = paste0(base_folder, '/simulation_runs/')
   } else {
     simulation_folder = 'simulation_runs/'
