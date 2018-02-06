@@ -94,19 +94,23 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
     
-    if (plot_params$plot_subset_type == 'all'){
-      plot_flag = TRUE
-    } else {
-      param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
-      
-      if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
-        plot_flag = TRUE 
-      } else {
-        plot_flag = FALSE
-      }
-      
-    }
+    param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
     
+    if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
+      plot_flag = TRUE 
+    } else {
+      if (length(plot_params$plot_subset_type) > 1){
+        plot_flag = FALSE
+      } else {
+        if (plot_params$plot_subset_type == 'all'){
+          plot_flag = TRUE
+        } else {
+          plot_flag = FALSE
+        }
+      }
+    } 
+    
+
     if (plot_flag == FALSE){
         flog.trace(' skipping scenario %d', scenario_ind )
     } else {
@@ -120,9 +124,10 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
       }
         
       for (feature_ind in features_to_plot){
+        current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
-                                                 feature_string = formatC(feature_ind, width = plot_params$string_width, format = "d", flag = "0"),
+                                                 feature_string = formatC(current_feature, width = plot_params$string_width, format = "d", flag = "0"),
                                                  plot_params$realisation_num)
         
         collated_realisations = bind_collated_realisations(collated_filenames)
@@ -140,7 +145,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
                           site_plot_lims, 
                           program_plot_lims,
                           landscape_plot_lims,
-                          current_simulation_params$features_to_use_in_simulation[feature_ind],
+                          current_feature,
                           plot_params$sets_to_plot)
         } else if (plot_params$plot_type == 'outcomes'){
           
@@ -156,7 +161,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
                            site_plot_lims, 
                            program_plot_lims,
                            landscape_plot_lims,
-                           current_simulation_params$features_to_use_in_simulation[feature_ind],
+                           current_feature,
                            plot_params$sets_to_plot)
           
         }
@@ -201,3 +206,4 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
     return(simulation_folder)
   }
 }
+
