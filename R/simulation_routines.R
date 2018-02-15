@@ -398,7 +398,7 @@ perform_stochastic_loss <- function(current_ecology, index_object, yr, current_s
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return()
   } else {
-    flog.info('cleared sites %s' , as.vector(inds_to_clear))
+    flog.info('stochastic losses %s' , as.vector(inds_to_clear))
   }
   
   # current remaining sites - used for calculation of cfac
@@ -1756,50 +1756,80 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
   
   time_horizons = unlist(time_horizons)
   
-  weighted_counters_object <- find_weighted_counters(current_cfacs,
-                                                     include_stochastic_loss,
-                                                     include_potential_developments,
-                                                     include_potential_offsets,
-                                                     intervention_vec = current_simulation_params$intervention_vec,
-                                                     stochastic_loss_prob = current_simulation_params$stochastic_loss_prob,
-                                                     offset_intervention_scale = current_simulation_params$max_offset_parcel_num,
-                                                     current_simulation_params$feature_num,
-                                                     parcel_num_remaining,
-                                                     parcel_num = length(current_cfacs),
-                                                     time_horizons,
-                                                     offset_yrs,
-                                                     time_steps = current_simulation_params$time_steps)
-  
-  if (length(decline_rates) != length(current_cfacs)){
-    flog.error('length error')
+  parcel_num = length(current_cfacs)
+  counter_weights = rep(list(1), parcel_num)
+  if (include_stochastic_loss == TRUE){
+
+    stochastic_loss_weights <- generate_weights(include_stochastic_loss,
+                                                calc_type = 'stochastic_loss',
+                                                current_simulation_params$max_offset_parcel_num,
+                                                current_simulation_params$intervention_vec,
+                                                offset_yrs,
+                                                time_horizons,
+                                                parcel_num,
+                                                parcel_num_remaining,
+                                                current_simulation_params$time_steps,
+                                                current_simulation_params$stochastic_loss_prob)
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - stochastic_loss_weights$weights[[i]])
   }
   
-  if (include_potential_offsets == FALSE){
-    adjusted_cfacs = weighted_counters_object$weighted_counters
-  } else {
-    
-    offset_projections <- calc_offset_projections(current_cfacs,
-                                                  weighted_counters_object$offset_intervention_probs,
-                                                  current_simulation_params$restoration_rate,
-                                                  current_simulation_params$offset_action_type,
-                                                  decline_rates,
-                                                  time_horizons,
-                                                  current_simulation_params$feature_num,
-                                                  current_simulation_params$min_eco_val,
+  if (include_potential_developments == TRUE){
+    dev_weights <- generate_weights(include_potential_developments,
+                                    calc_type = 'development',
+                                    current_simulation_params$max_offset_parcel_num,
+                                    current_simulation_params$intervention_vec,
+                                    offset_yrs,
+                                    time_horizons,
+                                    parcel_num,
+                                    parcel_num_remaining,
+                                    current_simulation_params$time_steps,
+                                    current_simulation_params$stochastic_loss_prob)
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - dev_weights$weights[[i]])
+  }
+  
+  if (include_potential_offsets == TRUE){
+    offset_weights <- generate_weights(include_potential_offsets,
+                                       calc_type = 'offset',
+                                       current_simulation_params$max_offset_parcel_num,
+                                       current_simulation_params$intervention_vec,
+                                       offset_yrs,
+                                       time_horizons,
+                                       parcel_num,
+                                       parcel_num_remaining,
+                                       current_simulation_params$time_steps,
+                                       current_simulation_params$stochastic_loss_prob)
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - offset_weights$weights[[i]])
+  }
+  
+  inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
+  counter_weights <- remove_neg_probs(counter_weights, inds_to_accept)
+  
+  adjusted_cfacs = lapply(seq_along(current_cfacs), function(i) lapply(seq_along(current_cfacs[[i]]),
+                                                                       function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
+                                                                                                                  nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
+  if (include_potential_offsets == TRUE){
+    offset_intervention_probs <- remove_neg_probs(offset_weights$weighted_probs, inds_to_accept)
+    offset_projections <- calc_offset_projections(current_cfacs, 
+                                                  offset_intervention_probs, 
+                                                  current_simulation_params$restoration_rate, 
+                                                  time_horizons, 
+                                                  current_simulation_params$feature_num, 
+                                                  current_simulation_params$min_eco_val, 
                                                   current_simulation_params$max_eco_val)
     
     summed_offset_projections <- sum_offset_projs(offset_projections,
-                                                  offset_probs = weighted_counters_object$offset_intervention_probs,
-                                                  current_simulation_params$feature_num,
+                                                  offset_intervention_probs, 
+                                                  current_simulation_params$feature_num, 
                                                   time_horizons)
     
-    adjusted_cfacs = sum_clearing_offsets(weighted_counters_object$weighted_counters,
-                                          summed_offset_projections,
-                                          current_simulation_params$feature_num)
+    adjusted_cfacs = sum_clearing_offsets(adjusted_cfacs, summed_offset_projections, current_simulation_params$feature_num)
+    
   }
   
   return(adjusted_cfacs)
 }
+
+
 
 
 
@@ -1837,76 +1867,9 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-find_weighted_counters <- function(current_cfacs, include_stochastic_loss, include_potential_developments, include_potential_offsets,
-                                   intervention_vec, stochastic_loss_prob, offset_intervention_scale, feature_num, parcel_num_remaining,
-                                   parcel_num, time_horizons, offset_yrs, time_steps){
-  
-  
-  stochastic_loss_weights <- generate_weights(include_stochastic_loss,
-                                               calc_type = 'stochastic_loss',
-                                               offset_intervention_scale,
-                                               intervention_vec,
-                                               offset_yrs,
-                                               time_horizons,
-                                               parcel_num,
-                                               parcel_num_remaining,
-                                               time_steps,
-                                               stochastic_loss_prob)
-  
-  dev_weights <- generate_weights(include_potential_developments,
-                                  calc_type = 'development',
-                                  offset_intervention_scale,
-                                  intervention_vec,
-                                  offset_yrs,
-                                  time_horizons,
-                                  parcel_num,
-                                  parcel_num_remaining,
-                                  time_steps,
-                                  stochastic_loss_prob)
-  
-  offset_weights <- generate_weights(include_potential_offsets,
-                                     calc_type = 'offset',
-                                     offset_intervention_scale,
-                                     intervention_vec,
-                                     offset_yrs,
-                                     time_horizons,
-                                     parcel_num,
-                                     parcel_num_remaining,
-                                     time_steps,
-                                     stochastic_loss_prob)
-  
-  counter_weights <- lapply(seq_len(parcel_num), function(i) (1 - (dev_weights$weights[[i]] + offset_weights$weights[[i]] + stochastic_loss_weights$weights[[i]])))
-  
-  inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
-  offset_intervention_probs <- remove_neg_probs(offset_weights$weighted_probs, inds_to_accept)
-  counter_weights <- remove_neg_probs(counter_weights, inds_to_accept)
-  
-  weighted_counters_object = list()
-  
-  ######## POTENTIAL FLAW HERE ################
-  weighted_counters_object$weighted_counters = lapply(seq_along(current_cfacs),
-                                                      function(i) lapply(seq_along(current_cfacs[[i]]),
-                                                                         function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
-                                                                                                                    nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
-  
-  weighted_counters_object$offset_intervention_probs = offset_intervention_probs
-  
-  
-  
-  return(weighted_counters_object)
-}
 
-
-
-
-
-##########     ERRORS IN THIS CODE   ########
-
-calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate, action_type, decline_rates, time_horizons, feature_num, min_eco_val, max_eco_val){
+calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
   
-  if (length(decline_rates) != length(current_cfacs)){
-    flog.error('length error')
-  }
   parcel_num = length(current_cfacs)
   offset_projections = vector('list', parcel_num)
   
@@ -1919,22 +1882,20 @@ calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rat
     for (feature_ind in seq_len(feature_num)){
       
       current_cfac = current_cfacs[[parcel_ind]][[feature_ind]]
-      current_dec_rate = decline_rates[[parcel_ind]][[feature_ind]]
       
       for (proj_yr in seq_len(time_horizon)){
         current_offset_projections[[feature_ind]][[proj_yr]] = array(0, dim(current_cfac))
         
         if (current_offset_probs[proj_yr] > 0){
-          current_parcel_ecology = list(current_cfac[proj_yr, ])
           
-          current_offset_proj = project_ecology(current_parcel_ecology,
+          current_offset_proj = project_ecology(current_cfac[proj_yr, ],
                                                 min_eco_val,
                                                 max_eco_val,
-                                                current_dec_rate,
+                                                restoration_rate,
                                                 (time_horizon - proj_yr),
                                                 time_fill = TRUE)
           
-          current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj[[1]]  #THIS IS WRONG
+          current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj 
         }
       }
     }
@@ -2007,37 +1968,6 @@ sum_cols_multi <- function(arr_to_use){
   return(arr_out)
 }
 
-
-
-
-
-# ind2sub <- function(rows, ind){
-#   # give an array with N rows, return location of array element "ind" in loc = [x, y] format
-#   rw = ((ind-1) %% rows) + 1
-#   # identify row of current element using mod format
-#   cl = floor((ind-1) / rows) + 1
-#   loc = c(rw, cl)
-#   return(loc)
-# }
-
-#
-# extract_3D_parcel <- function(current_parcel, trajectories){
-#   loc_1 = ind2sub(dim(trajectories)[1], current_parcel[1])
-#   loc_2 = ind2sub(dim(trajectories)[1], current_parcel[length(current_parcel)])
-#   parcel_sz = c((loc_2[1] - loc_1[1] + 1), (loc_2[2] - loc_1[2] + 1), dim(trajectories)[3])
-#   parcel_3D = array(0, parcel_sz)
-#   parcel_3D[, ,] = trajectories[loc_1[1]:loc_2[1], loc_1[2]:loc_2[2], ]
-#   return(parcel_3D)
-# }
-
-# rowProds <- function(X){ t(t(apply(X,1,FUN="prod"))) }
-#
-# test_cond <- function(vals_to_match, parcel_vals_pool, development_vals_used, match_array){
-#   thresh_array = matrix(rep(0.10*vals_to_match, dim(parcel_vals_pool)[1]), ncol = length(development_vals_used), byrow = TRUE)
-#   cond = (parcel_vals_pool - match_array) < thresh_array
-#   cond = rowProds(cond)
-#   return(cond)
-# }
 
 
 # sum through features for each site to yield single dimensional site state vector for each feature
