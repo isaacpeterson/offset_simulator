@@ -276,8 +276,16 @@ overlay_trajectories <- function(site_indexes_to_use, offset_bank, trajectories,
 
 
 get_y_lab <- function(output_type, current_simulation_params, feature_ind){
+  y_lab = paste('Feature', feature_ind)
+  if (feature_ind %in% current_simulation_params$features_to_use_in_offset_calc){
+    ylab = paste0(y_lab, 'T') 
+  } 
   
-  y_lab = paste('Feature', feature_ind, '\n', current_simulation_params$offset_calc_type, '/', current_simulation_params$dev_calc_type )
+  if (feature_ind %in% current_simulation_params$features_to_use_in_offset_intervention){
+    ylab = paste0(y_lab, 'O') 
+  } 
+  
+  ylab = paste0(y_lab, '\n', current_simulation_params$offset_calc_type, '/', current_simulation_params$dev_calc_type )
   
   if (current_simulation_params$use_offset_bank == FALSE){
     y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_stochastic_loss_in_offset_calc))

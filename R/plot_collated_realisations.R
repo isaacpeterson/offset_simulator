@@ -136,7 +136,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
           site_plot_lims = plot_params$site_impact_plot_lims_set[[feature_ind]]
           program_plot_lims = plot_params$program_impact_plot_lims_set[[feature_ind]]
           landscape_plot_lims = plot_params$landscape_impact_plot_lims_set[[feature_ind]]
-          
+
           plot_impact_set(collated_realisations,
                           current_simulation_params,
                           plot_params,
@@ -145,7 +145,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
                           site_plot_lims, 
                           program_plot_lims,
                           landscape_plot_lims,
-                          current_feature,
+                          feature_ind,
                           plot_params$sets_to_plot)
         } else if (plot_params$plot_type == 'outcomes'){
           
@@ -180,6 +180,12 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
   }
   flog.info('all done')
 }
+
+
+
+# find the current simulation folder - the function looks in the base_folder directory if supplied 
+# and assumes the current working directory contains the simulation folder otherwise. If the user supplies the
+# current run number the function looks for thaht specified folder and looks for the latest run otherwise.
 
 #' @export
 find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
