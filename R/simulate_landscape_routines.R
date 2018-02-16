@@ -76,13 +76,6 @@ simulate_LGA <- function(simulated_ecology_params){
   parcel_array = array(0, dim(pixel_indexes))
   parcel_array[unlist(parcels)] = unlist(parcel_list)
   
-  region_vx = split_vector(simulated_ecology_params$region_num_x, parcel_num_x, 1, min_width = 3) # perform similar operation used to split array into smallest elements, but this time for land parcels, arranging into regions
-  region_vy = split_vector(simulated_ecology_params$region_num_y, parcel_num_y, 1, min_width = 3)
-  
-  site_indexes = seq(length(parcel_list))
-  dim(site_indexes) = c(region_vy, region_vx)
-  
-  
   return(parcel_array)
 }
 
@@ -103,8 +96,7 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
   objects_to_save$decline_rates_initial <- simulate_decline_rates(parcel_num = length(objects_to_save$parcels$land_parcels), 
                                                   sample_decline_rate = TRUE, 
                                                   mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
-                                                  decline_rate_std = simulated_ecology_params$decline_rate_std, 
-                                                  feature_num = simulated_ecology_params$feature_num)       # set up array of decline rates that are eassociated with each cell
+                                                  decline_rate_std = simulated_ecology_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
   
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
 

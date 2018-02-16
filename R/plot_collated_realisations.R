@@ -6,40 +6,17 @@
 #' @import futile.logger
 #' @export
 
-osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_number = NULL, loglevel = INFO){
+osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, loglevel = INFO){
   
   if (is.null(user_plot_params)) {
     flog.error('provide plot params file')
     stop()
   } 
   
-  plot_params = overwrite_current_params(user_plot_params, 
-                                         default_params = initialise_default_plot_params())
+  plot_params = overwrite_current_params(user_plot_params, default_params = initialise_default_plot_params())
   
-  if (!is.null(simulation_folder)){
-    base_folder = paste0(simulation_folder, '/simulation_runs/')
-  } else {
-    base_folder = 'simulation_runs/'
-  }
-  
-  if (!is.null(run_number)){
-    current_run = run_number
-  } else {
-    filenames = list.files(path = base_folder, all.files = FALSE,
-                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                           include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
-    
-    current_run = as.numeric(filenames[length(filenames)])
-  }
-  
-  
-  base_folder = paste0(base_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
-  if (!dir.exists(base_folder)){
-    flog.error('simulation folder does not exist')
-    stop()
-  } 
-  collated_folder = paste0(base_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
-  simulation_params_folder = paste0(base_folder, '/simulation_params/')
+  collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
+  simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   
   if (length(plot_params$output_plot_folder) == 0){
     output_plot_folder = collated_folder
@@ -101,50 +78,56 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
     dir.create(output_plot_folder)
   }
   
-  if (plot_params$scenario_vec == 'all'){
+  if ( (class(plot_params$scenario_vec) == 'character')){
     scenario_vec = length(scenario_filenames)
   } else {
     scenario_vec = plot_params$scenario_vec
   }
+  
+  plot.ctr <- 1
+
   for (scenario_ind in seq(scenario_vec)){
     
     flog.info('_________________________________')
-    #     if (plot_params$output_type == 'features'){
-    #       feature_ind = plot_params$scenario_vec[scenario_ind]
-    #     } else if (plot_params$output_type == 'scenarios'){
-    #       scenario_ind = plot_params$scenario_vec[scenario_ind]
-    #     } else if (plot_params$output_type == 'site_sets'){
-    #       set_to_plot = plot_params$scenario_vec[scenario_ind]
-    #     }
-    
+
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
     
-    if (!is.na(match('all', plot_params$plot_subset_type))){
-      plot_flag = TRUE
-    } else {
-      param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
-      
-      if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
-        plot_flag = TRUE 
-      } else {
-        plot_flag = FALSE
-      }
-      
-    }
+    param_inds_to_subset = match(plot_params$plot_subset_type, names(current_simulation_params))
     
-    if (plot_flag == FALSE){
-        flog.info(' skipping plot %d', scenario_ind )
+    if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == plot_params$plot_subset_param)) {
+      plot_flag = TRUE 
     } else {
-      flog.info(' generating plot %d of type: %s', scenario_ind, plot_params$plot_type)  
+      if (length(plot_params$plot_subset_type) > 1){
+        plot_flag = FALSE
+      } else {
+        if (plot_params$plot_subset_type == 'all'){
+          plot_flag = TRUE
+        } else {
+          plot_flag = FALSE
+        }
+      }
+    } 
+    
+
+    if (plot_flag == FALSE){
+        flog.trace(' skipping scenario %d', scenario_ind )
+    } else {
       
-      feature_num = length(current_simulation_params$features_to_use_in_simulation)
+      flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
       
-      for (feature_ind in seq(feature_num)){
+      if (class(plot_params$features_to_plot) == 'character'){
+        features_to_plot = seq(current_simulation_params$feature_num)
+      }  else {
+        features_to_plot = plot_params$features_to_plot
+      }
+        
+      for (feature_ind in features_to_plot){
+        current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = plot_params$string_width, format = "d", flag = "0"),
-                                                 feature_string = formatC(feature_ind, width = plot_params$string_width, format = "d", flag = "0"),
+                                                 feature_string = formatC(current_feature, width = plot_params$string_width, format = "d", flag = "0"),
                                                  plot_params$realisation_num)
         
         collated_realisations = bind_collated_realisations(collated_filenames)
@@ -153,7 +136,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
           site_plot_lims = plot_params$site_impact_plot_lims_set[[feature_ind]]
           program_plot_lims = plot_params$program_impact_plot_lims_set[[feature_ind]]
           landscape_plot_lims = plot_params$landscape_impact_plot_lims_set[[feature_ind]]
-          
+
           plot_impact_set(collated_realisations,
                           current_simulation_params,
                           plot_params,
@@ -162,7 +145,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
                           site_plot_lims, 
                           program_plot_lims,
                           landscape_plot_lims,
-                          current_simulation_params$features_to_use_in_simulation[feature_ind],
+                          feature_ind,
                           plot_params$sets_to_plot)
         } else if (plot_params$plot_type == 'outcomes'){
           
@@ -178,11 +161,11 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
                            site_plot_lims, 
                            program_plot_lims,
                            landscape_plot_lims,
-                           current_simulation_params$features_to_use_in_simulation[feature_ind],
+                           current_feature,
                            plot_params$sets_to_plot)
           
         }
-        
+        plot.ctr <- plot.ctr + 1
         #flog.info(' finished writing plot %d', scenario_ind)
       } 
       
@@ -198,4 +181,35 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, run_num
   flog.info('all done')
 }
 
+
+
+# find the current simulation folder - the function looks in the base_folder directory if supplied 
+# and assumes the current working directory contains the simulation folder otherwise. If the user supplies the
+# current run number the function looks for thaht specified folder and looks for the latest run otherwise.
+
+#' @export
+find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
+  if (!is.null(base_folder) & (length(base_folder) > 0)){
+    simulation_folder = paste0(base_folder, '/simulation_runs/')
+  } else {
+    simulation_folder = 'simulation_runs/'
+  }
+  
+  if (!is.null(run_number)){
+    current_run = run_number
+  } else {
+    filenames = list.files(path = simulation_folder, all.files = FALSE,
+                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                           include.dirs = FALSE, no.. = FALSE, pattern='^[0-9]{1,45}$')
+    current_run = as.numeric(filenames[length(filenames)])
+  }
+  
+  simulation_folder = paste0(simulation_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
+  if (!dir.exists(simulation_folder)){
+    flog.error('simulation_folder %s does not exist.', simulation_folder)
+    stop()
+  } else{
+    return(simulation_folder)
+  }
+}
 
