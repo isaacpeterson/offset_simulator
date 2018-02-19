@@ -36,7 +36,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
             params_object$global_params$realisation_num,
             params_object$global_params$number_of_cores ) 
 
-  for (scenario_ind in seq_along(params_object$simulation_params_group)){
+  for (scenario_ind in params_object$global_params$scenario_run_vec){
     
     loop_strt <- Sys.time()
     

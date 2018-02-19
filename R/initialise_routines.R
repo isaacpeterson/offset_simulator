@@ -69,6 +69,16 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     dump('current_simulation_params', simulation_params_file, append = TRUE)
   }
   
+  if (length(global_params$scenario_subset) == 1){
+    if (global_params$scenario_subset == 'all'){
+      global_params$scenario_run_vec = seq_along(params_object$simulation_params_group)
+    } else {
+      global_params$scenario_run_vec = global_params$scenario_subset
+    }
+  } else {
+    global_params$scenario_run_vec = global_params$scenario_subset
+  }
+  
   global_params <- initialise_cores(global_params)
   global_params$strt = Sys.time()
 
