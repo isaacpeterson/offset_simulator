@@ -4,6 +4,8 @@ initialise_default_global_params <- function(){
   # set the random number seed
   default_global_params$set_seed = FALSE
   
+  default_global_params$scenario_subset = 'all'
+  
   default_global_params$user_simulated_ecology_params_file = 'default'  # path to file
   
   default_global_params$overwrite_default_params = TRUE

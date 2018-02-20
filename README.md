@@ -1,8 +1,9 @@
 # offsetsim
 
-Software for simulating the impacts of biodiversity offsetting
+OffsetSim is an iterative model that simulates the landscape under a set of user-defined offset conservation actions and gains structures to yield an assessment of the gains and losses at the site scale, where the loss of biodiversity from a particular development site is mitigated by an associated gain from one more offset sites, the program scale, comprising all sites in the development-offset program, and the landscape scale, comprising all sites in the landscape, i.e. the sites within the development-offset program as well as those not included. The model requires a set of GIS data layers to be defined as feature layers, as well as a set of response functions that describe the effect of each action on each feature layer. The features can represent any user defined spatial layer including species occupation, habitat types, vegetation classes, environmental domains, ecosystems, and ecosystem services. Actions such as development, protection, restoration etc. are defined and linked to these features. The responses to these actions include the characteristics of the offset action (e.g. the characteristics of the offset restoration function) and are provided as user defined functions. 
 
- [![Travis build status](https://travis-ci.org/isaacpeterson/offset_simulator.svg)](https://travis-ci.org/isaacpeterson/offset_simulator)
+
+ 
 
 ----------
 
@@ -70,7 +71,7 @@ You can get more information on `offsetsim` functionality, from inside R do:
 ### plot_collated_realisations.R
 
 * Plot the results of the simulation
-* run with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of thiese
+* run with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of these
 
 
 Model outputs
@@ -86,11 +87,11 @@ offset_data has the following structure:
 
 Within this directory there are the following directories
 
-- `simulation_runs` contains a folders automatically numbered sequentially for each new run. In each of these numbered folders there will be three folders called `collated_outputs`, `simulation_data` and `simulation_params`. `simulation_data` is the raw outputs of the simulation, and will only be retained if the appropriate parameter is set (this can take a lot of space). `collated_realisations` are processed outputs which can be used to make plots and there is one file per realization. The collated_realisations files have the impacts calculated with all specified counterfactuals. `simulation_params` contains the parameter settings and other info used to generated the simulation.
+- `simulation_runs` contains folders numbered sequentially for each run. In each of these numbered folders there will be three folders called `collated_outputs`, `simulation_data` and `simulation_params`. `simulation_data` is the raw outputs of the simulation, and will only be retained if the appropriate parameter is set (this can take a lot of space). `collated_realisations` are processed outputs which can be used to make plots and there is one file per realization. The collated_realisations files have the impacts calculated with all specified counterfactuals. `simulation_params` contains the parameter settings and other info used to generated the simulation.
 
 - `simulation_inputs` contains all the processed input data needed to run the simulation (NOTE THIS ONLY APPLIES TO THE LATEST RUN). eg <base dire>/offset_data/simulated/simulation_outputs/00005 where 00005 is the latest run that has been done.
 
 
 Points to note
 --------------
-This script can create runaway processes. By default the script will utilize all available processors on your machine. So if you terminate the script while it's running, it may leave some R processes running. This can be terminated by just quitting R, or manually killing those remaining processes.
+This script can occasionally create runaway processes if the runs are stopped before completion by the user. By default the script will utilize all available processors on your machine. So if you terminate the script while it's running, it may leave some R processes running. This can be terminated by just quitting R, or manually killing those remaining processes.
