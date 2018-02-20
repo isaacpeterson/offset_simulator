@@ -71,7 +71,7 @@ You can get more information on `offsetsim` functionality, from inside R do:
 ### plot_collated_realisations.R
 
 * Plot the results of the simulation
-* run with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of thiese
+* run with action_type set to 'plot_outcomes' or 'plot_impacts' to plot either of these
 
 
 Model outputs
