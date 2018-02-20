@@ -94,4 +94,4 @@ Within this directory there are the following directories
 
 Points to note
 --------------
-This script can create runaway processes. By default the script will utilize all available processors on your machine. So if you terminate the script while it's running, it may leave some R processes running. This can be terminated by just quitting R, or manually killing those remaining processes.
+This script can occasionally create runaway processes if the runs are stopped before completion by the user. By default the script will utilize all available processors on your machine. So if you terminate the script while it's running, it may leave some R processes running. This can be terminated by just quitting R, or manually killing those remaining processes.
