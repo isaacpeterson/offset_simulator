@@ -1,6 +1,6 @@
 # offsetsim
 
-Software for simulating the impacts of biodiversity offsetting
+Software for simulating the impacts of biodiversity offsetting. The model is designed to assess offset conservation policies in a many-featured landscape with a temporally and spatially evolving state. The model evaluates offset policies on three scales; namely the site scale, where the loss of biodiversity from a particular development site is mitigated by an associated gain from one more offset sites, the program scale, comprising all sites in the development-offset program, and the landscape scale, comprising all sites in the landscape, i.e. the sites within the development-offset program as well as those not included. 
 
  [![Travis build status](https://travis-ci.org/isaacpeterson/offset_simulator.svg)](https://travis-ci.org/isaacpeterson/offset_simulator)
 
