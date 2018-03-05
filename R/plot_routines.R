@@ -62,9 +62,8 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     dev_site_indexes_to_use = collated_realisations$collated_devs$site_indexes
   }
   
-  stats_to_use = unlist(collated_realisations$sites_used)
-  x_lab = t(array(c(names(stats_to_use), as.vector(stats_to_use)), dim = c(length(stats_to_use), 2)))
-  x_lab = paste(x_lab, sep = "", collapse = ' ')
+
+  x_lab = ''
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
     overlay_trajectories(dev_site_indexes_to_use,
@@ -270,12 +269,12 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
   
   ylab = paste0(y_lab, '\n', current_simulation_params$offset_calc_type, '/', current_simulation_params$dev_calc_type )
   
-  if (current_simulation_params$use_offset_bank == FALSE){
-    y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_stochastic_loss_in_offset_calc))
-  } else{
-    y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_simulation_params$include_stochastic_loss_in_offset_calc))
-  }
-  y_lab = t(y_lab)
+#   if (current_simulation_params$use_offset_bank == FALSE){
+#     y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_stochastic_loss_in_offset_calc))
+#   } else{
+#     y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_simulation_params$include_stochastic_loss_in_offset_calc))
+#   }
+#  y_lab = t(y_lab)
   return(y_lab)
 }
 
@@ -286,8 +285,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   plot_lwd = 1
   
   stats_to_use = unlist(collated_realisations$sites_used)
-  x_lab = t(array(c(names(stats_to_use), as.vector(stats_to_use)), dim = c(length(stats_to_use), 2)))
-  x_lab = paste(x_lab, sep = "", collapse = ' ')
+  x_lab = ''
   if (current_simulation_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
