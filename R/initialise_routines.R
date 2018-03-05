@@ -39,9 +39,9 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
   
-  simulation_params_group = generate_simulation_params_group(simulation_params)
+  simulation_params_object = build_simulation_variants(simulation_params)
   
-  global_params <- write_simulation_folders(global_params, length(simulation_params_group))
+  global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
   
   # generate simulated ecology
   if (global_params$use_simulated_data == TRUE) {
@@ -57,6 +57,11 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   }
   
   saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
+  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
+          
+  simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
+                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
+  
   dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
   simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
   
@@ -71,7 +76,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   if (length(global_params$scenario_subset) == 1){
     if (global_params$scenario_subset == 'all'){
-      global_params$scenario_run_vec = seq_along(params_object$simulation_params_group)
+      global_params$scenario_run_vec = seq_along(simulation_params_group)
     } else {
       global_params$scenario_run_vec = global_params$scenario_subset
     }
@@ -282,8 +287,8 @@ write_simulation_folders <- function(global_params, scenario_num){
     simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
     base_run_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
-    simulation_inputs_folder = 'simulation_inputs/'
-    base_run_folder = 'simulation_runs/'
+    simulation_inputs_folder = ('simulation_inputs/')
+    base_run_folder = ('simulation_runs/')
   }
   
   current_run = find_current_run(base_run_folder)
@@ -327,10 +332,13 @@ build_simulation_params <- function(common_params, simulation_params_group, curr
   names(current_simulation_params) <- append(names(common_params), names(simulation_params_group))
 
   return(current_simulation_params)
+  
 }
 
 
-collate_current_policy <- function(current_simulation_params){
+collate_current_policy <- function(current_simulation_params, common_params){
+  
+  current_simulation_params = append(current_simulation_params, common_params)
   
   if (current_simulation_params$use_offset_bank == TRUE){
     current_simulation_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
@@ -390,26 +398,28 @@ collate_current_policy <- function(current_simulation_params){
   } else {
     flog.info('using independent adjustment of cfacs in development impact calculation')
   }
-  current_simulation_params$adjust_offset_cfacs_flag = any(current_simulation_params$include_potential_developments_in_offset_calc,
+  current_simulation_params$adjust_offset_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_offset_calc,
                                                          current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                         current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE
-  current_simulation_params$adjust_dev_cfacs_flag = any(current_simulation_params$include_potential_developments_in_dev_calc,
+                                                         current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE)
+  current_simulation_params$adjust_dev_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_dev_calc,
                                                       current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                      current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE
+                                                      current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE)
   
   return(current_simulation_params)
   
 }
 
 
-generate_simulation_params_group <- function(simulation_params){
+build_simulation_variants <- function(simulation_params){
   
-  list_cond = unlist(lapply(seq_along(simulation_params), function(i) is.list(simulation_params[[i]])))
-  list_inds = which(list_cond)
-  common_params = simulation_params[which(!list_cond)]
+  variant_cond = unlist(lapply(seq_along(simulation_params), function(i) (is.list(simulation_params[[i]]))))
   
-  if (length(list_inds) > 0){
-    simulation_combs <- generate_simulation_combs(simulation_params[list_inds])  #generate all combinations of offset programs
+  indexes_to_vary = which(variant_cond)
+  variants = simulation_params[indexes_to_vary]
+  common_params = simulation_params[which(!variant_cond)]
+  
+  if (length(indexes_to_vary) > 0){
+    simulation_combs <- generate_simulation_combs(variants)  #generate all combinations of offset programs
     simulation_num = dim(simulation_combs)[1] #how many combinations there are in total
   } else {
     simulation_num = 1
@@ -417,24 +427,26 @@ generate_simulation_params_group <- function(simulation_params){
   simulation_params_group = vector('list', simulation_num)
   
   # when the interventions are set to take place
-  intervention_vec = generate_intervention_vec(time_steps = simulation_params$time_steps,
+  common_params$intervention_vec = generate_intervention_vec(time_steps = simulation_params$time_steps,
                                                               prog_start = simulation_params$dev_start,
                                                               prog_end = simulation_params$dev_end,
                                                               simulation_params$total_dev_num,
                                                               sd = 1)
   
-  for (simulation_ind in seq(simulation_num)){
-    
-    current_simulation_param_inds = unlist(simulation_combs[simulation_ind, ])
-    current_simulation_params <- build_simulation_params(common_params, simulation_params[list_inds], current_simulation_param_inds) #write current policy as a list
-    current_simulation_params$intervention_vec = intervention_vec
-    
-    simulation_params_group[[simulation_ind]] <- collate_current_policy(current_simulation_params)  #setup flags for cfacs, cfac adjustment etc.
-    
-  }
+  param_variants = lapply(seq(simulation_num), function(i)  
+    build_current_variant(current_variant_indexes = unlist(simulation_combs[i, ]), variants))
+  params_object = list()
+  params_object$param_variants = param_variants
+  params_object$common_params = common_params
   
-  return(simulation_params_group)
+  return(params_object)
   
+}
+
+build_current_variant <- function(current_variant_indexes, variants){
+  current_simulation_params_variant <- lapply(seq_along(variants), function(i) variants[[i]][[current_variant_indexes[i] ]])
+  names(current_simulation_params_variant) = names(variants)
+  return(current_simulation_params_variant)
 }
 
 
