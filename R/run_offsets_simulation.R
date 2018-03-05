@@ -18,7 +18,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   params_object <- run_initialise_routines(user_global_params, user_simulation_params, user_simulated_ecology_params)
   
   # nested list object containing ecological values by feature layer for all sites
-  initial_ecology <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_ecology.rds'))
+  initial_features <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_ecology.rds'))
   
   # list containing information on site geography
   parcels <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcels.rds'))
@@ -36,29 +36,29 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
             params_object$global_params$realisation_num,
             params_object$global_params$number_of_cores ) 
 
-  for (scenario_ind in params_object$global_params$scenario_run_vec){
+  for (scenario_ind in params_object$global_params$scenario_subset){
     
     loop_strt <- Sys.time()
     
     current_simulation_params = params_object$simulation_params_group[[scenario_ind]]
+    
     flog.info('running scenario %s of %s in %s mode with %s offsets',  
               scenario_ind, 
               length(params_object$simulation_params_group), 
               current_simulation_params$offset_calc_type, 
               current_simulation_params$offset_action_type)
     
-    # list used to govern ecology rate changes
-    
     # select subset of ecology to use in current simulation 
     # (e.g. if initial ecology is 100 layers deep just run with 10 of them)
-    initial_ecology <- select_feature_subset(initial_ecology, current_simulation_params$features_to_use_in_simulation)
+    initial_features_to_use <- select_feature_subset(initial_features, current_simulation_params$features_to_use_in_simulation)
     
-    decline_rates_initial <- select_feature_subset(decline_rates_initial, current_simulation_params$features_to_use_in_simulation)
+    decline_rates_initial_to_use <- select_feature_subset(decline_rates_initial, current_simulation_params$features_to_use_in_simulation)
+    
     # set object used to store simulation outputs 
-    simulation_inputs = initialise_output_object(parcels, 
-                                                 initial_ecology, 
+    simulation_inputs = initialise_input_object(parcels, 
+                                                 initial_features_to_use, 
                                                  current_simulation_params, 
-                                                 decline_rates_initial, 
+                                                 decline_rates_initial_to_use, 
                                                  dev_weights, 
                                                  offset_weights)
     
@@ -81,8 +81,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        current_simulation_params,
                                        params_object$global_params,
                                        parcels,
-                                       initial_ecology,
-                                       decline_rates_initial,
+                                       initial_features_to_use,
+                                       decline_rates_initial_to_use,
                                        dev_weights,
                                        offset_weights,
                                        scenario_ind,
@@ -97,8 +97,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        current_simulation_params,
                                        params_object$global_params,
                                        parcels,
-                                       initial_ecology,
-                                       decline_rates_initial,
+                                       initial_features_to_use,
+                                       decline_rates_initial_to_use,
                                        dev_weights,
                                        offset_weights,
                                        scenario_ind,
@@ -111,8 +111,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                      current_simulation_params,
                                      params_object$global_params,
                                      parcels,
-                                     initial_ecology,
-                                     decline_rates_initial,
+                                     initial_features_to_use,
+                                     decline_rates_initial_to_use,
                                      dev_weights,
                                      offset_weights,
                                      scenario_ind,
