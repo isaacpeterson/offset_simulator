@@ -222,7 +222,7 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
   # get the mean values of the list of vecs
   mean_collated_impact <- Reduce('+', collated_impacts) / length(collated_impacts)
   
-  # get the last elemet of the mean vec
+  # get the last element of the mean vec
   final_collated_impact <- tail(mean_collated_impact, n=1)
   
   if (length(NNL_to_use) > 0){
@@ -244,17 +244,20 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
 overlay_trajectories <- function(site_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
                                  overlay_type, sets_to_plot, y_lab, site_plot_lims, lwd, x_lab){
   if (offset_bank == FALSE){
-    site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]][sets_to_plot])
-    plot_list = trajectories[[realisation_ind]][site_indexes_to_use]
+    if ( sets_to_plot > length(site_indexes_to_use[[realisation_ind]])){
+      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of devs/offsets'))
+    }
+    current_site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]][sets_to_plot])
+    plot_list = trajectories[[realisation_ind]][current_site_indexes_to_use]
   } else{
-    site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]])
-    plot_list = list(Reduce('+', trajectories[[realisation_ind]][site_indexes_to_use]))
+    current_site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]])
+    plot_list = list(Reduce('+', trajectories[[realisation_ind]][current_site_indexes_to_use]))
   }
+  
   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = y_lab, x_lab, 
                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(lwd, length(plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
 }
-
 
 
 get_y_lab <- function(output_type, current_simulation_params, feature_ind){
