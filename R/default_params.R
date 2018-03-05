@@ -1,7 +1,7 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
   
-  # set the random number seed
+  # Set the random number seed
   default_global_params$set_seed = FALSE
   
   # When specifying multiple scenarios using initialise_default_simulation_params,
@@ -9,13 +9,24 @@ initialise_default_global_params <- function(){
   # run all scenarios.
   default_global_params$scenario_subset = 'all'
   
-  default_global_params$user_simulated_ecology_params_file = 'default'  # path to file
+  # If set to 'defaul', the values in set in
+  # initialise_default_simulated_ecology_params() are used. Otherwise this can
+  # be set to point to a file, that contains the initialise_default_simulated_ecology_params() 
+  # function.
+  # TODO(Isaac): check whether all params are needed or whether only the ones
+  # that are overwritten need to be specified
+  default_global_params$user_simulated_ecology_params_file = 'default'  
   
+  # TODO(Isaac): This may now be obsolete, Isaac to check and then remove 
   default_global_params$overwrite_default_params = TRUE
   
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
+  # Whether the package is to be used to generate simulated data. If this is
+  # FALSE then the it will look in the
+  # default_global_params$unique_simulation_folder to get the required
+  # infromation
   default_global_params$use_simulated_data = TRUE
   
   # Fix the output directory (will overwrite existing files) instead of creating unique 
@@ -29,14 +40,18 @@ initialise_default_global_params <- function(){
 
   # Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
-  # Setting to fale saves a lot of space
+  # Setting to FALSE saves a lot of disk space
   default_global_params$save_simulation_outputs = FALSE
 
+  # When TRUE, input data will be regenerated when a new run is done. If
+  # FALSE, it will use the same input data as the previous run.
+  # TODO(Isaac): chanfge this name to make clear it only applies to simulated data
   default_global_params$overwrite_existing_landscape_data = TRUE
+
   # Use inputs previously saved in landscape inputs folder to run current simulation
   default_global_params$run_from_saved = FALSE
 
-  # Saves the landscape data use by simulation into the run specific simulation params folder
+  # Saves all the initialization data use by simulation into the run specific simulation params folder
   default_global_params$backup_simulation_inputs = TRUE
 
   # Create an animation of the outputs
@@ -80,16 +95,17 @@ initialise_default_simulation_params <- function(){
     # distribution is set in the code the currently isn't user settable)
     default_simulation_params$total_dev_num = 5
     
-    # what subset of features to use in the simulation
+    # What subset of features to use in the simulation (specified by the index
+    # of the feature e.g. c(1,4,13)
     default_simulation_params$features_to_use_in_simulation = 1 
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
     default_simulation_params$features_to_use_in_offset_calc = 1
     
-    # what features are affected by the offset intervention
+    # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
+
     # The maxoimum number of parcels can be selected to offset a single development
-    
     default_simulation_params$max_offset_parcel_num = 10
     
     # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
