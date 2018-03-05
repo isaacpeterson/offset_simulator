@@ -76,12 +76,12 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   if (length(global_params$scenario_subset) == 1){
     if (global_params$scenario_subset == 'all'){
-      global_params$scenario_run_vec = seq_along(simulation_params_group)
+      global_params$scenario_subset = seq_along(simulation_params_group)
     } else {
-      global_params$scenario_run_vec = global_params$scenario_subset
+      global_params$scenario_subset = global_params$scenario_subset
     }
   } else {
-    global_params$scenario_run_vec = global_params$scenario_subset
+    global_params$scenario_subset = global_params$scenario_subset
   }
   
   global_params <- initialise_cores(global_params)
@@ -451,7 +451,7 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_output_object <- function(parcels, initial_ecology, simulation_params, decline_rates_initial, dev_weights, offset_weights){
+initialise_input_object <- function(parcels, initial_ecology, simulation_params, decline_rates_initial, dev_weights, offset_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
