@@ -38,7 +38,7 @@ initialise_default_global_params <- function(){
   # Specify how many cores to run on. Default setting here it to use all available
   default_global_params$number_of_cores = 'all'
 
-  # Whether all of the outputs of the model are kept after a scenario is
+  # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
   # Setting to FALSE saves a lot of disk space
   default_global_params$save_simulation_outputs = FALSE
@@ -222,7 +222,7 @@ initialise_default_simulation_params <- function(){
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
-  # future gains that are avoided) - UNDER DEVELOPMENT - LEAVE SET TO FALSE
+  # future gains that are avoided) - NOW WORKING
   default_simulation_params$include_potential_offsets_in_offset_calc = FALSE
 
   # include ability to set the counterfactual adjustment (include/exclude stochastic clearing, 
