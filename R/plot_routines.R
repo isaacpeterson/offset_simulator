@@ -285,6 +285,9 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   plot_lwd = 1
   
+  stats_to_use = unlist(collated_realisations$sites_used)
+  x_lab = t(array(c(names(stats_to_use), as.vector(stats_to_use)), dim = c(length(stats_to_use), 2)))
+  x_lab = paste(x_lab, sep = "", collapse = ' ')
   if (current_simulation_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
@@ -312,6 +315,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
                                plot_lwd,
                                plot_type,
                                y_lab,
+                               x_lab,
                                plot_from_impact_yr,
                                set_to_plot, 
                                site_plot_lims, 
@@ -333,6 +337,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
                                plot_lwd,
                                plot_type,
                                y_lab = '',
+                               x_lab,
                                plot_from_impact_yr,
                                set_to_plot, 
                                site_plot_lims, 
@@ -349,7 +354,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 
 
 overlay_parcel_set_element <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
-                                       plot_col, plot_lwd, plot_type, y_lab, plot_from_impact_yr, 
+                                       plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
                                        set_to_plot, plot_lims, time_steps){
   
   if (offset_bank == FALSE){
@@ -368,7 +373,7 @@ overlay_parcel_set_element <- function(collated_object, offset_bank, visualisati
   } else {
     plot_list = list(collated_object[[realisation_ind]])
   }
-  overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab = '', 
+  overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab, 
                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(plot_lwd, length(plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
 }
