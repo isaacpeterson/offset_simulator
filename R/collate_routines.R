@@ -510,16 +510,14 @@ collate_program <- function(simulation_outputs, current_trajectories, landscape_
 
 find_sites_used <- function(collated_program){
   sites_used = list()
-  sites_used$offset_sites = find_current_sites_used(collated_program$collated_offsets$site_indexes)
-  sites_used$dev_sites = find_current_sites_used(collated_program$collated_devs$site_indexes)
+  sites_used$offsets = find_current_sites_used(collated_program$collated_offsets$site_indexes)
+  sites_used$devs = find_current_sites_used(collated_program$collated_devs$site_indexes)
   
   sites_used$offset_bank = find_current_sites_used(collated_program$collated_offset_bank$site_indexes)
   sites_used$dev_credit = find_current_sites_used(collated_program$collated_dev_credit$site_indexes)
   
-  sites_used$stochastic_sites_cleared = find_current_sites_used(collated_program$collated_stochastic_loss$site_indexes)
-  sites_used$total_offset_sites = sum_list(list(sites_used$offset_sites, sites_used$offset_bank))
-  sites_used$total_dev_sites = sum_list(list(sites_used$dev_sites, sites_used$dev_credit))
-  
+  sites_used$sites_lost = find_current_sites_used(collated_program$collated_stochastic_loss$site_indexes)
+   
   return(sites_used)
 }
 

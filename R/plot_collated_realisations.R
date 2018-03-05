@@ -18,6 +18,12 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
   collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
   simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   
+  # read in file with stored param settings to identify plots easier
+  param_variants_filename = paste0(simulation_params_folder, 'param_variants.rds')
+  if (file.exists(param_variants_filename)){
+    param_variants = readRDS(paste0(simulation_params_folder, 'param_variants.rds'))
+  }
+  
   if (length(plot_params$output_plot_folder) == 0){
     output_plot_folder = collated_folder
   } else {
@@ -40,20 +46,6 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
   
   # write plots to nx * ny subplots
   setup_sub_plots(plot_params$nx, plot_params$ny, x_space = 5, y_space = 5)
-  
-  #   if (plot_params$output_type == 'scenarios'){
-  #     feature_ind = 1
-  #     set_to_plot = plot_params$sets_to_plot
-  #   } else if (plot_params$output_type == 'features'){
-  #     scenario_ind = 1
-  #     set_to_plot = plot_params$sets_to_plot
-  #   } else if (plot_params$output_type == 'site_sets'){
-  #     scenario_ind = 1
-  #     feature_ind = 1
-  #     plot_params$plot_program = FALSE
-  #     plot_params$plot_landscape = FALSE
-  #   }
-  
   
   global_params_filename <- paste0(simulation_params_folder, '/global_params.rds')
   if (!file.exists(global_params_filename)){
@@ -79,17 +71,19 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
   }
   
   if ( (class(plot_params$scenario_vec) == 'character')){
-    scenario_vec = length(scenario_filenames)
+    if (plot_params$scenario_vec == 'all'){
+      scenario_vec = 1:length(scenario_filenames)
+    }
   } else {
     scenario_vec = plot_params$scenario_vec
   }
   
   plot.ctr <- 1
 
-  for (scenario_ind in seq(scenario_vec)){
+  for (scenario_ind in scenario_vec){
     
     flog.info('_________________________________')
-
+    
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
@@ -116,6 +110,9 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
     } else {
       
       flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
+      if (file.exists(param_variants_filename)){
+        flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
+      }
       
       if (class(plot_params$features_to_plot) == 'character'){
         features_to_plot = seq(current_simulation_params$feature_num)
@@ -132,7 +129,14 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
         
         collated_realisations = bind_collated_realisations(collated_filenames)
         
+        sites_used = collated_realisations$sites_used
+        stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
+        mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
+        
+        flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+
         if (plot_params$plot_type == 'impacts'){
+          
           site_plot_lims = plot_params$site_impact_plot_lims_set[[feature_ind]]
           program_plot_lims = plot_params$program_impact_plot_lims_set[[feature_ind]]
           landscape_plot_lims = plot_params$landscape_impact_plot_lims_set[[feature_ind]]
