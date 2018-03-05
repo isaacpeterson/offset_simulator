@@ -111,8 +111,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
       
       flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, plot_params$plot_type)  
       if (file.exists(param_variants_filename)){
-        flog.info(cat(names(param_variants[[scenario_ind]]), '\n'))
-        flog.info(cat(paste(param_variants[[scenario_ind]]), '\n'))
+        flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
       }
       
       if (class(plot_params$features_to_plot) == 'character'){
@@ -130,7 +129,14 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
         
         collated_realisations = bind_collated_realisations(collated_filenames)
         
+        sites_used = collated_realisations$sites_used
+        stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
+        mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
+        
+        flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+
         if (plot_params$plot_type == 'impacts'){
+          
           site_plot_lims = plot_params$site_impact_plot_lims_set[[feature_ind]]
           program_plot_lims = plot_params$program_impact_plot_lims_set[[feature_ind]]
           landscape_plot_lims = plot_params$landscape_impact_plot_lims_set[[feature_ind]]
