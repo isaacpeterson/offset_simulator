@@ -58,7 +58,7 @@ osim.plot <- function(user_plot_params = NULL, simulation_folder = NULL, logleve
     global_params = readRDS(global_params_filename)
   }
   
-  # get the names of all the files containing the results
+  # get the names of all parameter files, separated into run scenarios
   scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_simulation_params', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
