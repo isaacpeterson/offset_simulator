@@ -6,24 +6,23 @@
 osim.create.example <- function(outdir = '.', loglevel = INFO) {
   
   urlRunParams <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/R/default_params.R'
-  urlRunScript <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/R/example_offsetsim_package_usage.R'
+  urlRunScript <- 'https://raw.githubusercontent.com/isaacpeterson/offset_simulator/master/user_examples/example_offsetsim_package_usage.R'
 
   flog.threshold(loglevel)
   flog.info(paste0("Ensuring output directory '", outdir, "' exists"))
-  outfolder <- write_nested_folder(outdir)
+  outfolder <- outdir
   
-  runFile <- 'offsetsim_example.R'
+  runFile <- 'example_offsetsim_package_usage.R'
   outRunScript <- paste0(outfolder,'/', runFile)
   outRunParams <- paste0(outfolder,'/default_params.R')
   # outPlotParams <- paste0(outfolder,'/default_plot_params.R')
-  
   
   flog.info(paste('Writing to ', outfolder)) 
   quiet <- FALSE
   if (loglevel == futile.logger::ERROR || loglevel == futile.logger::WARN || loglevel == futile.logger::INFO) {
     quiet <- TRUE
   }
-  msg <- paste0("Could not download user example fiels to ", outfolder, ".\n",
+  msg <- paste0("Could not download user example files to ", outfolder, ".\n",
                 "Please ensure you have an active internet connection.\n")
   
   flog.info(paste('Writing ', urlRunScript, 'to', outRunScript)) 
