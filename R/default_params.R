@@ -93,7 +93,7 @@ initialise_default_simulation_params <- function(){
     # mean number using a normal distribution such that the total number of
     # developments will always equal the total number (Note sd for this
     # distribution is set in the code the currently isn't user settable)
-    default_simulation_params$total_dev_num = 5
+    default_simulation_params$total_dev_num = 25
     
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)
