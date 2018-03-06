@@ -351,7 +351,7 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$program_outcome_plot_lims_set = rep(list(c(0e6, 1e7)), length(default_output_params$scenario_vec))
   default_output_params$landscape_outcome_plot_lims_set = rep(list(c(0, 2e7)), length(default_output_params$scenario_vec))
   
-  default_output_params$site_impact_plot_lims_set = rep(list(c(-1e3, 1e3)), length(default_output_params$scenario_vec))
+  default_output_params$site_impact_plot_lims_set = rep(list(c(-1e4, 1e4)), length(default_output_params$scenario_vec))
   default_output_params$program_impact_plot_lims_set = rep(list(c(-1e6, 1e6)), length(default_output_params$scenario_vec)) 
   default_output_params$landscape_impact_plot_lims_set = rep(list(c(-1e6, 0)), length(default_output_params$scenario_vec))
   

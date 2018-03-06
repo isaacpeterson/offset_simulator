@@ -199,15 +199,15 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
 find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
   
   #if (!is.null(base_folder) & (length(base_folder) > 0) & (base_folder != 'default')){
-  #if (!is.null(base_folder) & (base_folder != 'default')){
-  if (base_folder != 'default'){
-    simulation_folder = paste0(base_folder, '/simulation_runs/')
-  } else {
+  if (!is.null(base_folder)){
+    if (base_folder == 'default'){
+      simulation_folder = 'simulation_runs/'
+    } else {
+      simulation_folder = paste0(base_folder, '/simulation_runs/')
+    }
+  } else { 
     simulation_folder = 'simulation_runs/'
   }
-  
-  print(simulation_folder)
-  stop()
   
   if (!is.null(run_number)){
     current_run = run_number
