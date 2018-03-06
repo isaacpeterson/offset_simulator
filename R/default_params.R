@@ -118,7 +118,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$limit_offset_restoration = TRUE
     
     # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
-    default_simulation_params$stochastic_loss_prob = 1e-3
+    default_simulation_params$stochastic_loss_prob = 0
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
     default_simulation_params$min_eco_val = 0  
