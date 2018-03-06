@@ -269,10 +269,10 @@ initialise_default_simulated_ecology_params <- function(){
   default_simulated_ecology_params$feature_num = 1
   
   # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_simulation_params$decline_rate_std
-  default_simulated_ecology_params$mean_decline_rates = rep(list(-1e-2), length(default_simulated_ecology_params$feature_num))
+  default_simulated_ecology_params$mean_decline_rates = rep(list(-1e-2), default_simulated_ecology_params$feature_num)
   
   #set this parameter to zero to yield no noise
-  default_simulated_ecology_params$decline_rate_std = rep(list(1e-3), length(default_simulated_ecology_params$feature_num))
+  default_simulated_ecology_params$decline_rate_std = rep(list(1e-3), default_simulated_ecology_params$feature_num)
   
   # Number of pixels in (y, x) for the feature layes 
   default_simulated_ecology_params$ecology_size = c(300, 300)
