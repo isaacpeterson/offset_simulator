@@ -14,7 +14,7 @@ osim.create.example <- function(outdir = '.', loglevel = INFO) {
   
   runFile <- 'offsetsim_example.R'
   outRunScript <- paste0(outfolder,'/', runFile)
-  outRunParams <- paste0(outfolder,'/default_initialise_params.R')
+  outRunParams <- paste0(outfolder,'/default_params.R')
   # outPlotParams <- paste0(outfolder,'/default_plot_params.R')
   
   
