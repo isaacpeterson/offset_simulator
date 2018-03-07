@@ -314,8 +314,7 @@ initialise_default_simulated_ecology_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
-  default_output_params$output_plot = TRUE 
-  default_output_params$output_csv_file = TRUE
+  default_output_params$output_type = 'plot' # set to plot through 'features', 'scenarios' or 'site_sets'
   default_output_params$output_plot_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot

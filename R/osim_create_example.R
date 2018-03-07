@@ -37,6 +37,7 @@ osim.create.example <- function(outdir = '.', loglevel = INFO) {
            error = function(err) cat(msg)
   )
   
+  
 #   flog.info(paste('Writing ', urlPlotParams, 'to', outPlotParams)) 
 #   tryCatch(download.file(urlPlotParams,outPlotParams, quiet = quiet),
 #            warning = function(err) cat(msg),

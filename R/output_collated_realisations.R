@@ -44,7 +44,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     pdf(output_pdf_filename, width = 8.3, height = 11.7)
   }
   
-  if (output_params$output_type == 'plot'){
+  if (output_params$output_plot == TRUE){
   # write plots to nx * ny subplots
     setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
   }
@@ -138,7 +138,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
           flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
         }
         
-        if (output_params$output_type == 'plot'){
+        if (output_params$output_plot == TRUE){
           if (output_params$plot_type == 'impacts'){
             plot_impact_set(collated_realisations,
                             current_simulation_params,
@@ -164,17 +164,18 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
           }
           plot.ctr <- plot.ctr + 1
           #flog.info(' finished writing plot %d', scenario_ind)
-        } else if (output_params$output_type == 'file'){
-            write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
-                         paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
-            write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
-                       paste0(collated_folder, 'program_impacts.csv'), sep=',' )
-            write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
-                         paste0(collated_folder, 'landscape_outcomes.csv'), sep=',' )
-            write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
-                         paste0(collated_folder, 'landscape_impacts.csv'), sep=',' )
-        }
+        } 
         
+        if (output_params$output_csv_file == TRUE){
+          write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
+                       paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
+          write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
+                       paste0(collated_folder, 'program_impacts.csv'), sep=',' )
+          write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
+                       paste0(collated_folder, 'landscape_outcomes.csv'), sep=',' )
+          write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
+                       paste0(collated_folder, 'landscape_impacts.csv'), sep=',' )
+        }
       } 
       
     }

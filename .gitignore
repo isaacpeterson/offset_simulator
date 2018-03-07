@@ -7,4 +7,6 @@ user_files/
 simulation_routines_update.R
 user_examples/simulated/simulated_data/
 user_examples/grasslands
+/tests/output/
+
 .Rproj.user
