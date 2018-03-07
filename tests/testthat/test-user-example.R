@@ -17,7 +17,7 @@ test_that("running user-example", {
   
   Sys.setenv("R_TESTS" = "") # needed for R CMD CHECK to run correctly
   
-  outdir <- '../output/user-example'
+  outdir <- '.'
 
   # download and user example files to the given directory
   flog.info(paste('creating user example in', outdir))
