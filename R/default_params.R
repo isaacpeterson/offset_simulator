@@ -95,6 +95,13 @@ initialise_default_simulation_params <- function(){
     # distribution is set in the code the currently isn't user settable)
     default_simulation_params$total_dev_num = 25
     
+    # when the interventions are set to take place
+    default_simulation_params$intervention_vec = generate_intervention_vec(time_steps = default_simulation_params$time_steps,
+                                                               prog_start = default_simulation_params$dev_start,
+                                                               prog_end = default_simulation_params$dev_end,
+                                                               default_simulation_params$total_dev_num,
+                                                               sd = 0)
+
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)
     default_simulation_params$features_to_use_in_simulation = 1 

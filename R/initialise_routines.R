@@ -426,13 +426,6 @@ build_simulation_variants <- function(simulation_params){
   }
   simulation_params_group = vector('list', simulation_num)
   
-  # when the interventions are set to take place
-  common_params$intervention_vec = generate_intervention_vec(time_steps = simulation_params$time_steps,
-                                                              prog_start = simulation_params$dev_start,
-                                                              prog_end = simulation_params$dev_end,
-                                                              simulation_params$total_dev_num,
-                                                              sd = 1)
-  
   param_variants = lapply(seq(simulation_num), function(i)  
     build_current_variant(current_variant_indexes = unlist(simulation_combs[i, ]), variants))
   params_object = list()
