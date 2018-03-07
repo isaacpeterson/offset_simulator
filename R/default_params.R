@@ -318,7 +318,7 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$output_plot_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot
-  default_output_params$write_pdf = FALSE
+  default_output_params$write_pdf = TRUE
   default_output_params$sets_to_plot = 1 # example site to plot
   default_output_params$scenario_vec = 'all' #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
   default_output_params$site_impact_col_vec = c('darkgreen', 'red', 'black')

@@ -23,24 +23,25 @@ test_that("running user-example", {
   flog.info(paste('creating user example in', outdir))
   offsetsim::osim.create.example(outdir, futile.logger::WARN)
   
-  # FORCE number_of_cores<-2 as maxCores will fail on Travis (not allowed to spawn that many)
-  f <- paste0(outdir, '/offsetsim_example.R')
-  x <- readLines(f)
-  y <- gsub( "osim.run", "user_global_params$number_of_cores<-1; osim.run", x )
-  cat(y, file=f, sep="\n")
+#   # FORCE number_of_cores<-2 as maxCores will fail on Travis (not allowed to spawn that many)
+#   f <- paste0(outdir, '/offsetsim_example.R')
+#   x <- readLines(f)
+#   y <- gsub( "osim.run", "user_global_params$number_of_cores<-1; osim.run", x )
+#   cat(y, file=f, sep="\n")
   
   # run it
   testrundir <- getwd()
   flog.info(paste0('running the user example in ',outdir))
-  tryCatch({setwd(outdir); source('offsetsim_example.R')}, finally = setwd(testrundir)) 
-
+  tryCatch({setwd(outdir); source('example_offsetsim_package_usage.R')}, finally = setwd(testrundir)) 
+  find_current_run_folder()
+  list.files(paste0(find_current_run_folder(), '/'))
   # check that we got some output
-  actual <- '../output/user-example/simulated_data/simulation_runs/00001/collated_outputs/collated_scenario_001_realisation_001_feature_001.rds'
+  actual <- list.files(paste0(find_current_run_folder(), '/collated_outputs/'), pattern = '.rds')
   flog.info(paste('checking if', actual , 'exists'))
   expect_true(file.exists(actual))
 
   # check that we got some plot as PDF
-  actual <- '../output/user-example/Rplots.pdf'
+  actual <- list.files(paste0(find_current_run_folder(), '/collated_outputs/'), pattern = '.pdf')
   flog.info(paste('checking if', actual , 'exists'))
   expect_true(file.exists(actual))
   
