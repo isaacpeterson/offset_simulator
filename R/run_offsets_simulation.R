@@ -159,16 +159,18 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     } else {
       # Case when running single realisation
       # TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
-      run_offset_simulation_routines(simulation_inputs, 
-                                     current_simulation_params,
-                                     params_object$global_params,
-                                     parcels,
-                                     initial_features_to_use,
-                                     decline_rates_initial_to_use,
-                                     dev_weights,
-                                     offset_weights,
-                                     scenario_ind,
-                                     realisation_ind = 1)
+      for (realisation_ind in 1:params_object$global_params$realisation_num){
+        run_offset_simulation_routines(simulation_inputs, 
+                                       current_simulation_params,
+                                       params_object$global_params,
+                                       parcels,
+                                       initial_features_to_use,
+                                       decline_rates_initial_to_use,
+                                       dev_weights,
+                                       offset_weights,
+                                       scenario_ind,
+                                       realisation_ind)
+      }
     }
     
     flog.info('scenario %s done in %s %s', 
