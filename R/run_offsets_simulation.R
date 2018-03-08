@@ -108,7 +108,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                                  offset_weights)
     
     flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
-              current_simulation_params$total_dev_num, 
+              sum(current_simulation_params$intervention_vec), 
               length(unlist(simulation_inputs$index_object$indexes_to_use$devs)),  # total number of sites available to develop
               length(unlist(simulation_inputs$index_object$indexes_to_use$offsets)), # total number sites avaulable to offset
               length(parcels$land_parcels), # total number of parcles
