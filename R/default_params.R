@@ -81,27 +81,11 @@ initialise_default_simulation_params <- function(){
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
     
-    # The time step at which development starts
-    default_simulation_params$dev_start = 1
-    
-    # The time at which development ends
-    default_simulation_params$dev_end = 50
-    
-    # The total number of parcel that will be developed. The number of
-    # developments per time step is determined as follows: First the mean number
-    # number per time step is determined, then sampling is done around this
-    # mean number using a normal distribution such that the total number of
-    # developments will always equal the total number (Note sd for this
-    # distribution is set in the code the currently isn't user settable)
-    default_simulation_params$total_dev_num = 25
-    
     # when the interventions are set to take place
-    default_simulation_params$intervention_vec = generate_intervention_vec(time_steps = default_simulation_params$time_steps,
-                                                               prog_start = default_simulation_params$dev_start,
-                                                               prog_end = default_simulation_params$dev_end,
-                                                               default_simulation_params$total_dev_num,
-                                                               sd = 0)
-
+    intervention_locs = seq(1, default_simulation_params$time_steps, 1)
+    default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
+    default_simulation_params$intervention_vec[intervention_locs] = 1
+    
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)
     default_simulation_params$features_to_use_in_simulation = 1 
