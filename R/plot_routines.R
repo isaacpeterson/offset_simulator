@@ -176,8 +176,8 @@ check_plot_options <- function(plot_params, current_simulation_params, scenario_
     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
   }
   
-  if (current_simulation_params$total_dev_num < max(plot_params$sets_to_plot)){
-    stop (paste('chosen example set to plot needs to be less than ', current_simulation_params$total_dev_num))
+  if (sum(current_simulation_params$intervention_vec) < max(plot_params$sets_to_plot)){
+    stop (paste('chosen example set to plot needs to be less than ', sum(current_simulation_params$intervention_vec)))
   }
   
   if (plot_params$output_type == 'scenarios'){
@@ -192,8 +192,8 @@ check_plot_options <- function(plot_params, current_simulation_params, scenario_
     }
     
   } else if (plot_params$output_type == 'multiple_sets'){
-    if ( max(plot_params$sets_to_plot) > current_simulation_params$total_dev_num){
-      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', current_simulation_params$total_dev_num, ')'))
+    if ( max(plot_params$sets_to_plot) > sum(current_simulation_params$intervention_vec)){
+      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', sum(current_simulation_params$intervention_vec), ')'))
     }
   }
   
