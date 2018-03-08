@@ -37,6 +37,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     set.seed(seed)
   }
   
+
   #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
   
   simulation_params_object = build_simulation_variants(simulation_params)
@@ -382,7 +383,7 @@ collate_current_policy <- function(current_simulation_params, common_params){
   }
   
   if (current_simulation_params$use_offset_bank == TRUE){
-    current_simulation_params$banked_offset_vec = generate_intervention_vec(time_steps = simulation_params$time_steps,
+    current_simulation_params$banked_offset_vec = generate_stochastic_intervention_vec(time_steps = simulation_params$time_steps,
                                                                           prog_start = current_simulation_params$offset_bank_start,
                                                                           prog_end = current_simulation_params$offset_bank_end,
                                                                           total_simulation_num = current_simulation_params$offset_bank_num,
@@ -482,9 +483,10 @@ parcel_set_list_names <- function(){
   return(list_names)
 }
 
-generate_intervention_vec <- function(time_steps, prog_start, prog_end, total_simulation_num, sd){
+#' @export
+generate_stochstic_intervention_vec <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
   intervention_vec = array(0, time_steps)
-  intervention_vec[prog_start:prog_end] = split_vector((prog_end - prog_start + 1), total_simulation_num, sd, min_width = -1)
+  intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
   return(intervention_vec)
 }
 
