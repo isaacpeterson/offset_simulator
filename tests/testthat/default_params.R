@@ -81,19 +81,10 @@ initialise_default_simulation_params <- function(){
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
     
-    # The time step at which development starts
-    default_simulation_params$dev_start = 1
-    
-    # The time at which development ends
-    default_simulation_params$dev_end = 50
-    
-    # The total number of parcel that will be developed. The number of
-    # developments per time step is determined as follows: First the mean number
-    # number per time step is determined, then sampling is done around this
-    # mean number using a normal distribution such that the total number of
-    # developments will always equal the total number (Note sd for this
-    # distribution is set in the code the currently isn't user settable)
-    default_simulation_params$total_dev_num = 25
+    # when the interventions are set to take place
+    intervention_locs = seq(1, default_simulation_params$time_steps, 1)
+    default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
+    default_simulation_params$intervention_vec[intervention_locs] = 1
     
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)
@@ -314,7 +305,8 @@ initialise_default_simulated_ecology_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
-  default_output_params$output_type = 'plot' # set to plot through 'features', 'scenarios' or 'site_sets'
+  default_output_params$output_plot = TRUE 
+  default_output_params$output_csv_file = TRUE
   default_output_params$output_plot_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot

@@ -1,1 +1,9 @@
 /output/
+/testthat/
+/testthat/default_params.R			
+/testthat/example_offsetsim_package_usage.R	
+/testthat/test-test01.R				
+/testthat/test-test02.R				
+/testthat/test01run.R
+/testthat/test02run.R
+/testthat/test_impacts.pdf
