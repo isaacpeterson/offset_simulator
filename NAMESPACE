@@ -3,6 +3,7 @@
 export(LGA_to_parcel_list)
 export(find_current_run_folder)
 export(generate_nested_list)
+export(generate_stochstic_intervention_vec)
 export(load_rasters)
 export(osim.create.example)
 export(osim.output)
