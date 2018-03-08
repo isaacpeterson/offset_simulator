@@ -17,48 +17,84 @@ test_that("running user-example", {
   
   Sys.setenv("R_TESTS" = "") # needed for R CMD CHECK to run correctly
   
-  outdir <- '.'
+  run_file_dir <- getwd()
   
   # download and user example files to the given directory
-  flog.info(paste('creating user example in', outdir))
-  offsetsim::osim.create.example(getwd(), futile.logger::WARN)
+  flog.info(paste('creating user example in', run_file_dir))
+  offsetsim::osim.create.example(run_file_dir, futile.logger::WARN)
   
-  f <- paste0(outdir, '/example_offsetsim_package_usage.R')
-  x <- readLines(f)
+  f <- paste0(run_file_dir, '/example_offsetsim_package_usage.R')
+  
+  outdir = paste0(dirname(run_file_dir), '/output/boundary_test/')
+  if (!file.exists(outdir)){
+    dir.create(outdir, recursive = TRUE)
+  }
   
   #FORCE number_of_cores<-1 as maxCores will fail on Travis (not allowed to spawn that many)
-  y <- gsub( "osim.run", "user_global_params$number_of_cores<-1; osim.run", x )
+  x <- readLines(f)
+  list_element_to_force <- gsub( "osim.run", paste0("user_global_params$number_of_cores = 'all'; \n osim_run"), x )
+  cat(list_element_to_force, file=f, sep="\n")
   
-  #FORCE overwrite of test folder
-  z <- gsub( "osim.run", "user_global_params$unique_simulation_folder = FALSE; osim.run", x )
-  cat(y, file=f, sep="\n")
-  cat(z, file=f, sep="\n")
+  x <- readLines(f)
+  list_element_to_force <- gsub( "osim.run", "user_output_params$output_csv_file = TRUE; \n osim.run", x )
+  cat(list_element_to_force, file=f, sep="\n")
   
-  # run it
-  testrundir <- getwd()
-  flog.info(paste0('running the user example in ',outdir))
-  tryCatch({setwd(outdir); source('example_offsetsim_package_usage.R')}, finally = setwd(testrundir)) 
-  find_current_run_folder()
-  list.files(paste0(find_current_run_folder(), '/'))
-  # check that we got some output
+  x <- readLines(f)
+  list_element_to_force <- gsub( "osim.run", paste0("user_global_params$simulation_folder = '", outdir, "'; \n osim.run"), x )
+  cat(list_element_to_force, file=f, sep="\n")
+  
+  x <- readLines(f)
+  list_element_to_force <- gsub( "osim.run", paste0("user_global_params$realisation_num = 4; \n osim.run"), x )
+  cat(list_element_to_force, file=f, sep="\n")
+  
+  flog.info(paste0('running the user example in ', run_file_dir))
+  tryCatch({setwd(run_file_dir); source('example_offsetsim_package_usage.R')}) 
+  
   output_folder = paste0(find_current_run_folder(outdir), '/collated_outputs/')
   actual <- list.files(output_folder, pattern = '.rds')
   flog.info(paste('checking if', actual , 'exists'))
   expect_true(length(actual) > 0)
   
-  # check that we got some plot as PDF
+  # check that we got plot as PDF
   actual <- list.files(output_folder, pattern = '.pdf')
-  flog.info(paste('checking if', actual , 'exists'))
+  flog.info(paste('checking if pdf output ', actual , 'exists'))
   expect_true(length(actual) > 0)
   
-  flog.info(paste('checking if outputs are within boundaries'))
-  program_impacts = read.table(file = paste0(current_simulation_folder, '/expected/test_boundaries/program_impacts.csv'), sep = ',', header = FALSE)
-  program_maxs = apply(program_impacts, 1, max)
-  program_mins = apply(program_impacts, 1, min)
-  program_mean = apply(program_impacts, 1, mean)
+  expected_folder = paste0(dirname(run_file_dir), '/expected/test_boundaries/')
+  expected_impact_files = list.files(expected_folder, pattern = 'program_impacts.csv')
   
-  expect_true(program_impacts > 0)
-#   expected <- md5sum(paste0('../expected/test02out/collated_scenario_001_realisation_001_feature_001.rds'))
-#   actual <- md5sum(paste0('../output/test02out/simulation_runs/00001/collated_outputs/collated_scenario_001_realisation_001_feature_001.rds'))
-#   
+  # check that we got impacts as csv
+  actual_impact_files <- list.files(output_folder, pattern = 'program_impacts.csv')
+  flog.info(paste('checking if impacts are output as csv files'))
+  expect_true(all(actual_impact_files == expected_impact_files))
+  
+  flog.info(paste('checking if outputs are within boundaries'))
+  
+  expected_impacts = read.table(file = paste0(expected_folder, expected_impact_files), sep = ',', header = FALSE)
+  actual_impacts = read.table(file = paste0(output_folder, actual_impact_files), sep = ',', header = FALSE)
+  
+  ks_tests = lapply(seq(user_simulation_params$time_steps), 
+                    function(x) ks.test(as.numeric(expected_impacts[x, ]), as.numeric(actual_impacts[x, ])))
+  p_vals = lapply(seq_along(ks_tests), function(i) ks_tests[[i]]$p.value)
+  expect_true(all(unlist(p_vals) > 0.01))
+  
+  expected_maxs = apply(expected_impacts, 1, max)
+  expected_mins = apply(expected_impacts, 1, min)
+  expected_mean = apply(expected_impacts, 1, mean)
+  
+  pdf(paste0(run_file_dir, '/test_impacts.pdf' ))
+  plot(expected_maxs, type = 'l', ylim = c(min(expected_mins), max(expected_maxs)))
+  lines(expected_mins, lwd = 2, col = 'red')
+  lines(expected_maxs, lwd = 2, col = 'red')
+  lines(expected_mean, lwd = 2, col = 'red')
+  
+  for (plot_ind in seq(user_global_params$realisation_num)){
+    lines(as.numeric(actual_impacts[, plot_ind ]))
+  }
+  dev.off()
+  unlink(paste0(dirname(run_file_dir), '/output/boundary_test'))
+  #   expect_true(program_impacts > 0)
+  #   expected <- md5sum(paste0('../expected/test02out/collated_scenario_001_realisation_001_feature_001.rds'))
+  #   actual <- md5sum(paste0('../output/test02out/simulation_runs/00001/collated_outputs/collated_scenario_001_realisation_001_feature_001.rds'))
+  #   
 })
