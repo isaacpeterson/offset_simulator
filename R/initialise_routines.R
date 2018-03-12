@@ -484,7 +484,7 @@ parcel_set_list_names <- function(){
 }
 
 #' @export
-generate_stochstic_intervention_vec <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
+generate_stochastic_intervention_vec <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
   intervention_vec = array(0, time_steps)
   intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
   return(intervention_vec)
