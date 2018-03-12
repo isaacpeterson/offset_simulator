@@ -1,4 +1,4 @@
-run_offset_simulation_routines <- function(simulation_inputs, current_simulation_params, global_params, parcels, initial_ecology,
+run_offset_simulation_routines <- function(simulation_inputs, current_simulation_params, global_params, parcels,
                                            decline_rates_initial, dev_weights, offset_weights, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
   # list used to govern ecology rate changes
@@ -37,7 +37,7 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_data_stack,
                                                         decline_rates_initial, 
-                                                        initial_ecology,  
+                                                        simulation_inputs$initial_ecology,  
                                                         current_data_dir, 
                                                         current_simulation_params,
                                                         realisation_ind,
@@ -559,7 +559,9 @@ prepare_offset_pool <- function(simulation_outputs, current_simulation_params,
   
   if (current_simulation_params$use_offset_bank == TRUE){
     # if running in offset bank mode select sites from current region
-    subset_pool = which(unlist(simulation_outputs$offset_bank_object$site_indexes) %in% parcels$regions)
+    flog.error('offset bank in development')
+    stop()
+    subset_pool = simulation_outputs$offset_bank_object$site_indexes
     
     # find set of offset characteristics that apply to current set of available sites
     offset_pool_object <- select_pool_subset(simulation_outputs$offset_bank_object, subset_pool)
