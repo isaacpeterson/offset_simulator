@@ -98,7 +98,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 
 
 plot_impact_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, realisation_num, 
-                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, set_to_plot){
+                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, sets_to_plot){
   
   # Plot the site scale impacts
   if (plot_params$plot_site == TRUE){
@@ -112,7 +112,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          realisation_ind = 1, 
                          current_feature, 
                          plot_from_impact_yr = FALSE, 
-                         set_to_plot,
+                         sets_to_plot,
                          site_plot_lims,
                          current_simulation_params$time_steps, 
                          plot_params$site_impact_col_vec, 
@@ -284,7 +284,7 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
 
 
 overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_simulation_params, realisation_ind, 
-                                 feature_ind, plot_from_impact_yr, set_to_plot, site_plot_lims, time_steps, col_vec, plot_lwd){
+                                 feature_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps, col_vec, plot_lwd){
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   plot_lwd = 1
   
@@ -293,10 +293,10 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   if (current_simulation_params$use_offset_bank == FALSE){
     offset_set = collated_realisations$collated_offsets
     dev_set = collated_realisations$collated_devs
-    if (max(set_to_plot) > length(dev_set$site_indexes[[realisation_ind]])){
+    if (max(sets_to_plot) > length(dev_set$site_indexes[[realisation_ind]])){
       stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$site_indexes[[realisation_ind]]), ' sites'))
     }
-    net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][set_to_plot]
+    net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][sets_to_plot]
     
   } else {
     offset_set = collated_realisations$program_scale_impacts$net_offset_gains
@@ -305,52 +305,55 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   }
   plot_type = 'non-overlay'
   
-  # Plot the impact of the offset site(s) 
-  
-  if (plot_site_offset_impact == TRUE){
+  for (plot_ind in seq_along(sets_to_plot)){
+    current_set_to_plot = sets_to_plot[plot_ind]
+    # Plot the impact of the offset site(s) 
+    if (plot_site_offset_impact == TRUE){
+      
+      overlay_impact(collated_object = offset_set,
+                     current_simulation_params$use_offset_bank,
+                     visualisation_type = 'stacked', 
+                     realisation_ind, 
+                     plot_col = col_vec[1], 
+                     plot_lwd,
+                     plot_type,
+                     y_lab,
+                     x_lab,
+                     plot_from_impact_yr,
+                     current_set_to_plot, 
+                     site_plot_lims, 
+                     time_steps)
+      
+      plot_type = 'overlay'
+    }
     
-    overlay_impact(collated_object = offset_set,
-                   current_simulation_params$use_offset_bank,
-                   visualisation_type = 'stacked', 
-                   realisation_ind, 
-                   plot_col = col_vec[1], 
-                   plot_lwd,
-                   plot_type,
-                   y_lab,
-                   x_lab,
-                   plot_from_impact_yr,
-                   set_to_plot, 
-                   site_plot_lims, 
-                   time_steps)
     
-    plot_type = 'overlay'
-  }
-  
-  
-  # Overlay the impact of the development site 
-  
-  if (plot_site_dev_impact == TRUE){
+    # Overlay the impact of the development site 
     
-    overlay_impact(dev_set,
-                   current_simulation_params$use_offset_bank,
-                   visualisation_type = 'non-stacked', 
-                   realisation_ind, 
-                   plot_col = col_vec[2],
-                   plot_lwd,
-                   plot_type,
-                   y_lab = '',
-                   x_lab,
-                   plot_from_impact_yr,
-                   set_to_plot, 
-                   site_plot_lims, 
-                   time_steps)
-  }
-  
-  # Overlay the net impact of the offset and development impact 
-  if (plot_site_net_impact == TRUE){
-    overlay_plot_list(plot_type, net_plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
-                      col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
-                      legend_vec = 'NA', legend_loc = FALSE)
+    if (plot_site_dev_impact == TRUE){
+      
+      overlay_impact(dev_set,
+                     current_simulation_params$use_offset_bank,
+                     visualisation_type = 'non-stacked', 
+                     realisation_ind, 
+                     plot_col = col_vec[2],
+                     plot_lwd,
+                     plot_type,
+                     y_lab = '',
+                     x_lab,
+                     plot_from_impact_yr,
+                     current_set_to_plot, 
+                     site_plot_lims, 
+                     time_steps)
+    }
+    
+    # Overlay the net impact of the offset and development impact 
+    if (plot_site_net_impact == TRUE){
+      overlay_plot_list(plot_type, net_plot_list[current_set_to_plot], yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
+                        col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
+                        legend_vec = 'NA', legend_loc = FALSE)
+    }
+    plot_type = 'non-overlay'
   }
 }
 
