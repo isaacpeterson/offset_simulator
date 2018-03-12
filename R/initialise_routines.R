@@ -5,7 +5,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   #' @import doParallel
   #' @import abind
   #' @import pixmap
-
+  
   default_global_params = initialise_default_global_params()
   default_simulation_params = initialise_default_simulation_params()
   default_simulated_ecology_params = initialise_default_simulated_ecology_params()
@@ -16,7 +16,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   } else {
     global_params = default_global_params
   }
-
+  
   if (!is.null(user_simulation_params) == TRUE){  
     simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
     #check_simulation_params(simulation_params)
@@ -37,7 +37,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     set.seed(seed)
   }
   
-
+  
   #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
   
   simulation_params_object = build_simulation_variants(simulation_params)
@@ -59,7 +59,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
   saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
-          
+  
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
                                     function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
   
@@ -87,7 +87,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   global_params <- initialise_cores(global_params)
   global_params$strt = Sys.time()
-
+  
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params_group = simulation_params_group
@@ -105,10 +105,10 @@ check_param_conflicts <- function(simulation_params, simulated_ecology_params){
   } 
   
   offset_calc_test = 
-  if (any(is.na(offset_calc_test))){
-    flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match simulation_params$features_to_use_in_simulation'))
-    stop()
-  } 
+    if (any(is.na(offset_calc_test))){
+      flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match simulation_params$features_to_use_in_simulation'))
+      stop()
+    } 
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params = simulation_params
@@ -198,15 +198,15 @@ check_simulation_params <- function(simulation_params, decline_rates_initial){
   valid_dev_calc_type = c('future_condition', 'current_condition')
   check_current_param(simulation_params$dev_calc_type, valid_dev_calc_type)
   
-#   if ( (length(simulation_params$mean_decline_rates) != length(simulation_params$features_to_use_in_simulation)) ){
-#     flog.error(cat('\n decline rates mean parameter does not match feature number'))
-#     stop()
-#   }
-#   
-#   if ( (length(simulation_params$decline_rate_std) != length(simulation_params$features_to_use_in_simulation)) ){
-#     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
-#     stop()
-#   }
+  #   if ( (length(simulation_params$mean_decline_rates) != length(simulation_params$features_to_use_in_simulation)) ){
+  #     flog.error(cat('\n decline rates mean parameter does not match feature number'))
+  #     stop()
+  #   }
+  #   
+  #   if ( (length(simulation_params$decline_rate_std) != length(simulation_params$features_to_use_in_simulation)) ){
+  #     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
+  #     stop()
+  #   }
   
 }
 
@@ -315,11 +315,11 @@ generate_simulation_combs <- function(simulation_params_group){
 }
 
 build_simulation_params <- function(common_params, simulation_params_group, current_simulation_param_inds){
-
+  
   current_simulation_params_variant <- lapply(seq_along(simulation_params_group), function(i) simulation_params_group[[i]][[current_simulation_param_inds[i] ]])
   current_simulation_params <- append(common_params, current_simulation_params_variant)
   names(current_simulation_params) <- append(names(common_params), names(simulation_params_group))
-
+  
   return(current_simulation_params)
   
 }
@@ -372,10 +372,10 @@ collate_current_policy <- function(current_simulation_params, common_params){
   
   if (current_simulation_params$use_offset_bank == TRUE){
     current_simulation_params$banked_offset_vec = generate_stochastic_intervention_vec(time_steps = simulation_params$time_steps,
-                                                                          current_simulation_params$offset_bank_start,
-                                                                          current_simulation_params$offset_bank_end,
-                                                                          current_simulation_params$offset_bank_num,
-                                                                          sd = 1)
+                                                                                       current_simulation_params$offset_bank_start,
+                                                                                       current_simulation_params$offset_bank_end,
+                                                                                       current_simulation_params$offset_bank_num,
+                                                                                       sd = 1)
   } else {
     current_simulation_params$banked_offset_vec = list()
   }
@@ -388,11 +388,11 @@ collate_current_policy <- function(current_simulation_params, common_params){
     flog.info('using independent adjustment of cfacs in development impact calculation')
   }
   current_simulation_params$adjust_offset_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_offset_calc,
-                                                         current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                         current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE)
+                                                             current_simulation_params$include_potential_offsets_in_offset_calc,
+                                                             current_simulation_params$include_stochastic_loss_in_offset_calc) == TRUE)
   current_simulation_params$adjust_dev_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_dev_calc,
-                                                      current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                      current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE)
+                                                          current_simulation_params$include_potential_offsets_in_dev_calc,
+                                                          current_simulation_params$include_stochastic_loss_in_dev_calc) == TRUE)
   
   return(current_simulation_params)
   
@@ -433,7 +433,7 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_ecology, simulation_params, decline_rates_initial, dev_weights, offset_weights){
+initialise_input_object <- function(parcels, initial_ecology, simulation_params, decline_rates_initial, offset_weights, dev_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -444,9 +444,8 @@ initialise_input_object <- function(parcels, initial_ecology, simulation_params,
   output_object$index_object <- initialise_index_object(parcels, 
                                                         initial_ecology, 
                                                         simulation_params, 
-                                                        offset_indexes_to_exclude = which(unlist(offset_weights) == 0), 
+                                                        offset_indexes_to_exclude = c(which(unlist(offset_weights) == 0)), 
                                                         dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
-  
   output_object$current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
   output_object$decline_rates = decline_rates_initial
   return(output_object)
@@ -578,7 +577,6 @@ initialise_index_object <- function(parcels, initial_ecology, simulation_params,
 }
 
 
-
 set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, simulation_params, screen_site_zeros){
   
   if (screen_site_zeros == TRUE){
@@ -604,12 +602,12 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
 }
 
 screen_available_sites <- function(indexes_to_use, indexes_to_exclude){
-
-    inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
-    if (length(inds_to_remove) > 0){
-      indexes_to_use = indexes_to_use[-inds_to_remove]
-    }
-
+  
+  inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
+  if (length(inds_to_remove) > 0){
+    indexes_to_use = indexes_to_use[-inds_to_remove]
+  }
+  
   return(indexes_to_use)
 }
 

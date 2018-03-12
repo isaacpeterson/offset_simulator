@@ -91,18 +91,18 @@ generate_nested_list <- function(outer_dim, inner_dim){
 }
 
 #' @export
-LGA_to_parcel_list <- function(LGA_array){
+define_planning_units <- function(planning_units_array){
 
-  site_group_vals = unique(as.vector(LGA_array))
-  land_parcels <- lapply(seq_along(site_group_vals), function(i) which(LGA_array == site_group_vals[i]))
+  site_ID_vals = unique(as.vector(planning_units_array))
+  land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
   
   parcels = list()
-  parcels$landscape_dims = dim(LGA_array)
+  parcels$landscape_dims = dim(planning_units_array)
   parcels$site_indexes = seq_along(land_parcels)
   parcels$land_parcel_num = length(land_parcels)
   parcels$land_parcels = land_parcels
-  parcels$parcel_array = LGA_array
-  
+  parcels$parcel_array = planning_units_array
+  parcels$site_ID_vals = site_ID_vals
   return(parcels)
 }
 
