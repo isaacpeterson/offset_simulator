@@ -49,7 +49,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (global_params$run_from_saved == FALSE)){
+    if ( (length(current_filenames) == 0) | (global_params$run_from_saved_simulated_data == FALSE)){
       construct_simulated_data(simulated_ecology_params, 
                                global_params$simulation_inputs_folder, 
                                global_params$simulation_params_folder, 
@@ -253,21 +253,9 @@ select_feature_subset <- function(input_object, features_to_use){
 }
 
 
-write_nested_folder <- function(current_folder){
-  while (!(file.exists(current_folder))){
-    dir_to_use = current_folder
-    while (!(file.exists(dir_to_use))){
-      dir_to_use_tmp = dir_to_use
-      dir_to_use = dirname(dir_to_use)
-    }
-    dir.create(dir_to_use_tmp)
-  }
-  return(current_folder)
-}
-
 write_folder <- function(current_folder){
   if (!file.exists(current_folder)){
-    dir.create(current_folder)
+    dir.create(current_folder, recursive = TRUE)
   }
   return(current_folder)
 }
@@ -284,7 +272,7 @@ find_current_run <- function(base_run_folder){
 write_simulation_folders <- function(global_params, scenario_num){
   
   if (global_params$simulation_folder != 'default'){
-    simulation_folder = write_nested_folder(global_params$simulation_folder)
+    simulation_folder = write_folder(global_params$simulation_folder)
     simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
     base_run_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
@@ -299,8 +287,8 @@ write_simulation_folders <- function(global_params, scenario_num){
   } else {
     current_run = 1
   } 
-
-  global_params$run_folder = write_nested_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
+  
+  global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
   global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
   flog.info('writing simulation outputs into %s', global_params$run_folder)
   
@@ -384,9 +372,9 @@ collate_current_policy <- function(current_simulation_params, common_params){
   
   if (current_simulation_params$use_offset_bank == TRUE){
     current_simulation_params$banked_offset_vec = generate_stochastic_intervention_vec(time_steps = simulation_params$time_steps,
-                                                                          prog_start = current_simulation_params$offset_bank_start,
-                                                                          prog_end = current_simulation_params$offset_bank_end,
-                                                                          total_simulation_num = current_simulation_params$offset_bank_num,
+                                                                          current_simulation_params$offset_bank_start,
+                                                                          current_simulation_params$offset_bank_end,
+                                                                          current_simulation_params$offset_bank_num,
                                                                           sd = 1)
   } else {
     current_simulation_params$banked_offset_vec = list()

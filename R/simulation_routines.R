@@ -2,7 +2,7 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
                                            decline_rates_initial, dev_weights, offset_weights, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
   # list used to govern ecology rate changes
-  current_data_dir = write_nested_folder(paste0(global_params$output_folder, 
+  current_data_dir = write_folder(paste0(global_params$output_folder, 
                                                 'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
                                                 '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
