@@ -61,7 +61,7 @@ mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller s
   
 }  
 
-simulate_LGA <- function(simulated_ecology_params){
+simulate_planning_units <- function(simulated_ecology_params){
   
   parcel_num_x = simulated_ecology_params$parcel_num_x   #length in parcels of array in x 
   parcel_num_y = simulated_ecology_params$parcel_num_y #length in parcels of array in y 
@@ -86,8 +86,8 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
 
   objects_to_save$simulated_ecology_params <- simulated_ecology_params
   
-  objects_to_save$LGA_array <- simulate_LGA(objects_to_save$simulated_ecology_params)
-  objects_to_save$parcels <- LGA_to_parcel_list(objects_to_save$LGA_array)
+  objects_to_save$planning_units_array <- simulate_planning_units(objects_to_save$simulated_ecology_params)
+  objects_to_save$parcels <- define_planning_units(objects_to_save$planning_units_array)
   objects_to_save$parcel_ecology <- simulate_ecology(objects_to_save$simulated_ecology_params, land_parcels = objects_to_save$parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
   objects_to_save$dev_weights = rep(list(1/length(objects_to_save$parcel_ecology)), length(objects_to_save$parcel_ecology))

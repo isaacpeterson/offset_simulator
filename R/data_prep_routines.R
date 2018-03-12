@@ -62,7 +62,7 @@ read_pnm_layer <- function(filename){
 
 #' @export
 save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
-  write_nested_folder(simulation_inputs_folder)
+  write_folder(simulation_inputs_folder)
   filenames_to_save = names(objects_to_save)
   for (file_ind in seq_along(objects_to_save)){
     saveRDS(objects_to_save[[file_ind]], paste0(simulation_inputs_folder, filenames_to_save[file_ind], '.rds')) 
