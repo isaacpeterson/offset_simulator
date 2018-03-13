@@ -30,6 +30,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   legend_vec = c('Outcome', 'Counterfactual'), 
                   current_simulation_params$time_steps)
   }
+  
   if (plot_params$plot_landscape == TRUE){ 
     plot_outcomes(collated_realisations$landscape$net_landscape, 
                   plot_type = 'landscape', 

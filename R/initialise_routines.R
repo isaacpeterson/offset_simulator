@@ -244,7 +244,7 @@ overwrite_current_params <- function(user_params, default_params){
 
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match initial_ecology_dimensions'))
+    flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match initial_feature_layers_dimensions'))
     stop()
   }
   output_object <- lapply(seq_along(input_object),
@@ -433,16 +433,16 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_ecology, simulation_params, decline_rates_initial, offset_weights, dev_weights){
+initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, decline_rates_initial, offset_weights, dev_weights){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
   output_object$stochastic_loss_object <- list()
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
-  output_object$current_ecology = initial_ecology
+  output_object$current_feature_layers = initial_feature_layers
   output_object$index_object <- initialise_index_object(parcels, 
-                                                        initial_ecology, 
+                                                        initial_feature_layers, 
                                                         simulation_params, 
                                                         offset_indexes_to_exclude = c(which(unlist(offset_weights) == 0)), 
                                                         dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
@@ -550,7 +550,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(parcels, initial_ecology, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(parcels, initial_feature_layers, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector()
@@ -562,14 +562,14 @@ initialise_index_object <- function(parcels, initial_ecology, simulation_params,
   index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
-                                                              initial_ecology, 
+                                                              initial_feature_layers, 
                                                               simulation_params, 
                                                               screen_site_zeros = simulation_params$screen_offset_zeros)
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
-                                                           initial_ecology, 
+                                                           initial_feature_layers, 
                                                            simulation_params, 
                                                            screen_site_zeros = simulation_params$screen_dev_zeros)
   return(index_object)
@@ -577,13 +577,13 @@ initialise_index_object <- function(parcels, initial_ecology, simulation_params,
 }
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_ecology, simulation_params, screen_site_zeros){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_feature_layers, simulation_params, screen_site_zeros){
   
   if (screen_site_zeros == TRUE){
     
-    initial_parcel_sums = lapply(seq_along(initial_ecology), 
-                                 function(i) lapply(seq_along(initial_ecology[[i]]), 
-                                                    function(j) sum(initial_ecology[[i]][[j]]) ) )
+    initial_parcel_sums = lapply(seq_along(initial_feature_layers), 
+                                 function(i) lapply(seq_along(initial_feature_layers[[i]]), 
+                                                    function(j) sum(initial_feature_layers[[i]][[j]]) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                            function(i) all(unlist(initial_parcel_sums[[i]][simulation_params$features_to_use_in_offset_calc]) == 0))))
@@ -627,17 +627,17 @@ initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_
 
 split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, feature_num){
   parcel_num = length(land_parcels)
-  current_ecology = generate_nested_list(outer_dim = parcel_num, inner_dim = feature_num)
+  current_feature_layers = generate_nested_list(outer_dim = parcel_num, inner_dim = feature_num)
   
   for (parcel_ind in seq_len(parcel_num)){
     current_parcel = land_parcels[[parcel_ind]]
     parcel_dims = length(current_parcel)
     
     for (eco_ind in seq_len(feature_num)){
-      current_ecology[[parcel_ind]][[eco_ind]] = landscape_ecology[[eco_ind]][current_parcel]
+      current_feature_layers[[parcel_ind]][[eco_ind]] = landscape_ecology[[eco_ind]][current_parcel]
     }
   }
-  return(current_ecology)
+  return(current_feature_layers)
   
 }
 
