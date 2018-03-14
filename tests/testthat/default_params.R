@@ -17,9 +17,6 @@ initialise_default_global_params <- function(){
   # that are overwritten need to be specified
   default_global_params$user_simulated_ecology_params_file = 'default'  
   
-  # TODO(Isaac): This may now be obsolete, Isaac to check and then remove 
-  default_global_params$overwrite_default_params = TRUE
-  
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
@@ -43,13 +40,8 @@ initialise_default_global_params <- function(){
   # Setting to FALSE saves a lot of disk space
   default_global_params$save_simulation_outputs = FALSE
 
-  # When TRUE, input data will be regenerated when a new run is done. If
-  # FALSE, it will use the same input data as the previous run.
-  # TODO(Isaac): chanfge this name to make clear it only applies to simulated data
-  default_global_params$overwrite_existing_landscape_data = TRUE
-
   # Use inputs previously saved in landscape inputs folder to run current simulation
-  default_global_params$run_from_saved = FALSE
+  default_global_params$run_from_saved_simulated_data = FALSE
 
   # Saves all the initialization data use by simulation into the run specific simulation params folder
   default_global_params$backup_simulation_inputs = TRUE
@@ -81,7 +73,7 @@ initialise_default_simulation_params <- function(){
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
     
-    # when the interventions are set to take place
+    # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
     default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
     default_simulation_params$intervention_vec[intervention_locs] = 1

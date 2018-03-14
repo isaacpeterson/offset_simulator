@@ -32,7 +32,7 @@ test_that("running user-example", {
   
   #FORCE number_of_cores<-1 as maxCores will fail on Travis (not allowed to spawn that many)
   x <- readLines(f)
-  list_element_to_force <- gsub( "osim.run", paste0("user_global_params$number_of_cores = 'all'; \n osim_run"), x )
+  list_element_to_force <- gsub( "osim.run", paste0("user_global_params$number_of_cores = 1; \n osim_run"), x )
   cat(list_element_to_force, file=f, sep="\n")
   
   x <- readLines(f)

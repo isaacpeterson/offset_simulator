@@ -37,7 +37,7 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
     current_collated_realisation = run_collate_routines(simulation_outputs, 
                                                         current_data_stack,
                                                         decline_rates_initial, 
-                                                        simulation_inputs$initial_feature_layers,  
+                                                        simulation_inputs$current_feature_layers,  
                                                         current_data_dir, 
                                                         current_simulation_params,
                                                         realisation_ind,

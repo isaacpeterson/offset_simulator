@@ -56,10 +56,9 @@ initialise_user_combination_params <- function(){
 
   combination_params$offset_bank_end = 1 
 
-
   combination_params$offset_bank_num = 200 
 
-    combination_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
+  combination_params$offset_bank_type = c('credit') #c('parcel_set', 'credit')     
   
   combination_params$offset_time_horizon = c(15)
   
