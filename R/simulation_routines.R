@@ -204,7 +204,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                      index_object = simulation_outputs$index_object,
                                                      decline_rates = simulation_outputs$decline_rates,
                                                      current_dev_object = unregulated_loss_object,
-                                                     clearing_type = 'stochastic',
+                                                     clearing_type = 'unregulated',
                                                      current_simulation_params)
     }
     
@@ -398,7 +398,7 @@ perform_unregulated_loss <- function(current_feature_layers, index_object, yr, c
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return()
   } else {
-    flog.info('stochastic losses %s' , as.vector(inds_to_clear))
+    flog.info('unregulated losses %s' , as.vector(inds_to_clear))
   }
   
   # current remaining sites - used for calculation of cfac
@@ -479,7 +479,7 @@ remove_parcel_from_current_pool <- function(offset_pool_object, current_site_ind
 
 
 
-# routines to mark and destroy feature_layers in cleared sites e.g. Development or stochastic
+# routines to mark and destroy feature_layers in cleared sites e.g. Development or unregulated
 
 perform_clearing_routine <- function(simulation_outputs, index_object, decline_rates, current_dev_object, clearing_type, current_simulation_params){
   #remove development parcels from available pool
@@ -492,7 +492,7 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
     simulation_outputs$credit_object <- append_current_group(simulation_outputs$credit_object, current_dev_object, append_routine = 'standard')
-  } else if (clearing_type == 'stochastic'){
+  } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
     
     simulation_outputs$unregulated_loss_object <- append_current_group(simulation_outputs$unregulated_loss_object, current_dev_object, append_routine = 'standard')
@@ -1470,8 +1470,8 @@ update_index_object <- function(index_object, update_type, site_indexes){
     index_object$site_indexes$offsets = append(index_object$site_indexes$offsets, list(site_indexes))
   } else if (update_type == 'development'){
     index_object$site_indexes$devs = append(index_object$site_indexes$devs, list(site_indexes))
-  } else if (update_type == 'stochastic'){
-    index_object$site_indexes$stochastics = append(index_object$site_indexes$stochastics, list(site_indexes))
+  } else if (update_type == 'unregulated'){
+    index_object$site_indexes$unregulated = append(index_object$site_indexes$unregulated, list(site_indexes))
   } else if (update_type == 'develop_from_credit'){
     index_object$site_indexes$dev_credit = append(index_object$site_indexes$dev_credits, list(site_indexes))
   } else if (update_type == 'banking'){

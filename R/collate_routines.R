@@ -449,7 +449,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                          feature_ind)
   
   collated_data$collated_unregulated_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$unregulated_loss_object,
-                                                                              current_site_groups = simulation_outputs$index_object$site_indexes$stochastics,
+                                                                              current_site_groups = simulation_outputs$index_object$site_indexes$unregulated,
                                                                               current_trajectories, 
                                                                               current_decline_rates_initial, 
                                                                               collate_type = 'unregulated_loss', 
