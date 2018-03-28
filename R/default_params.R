@@ -101,7 +101,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$limit_offset_restoration = TRUE
     
     # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
-    default_simulation_params$stochastic_loss_prob = 0
+    default_simulation_params$unregulated_loss_prob = 0
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
     default_simulation_params$min_eco_val = 0  
@@ -201,7 +201,7 @@ initialise_default_simulation_params <- function(){
   # Include future stochastic developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_stochastic_loss_in_offset_calc = FALSE
+  default_simulation_params$include_unregulated_loss_in_offset_calc = FALSE
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
@@ -226,7 +226,7 @@ initialise_default_simulation_params <- function(){
   # impact because projected future value of the site is lower if there is
   # some probability the site may be stochasticly developed in the future
   
-  # default_simulation_params$include_stochastic_loss_in_dev_calc = default_simulation_params$include_stochastic_loss_in_offset_calc
+  # default_simulation_params$include_unregulated_loss_in_dev_calc = default_simulation_params$include_unregulated_loss_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as

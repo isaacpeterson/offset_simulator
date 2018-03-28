@@ -191,7 +191,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
     }
     
     #select sites for clearing
-    stochastic_loss_object <- perform_stochastic_loss(simulation_outputs$current_feature_layers,
+    unregulated_loss_object <- perform_unregulated_loss(simulation_outputs$current_feature_layers,
                                                          simulation_outputs$index_object,
                                                          yr,
                                                          current_simulation_params,
@@ -199,11 +199,11 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                          current_simulation_params$offset_time_horizon)
     
     # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
-    if (!is.null(stochastic_loss_object)){
+    if (!is.null(unregulated_loss_object)){
       simulation_outputs <- perform_clearing_routine(simulation_outputs,
                                                      index_object = simulation_outputs$index_object,
                                                      decline_rates = simulation_outputs$decline_rates,
-                                                     current_dev_object = stochastic_loss_object,
+                                                     current_dev_object = unregulated_loss_object,
                                                      clearing_type = 'stochastic',
                                                      current_simulation_params)
     }
@@ -377,7 +377,7 @@ remove_site_from_pool <- function(offset_pool_object, current_site_indexes){
 #sample over uniform random vector, indicies less than the threshold level are selected for clearing
 select_sites_to_clear <- function(site_indexes, current_simulation_params){
   
-  clearing_thresh <- rep(current_simulation_params$stochastic_loss_prob, length(site_indexes))
+  clearing_thresh <- rep(current_simulation_params$unregulated_loss_prob, length(site_indexes))
   discrim <- runif(length(clearing_thresh)) < clearing_thresh
   inds_to_clear <- site_indexes[discrim]
   
@@ -386,9 +386,9 @@ select_sites_to_clear <- function(site_indexes, current_simulation_params){
 
 
 
-perform_stochastic_loss <- function(current_feature_layers, index_object, yr, current_simulation_params, decline_rates_initial, time_horizon){
+perform_unregulated_loss <- function(current_feature_layers, index_object, yr, current_simulation_params, decline_rates_initial, time_horizon){
   
-  if (current_simulation_params$stochastic_loss_prob == 0){
+  if (current_simulation_params$unregulated_loss_prob == 0){
     # return null object when clearing is inactive
     return()
   }
@@ -405,13 +405,13 @@ perform_stochastic_loss <- function(current_feature_layers, index_object, yr, cu
   parcel_num_remaining = length(site_indexes)
   
   # store group of site characteristics in site characteristics object
-  stochastic_loss_object <- record_current_parcel_set(current_feature_layers[inds_to_clear],
+  unregulated_loss_object <- record_current_parcel_set(current_feature_layers[inds_to_clear],
                                                         inds_to_clear,
                                                         parcel_num_remaining,
                                                         yr)
   
   # record characteristics of cleared site
-  stochastic_loss_object <- assess_current_pool(pool_object = stochastic_loss_object,
+  unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
                                                   pool_type = 'devs',
                                                   calc_type = current_simulation_params$dev_calc_type,
                                                   cfacs_flag = current_simulation_params$dev_cfacs_flag,
@@ -419,13 +419,13 @@ perform_stochastic_loss <- function(current_feature_layers, index_object, yr, cu
                                                   action_type = current_simulation_params$offset_action_type,
                                                   include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                                   include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                  include_stochastic_loss = current_simulation_params$include_stochastic_loss_in_dev_calc,
+                                                  include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc,
                                                   time_horizon_type = 'future',
                                                   current_simulation_params,
                                                   decline_rates_initial,
                                                   time_horizon,
                                                   yr)  #determine future development parcel attributes
-  return(stochastic_loss_object)
+  return(unregulated_loss_object)
 }
 
 
@@ -495,7 +495,7 @@ perform_clearing_routine <- function(simulation_outputs, index_object, decline_r
   } else if (clearing_type == 'stochastic'){
     #record current cleared site characteristics
     
-    simulation_outputs$stochastic_loss_object <- append_current_group(simulation_outputs$stochastic_loss_object, current_dev_object, append_routine = 'standard')
+    simulation_outputs$unregulated_loss_object <- append_current_group(simulation_outputs$unregulated_loss_object, current_dev_object, append_routine = 'standard')
   }
   # set elements corresponding to developed parcels in decline rates array to zero
   simulation_outputs$decline_rates <- update_decline_rates(decline_rates,
@@ -590,7 +590,7 @@ prepare_offset_pool <- function(simulation_outputs, current_simulation_params,
                                             action_type = current_simulation_params$offset_action_type,
                                             include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc,
                                             include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc,
-                                            include_stochastic_loss = current_simulation_params$include_stochastic_loss_in_offset_calc,
+                                            include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_offset_calc,
                                             time_horizon_type = current_simulation_params$offset_time_horizon_type,
                                             current_simulation_params,
                                             decline_rates_initial,
@@ -677,7 +677,7 @@ assess_parcel_sets <- function(current_feature_layers, offsets_object, offset_pa
                                                      adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                                                      include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc,
                                                      include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc,
-                                                     include_stochastic_loss = current_simulation_params$include_stochastic_loss_in_offset_calc,
+                                                     include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_offset_calc,
                                                      time_horizon_type = current_simulation_params$offset_time_horizon_type,
                                                      current_simulation_params,
                                                      decline_rates_initial,
@@ -703,7 +703,7 @@ assess_parcel_sets <- function(current_feature_layers, offsets_object, offset_pa
 
 
 assess_current_gain_pool <- function(current_feature_layers, pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, 
-                                     include_potential_developments,include_potential_offsets,include_stochastic_loss,
+                                     include_potential_developments,include_potential_offsets,include_unregulated_loss,
                                      time_horizon_type, current_simulation_params, decline_rates_initial, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
@@ -722,7 +722,7 @@ assess_current_gain_pool <- function(current_feature_layers, pool_object, pool_t
                               offset_yrs,
                               include_potential_developments,
                               include_potential_offsets,
-                              include_stochastic_loss,
+                              include_unregulated_loss,
                               adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                               features_to_project = current_simulation_params$features_to_use_in_offset_calc)
     
@@ -920,7 +920,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
                                          action_type = current_simulation_params$offset_action_type,
                                          include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                          include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                         include_stochastic_loss = current_simulation_params$include_stochastic_loss_in_dev_calc,
+                                         include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc,
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          decline_rates_initial,
@@ -1026,7 +1026,7 @@ develop_from_credit <- function(current_feature_layers, current_credit, dev_weig
                                          action_type = current_simulation_params$offset_action_type,
                                          include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
                                          include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                         include_stochastic_loss = current_simulation_params$include_stochastic_loss_in_dev_calc,
+                                         include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc,
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          decline_rates_initial,
@@ -1561,7 +1561,7 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 
 
 assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
-                                include_potential_developments, include_potential_offsets, include_stochastic_loss,
+                                include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                 time_horizon_type, current_simulation_params, decline_rates_initial, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
@@ -1591,7 +1591,7 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
                                 offset_yrs,
                                 include_potential_developments,
                                 include_potential_offsets,
-                                include_stochastic_loss,
+                                include_unregulated_loss,
                                 adjust_cfacs_flag,
                                 features_to_project = current_simulation_params$features_to_use_in_offset_calc)
       
@@ -1717,7 +1717,7 @@ kill_development_feature_layers <- function(current_feature_layers, decline_rate
 
 
 calc_cfacs <- function(parcel_feature_layers, parcel_num_remaining, current_simulation_params,
-                       decline_rates, time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_stochastic_loss,
+                       decline_rates, time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_unregulated_loss,
                        adjust_cfacs_flag, features_to_project){
   
   cfacs_object = list()
@@ -1736,7 +1736,7 @@ calc_cfacs <- function(parcel_feature_layers, parcel_num_remaining, current_simu
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
                                                include_potential_developments,
                                                include_potential_offsets,
-                                               include_stochastic_loss,
+                                               include_unregulated_loss,
                                                current_simulation_params,
                                                parcel_num_remaining,
                                                decline_rates,
@@ -1753,17 +1753,17 @@ calc_cfacs <- function(parcel_feature_layers, parcel_num_remaining, current_simu
 }
 
 
-adjust_cfacs <- function(current_cfacs, include_potential_developments,include_potential_offsets, include_stochastic_loss,
+adjust_cfacs <- function(current_cfacs, include_potential_developments,include_potential_offsets, include_unregulated_loss,
                          current_simulation_params, parcel_num_remaining, decline_rates, time_horizons, offset_yrs){
   
   time_horizons = unlist(time_horizons)
   
   parcel_num = length(current_cfacs)
   counter_weights = rep(list(1), parcel_num)
-  if (include_stochastic_loss == TRUE){
+  if (include_unregulated_loss == TRUE){
 
-    stochastic_loss_weights <- generate_weights(include_stochastic_loss,
-                                                calc_type = 'stochastic_loss',
+    unregulated_loss_weights <- generate_weights(include_unregulated_loss,
+                                                calc_type = 'unregulated_loss',
                                                 current_simulation_params$max_offset_parcel_num,
                                                 current_simulation_params$intervention_vec,
                                                 offset_yrs,
@@ -1771,8 +1771,8 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                                 parcel_num,
                                                 parcel_num_remaining,
                                                 current_simulation_params$time_steps,
-                                                current_simulation_params$stochastic_loss_prob)
-    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - stochastic_loss_weights$weights[[i]])
+                                                current_simulation_params$unregulated_loss_prob)
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - unregulated_loss_weights$weights[[i]])
   }
   
   if (include_potential_developments == TRUE){
@@ -1785,7 +1785,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                     parcel_num,
                                     parcel_num_remaining,
                                     current_simulation_params$time_steps,
-                                    current_simulation_params$stochastic_loss_prob)
+                                    current_simulation_params$unregulated_loss_prob)
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - dev_weights$weights[[i]])
   }
   
@@ -1799,7 +1799,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                        parcel_num,
                                        parcel_num_remaining,
                                        current_simulation_params$time_steps,
-                                       current_simulation_params$stochastic_loss_prob)
+                                       current_simulation_params$unregulated_loss_prob)
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - offset_weights$weights[[i]])
   }
   
@@ -1842,10 +1842,10 @@ remove_neg_probs <- function(weight_list, inds_to_accept){
 
 
 generate_weights <- function(perform_weight, calc_type, offset_intervention_scale, intervention_vec, offset_yrs, time_horizons,
-                             parcel_num, parcel_num_remaining, time_steps, stochastic_loss_prob){
+                             parcel_num, parcel_num_remaining, time_steps, unregulated_loss_prob){
   if (perform_weight == TRUE){
-    if (calc_type == 'stochastic_loss'){
-      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(stochastic_loss_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_simulation_params$stochastic_loss_prob)
+    if (calc_type == 'unregulated_loss'){
+      weighted_probs <- lapply(seq_len(parcel_num), function(i) rep(unregulated_loss_prob, (time_horizons[i] + 1)))    #runif(n = (time_horizon + 1), min = 0, max = current_simulation_params$unregulated_loss_prob)
     } else {
       weighted_probs <- find_intervention_probability(intervention_vec,
                                                       offset_yrs,
