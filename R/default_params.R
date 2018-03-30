@@ -154,13 +154,15 @@ initialise_default_simulation_params <- function(){
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   default_simulation_params$allow_developments_from_credit = TRUE
   
-  # How the development parcels are selected options are 'random' or
-  # 'weighted'. Note tha weighted requires an additonal weighting layer. If
+  # How the development/offset parcels are selected options are 'random',
+  # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
   default_simulation_params$development_selection_type = 'random'  
 
+  default_simulation_params$offset_selection_type = 'greedy'  
+  
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
@@ -237,6 +239,7 @@ initialise_default_simulation_params <- function(){
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
+  
   default_simulation_params$offset_multiplier = 1
 
   return(default_simulation_params)

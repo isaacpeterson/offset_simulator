@@ -1,5 +1,5 @@
 run_offset_simulation_routines <- function(simulation_inputs, current_simulation_params, global_params, parcels,
-                                           decline_rates_initial, dev_weights, offset_weights, scenario_ind, realisation_ind){  
+                                           decline_rates_initial, dev_probability_list, offset_probability_list, scenario_ind, realisation_ind){  
   # run simulation with identical realisation instantiation
   # list used to govern feature_layers rate changes
   current_data_dir = write_folder(paste0(global_params$output_folder, 
@@ -14,7 +14,8 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
                                        current_simulation_params,
                                        parcels,
                                        decline_rates_initial,
-                                       dev_weights,
+                                       dev_probability_list,
+                                       offset_probability_list,
                                        current_data_dir)
   
   # save raw simulation data
@@ -75,11 +76,9 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
 }
 
 
-
-
 # main engine for code - returns all simulation outputs including developments, offsets etc.
 run_simulation <- function(simulation_outputs, global_params, current_simulation_params, parcels,
-                           decline_rates_initial, dev_weights, current_data_dir){
+                           decline_rates_initial, dev_probability_list, offset_probability_list, current_data_dir){
   
   #run through main time loop
   for (yr in seq_len(current_simulation_params$time_steps)){
@@ -105,6 +104,8 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
     for (current_dev_index in seq_len(current_simulation_params$intervention_vec[yr])){
       if (current_simulation_params$allow_developments_from_credit == TRUE){
         
+        
+        ###### TODO REINSTATE OFFSETBANK ROUTINES ####
         #           if (current_simulation_params$use_offset_bank == TRUE){
         #             simulation_outputs$current_credit = assess_credit(simulation_outputs, current_simulation_params)
         #           }
@@ -112,7 +113,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
         
         credit_match_object = develop_from_credit(simulation_outputs$current_feature_layers,
                                                   simulation_outputs$current_credit,
-                                                  dev_weights,
+                                                  dev_probability_list,
                                                   current_simulation_params,
                                                   intervention_vec = current_simulation_params$intervention_vec,
                                                   dev_indexes_to_use = simulation_outputs$index_object$indexes_to_use$devs,
@@ -121,14 +122,13 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
                                                   yr,
                                                   current_simulation_params$offset_time_horizon)
         
-        # if development was permitted add current site to current group of developments, set all feature_layers to zero
+        # if development was permitted add current site to current group of developments, set all feature_layers of development site to zero
         
         if (credit_match_object$match_flag == TRUE){
           
           simulation_outputs$current_credit = credit_match_object$current_credit
           flog.info(cat('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
                         'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1)), '\n'))
-          
           
           simulation_outputs <- perform_clearing_routine(simulation_outputs,
                                                          simulation_outputs$index_object,
@@ -146,10 +146,13 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
       
       if ( (credit_match_object$match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE)){
         
-        #perform the matching routine - i.e. find a matching development/offset set.
+        #perform the matching routine - i.e. find a matching development/offset set 
+        #this is the trickiest set of routines and may need series of TODO's and robustness checks.
+        
         match_object <- match_sites(offset_pool_object = simulation_outputs$offset_pool_object,
                                     simulation_outputs$current_credit,
-                                    dev_weights,
+                                    dev_probability_list,
+                                    offset_probability_list,
                                     current_simulation_params,
                                     intervention_vec = current_simulation_params$intervention_vec,
                                     indexes_to_use = simulation_outputs$index_object$indexes_to_use$devs,
@@ -885,9 +888,17 @@ remove_index <- function(object_list, ind_to_remove){
   return(object_list)
 }
 
-match_sites <- function(offset_pool_object, current_credit, dev_weights, current_simulation_params,
+
+
+recalculate_probabilities <- function(current_probability_list){
+  current_probability_list = lapply(seq_along(current_probability_list), function(i) current_probability_list[[i]]/sum(unlist(current_probability_list)))
+  return(current_probability_list)
+}
+
+match_sites <- function(offset_pool_object, current_credit, dev_probability_list, offset_probability_list, current_simulation_params,
                         intervention_vec, indexes_to_use, current_feature_layers, decline_rates_initial,
                         land_parcels, yr, time_horizon){
+  
   match_object = false_match()
   
   current_pool_vals = offset_pool_object$parcel_vals_used
@@ -903,6 +914,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
   current_pool_vals_array <- matrix(unlist(current_pool_vals), nrow = length(current_pool_vals), byrow=TRUE)
   zero_inds <- which(apply(current_pool_vals_array, MARGIN = 1, sum) == 0)
   
+  ###### TODO check zero development routines the code below may not be the most efficient method for this ###
   current_pool_vals = remove_index(current_pool_vals, zero_inds)
   current_pool_indexes = remove_index(current_pool_indexes, zero_inds)
   
@@ -942,11 +954,8 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
     if (current_simulation_params$development_selection_type == 'random'){
       sample_ind = sample(seq_along(current_match_pool), size = 1)
     } else if (current_simulation_params$development_selection_type == 'weighted'){
-      
-      current_dev_weights = dev_weights[unlist(current_match_pool)]
-      
-      current_dev_weights = lapply(seq_along(current_dev_weights), function(i) current_dev_weights[[i]]/sum(unlist(current_dev_weights)))
-      sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_weights)
+      current_dev_probability_list = recalculate_probabilities(dev_probability_list[unlist(current_match_pool)])
+      sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_probability_list)
     }
     
     current_test_index = current_match_pool[sample_ind]
@@ -955,18 +964,18 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
     if (current_simulation_params$use_offset_bank == FALSE){
       dev_ind = list_intersect(current_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
       match_pool_to_use = remove_index(current_pool_indexes, dev_ind$match_ind)
-      vals_to_use = remove_index(current_pool_vals, dev_ind$match_ind)
+      pool_vals_to_use = remove_index(current_pool_vals, dev_ind$match_ind)
     } else {
       match_pool_to_use = current_pool_indexes  #if performing offset banking use any of the available banked offset pool
-      vals_to_use = current_pool_vals
+      pool_vals_to_use = current_pool_vals
     }
     
     match_object <- select_from_pool(match_type = 'offset',
-                                     match_procedure = 'euclidean',
+                                     current_simulation_params$offset_selection_type,
                                      current_pool = match_pool_to_use,
-                                     vals_to_use,
+                                     pool_vals_to_use,
                                      current_credit,
-                                     dev_weights,
+                                     offset_probability_list,
                                      allow_developments_from_credit = current_simulation_params$allow_developments_from_credit,
                                      screen_site_zeros = current_simulation_params$screen_offset_zeros,
                                      offset_multiplier = current_simulation_params$offset_multiplier,
@@ -1010,7 +1019,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_weights, current
 # land_parcels = parcels$land_parcels
 # time_horizon = current_simulation_params$offset_time_horizon
 
-develop_from_credit <- function(current_feature_layers, current_credit, dev_weights, current_simulation_params, 
+develop_from_credit <- function(current_feature_layers, current_credit, dev_probability_list, current_simulation_params, 
                                 intervention_vec, dev_indexes_to_use, decline_rates_initial, land_parcels, yr, time_horizon){
   
   parcel_num_remaining = length(dev_indexes_to_use)
@@ -1037,11 +1046,11 @@ develop_from_credit <- function(current_feature_layers, current_credit, dev_weig
   
   if (length(unlist(dev_pool_object$site_indexes)) > 0){
     match_object <- select_from_pool(match_type = 'development', 
-                                     match_procedure = 'random', 
+                                     current_simulation_params$development_selection_type, 
                                      current_pool = dev_pool_object$site_indexes, 
-                                     vals_to_use = dev_pool_object$parcel_vals_used, 
+                                     pool_vals_to_use = dev_pool_object$parcel_vals_used, 
                                      current_credit,
-                                     dev_weights,
+                                     dev_probability_list,
                                      allow_developments_from_credit = FALSE,
                                      screen_site_zeros = current_simulation_params$screen_dev_zeros,
                                      offset_multiplier = current_simulation_params$offset_multiplier,
@@ -1163,7 +1172,7 @@ nested_list_tail <- function(list_a){
 
 
 
-
+##### TODO probability list should be passed to this - otherwise underlying assumption is equal weights #####
 find_intervention_probability <- function(intervention_vec, offset_yrs, calc_type, offset_intervention_scale, time_horizons, parcel_num, parcel_num_remaining, time_steps){
   
   intervention_probs = vector('list', parcel_num)
@@ -1243,32 +1252,33 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh, pool_num, vals_to_use, vals_to_match, max_offset_parcel_num,
+select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_offset_parcel_num,
                                  current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros){
   
   pool_object = list()
   
-  if (length(unlist(vals_to_use)) > 0){
-    vals_to_use <- lapply(seq_along(vals_to_use), function(i) vals_to_use[[i]][current_features_to_use_in_offset_calc])
-  } else {
+  if (length(unlist(pool_vals_to_use)) == 0){
     pool_object$break_flag = TRUE
     return(pool_object)
-  }
+  } 
   
-  zero_inds <- which(unlist(lapply(seq_along(vals_to_use), function(i) sum(vals_to_use[[i]]) == 0)))
+  pool_vals_to_use <- lapply(seq_along(pool_vals_to_use), function(i) pool_vals_to_use[[i]][current_features_to_use_in_offset_calc])
+  zero_inds <- which(unlist(lapply(seq_along(pool_vals_to_use), function(i) sum(pool_vals_to_use[[i]]) == 0)))
   
+  # force zero feature values to be developed first
   if ((screen_site_zeros == FALSE) & (length(zero_inds) > 0)){
     
-    vals_to_use = vals_to_use[zero_inds]
+    pool_vals_to_use = pool_vals_to_use[zero_inds]
     current_pool = current_pool[zero_inds]
     pool_object$break_flag = FALSE
-    pool_object$vals_to_use = vals_to_use
+    pool_object$pool_vals_to_use = pool_vals_to_use
     pool_object$current_pool = current_pool
     return(pool_object)
+    
   } else {
     
     current_pool <- remove_index(current_pool, zero_inds)
-    vals_to_use <- remove_index(vals_to_use, zero_inds)
+    pool_vals_to_use <- remove_index(pool_vals_to_use, zero_inds)
     pool_num = length(current_pool)
   }
   
@@ -1282,24 +1292,27 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
     vals_to_match = vals_to_match - current_credit[current_features_to_use_in_offset_calc]
   }
   
-  ndims = length(current_features_to_use_in_offset_calc)
-  #   
+  
+
+  ##### TODO Removed these routines as unsure of robustness - note that this passes development loss as negative credit to subsequent offset ########
+  
+  # ndims = length(current_features_to_use_in_offset_calc)
   #   if (site_for_site == TRUE){
   #     match_list = rep(list(vals_to_match), pool_num)
   #     thresh_list = rep(list(thresh), pool_num)
   #   } else {
-  #     vals_to_use = apply(vals_to_use, MARGIN = 2, 'sum')
-  #     vals_to_use = matrix(vals_to_use, ncol = ndims, byrow = TRUE)
+  #     pool_vals_to_use = apply(pool_vals_to_use, MARGIN = 2, 'sum')
+  #     pool_vals_to_use = matrix(pool_vals_to_use, ncol = ndims, byrow = TRUE)
   #     match_array = matrix(vals_to_match, ncol = ndims, byrow = TRUE)
   #     thresh_array = matrix(thresh, ncol = ndims, byrow = TRUE)
   #   }
   #   
-  #   mapply('-', vals_to_match, vals_to_use, SIMPLIFY = FALSE)
+  #   mapply('-', vals_to_match, pool_vals_to_use, SIMPLIFY = FALSE)
   #   
   #   if (match_type == 'offset'){
-  #     test_array = (match_array - vals_to_use) < thresh_array
+  #     test_array = (match_array - pool_vals_to_use) < thresh_array
   #   } else if (match_type == 'development'){
-  #     test_array = (match_array - vals_to_use) > thresh_array
+  #     test_array = (match_array - pool_vals_to_use) > thresh_array
   #   }
   #   
   #   inds_to_use = which(apply(test_array, MARGIN = 1, prod) > 0) # test if all dimensions pass threshold test and are non-zero
@@ -1317,12 +1330,12 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
   #   } else {
   #     
   #     if (site_for_site == TRUE){
-  #       vals_to_use <- vals_to_use[inds_to_use]
+  #       pool_vals_to_use <- pool_vals_to_use[inds_to_use]
   #       current_pool <- current_pool[inds_to_use]
   #     }
   
   pool_object$break_flag = FALSE
-  pool_object$vals_to_use = vals_to_use
+  pool_object$pool_vals_to_use = pool_vals_to_use
   pool_object$current_pool = current_pool
   return(pool_object)
   #  }
@@ -1330,10 +1343,10 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
 
 
 
-select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_use, current_credit, dev_weights, allow_developments_from_credit, screen_site_zeros,
+select_from_pool <- function(match_type, match_procedure, current_pool, pool_vals_to_use, current_credit, current_probability_list, allow_developments_from_credit, screen_site_zeros,
                              offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
   
-  if (length(unlist(vals_to_use)) == 0){
+  if (length(unlist(pool_vals_to_use)) == 0){
     match_object = false_match()
     return(match_object)
   } 
@@ -1342,18 +1355,18 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
   
   vals_to_match = offset_multiplier*unlist(vals_to_match_initial)
   
-  #remove dimension with zero val from offset calc
+  # find and remove feature(s) with zero value
   current_features_to_use_in_offset_calc = which(vals_to_match > 0)
   vals_to_match = vals_to_match[current_features_to_use_in_offset_calc]
   
-  if (length(vals_to_match) == 0){
+  if ( (length(vals_to_match) == 0) ) {
     match_object = false_match()
     return(match_object)
   }
   
   thresh = array(match_threshold_ratio*vals_to_match)         #create an array of threshold values with length equal to the dimensions to match to
   
-  pool_object <- select_pool_to_match(current_features_to_use_in_offset_calc, thresh, pool_num, vals_to_use, vals_to_match, max_offset_parcel_num,
+  pool_object <- select_pool_to_match(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_offset_parcel_num,
                                       current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros)
   
   if (pool_object$break_flag == TRUE){
@@ -1366,7 +1379,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
     site_for_site = 'TRUE'
   }
   
-  parcel_vals_pool = pool_object$vals_to_use
+  parcel_vals_pool = pool_object$pool_vals_to_use
   
   current_pool = pool_object$current_pool
   match_flag = FALSE
@@ -1379,7 +1392,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
       break
     }
     
-    if (match_procedure == 'euclidean'){
+    if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
     } else if (match_procedure == 'random'){
       match_params = list()
@@ -1387,8 +1400,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, vals_to_
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     } else if (match_procedure == 'weighted'){
       match_params = list()
-      match_params$match_ind = sample(length(current_pool), 1, dev_weights[current_pool])
-      
+      match_params$match_ind = sample(length(current_pool), 1, current_probability_list[current_pool])
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
     
@@ -1776,7 +1788,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
   }
   
   if (include_potential_developments == TRUE){
-    dev_weights <- generate_weights(include_potential_developments,
+    dev_probability_list <- generate_weights(include_potential_developments,
                                     calc_type = 'development',
                                     current_simulation_params$max_offset_parcel_num,
                                     current_simulation_params$intervention_vec,
@@ -1786,11 +1798,11 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                     parcel_num_remaining,
                                     current_simulation_params$time_steps,
                                     current_simulation_params$unregulated_loss_prob)
-    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - dev_weights$weights[[i]])
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - dev_probability_list$weights[[i]])
   }
   
   if (include_potential_offsets == TRUE){
-    offset_weights <- generate_weights(include_potential_offsets,
+    current_offset_probability_list <- generate_weights(include_potential_offsets,
                                        calc_type = 'offset',
                                        current_simulation_params$max_offset_parcel_num,
                                        current_simulation_params$intervention_vec,
@@ -1800,7 +1812,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                        parcel_num_remaining,
                                        current_simulation_params$time_steps,
                                        current_simulation_params$unregulated_loss_prob)
-    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - offset_weights$weights[[i]])
+    counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - current_offset_probability_list$weights[[i]])
   }
   
   inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
@@ -1810,7 +1822,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                                                        function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
   if (include_potential_offsets == TRUE){
-    offset_intervention_probs <- remove_neg_probs(offset_weights$weighted_probs, inds_to_accept)
+    offset_intervention_probs <- remove_neg_probs(current_offset_probability_list$weighted_probs, inds_to_accept)
     offset_projections <- calc_offset_projections(current_cfacs, 
                                                   offset_intervention_probs, 
                                                   current_simulation_params$restoration_rate, 
