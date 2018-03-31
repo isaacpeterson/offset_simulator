@@ -1346,11 +1346,12 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
 select_from_pool <- function(match_type, match_procedure, current_pool, pool_vals_to_use, current_credit, current_probability_list, allow_developments_from_credit, screen_site_zeros,
                              offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
   
+  
   if (length(unlist(pool_vals_to_use)) == 0){
     match_object = false_match()
     return(match_object)
   } 
-  
+
   pool_num = length(current_pool)
   
   vals_to_match = offset_multiplier*unlist(vals_to_match_initial)
@@ -1400,7 +1401,8 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     } else if (match_procedure == 'weighted'){
       match_params = list()
-      match_params$match_ind = sample(length(current_pool), 1, current_probability_list[current_pool])
+      probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(current_pool)])
+      match_params$match_ind = sample(length(current_pool), 1, probability_list_to_use)
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
     
