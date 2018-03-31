@@ -154,6 +154,12 @@ initialise_default_simulation_params <- function(){
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   default_simulation_params$allow_developments_from_credit = TRUE
   
+  #use a specified offset metric in the site match calculation
+  current_simulation_params$use_specified_offset_metric = TRUE
+  
+  # define the offset metric function
+  current_simulation_params$metric_type == 'euclidian_norm'
+  
   # How the development/offset parcels are selected options are 'random',
   # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
@@ -187,10 +193,6 @@ initialise_default_simulation_params <- function(){
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$offset_bank_type = 'credit'     
-  
-  # TRUE - one-to-one selection of offset parcels for one development, FALSE =
-  # many-to-one selection of offset parcels for one development
-  default_simulation_params$site_for_site = FALSE
 
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = 15

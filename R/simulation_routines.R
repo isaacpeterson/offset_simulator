@@ -971,18 +971,17 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
     }
     
     match_object <- select_from_pool(match_type = 'offset',
-                                     current_simulation_params$offset_selection_type,
                                      current_pool = match_pool_to_use,
                                      pool_vals_to_use,
                                      current_credit,
                                      offset_probability_list,
+                                     current_simulation_params$offset_selection_type,
                                      allow_developments_from_credit = current_simulation_params$allow_developments_from_credit,
                                      screen_site_zeros = current_simulation_params$screen_offset_zeros,
                                      offset_multiplier = current_simulation_params$offset_multiplier,
                                      match_threshold_ratio = current_simulation_params$match_threshold_ratio,
                                      match_threshold_noise = current_simulation_params$match_threshold_noise, 
                                      vals_to_match_initial = vals_to_match,
-                                     current_simulation_params$site_for_site,
                                      features_to_use_in_offset_calc = current_simulation_params$features_to_use_in_offset_calc,
                                      max_offset_parcel_num = current_simulation_params$max_offset_parcel_num,
                                      yr) #perform matching routine
@@ -1046,18 +1045,17 @@ develop_from_credit <- function(current_feature_layers, current_credit, dev_prob
   
   if (length(unlist(dev_pool_object$site_indexes)) > 0){
     match_object <- select_from_pool(match_type = 'development', 
-                                     current_simulation_params$development_selection_type, 
                                      current_pool = dev_pool_object$site_indexes, 
                                      pool_vals_to_use = dev_pool_object$parcel_vals_used, 
                                      current_credit,
                                      dev_probability_list,
                                      allow_developments_from_credit = FALSE,
+                                     current_simulation_params$development_selection_type,
                                      screen_site_zeros = current_simulation_params$screen_dev_zeros,
                                      offset_multiplier = current_simulation_params$offset_multiplier,
                                      match_threshold_ratio = current_simulation_params$match_threshold_ratio,
                                      match_threshold_noise = current_simulation_params$match_threshold_noise, 
                                      vals_to_match_initial = current_credit,
-                                     site_for_site = TRUE,
                                      current_simulation_params$features_to_use_in_offset_calc,
                                      max_offset_parcel_num = current_simulation_params$max_offset_parcel_num,
                                      yr)
@@ -1252,8 +1250,8 @@ select_cols <- function(arr_to_use, col_inds){
 
 
 
-select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_offset_parcel_num,
-                                 current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros){
+select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_parcel_num,
+                                 current_pool, current_credit, match_type, screen_site_zeros){
   
   pool_object = list()
   
@@ -1288,16 +1286,16 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
     return(pool_object)
   } 
   
-  if ( (match_type == 'offset') & (allow_developments_from_credit == TRUE) ){
-    vals_to_match = vals_to_match - current_credit[current_features_to_use_in_offset_calc]
+  if (current_simulation_params$use_specified_offset_metric == TRUE){
+    pool_vals_to_use = transform_features_to_offset_metric(pool_vals_to_use)
   }
-  
-  
 
   ##### TODO Removed these routines as unsure of robustness - note that this passes development loss as negative credit to subsequent offset ########
-  
+#   if ( (match_type == 'offset') & (allow_developments_from_credit == TRUE) ){
+#     vals_to_match = vals_to_match - current_credit[current_features_to_use_in_offset_calc]
+#   }
   # ndims = length(current_features_to_use_in_offset_calc)
-  #   if (site_for_site == TRUE){
+  #   if (max_parcel_num == 1){
   #     match_list = rep(list(vals_to_match), pool_num)
   #     thresh_list = rep(list(thresh), pool_num)
   #   } else {
@@ -1329,7 +1327,7 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
   #     return(pool_object)
   #   } else {
   #     
-  #     if (site_for_site == TRUE){
+  #     if (max_parcel_num == 1){
   #       pool_vals_to_use <- pool_vals_to_use[inds_to_use]
   #       current_pool <- current_pool[inds_to_use]
   #     }
@@ -1341,11 +1339,23 @@ select_pool_to_match <- function(current_features_to_use_in_offset_calc, thresh,
   #  }
 }
 
+transform_features_to_offset_metric <- function(pool_vals, metric_type){
+  
+  if (metric_type == 'euclidian_norm'){
+    pool_vals = sqrt(sum(pool_vals^2))
+  }
+  
+}
 
 
 select_from_pool <- function(match_type, match_procedure, current_pool, pool_vals_to_use, current_credit, current_probability_list, allow_developments_from_credit, screen_site_zeros,
-                             offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, site_for_site, features_to_use_in_offset_calc, max_offset_parcel_num, yr){
+                             offset_multiplier, match_threshold_ratio, match_threshold_noise,  vals_to_match_initial, features_to_use_in_offset_calc, yr){
   
+  if (match_type == 'offset'){
+    max_parcel_num = max_offset_parcel_num
+  } else if (match_type == 'development'){
+    max_parcel_num = 1
+  }
   
   if (length(unlist(pool_vals_to_use)) == 0){
     match_object = false_match()
@@ -1367,8 +1377,8 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
   
   thresh = array(match_threshold_ratio*vals_to_match)         #create an array of threshold values with length equal to the dimensions to match to
   
-  pool_object <- select_pool_to_match(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_offset_parcel_num,
-                                      current_pool, allow_developments_from_credit, current_credit, site_for_site, match_type, screen_site_zeros)
+  pool_object <- select_pool_to_match(current_features_to_use_in_offset_calc, thresh, pool_num, pool_vals_to_use, vals_to_match, max_parcel_num,
+                                      current_pool, current_credit, match_type, screen_site_zeros)
   
   if (pool_object$break_flag == TRUE){
     match_object = false_match()
@@ -1377,12 +1387,13 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
   
   if (screen_site_zeros == FALSE){
     match_procedure = 'random'
-    site_for_site = 'TRUE'
+    max_parcel_num = 1
   }
   
   parcel_vals_pool = pool_object$pool_vals_to_use
   
   current_pool = pool_object$current_pool
+  
   match_flag = FALSE
   match_vals = list()
   match_indexes = list()
@@ -1392,7 +1403,7 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
     if (length(current_pool) == 0){
       break
     }
-    
+
     if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
     } else if (match_procedure == 'random'){
@@ -1410,13 +1421,14 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
     current_match_index = current_pool[match_params$match_ind]
     vals_to_match = vals_to_match - current_match_val
     
-    if (site_for_site == FALSE){
+    if (max_parcel_num > 1){
       
       ind_to_remove = list_intersect(current_pool, current_match_index)
       current_pool = remove_index(current_pool, ind_to_remove$match_ind)
       parcel_vals_pool = remove_index(parcel_vals_pool, ind_to_remove$match_ind)
       match_vals = append(match_vals, current_match_val)
       match_indexes = append(match_indexes, current_match_index)
+      
       if (length(unlist(match_indexes)) > max_offset_parcel_num){
         match_flag = FALSE
         break
@@ -1432,14 +1444,11 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
       match_vals = list(current_match_val)
       match_flag = TRUE
     }
-    
   }
   
-  if (length(vals_to_match) == 0){
-    stop('vals_to_match error')
-  }
   if (match_type == 'offset'){
-    current_credit[current_features_to_use_in_offset_calc] = -vals_to_match # switch sign for any additional credit from offset
+    # switch sign for any additional credit from offset
+    current_credit[current_features_to_use_in_offset_calc] = -vals_to_match 
   } else {
     current_credit[current_features_to_use_in_offset_calc] = vals_to_match
   }
@@ -1449,7 +1458,6 @@ select_from_pool <- function(match_type, match_procedure, current_pool, pool_val
   match_object$match_vals = match_vals
   match_object$match_flag = match_flag
   match_object$current_credit = current_credit
-  match_object$vals_to_match = vals_to_match_initial
   
   return(match_object)
   
