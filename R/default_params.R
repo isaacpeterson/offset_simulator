@@ -155,10 +155,10 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$allow_developments_from_credit = TRUE
   
   #use a specified offset metric in the site match calculation
-  current_simulation_params$use_specified_offset_metric = TRUE
+  default_simulation_params$use_specified_offset_metric = FALSE
   
   # define the offset metric function
-  current_simulation_params$metric_type == 'euclidian_norm'
+  default_simulation_params$offset_metric_type = 'euclidian_norm'
   
   # How the development/offset parcels are selected options are 'random',
   # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If

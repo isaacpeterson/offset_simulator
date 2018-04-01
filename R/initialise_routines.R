@@ -446,7 +446,13 @@ initialise_input_object <- function(parcels, initial_feature_layers, simulation_
                                                         simulation_params, 
                                                         offset_indexes_to_exclude = c(which(unlist(offset_weights) == 0)), 
                                                         dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
-  output_object$current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
+  
+  current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
+  if (simulation_params$use_specified_offset_metric == TRUE){
+    current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$offset_metric_type)
+  }
+  output_object$current_credit = current_credit
+  
   output_object$decline_rates = decline_rates_initial
   return(output_object)
 }
