@@ -90,8 +90,8 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
   objects_to_save$parcels <- define_planning_units(objects_to_save$planning_units_array)
   objects_to_save$parcel_ecology <- simulate_ecology(objects_to_save$simulated_ecology_params, land_parcels = objects_to_save$parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
-  objects_to_save$dev_weights = rep(list(1/length(objects_to_save$parcel_ecology)), length(objects_to_save$parcel_ecology))
-  objects_to_save$offset_weights = objects_to_save$dev_weights
+  objects_to_save$dev_probability_list = rep(list(1/length(objects_to_save$parcel_ecology)), length(objects_to_save$parcel_ecology))
+  objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
   
   objects_to_save$decline_rates_initial <- simulate_decline_rates(parcel_num = length(objects_to_save$parcels$land_parcels), 
                                                   sample_decline_rate = TRUE, 

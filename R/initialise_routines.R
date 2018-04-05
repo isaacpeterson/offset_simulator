@@ -433,7 +433,7 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, decline_rates_initial, offset_weights, dev_weights){
+initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, decline_rates_initial, offset_probability_list, dev_probability_list){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -444,8 +444,8 @@ initialise_input_object <- function(parcels, initial_feature_layers, simulation_
   output_object$index_object <- initialise_index_object(parcels, 
                                                         initial_feature_layers, 
                                                         simulation_params, 
-                                                        offset_indexes_to_exclude = c(which(unlist(offset_weights) == 0)), 
-                                                        dev_indexes_to_exclude = which(unlist(dev_weights) == 0))
+                                                        offset_indexes_to_exclude = c(which(unlist(offset_probability_list) == 0)), 
+                                                        dev_indexes_to_exclude = which(unlist(dev_probability_list) == 0))
   
   current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
   if (simulation_params$use_specified_offset_metric == TRUE){

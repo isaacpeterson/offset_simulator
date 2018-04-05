@@ -3,8 +3,8 @@ run_offset_simulation_routines <- function(simulation_inputs, current_simulation
   # run simulation with identical realisation instantiation
   # list used to govern feature_layers rate changes
   current_data_dir = write_folder(paste0(global_params$output_folder, 
-                                                'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
-                                                '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
+                                         'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
+                                         '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
   flog.info('current data dir is %s', current_data_dir)
   
@@ -197,11 +197,11 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
     
     #select sites for clearing
     unregulated_loss_object <- perform_unregulated_loss(simulation_outputs$current_feature_layers,
-                                                         simulation_outputs$index_object,
-                                                         yr,
-                                                         current_simulation_params,
-                                                         decline_rates_initial,
-                                                         current_simulation_params$offset_time_horizon)
+                                                        simulation_outputs$index_object,
+                                                        yr,
+                                                        current_simulation_params,
+                                                        decline_rates_initial,
+                                                        current_simulation_params$offset_time_horizon)
     
     # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
     if (!is.null(unregulated_loss_object)){
@@ -239,24 +239,24 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
     }
     # implement ecological loss for developed sites (those with decline_rates = 0)
     simulation_outputs$current_feature_layers <- kill_development_feature_layers(simulation_outputs$current_feature_layers,
-                                                                   simulation_outputs$decline_rates,
-                                                                   current_simulation_params$feature_num)
+                                                                                 simulation_outputs$decline_rates,
+                                                                                 current_simulation_params$feature_num)
     
     for (feature_ind in seq(current_simulation_params$feature_num)){
       feature_layers_to_save = lapply(seq_along(simulation_outputs$current_feature_layers), function(i) simulation_outputs$current_feature_layers[[i]][[feature_ind]])
       saveRDS(feature_layers_to_save, paste0(current_data_dir,
-                                      'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
-                                      '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+                                             'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
+                                             '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     }
     
     # update feature_layers for all sites (including those just developed/offset)
     
     simulation_outputs$current_feature_layers = project_sites(simulation_outputs$current_feature_layers,
-                                                       simulation_outputs$decline_rates,
-                                                       current_time_horizons = rep(list(1), length(simulation_outputs$current_feature_layers)),
-                                                       current_simulation_params,
-                                                       features_to_project = seq_along(current_simulation_params$features_to_use_in_simulation),
-                                                       time_fill = FALSE)
+                                                              simulation_outputs$decline_rates,
+                                                              current_time_horizons = rep(list(1), length(simulation_outputs$current_feature_layers)),
+                                                              current_simulation_params,
+                                                              features_to_project = seq_along(current_simulation_params$features_to_use_in_simulation),
+                                                              time_fill = FALSE)
   }
   
   return(simulation_outputs)
@@ -411,25 +411,25 @@ perform_unregulated_loss <- function(current_feature_layers, index_object, yr, c
   
   # store group of site characteristics in site characteristics object
   unregulated_loss_object <- record_current_parcel_set(current_feature_layers[inds_to_clear],
-                                                        inds_to_clear,
-                                                        parcel_num_remaining,
-                                                        yr)
+                                                       inds_to_clear,
+                                                       parcel_num_remaining,
+                                                       yr)
   
   # record characteristics of cleared site
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
-                                                  pool_type = 'devs',
-                                                  calc_type = current_simulation_params$dev_calc_type,
-                                                  cfacs_flag = current_simulation_params$dev_cfacs_flag,
-                                                  adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
-                                                  action_type = current_simulation_params$offset_action_type,
-                                                  include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
-                                                  include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
-                                                  include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc,
-                                                  time_horizon_type = 'future',
-                                                  current_simulation_params,
-                                                  decline_rates_initial,
-                                                  time_horizon,
-                                                  yr)  #determine future development parcel attributes
+                                                 pool_type = 'devs',
+                                                 calc_type = current_simulation_params$dev_calc_type,
+                                                 cfacs_flag = current_simulation_params$dev_cfacs_flag,
+                                                 adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
+                                                 action_type = current_simulation_params$offset_action_type,
+                                                 include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc,
+                                                 include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc,
+                                                 include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc,
+                                                 time_horizon_type = 'future',
+                                                 current_simulation_params,
+                                                 decline_rates_initial,
+                                                 time_horizon,
+                                                 yr)  #determine future development parcel attributes
   return(unregulated_loss_object)
 }
 
@@ -791,29 +791,45 @@ mcell <- function(x, vx, vy){
 }
 
 
-# define feature_layers dynamics by logistic curve
-logistic_feature_layers <- function(parcel_vals, min_eco_val, max_eco_val, decline_rate, time_horizon, time_fill){
+user_projection <- function(parcel_vals, min_eco_val, max_eco_val, decline_rate, time_horizon, time_fill){
   
   if (time_fill == TRUE){
     time_vec = 0:time_horizon
   } else {time_vec = time_horizon}
-  if ( (decline_rate != 0) & (parcel_vals > min_eco_val)){
+  
+  # If decline_rate is set to zero return same value for all time steps
+  if (decline_rate == 0){
+    eco_projected = rep(parcel_vals, length(time_vec))
+  } else if ( (decline_rate != 0) & (parcel_vals > min_eco_val)){
     # define logistic curve given logistic parameter decline_rate.
     t_sh = -1/decline_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
     eco_projected = min_eco_val + (max_eco_val - min_eco_val)/(1 + exp(-decline_rate*(time_vec - t_sh)))
-  } else {
-    # If decline_rate is zet to zero return same value for all time steps
-    eco_projected = rep(parcel_vals, length(time_vec))
-  }
+  } 
+  return(eco_projected)
+}
+
+
+# define feature_layers dynamics by logistic curve
+logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, time_vec){
+  
+  t_sh = -1/current_dec_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
+  
+  # define logistic curve given logistic parameter set.
+  eco_projected = min_eco_val + (max_eco_val - min_eco_val)/(1 + exp(-current_dec_rate*(time_vec - t_sh)))
   
   return(eco_projected)
 }
 
+
+
+
 # calculate the expected feature_layers under maintenaince, restoration
 
-project_feature_layers <- function(current_parcel_feature_layers, min_eco_val, max_eco_val, current_dec_rate, time_horizon, time_fill){
+project_feature_layers <- function(projection_type, current_parcel_feature_layers, min_eco_val, max_eco_val, current_dec_rate, time_horizon, time_fill){
   
-  if (current_dec_rate == 1){
+  # for maintain feature_layers or project development vals, copy current feature_layers to matrix of depth (time_horizon + 1)
+  
+  if ( (current_dec_rate == 1) || (current_dec_rate == 0)){
     # for maintain feature_layers copy current feature_layers to matrix of depth (time_horizon + 1)
     if (time_fill == TRUE){
       # return all feature_layers states over all time steps
@@ -822,19 +838,25 @@ project_feature_layers <- function(current_parcel_feature_layers, min_eco_val, m
       # project for single time step
       projected_feature_layers = current_parcel_feature_layers
     }
-  } else{
-    # update feature_layers according to function defined in project_feature_layers function (in this case logistic_feature_layers)
+  } else {
+    
+    if (time_fill == TRUE){
+      time_vec = 0:time_horizon
+    } else {
+      time_vec = time_horizon
+    }
+    
+    # update feature_layers according to function defined in project_feature_layers function
     # function parameters are contained in decline_rates array
-    projected_feature_layers = sapply(current_parcel_feature_layers, logistic_feature_layers, min_eco_val, max_eco_val,
-                               decline_rate = current_dec_rate, time_horizon = time_horizon, time_fill)
+    if (projection_type == 'logistic_function'){
+      projected_feature_layers = sapply(current_parcel_feature_layers, logistic_projection, min_eco_val, max_eco_val,
+                                        current_dec_rate, time_vec)
+    }
   }
-  
   if (time_horizon == 0){
     dim(projected_feature_layers) = c(1, length(projected_feature_layers))
   }
-  
   return(projected_feature_layers)
-  
 }
 
 
@@ -845,12 +867,13 @@ project_sites <- function(current_parcel_feature_layers, current_decline_rates, 
   
   parcel_trajs = lapply(seq_along(current_parcel_feature_layers),
                         function(i) (lapply(features_to_project,
-                                            function(j) project_feature_layers(current_parcel_feature_layers[[i]][[j]],
-                                                                        current_simulation_params$min_eco_val,
-                                                                        current_simulation_params$max_eco_val,
-                                                                        current_dec_rate = current_decline_rates[[i]][[j]],
-                                                                        time_horizon = unlist(current_time_horizons[i]),
-                                                                        time_fill))))
+                                            function(j) project_feature_layers(current_simulation_params$projection_type,
+                                                                               current_parcel_feature_layers[[i]][[j]],
+                                                                               current_simulation_params$min_eco_val,
+                                                                               current_simulation_params$max_eco_val,
+                                                                               current_dec_rate = current_decline_rates[[i]][[j]],
+                                                                               time_horizon = unlist(current_time_horizons[i]),
+                                                                               time_fill))))
   
   return(parcel_trajs)
 }
@@ -977,13 +1000,13 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
     }
     
     match_object <- match_from_pool(match_type = 'offset',
-                                     current_pool = match_pool_to_use,
-                                     pool_vals_to_use,
-                                     current_credit,
-                                     offset_probability_list,
-                                     vals_to_match_initial = vals_to_match,
-                                     current_simulation_params,
-                                     yr) #perform matching routine
+                                    current_pool = match_pool_to_use,
+                                    pool_vals_to_use,
+                                    current_credit,
+                                    offset_probability_list,
+                                    vals_to_match_initial = vals_to_match,
+                                    current_simulation_params,
+                                    yr) #perform matching routine
     
     if (match_object$match_flag == FALSE){
       
@@ -1041,14 +1064,14 @@ develop_from_credit <- function(current_feature_layers, current_credit, dev_prob
     pool_vals_to_use = dev_pool_object$parcel_vals_use
     
     match_object <- match_from_pool(match_type = 'development', 
-                                     current_pool = dev_pool_object$site_indexes, 
-                                     pool_vals_to_use, 
-                                     current_credit,
-                                     dev_probability_list,
-                                     vals_to_match_initial = current_credit,
-                                     current_simulation_params,
-                                     yr)
-
+                                    current_pool = dev_pool_object$site_indexes, 
+                                    pool_vals_to_use, 
+                                    current_credit,
+                                    dev_probability_list,
+                                    vals_to_match_initial = current_credit,
+                                    current_simulation_params,
+                                    yr)
+    
   } else{
     match_object = false_match()
   }
@@ -1271,10 +1294,10 @@ select_pool_to_match <- function(vals_to_match, current_features_to_use_in_offse
       return(pool_object)
     } 
   } 
-
+  
   
   ##### TODO check robustness #######
-
+  
   if (max_parcel_num > 1){
     pool_vals_to_test = Reduce('+', pool_vals_to_use)
   } else {
@@ -1321,7 +1344,7 @@ transform_features_to_offset_metric <- function(pool_vals, metric_type){
 
 
 match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_credit, current_probability_list, 
-                             vals_to_match_initial, current_simulation_params, yr){
+                            vals_to_match_initial, current_simulation_params, yr){
   
   if (length(unlist(current_pool)) == 0){
     match_object = false_match()
@@ -1349,7 +1372,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     } 
     
     offset_multiplier = current_simulation_params$offset_multiplier
-
+    
     vals_to_match = offset_multiplier * vals_to_match_initial[current_features_to_use_in_offset_calc]
     
     if (current_simulation_params$use_specified_offset_metric == TRUE){
@@ -1380,7 +1403,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     # when developing from credit, inverse offset multiplier
     vals_to_match = 1/current_simulation_params$offset_multiplier*vals_to_match_initial
   }
- 
+  
   #create an array of threshold values defined by user based proportion 
   thresh = array(current_simulation_params$match_threshold_ratio * vals_to_match)         
   
@@ -1404,7 +1427,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     if (length(current_pool) == 0){
       break
     }
-
+    
     if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
     } else if (match_procedure == 'random'){
@@ -1421,7 +1444,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     current_match_val = unlist(match_params$match_vals)
     current_match_index = current_pool[match_params$match_ind]
     vals_to_match = vals_to_match - current_match_val
-
+    
     if (max_parcel_num > 1){
       ind_to_remove = list_intersect(current_pool, current_match_index)
       current_pool = remove_index(current_pool, ind_to_remove$match_ind)
@@ -1433,7 +1456,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
         match_flag = FALSE
         break
       }
-   
+      
     } else {
       match_indexes = list(current_match_index)
       match_vals = list(current_match_val)
@@ -1444,7 +1467,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     } else if (match_type == 'development'){
       match_flag = all(vals_to_match >= -thresh)
     } 
-
+    
   }
   
   #### TODO NOTE if running with offset_metric specified current credit is wrong as it 
@@ -1649,11 +1672,11 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
       }
       
       projected_feature_layers = project_sites(current_parcel_feature_layers = pool_object$parcel_feature_layers,
-                                        current_decline_rates,
-                                        time_horizons,
-                                        current_simulation_params,
-                                        features_to_project = current_simulation_params$features_to_use_in_offset_calc,
-                                        time_fill = FALSE)
+                                               current_decline_rates,
+                                               time_horizons,
+                                               current_simulation_params,
+                                               features_to_project = current_simulation_params$features_to_use_in_offset_calc,
+                                               time_fill = FALSE)
       #sum_sites
       
       projected_vals = sum_sites(projected_feature_layers)
@@ -1792,45 +1815,45 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
   parcel_num = length(current_cfacs)
   counter_weights = rep(list(1), parcel_num)
   if (include_unregulated_loss == TRUE){
-
+    
     unregulated_loss_weights <- generate_weights(include_unregulated_loss,
-                                                calc_type = 'unregulated_loss',
-                                                current_simulation_params$max_offset_parcel_num,
-                                                current_simulation_params$intervention_vec,
-                                                offset_yrs,
-                                                time_horizons,
-                                                parcel_num,
-                                                parcel_num_remaining,
-                                                current_simulation_params$time_steps,
-                                                current_simulation_params$unregulated_loss_prob)
+                                                 calc_type = 'unregulated_loss',
+                                                 current_simulation_params$max_offset_parcel_num,
+                                                 current_simulation_params$intervention_vec,
+                                                 offset_yrs,
+                                                 time_horizons,
+                                                 parcel_num,
+                                                 parcel_num_remaining,
+                                                 current_simulation_params$time_steps,
+                                                 current_simulation_params$unregulated_loss_prob)
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - unregulated_loss_weights$weights[[i]])
   }
   
   if (include_potential_developments == TRUE){
     dev_probability_list <- generate_weights(include_potential_developments,
-                                    calc_type = 'development',
-                                    current_simulation_params$max_offset_parcel_num,
-                                    current_simulation_params$intervention_vec,
-                                    offset_yrs,
-                                    time_horizons,
-                                    parcel_num,
-                                    parcel_num_remaining,
-                                    current_simulation_params$time_steps,
-                                    current_simulation_params$unregulated_loss_prob)
+                                             calc_type = 'development',
+                                             current_simulation_params$max_offset_parcel_num,
+                                             current_simulation_params$intervention_vec,
+                                             offset_yrs,
+                                             time_horizons,
+                                             parcel_num,
+                                             parcel_num_remaining,
+                                             current_simulation_params$time_steps,
+                                             current_simulation_params$unregulated_loss_prob)
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - dev_probability_list$weights[[i]])
   }
   
   if (include_potential_offsets == TRUE){
     current_offset_probability_list <- generate_weights(include_potential_offsets,
-                                       calc_type = 'offset',
-                                       current_simulation_params$max_offset_parcel_num,
-                                       current_simulation_params$intervention_vec,
-                                       offset_yrs,
-                                       time_horizons,
-                                       parcel_num,
-                                       parcel_num_remaining,
-                                       current_simulation_params$time_steps,
-                                       current_simulation_params$unregulated_loss_prob)
+                                                        calc_type = 'offset',
+                                                        current_simulation_params$max_offset_parcel_num,
+                                                        current_simulation_params$intervention_vec,
+                                                        offset_yrs,
+                                                        time_horizons,
+                                                        parcel_num,
+                                                        parcel_num_remaining,
+                                                        current_simulation_params$time_steps,
+                                                        current_simulation_params$unregulated_loss_prob)
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - current_offset_probability_list$weights[[i]])
   }
   
@@ -1842,7 +1865,8 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments,include_p
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
   if (include_potential_offsets == TRUE){
     offset_intervention_probs <- remove_neg_probs(current_offset_probability_list$weighted_probs, inds_to_accept)
-    offset_projections <- calc_offset_projections(current_cfacs, 
+    offset_projections <- calc_offset_projections(current_simulation_params$projection_type,
+                                                  current_cfacs, 
                                                   offset_intervention_probs, 
                                                   current_simulation_params$restoration_rate, 
                                                   time_horizons, 
@@ -1901,7 +1925,7 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
+calc_offset_projections <- function(projection_type,current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
   
   parcel_num = length(current_cfacs)
   offset_projections = vector('list', parcel_num)
@@ -1921,12 +1945,13 @@ calc_offset_projections <- function(current_cfacs, offset_probs, restoration_rat
         
         if (current_offset_probs[proj_yr] > 0){
           
-          current_offset_proj = project_feature_layers(current_cfac[proj_yr, ],
-                                                min_eco_val,
-                                                max_eco_val,
-                                                restoration_rate,
-                                                (time_horizon - proj_yr),
-                                                time_fill = TRUE)
+          current_offset_proj = project_feature_layers(projection_type,
+                                                       current_cfac[proj_yr, ],
+                                                       min_eco_val,
+                                                       max_eco_val,
+                                                       restoration_rate,
+                                                       (time_horizon - proj_yr),
+                                                       time_fill = TRUE)
           
           current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj 
         }

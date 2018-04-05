@@ -41,14 +41,14 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # all sites have equal probability simulated data, with user data this must
   # be specified.
   # TODO(Isaac): if this isn't supplied by user, assign all values to be equal (and give warning)
-  dev_weights <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'dev_weights.rds'))
+  dev_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
   
   # This is a list of single values of length number of sites, where the values
   # represent the probabilities of sites being offset. Default is that all
   # sites have equal probability simulated data, with user data this must be
   # specified.
   # TODO(Isaac): if this isn't supplied by user, assign all values to be equal (and give warning)
-  offset_weights <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_weights.rds'))
+  offset_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
   
   # This is a nested list. Top level is of length number of sites, and each
   # element is another list containing a single number for each feature.  This
@@ -69,7 +69,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
             params_object$global_params$realisation_num,
             params_object$global_params$number_of_cores ) 
   
-  
+
   # Loop over all defined scenarios if only a subset of the scenarios is to be
   # reun (as defined by params_object$global_params$scenario_subset) then only
   # run these. By default params_object$global_params$scenario_subset
@@ -103,8 +103,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                                 initial_feature_layers_to_use, 
                                                 current_simulation_params, 
                                                 decline_rates_initial_to_use, 
-                                                offset_weights, 
-                                                dev_weights)
+                                                offset_probability_list, 
+                                                dev_probability_list)
 
     flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
               sum(current_simulation_params$intervention_vec), 
@@ -133,8 +133,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        params_object$global_params,
                                        parcels,
                                        decline_rates_initial_to_use,
-                                       dev_weights,
-                                       offset_weights,
+                                       dev_probability_list,
+                                       offset_probability_list,
                                        scenario_ind,
                                        realisation_ind)
       }
@@ -148,8 +148,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        params_object$global_params,
                                        parcels,
                                        decline_rates_initial_to_use,
-                                       dev_weights,
-                                       offset_weights,
+                                       dev_probability_list,
+                                       offset_probability_list,
                                        scenario_ind,
                                        realisation_ind)
       }
@@ -162,8 +162,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        params_object$global_params,
                                        parcels,
                                        decline_rates_initial_to_use,
-                                       dev_weights,
-                                       offset_weights,
+                                       dev_probability_list,
+                                       offset_probability_list,
                                        scenario_ind,
                                        realisation_ind)
       }

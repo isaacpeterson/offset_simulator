@@ -17,6 +17,7 @@ initialise_default_global_params <- function(){
   # that are overwritten need to be specified
   default_global_params$user_simulated_ecology_params_file = 'default'  
   
+
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
@@ -88,6 +89,9 @@ initialise_default_simulation_params <- function(){
     # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
 
+    #how the feature dynamics are determined
+    default_simulation_params$projection_type = 'logistic_function'
+    
     # The maxoimum number of parcels can be selected to offset a single development
     default_simulation_params$max_offset_parcel_num = 10
     
