@@ -3,11 +3,6 @@ context("system tests")
 library(tools)
 library(futile.logger)
 
-# dsingh, 21 dec 2017: Here we do not compare against an expected RDS output because 
-# in the default params the random seed is not set. Instead we do a loose
-# check that we get "some" RDS output and "some" plot, which is an indication that 
-# at least something ran and generated a plot
-
 test_that("running user-example", {
   
   loglevel <- futile.logger::TRACE

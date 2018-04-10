@@ -12,3 +12,4 @@ tests/testthat/default_params.R
 tests/testthat/example_offsetsim_package_usage.R	
 tests/testthat/test_impacts.pdf
 .Rproj.user
+.httr-oauth

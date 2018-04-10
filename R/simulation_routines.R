@@ -822,6 +822,12 @@ logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_d
 
 
 
+user_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, time_vec){
+  
+  lo <- loess(y ~ time_vec)
+  
+  return(eco_projected)
+}
 
 # calculate the expected feature_layers under maintenaince, restoration
 

@@ -167,6 +167,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         } 
         
         if (output_params$output_csv_file == TRUE){
+          flog.info('writing outputs to csv')
           write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
                        paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
           write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 

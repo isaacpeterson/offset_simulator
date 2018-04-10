@@ -17,6 +17,7 @@ initialise_default_global_params <- function(){
   # that are overwritten need to be specified
   default_global_params$user_simulated_ecology_params_file = 'default'  
   
+
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
@@ -88,6 +89,9 @@ initialise_default_simulation_params <- function(){
     # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
 
+    #how the feature dynamics are determined
+    default_simulation_params$projection_type = 'logistic_function'
+    
     # The maxoimum number of parcels can be selected to offset a single development
     default_simulation_params$max_offset_parcel_num = 10
     
@@ -101,7 +105,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$limit_offset_restoration = TRUE
     
     # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
-    default_simulation_params$stochastic_loss_prob = 0
+    default_simulation_params$unregulated_loss_prob = 0
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
     default_simulation_params$min_eco_val = 0  
@@ -154,13 +158,21 @@ initialise_default_simulation_params <- function(){
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
   default_simulation_params$allow_developments_from_credit = TRUE
   
-  # How the development parcels are selected options are 'random' or
-  # 'weighted'. Note tha weighted requires an additonal weighting layer. If
+  #use a specified offset metric in the site match calculation
+  default_simulation_params$use_specified_offset_metric = FALSE
+  
+  # define the offset metric function
+  default_simulation_params$offset_metric_type = 'euclidian_norm'
+  
+  # How the development/offset parcels are selected options are 'random',
+  # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
   default_simulation_params$development_selection_type = 'random'  
 
+  default_simulation_params$offset_selection_type = 'greedy'  
+  
   # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
@@ -185,10 +197,6 @@ initialise_default_simulation_params <- function(){
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$offset_bank_type = 'credit'     
-  
-  # TRUE - one-to-one selection of offset parcels for one development, FALSE =
-  # many-to-one selection of offset parcels for one development
-  default_simulation_params$site_for_site = FALSE
 
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = 15
@@ -201,7 +209,7 @@ initialise_default_simulation_params <- function(){
   # Include future stochastic developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_stochastic_loss_in_offset_calc = FALSE
+  default_simulation_params$include_unregulated_loss_in_offset_calc = FALSE
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
@@ -226,7 +234,7 @@ initialise_default_simulation_params <- function(){
   # impact because projected future value of the site is lower if there is
   # some probability the site may be stochasticly developed in the future
   
-  # default_simulation_params$include_stochastic_loss_in_dev_calc = default_simulation_params$include_stochastic_loss_in_offset_calc
+  # default_simulation_params$include_unregulated_loss_in_dev_calc = default_simulation_params$include_unregulated_loss_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
@@ -237,6 +245,7 @@ initialise_default_simulation_params <- function(){
   # The development impacts is multiplied by this factor (irrespective of how
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
+  
   default_simulation_params$offset_multiplier = 1
 
   return(default_simulation_params)
