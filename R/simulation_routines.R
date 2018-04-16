@@ -238,7 +238,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
       
     }
     # implement ecological loss for developed sites (those with decline_rates = 0)
-    simulation_outputs$current_feature_layers <- kill_development_feature_layers(simulation_outputs$current_feature_layers,
+    simulation_outputs$current_feature_layers <- kill_development_sites(simulation_outputs$current_feature_layers,
                                                                                  simulation_outputs$decline_rates,
                                                                                  current_simulation_params$feature_num)
     
@@ -872,14 +872,14 @@ project_feature_layers <- function(projection_type, current_parcel_feature_layer
 project_sites <- function(current_parcel_feature_layers, current_decline_rates, current_time_horizons, current_simulation_params, features_to_project, time_fill){
   
   parcel_trajs = lapply(seq_along(current_parcel_feature_layers),
-                        function(i) (lapply(features_to_project,
+                        function(i) lapply(features_to_project,
                                             function(j) project_feature_layers(current_simulation_params$projection_type,
                                                                                current_parcel_feature_layers[[i]][[j]],
                                                                                current_simulation_params$min_eco_val,
                                                                                current_simulation_params$max_eco_val,
                                                                                current_dec_rate = current_decline_rates[[i]][[j]],
                                                                                time_horizon = unlist(current_time_horizons[i]),
-                                                                               time_fill))))
+                                                                               time_fill)))
   
   return(parcel_trajs)
 }
@@ -1755,7 +1755,7 @@ append_current_object <- function(parcel_set_object, current_parcel_set_object, 
 
 
 
-kill_development_feature_layers <- function(current_feature_layers, decline_rates, feature_num){
+kill_development_sites <- function(current_feature_layers, decline_rates, feature_num){
   
   parcel_num = length(current_feature_layers)
   
