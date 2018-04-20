@@ -73,11 +73,13 @@ initialise_default_simulation_params <- function(){
 
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
+    default_simulation_params$intervention_num = 50
     
     # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
     default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
     default_simulation_params$intervention_vec[intervention_locs] = 1
+    
     
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)

@@ -1,7 +1,9 @@
 run_offset_simulation_routines <- function(simulation_inputs, current_simulation_params, global_params, parcels,
                                            decline_rates_initial, dev_probability_list, offset_probability_list, scenario_ind, realisation_ind){  
+  
   # run simulation with identical realisation instantiation
   # list used to govern feature_layers rate changes
+  
   current_data_dir = write_folder(paste0(global_params$output_folder, 
                                          'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
                                          '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
@@ -149,7 +151,7 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
       if ( (credit_match_object$match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE)){
         
         #perform the matching routine - i.e. find a matching development/offset set 
-        #this is the trickiest set of routines and may need series of TODO's and robustness checks.
+        # this is the trickiest set of routines and may need series of robustness checks.
         
         match_object <- match_sites(offset_pool_object = simulation_outputs$offset_pool_object,
                                     simulation_outputs$current_credit,
@@ -167,8 +169,10 @@ run_simulation <- function(simulation_outputs, global_params, current_simulation
         
         if (match_object$match_flag == TRUE){
           
-          flog.info(cat('matched development site', paste(match_object$development_object$site_indexes),
-                        'with offset sites', paste(match_object$offset_object$site_indexes), '\n'))
+          flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
+                        'with value', paste(round(unlist(match_object$development_object$parcel_vals_used), 1)), 
+                        'and offset with sites', paste(match_object$offset_object$site_indexes), 
+                        'of value', paste(round(unlist(match_object$offset_object$parcel_vals_used), 1)), '\n'))
           
           #update available credit
           
@@ -948,6 +952,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
   zero_inds <- which(apply(current_pool_vals_array, MARGIN = 1, sum) == 0)
   
   ###### TODO check zero development routines the code below may not be the most efficient method for this ###
+  
   current_pool_vals = remove_index(current_pool_vals, zero_inds)
   current_pool_indexes = remove_index(current_pool_indexes, zero_inds)
   
@@ -955,7 +960,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
   dev_pool_object <- record_current_parcel_set(current_feature_layers[current_match_pool],
                                                current_match_pool,
                                                parcel_num_remaining,
-                                               yr) #record potential current development parcel attributes
+                                               yr) 
   
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
                                          pool_type = 'devs',
@@ -1188,8 +1193,10 @@ nested_list_tail <- function(list_a){
 
 
 
-##### TODO probability list should be passed to this - otherwise underlying assumption is equal weights #####
-find_intervention_probability <- function(intervention_vec, offset_yrs, calc_type, offset_intervention_scale, time_horizons, parcel_num, parcel_num_remaining, time_steps){
+##### TODO probability list should be passed to this - otherwise underlying assumption is equal weights for all sites which is wrong #####
+
+find_intervention_probability <- function(intervention_vec, offset_yrs, calc_type, offset_intervention_scale, 
+                                          time_horizons, parcel_num, parcel_num_remaining, time_steps){
   
   intervention_probs = vector('list', parcel_num)
   parcel_num_remaining = unlist(parcel_num_remaining)
@@ -1285,8 +1292,6 @@ select_pool_to_match <- function(vals_to_match, current_features_to_use_in_offse
   
   zero_inds <- which(unlist(lapply(seq_along(pool_vals_to_use), function(i) sum(pool_vals_to_use[[i]]) == 0)))
   
-  
-  #### TODO NOTE: R bug here
   if (screen_site_zeros == TRUE){ 
     
     if (length(zero_inds) > 0){
@@ -1476,8 +1481,8 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
   }
   
-  #### TODO NOTE if running with offset_metric specified current credit is wrong as it 
-  # copies all entries to the same value
+  #### TODO NOTE if running with offset_metric specified current credit is wrong as it copies all entries to the same value
+  
   if (match_type == 'offset'){
     # switch sign for any additional credit from offset
     current_credit_to_update = -vals_to_match 
