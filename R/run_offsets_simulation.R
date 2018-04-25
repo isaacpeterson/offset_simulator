@@ -11,6 +11,8 @@
 #' 
 osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_simulated_ecology_params = NULL, loglevel = WARN){
   
+  flog.appender(appender.tee('osim.run.log'))
+  
   flog.threshold(loglevel)
   flog.info('starting offsetsim')
   

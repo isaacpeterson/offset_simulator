@@ -8,6 +8,8 @@
 
 osim.output <- function(user_output_params = NULL, simulation_folder = NULL, loglevel = INFO){
   
+  flog.appender(appender.tee('osim.output.log'))
+  
   if (is.null(user_output_params)) {
     flog.error('provide plot params file')
     stop()
@@ -117,13 +119,12 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         # line, through will work where a variable has 2 or more values.
         #flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
         
-        # The below was written to provide nicer output, where each variable and its value(s) are printed on 
-        # line in the log file 
+        # The code below was written to provide nicer loggin output, where each variable and its value(s) 
+        # are printed on one line in the log file 
         # Note: this only works for variable that have 1, 2 or 3 values
         
         no.vars <- length(names(param_variants[[scenario_ind]]))
         for( i in 1:no.vars) {
-          
           # if param has 3 values
           if(length(param_variants[[scenario_ind]][[i]])==3){
             flog.info(' %s = (%s, %s, %s)', names(param_variants[[scenario_ind]])[i], param_variants[[scenario_ind]][[i]][1], 
@@ -136,6 +137,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
             flog.info(' %s = %s', names(param_variants[[scenario_ind]])[i], param_variants[[scenario_ind]][[i]] )
           }
         }
+        
         
       }
       
@@ -161,12 +163,13 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
           
           #flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
           
+          # Added code to pring the number of sites used for dev, offsets etc, on one line with the variable name
           flog.info('Mean number of sites used for:')
           for( i in 1:length(names(sites_used[stats_to_use])) ) {
-            
             flog.info(' %s = %s', names(sites_used[stats_to_use])[i], mean_sites_used[[i]] )
-            
           }
+          
+          
         }
         
         if (output_params$output_plot == TRUE){
