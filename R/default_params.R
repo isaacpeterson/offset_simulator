@@ -17,7 +17,6 @@ initialise_default_global_params <- function(){
   # that are overwritten need to be specified
   default_global_params$user_simulated_ecology_params_file = 'default'  
   
-
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
@@ -80,7 +79,6 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
     default_simulation_params$intervention_vec[intervention_locs] = 1
     
-    
     # What subset of features to use in the simulation (specified by the index
     # of the feature e.g. c(1,4,13)
     default_simulation_params$features_to_use_in_simulation = 1 
@@ -91,7 +89,7 @@ initialise_default_simulation_params <- function(){
     # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
 
-    #how the feature dynamics are determined
+    # how the feature dynamics are determined
     default_simulation_params$projection_type = 'logistic_function'
     
     # The maxoimum number of parcels can be selected to offset a single development
@@ -127,12 +125,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$match_threshold_ratio = 0.01 
     
     default_simulation_params$match_threshold_noise = 1e-10
-    # NOT CURRENTLY USED (Limit the amount of restoration to this percentage of the total available)
-    default_simulation_params$max_restoration_eco_val = 70
     
-    # The mean and the standard deviation of a normal distribution fro which to sample the restoration parameters from
-    default_simulation_params$restoration_rate = 0.02
-    default_simulation_params$restoration_rate_std = 0.005
     
   # The Options are 'restoration_gains' - the gains are calculated relative to
   # the site value at the time of the intervention above  - forces offsets to restore sites
@@ -259,6 +252,9 @@ initialise_default_simulated_ecology_params <- function(){
   
   default_simulated_ecology_params = list()
   
+  # enable/disable feature dynamics parameters to be sampled from a distribution
+  default_simulated_ecology_params$sample_decline_rate = TRUE
+  
   #how many feature layers to generate
   default_simulated_ecology_params$feature_num = 1
   
@@ -268,16 +264,20 @@ initialise_default_simulated_ecology_params <- function(){
   #set this parameter to zero to yield no noise
   default_simulated_ecology_params$decline_rate_std = rep(list(1e-3), default_simulated_ecology_params$feature_num)
   
+  default_simulated_ecology_params$simulated_time_vec = 1:100
+  
   # Number of pixels in (y, x) for the feature layes 
   default_simulated_ecology_params$ecology_size = c(300, 300)
   
   # Numnber of parcels in x (but total size varies)
   default_simulated_ecology_params$parcel_num_x = 30 
   
+  
   # Numnber of parcels in y (but total size varies)
   default_simulated_ecology_params$parcel_num_y = 30 
   
-  #how much the site dimensions should vary
+  #parameter governing how fast the site improves
+  default_simulated_ecology_params$restoration_rate = rep(list(+2e-2), default_simulated_ecology_params$feature_num)
   
   default_simulated_ecology_params$site_width_variation_param = 1
   # Minimum allowable initial ecological value of smallest ecological element
@@ -286,7 +286,12 @@ initialise_default_simulated_ecology_params <- function(){
   
   # Max allowable initial ecological value of largest element (pixel) ie max
   # value to sample from
-  default_simulated_ecology_params$max_initial_eco_val = 90
+  default_simulated_ecology_params$max_initial_eco_val = 80
+  
+  # Max allowable ecological value 
+  default_simulated_ecology_params$local_max_eco_val = 90
+  
+  default_simulated_ecology_params$local_min_eco_val = 10
   
   # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
   default_simulated_ecology_params$occupation_ratio = list(1)

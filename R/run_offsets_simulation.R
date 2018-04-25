@@ -61,7 +61,14 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # something like  the identity fo the lookup table that describes chondition
   # change over time, which can be based on a funciton or can be from expert
   # elicitation
-  decline_rates_initial <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'decline_rates_initial.rds'))
+  
+  #decline_rates_initial <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'decline_rates_initial.rds'))
+  
+  background_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+  
+  management_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
+  
+  management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
   
   # Write initial logging info
   flog.info('Running %s scenarios with %s realisations on %s cores', 
@@ -69,18 +76,14 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
             params_object$global_params$realisation_num,
             params_object$global_params$number_of_cores ) 
   
-
   # Loop over all defined scenarios if only a subset of the scenarios is to be
   # reun (as defined by params_object$global_params$scenario_subset) then only
   # run these. By default params_object$global_params$scenario_subset
-  
-  # TODO(Issac) change scenario_run_vec to be scenario_subset
   
   for (scenario_ind in params_object$global_params$scenario_subset){
     
     # Store the start time
     loop_strt <- Sys.time()
-    
     
     # Extract out the parameters for the current scenario to be run
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
@@ -96,13 +99,14 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     # (e.g. if there 100 layers just run with 10 of them)
     initial_feature_layers_to_use <- select_feature_subset(initial_feature_layers, current_simulation_params$features_to_use_in_simulation)
     
-    decline_rates_initial_to_use <- select_feature_subset(decline_rates_initial, current_simulation_params$features_to_use_in_simulation)
+    background_dynamics_to_use <- select_feature_subset(background_dynamics, current_simulation_params$features_to_use_in_simulation)
+    
+    management_dynamics_to_use <- select_feature_subset(management_dynamics, current_simulation_params$features_to_use_in_simulation)
     
     # Set up the object used to store all simulation inputs and pass them to the simulation function 
     simulation_inputs = initialise_input_object(parcels, 
                                                 initial_feature_layers_to_use, 
                                                 current_simulation_params, 
-                                                decline_rates_initial_to_use, 
                                                 offset_probability_list, 
                                                 dev_probability_list)
 
@@ -132,7 +136,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        current_simulation_params,
                                        params_object$global_params,
                                        parcels,
-                                       decline_rates_initial_to_use,
+                                       background_dynamics_to_use, 
+                                       management_dynamics_to_use,
+                                       management_mode,
                                        dev_probability_list,
                                        offset_probability_list,
                                        scenario_ind,
@@ -147,7 +153,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        current_simulation_params,
                                        params_object$global_params,
                                        parcels,
-                                       decline_rates_initial_to_use,
+                                       background_dynamics_to_use, 
+                                       management_dynamics_to_use,
+                                       management_mode,
                                        dev_probability_list,
                                        offset_probability_list,
                                        scenario_ind,
@@ -161,7 +169,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        current_simulation_params,
                                        params_object$global_params,
                                        parcels,
-                                       decline_rates_initial_to_use,
+                                       background_dynamics_to_use, 
+                                       management_dynamics_to_use,
+                                       management_mode,
                                        dev_probability_list,
                                        offset_probability_list,
                                        scenario_ind,
