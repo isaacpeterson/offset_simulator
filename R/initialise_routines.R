@@ -169,16 +169,16 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-check_simulation_params <- function(simulation_params, decline_rates_initial){
+check_simulation_params <- function(simulation_params){
   
   offset_action_set = simulation_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
   
-  if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
-    flog.error('restoration parameter set below decline rate')
-    stop()
-  }
+#   if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
+#     flog.error('restoration parameter set below decline rate')
+#     stop()
+#   }
   
   for (offset_action_ind in seq_along(offset_action_set)){
     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
@@ -433,7 +433,7 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, decline_rates_initial, offset_probability_list, dev_probability_list){
+initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, offset_probability_list, dev_probability_list){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -452,8 +452,6 @@ initialise_input_object <- function(parcels, initial_feature_layers, simulation_
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$offset_metric_type)
   }
   output_object$current_credit = current_credit
-  
-  output_object$decline_rates = decline_rates_initial
   return(output_object)
 }
 
@@ -618,18 +616,18 @@ screen_available_sites <- function(indexes_to_use, indexes_to_exclude){
 }
 
 
-initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
-  
-  land_parcels = parcels$land_parcels
-  parcel_num = length(land_parcels)
-  decline_rates = vector('list', parcel_num)
-  for (parcel_ind in seq(parcel_num)){
-    decline_rates[[parcel_ind]] = lapply(seq(feature_num), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
-  }
-  
-  return(decline_rates)
-  
-}
+# initialise_decline_rates <- function(parcels, sample_decline_rate, mean_decline_rates, decline_rate_std, feature_num){
+#   
+#   land_parcels = parcels$land_parcels
+#   parcel_num = length(land_parcels)
+#   decline_rates = vector('list', parcel_num)
+#   for (parcel_ind in seq(parcel_num)){
+#     decline_rates[[parcel_ind]] = lapply(seq(feature_num), function(i) rnorm(1, mean_decline_rates[i], decline_rate_std[i]))
+#   }
+#   
+#   return(decline_rates)
+#   
+# }
 
 split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, feature_num){
   parcel_num = length(land_parcels)
