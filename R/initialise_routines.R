@@ -576,6 +576,8 @@ initialise_index_object <- function(parcels, initial_feature_layers, simulation_
                                                            initial_feature_layers, 
                                                            simulation_params, 
                                                            screen_site_zeros = simulation_params$screen_dev_zeros)
+  index_object$global_indexes = parcels$site_indexes
+  
   return(index_object)
   
 }
