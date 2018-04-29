@@ -98,27 +98,27 @@ log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, ti
 #                              mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
 #                              decline_rate_std = simulated_ecology_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
 
-simulate_dynamics <- function(sample_decline_rate, parcel_num, initial_val, mean_decline_rates, decline_rate_std, min_eco_val, max_eco_val, time_vec){
-  
-  feature_num = length(mean_decline_rates)
-  if (sample_decline_rate == TRUE){
-    # sample change rate from normal distribution
-    decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
-                                                               function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
-  } else {
-    # copy same rate to all sites
-    decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
-                                                               function(j) mean_decline_rates[[j]]))
-  }
-  
-  feature_dynamics = lapply(seq_along(decline_rates), 
-                            function(i) lapply(seq_along(decline_rates[[i]]), function(j) log_proj(parcel_vals = initial_val,
-                                                                                           min_eco_val, 
-                                                                                           max_eco_val,  
-                                                                                           current_dec_rate = decline_rates[[i]][[j]], 
-                                                                                           time_vec)))
-  return(feature_dynamics)
-}
+# simulate_dynamics <- function(sample_decline_rate, parcel_num, initial_val, mean_decline_rates, decline_rate_std, min_eco_val, max_eco_val, time_vec){
+#   
+#   feature_num = length(mean_decline_rates)
+#   if (sample_decline_rate == TRUE){
+#     # sample change rate from normal distribution
+#     decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
+#                                                                function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
+#   } else {
+#     # copy same rate to all sites
+#     decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
+#                                                                function(j) mean_decline_rates[[j]]))
+#   }
+#   
+#   feature_dynamics = lapply(seq_along(decline_rates), 
+#                             function(i) lapply(seq_along(decline_rates[[i]]), function(j) log_proj(parcel_vals = initial_val,
+#                                                                                            min_eco_val, 
+#                                                                                            max_eco_val,  
+#                                                                                            current_dec_rate = decline_rates[[i]][[j]], 
+#                                                                                            time_vec)))
+#   return(feature_dynamics)
+# }
 
 construct_simulated_data <- function(simulated_ecology_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
 
@@ -134,25 +134,25 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
   objects_to_save$dev_probability_list = rep(list(1/parcel_num), parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
   
-  objects_to_save$background_dynamics <- simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
-                                                        parcel_num, 
-                                                        initial_val = simulated_ecology_params$max_initial_eco_val, 
-                                                        mean_decline_rates = simulated_ecology_params$mean_decline_rate, 
-                                                        decline_rate_std = simulated_ecology_params$decline_rate_std, 
-                                                        min_eco_val = simulated_ecology_params$local_min_eco_val, 
-                                                        max_eco_val = simulated_ecology_params$local_max_eco_val, 
-                                                        time_vec = simulated_ecology_params$simulated_time_vec)
+#   objects_to_save$background_dynamics <- simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
+#                                                         parcel_num, 
+#                                                         initial_val = simulated_ecology_params$max_initial_eco_val, 
+#                                                         mean_decline_rates = simulated_ecology_params$mean_decline_rate, 
+#                                                         decline_rate_std = simulated_ecology_params$decline_rate_std, 
+#                                                         min_eco_val = simulated_ecology_params$local_min_eco_val, 
+#                                                         max_eco_val = simulated_ecology_params$local_max_eco_val, 
+#                                                         time_vec = simulated_ecology_params$simulated_time_vec)
+#   
+#   objects_to_save$management_dynamics = simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
+#                                                            parcel_num = parcel_num, 
+#                                                            initial_val = simulated_ecology_params$min_initial_eco_val, 
+#                                                            mean_decline_rates = simulated_ecology_params$restoration_rate, 
+#                                                            decline_rate_std = simulated_ecology_params$decline_rate_std, 
+#                                                            min_eco_val = simulated_ecology_params$local_min_eco_val, 
+#                                                            max_eco_val = simulated_ecology_params$local_max_eco_val, 
+#                                                            time_vec = simulated_ecology_params$simulated_time_vec)
   
-  objects_to_save$management_dynamics = simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
-                                                           parcel_num = parcel_num, 
-                                                           initial_val = simulated_ecology_params$min_initial_eco_val, 
-                                                           mean_decline_rates = simulated_ecology_params$restoration_rate, 
-                                                           decline_rate_std = simulated_ecology_params$decline_rate_std, 
-                                                           min_eco_val = simulated_ecology_params$local_min_eco_val, 
-                                                           max_eco_val = simulated_ecology_params$local_max_eco_val, 
-                                                           time_vec = simulated_ecology_params$simulated_time_vec)
-  
-  objects_to_save$management_mode = lapply(seq(parcel_num), function(i) rep(list(0), simulated_ecology_params$feature_num))
+#  objects_to_save$management_mode = lapply(seq(parcel_num), function(i) rep(list(0), simulated_ecology_params$feature_num))
     
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
 
