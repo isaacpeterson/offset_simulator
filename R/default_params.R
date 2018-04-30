@@ -98,6 +98,11 @@ initialise_default_simulation_params <- function(){
     # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
     default_simulation_params$sample_restoration_rate = FALSE
     
+    # The mean and the standard deviation of a normal distribution from which to sample the restoration parameters from
+    default_simulation_params$restoration_rate = 0.02
+    
+    default_simulation_params$restoration_rate_std = 0.005
+    
     # Sample the decline rates from a normal distribution to they vary per parcel and per feature
     default_simulation_params$sample_decline_rate = FALSE
     

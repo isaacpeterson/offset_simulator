@@ -1,5 +1,6 @@
 run_offset_simulation_routines <- function(simulation_inputs, current_simulation_params, global_params, parcels,
-                                           decline_rates_initial, dev_probability_list, offset_probability_list, scenario_ind, realisation_ind){  
+                                           decline_rates_initial, dev_probability_list, offset_probability_list, 
+                                           scenario_ind, realisation_ind){  
   
   # run simulation with identical realisation instantiation
   # list used to govern feature_layers rate changes

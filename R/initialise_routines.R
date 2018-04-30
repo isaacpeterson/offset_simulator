@@ -433,13 +433,14 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, offset_probability_list, dev_probability_list){
+initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, offset_probability_list, dev_probability_list, decline_rates_initial){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
   output_object$unregulated_loss_object <- list()
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
+  output_object$decline_rates = decline_rates_initial
   output_object$current_feature_layers = initial_feature_layers
   output_object$index_object <- initialise_index_object(parcels, 
                                                         initial_feature_layers, 
