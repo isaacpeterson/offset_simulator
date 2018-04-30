@@ -37,7 +37,7 @@ initialise_default_global_params <- function(){
 
   # What subset of features to use in the simulation (specified by the index
   # of the feature e.g. c(1,4,13)
-  default_global_params$features_to_use_in_simulation = 1 
+  default_global_params$features_to_use_in_simulation = 'all' 
   
   # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
@@ -63,17 +63,12 @@ initialise_default_global_params <- function(){
 intialise_default_simulation_dynamics <- function(){
   
   default_simulation_dynamics = list()
-  initial_dynamics_val = 80
-  default_simulation_dynamics$simulated_time_vec = 0:100
+  default_simulation_dynamics$simulated_time_vec = vector()
   default_simulation_dynamics$background_dynamics = list()
   default_simulation_dynamics$management_dynamics = list()
-  default_simulation_dynamics$background_mode_num = 4
-  default_simulation_dynamics$management_mode_num = 4
-  
-  # Sample the restoration rates from a normal distribution to they vary per parcel and per feature
-  default_simulation_dynamics$sample_management_dynamics = TRUE
-  
-  # Sample the decline rates from a normal distribution to they vary per parcel and per feature
+  default_simulation_dynamics$background_mode_num = vector()
+  default_simulation_dynamics$management_mode_num = vector()
+  default_simulation_dynamics$sample_management_dynamics = TRUE 
   default_simulation_dynamics$sample_background_dynamics = TRUE
   
   return(default_simulation_dynamics)
@@ -301,6 +296,7 @@ initialise_default_simulated_ecology_params <- function(){
   default_simulated_ecology_params$max_initial_eco_val = 80
   
   # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
+  #TODO add error flag  when the length of this does not match feature_num
   default_simulated_ecology_params$occupation_ratio = list(1)
   
   # Mow much initial variation in pixels per land parcel (this is the width of

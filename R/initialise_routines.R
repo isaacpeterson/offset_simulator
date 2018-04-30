@@ -1,6 +1,188 @@
 #generic set of initialisation routines that are called for every simulation
 
-run_initialise_routines <- function(user_global_params = NULL, user_simulation_params = NULL, user_simulated_ecology_params = NULL){
+run_initialise_routines <- function(user_global_params = NULL, user_simulation_params = NULL, 
+                                    user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL){
+
+  
+  params_object <- build_simulation_params(user_global_params, user_simulation_params, user_simulated_ecology_params)
+  # Read in list object containing feature values by feature layer for all
+  # sites.  This is 3-level nested list, the top level is parcel index, for each
+  # parcel there is sublist containing the value of each feature for each cell
+  # in that parcel. So if there were 3 parcels and 2 features, it would be a 3
+  # element list, where each element was subsequent list of length 2
+  # containing the values for the 2 features in that parcel. The values of the
+  # feature for the parcel are a vector of length given by the number of
+  # pixels in the parcel.
+  
+  initial_feature_layers <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_ecology.rds'))
+  
+  if (params_object$global_params$features_to_use_in_simulation == 'all'){
+    params_object$global_params$features_to_use_in_simulation = seq_along(initial_feature_layers[[1]])
+  } 
+  
+  params_object$global_params$feature_num = length(params_object$global_params$features_to_use_in_simulation) 
+  
+  # This is a list of vectors of length number of sites. First level is the parcel index; the second
+  # level is the a vector containing the index values for the pixels in each
+  # parcel
+  parcels <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcels.rds'))
+  
+  # This is a list of single values of length number of sites where the values
+  # representing the probabilities of sites being developed. Default is that
+  # all sites have equal probability simulated data, with user data this must
+  # be specified.
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))){
+    dev_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
+  } else {
+    dev_probability_list <- rep(list(1/length(parcels$land_parcels)), length(parcels$land_parcels))
+  }
+  
+  # This is a list of single values of length number of sites, where the values
+  # represent the probabilities of sites being offset. Default is that all
+  # sites have equal probability simulated data, with user data this must be
+  # specified.
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))){
+    offset_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
+  } else {
+    offset_probability_list <- rep(list(1/length(parcels$land_parcels)), length(parcels$land_parcels))
+  }
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
+    background_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+  } else {
+    background_dynamics <- build_dynamics(user_simulation_dynamics$sample_background_dynamics, 
+                                          user_simulation_dynamics$background_dynamics, 
+                                          parcels$land_parcel_num, 
+                                          user_simulation_dynamics$background_mode_num,
+                                          feature_num = params_object$global_params$features_to_use_in_simulation, 
+                                          user_simulation_dynamics$simulated_time_vec)
+  }
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))){
+    management_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
+  } else {
+    management_dynamics <- build_dynamics(user_simulation_dynamics$sample_background_dynamics, 
+                                          user_simulation_dynamics$management_dynamics,
+                                          parcels$land_parcel_num, 
+                                          user_simulation_dynamics$management_mode_num,
+                                          feature_num = params_object$global_params$features_to_use_in_simulation,
+                                          user_simulation_dynamics$simulated_time_vec)
+  }
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))){
+    management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
+  } else {
+    
+  }
+  
+  # select subset of feature layers to use in current simulation 
+  # (e.g. if there 100 layers just run with 10 of them)
+  initial_feature_layers <- select_feature_subset(initial_feature_layers, params_object$global_params$features_to_use_in_simulation)
+  
+  background_dynamics <- select_feature_subset(background_dynamics, params_object$global_params$features_to_use_in_simulation)
+  
+  management_dynamics <- select_feature_subset(management_dynamics, params_object$global_params$features_to_use_in_simulation)
+  
+  # Set up the object used to store all simulation inputs and pass them to the simulation function 
+  simulation_inputs = initialise_input_object(parcels, 
+                                              initial_feature_layers_to_use, 
+                                              current_simulation_params, 
+                                              offset_probability_list, 
+                                              dev_probability_list)
+  
+  input_object = list()
+  input_object$global_params = global_params
+  input_object$simulation_params_group = simulation_params_group
+  input_obect$current_feature_layers = initial_feature_layers
+  input_object$parcels = parcels
+  input_object$dev_probability_list = dev_probability_list
+  input_object$offset_probability_list = offset_probability_list
+  input_object$management_mode = lapply(seq(parcels$land_parcel_num), function(i) rep(list(0), length(initial_feature_layers)))
+  return(params_object)
+  
+}
+
+
+
+build_dynamics <- function(sample_dynamics, feature_dynamics, parcel_num, mode_num, feature_num, time_vec){
+  
+  dynamics_set = lapply(seq(parcel_num), function(i) feature_dynamics)
+  
+#   dynamics_set = lapply(seq(parcel_num), 
+#                         function(i) lapply(seq(feature_num), 
+#                                            function(j) lapply(seq(mode_num), 
+#                                                               function(k) feature_dynamics[[i]][[j]][[k]]
+  
+  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$upper_bound)
+  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$best_estimate)
+  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$lower_bound)
+  
+  
+  
+  
+    feature_dynamics_upper = lapply(seq(feature_num), function(i) lapply(seq(mode_num), 
+                                                                       function(j) feature_dynamics[[i]][[j]]$upper_bound 
+                                                                       - feature_dynamics[[i]][[j]]$best_estimate))
+    
+    
+#   for (parcel_ind in seq(parcel_num)){
+#     for (feature_ind in seq(feature_num)){
+#         line_fractions = rnorm(mode_num, mean = 0, sd = 0.2)
+#         line_fractions[line_fractions < -1] = - 1
+#         line_fractions[line_fractions > 1] = 1
+#         lapply(seq_along(dynamics_set[[parcel_ind]][[feature_ind]]), dynamics_set[[i]][[feature_ind]][[mode_ind]]$)
+#     }
+#   }
+  for (feature_ind in seq(feature_num)){
+    current_feature_dynamics_set = vector('list', mode_num)
+    for (mode_ind in seq(mode_num)){
+      current_feature_dynamics = feature_dynamics[[feature_ind]][[mode_ind]]
+      
+      if (sample_dynamics == TRUE){
+        line_fractions = rnorm(parcel_num, mean = 0, sd = 0.2)
+        line_fractions[line_fractions < -1] = - 1
+        line_fractions[line_fractions > 1] = 1
+        
+        current_mode_dynamics_set = vector('list', parcel_num)
+        current_mode_dynamics_set[line_fractions >= 0] = lapply(which(line_fractions >= 0), 
+                                                           function(i) line_fractions[i]*(current_feature_dynamics$upper_bound - current_feature_dynamics$best_estimate))
+        current_mode_dynamics_set[line_fractions < 0] = lapply(which(line_fractions < 0), 
+                                                          function(i) line_fractions[i]*(current_feature_dynamics$best_estimate - current_feature_dynamics$lower_bound))
+        current_mode_dynamics_set = mapply('+', current_mode_dynamics_set, rep(list(current_feature_dynamics$best_estimate), parcel_num), SIMPLIFY = FALSE)
+        
+        splines = lapply(seq_along(current_mode_dynamics_set), function(i) smooth.spline(time_vec, current_mode_dynamics_set[[i]], df = 4))
+        
+      } else {
+        current_mode_dynamics_set = rep(list(current_feature_dynamics$best_estimate), parcel_num)
+      }
+      current_feature_dynamics_set[[mode_ind]] = splines
+    }
+    dynamics_set[[feature_ind]] = current_feature_dynamics_set
+  }
+  
+  return(dynamics_set)
+}
+
+initialise_output_object <- function(current_simulation_params, index_object){
+  output_object = list()
+  output_object$offsets_object <- list()
+  output_object$dev_object <- list()
+  output_object$unregulated_loss_object <- list()
+  output_object$credit_object <- list()
+  output_object$offset_bank_object <- list()
+  output_object$offset_pool_object <- list()
+  current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
+  if (current_simulation_params$use_specified_offset_metric == TRUE){
+    current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$current_offset_metric_type)
+  }
+  output_object$current_credit = current_credit
+  output_object$index_object
+  return(output_object)
+}
+
+build_simulation_params <- function(user_global_params, user_simulation_params, user_simulated_ecology_params){
   #' @import foreach
   #' @import doParallel
   #' @import abind
@@ -41,7 +223,6 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
   
   simulation_params_object = build_simulation_variants(simulation_params)
-  
   global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
   
   # generate simulated ecology
@@ -57,11 +238,8 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     }
   }
   
-  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
-  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
-  
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
+                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params, global_params))
   
   dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
   simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
@@ -88,25 +266,27 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   global_params <- initialise_cores(global_params)
   global_params$strt = Sys.time()
   
+  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
+  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
+  
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params_group = simulation_params_group
   return(params_object)
-  
 }
-
-
-check_param_conflicts <- function(simulation_params, simulated_ecology_params){
   
-  feature_test = match(simulation_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
+  
+check_param_conflicts <- function(simulation_params, simulated_ecology_params, global_params){
+  
+  feature_test = match(global_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
   if (any(is.na(feature_test))){
-    flog.error(paste('\n ERROR: simulation_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
+    flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
     stop()
   } 
   
   offset_calc_test = 
     if (any(is.na(offset_calc_test))){
-      flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match simulation_params$features_to_use_in_simulation'))
+      flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
       stop()
     } 
   params_object = list()
@@ -175,10 +355,10 @@ check_simulation_params <- function(simulation_params){
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
   
-#   if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
-#     flog.error('restoration parameter set below decline rate')
-#     stop()
-#   }
+  #   if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
+  #     flog.error('restoration parameter set below decline rate')
+  #     stop()
+  #   }
   
   for (offset_action_ind in seq_along(offset_action_set)){
     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
@@ -198,12 +378,12 @@ check_simulation_params <- function(simulation_params){
   valid_dev_calc_type = c('future_condition', 'current_condition')
   check_current_param(simulation_params$dev_calc_type, valid_dev_calc_type)
   
-  #   if ( (length(simulation_params$mean_decline_rates) != length(simulation_params$features_to_use_in_simulation)) ){
+  #   if ( (length(simulation_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
   #     flog.error(cat('\n decline rates mean parameter does not match feature number'))
   #     stop()
   #   }
   #   
-  #   if ( (length(simulation_params$decline_rate_std) != length(simulation_params$features_to_use_in_simulation)) ){
+  #   if ( (length(simulation_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
   #     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
   #     stop()
   #   }
@@ -247,9 +427,9 @@ select_feature_subset <- function(input_object, features_to_use){
     flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match initial_feature_layers_dimensions'))
     stop()
   }
-  output_object <- lapply(seq_along(input_object),
+  input_object <- lapply(seq_along(input_object),
                           function(i) (input_object[[i]][features_to_use]))
-  return(output_object)
+  return(input_object)
 }
 
 
@@ -314,18 +494,18 @@ generate_simulation_combs <- function(simulation_params_group){
   
 }
 
-build_simulation_params <- function(common_params, simulation_params_group, current_simulation_param_inds){
-  
-  current_simulation_params_variant <- lapply(seq_along(simulation_params_group), function(i) simulation_params_group[[i]][[current_simulation_param_inds[i] ]])
-  current_simulation_params <- append(common_params, current_simulation_params_variant)
-  names(current_simulation_params) <- append(names(common_params), names(simulation_params_group))
-  
-  return(current_simulation_params)
-  
-}
+# build_simulation_params <- function(common_params, simulation_params_group, current_simulation_param_inds){
+#   
+#   current_simulation_params_variant <- lapply(seq_along(simulation_params_group), function(i) simulation_params_group[[i]][[current_simulation_param_inds[i] ]])
+#   current_simulation_params <- append(common_params, current_simulation_params_variant)
+#   names(current_simulation_params) <- append(names(common_params), names(simulation_params_group))
+#   
+#   return(current_simulation_params)
+#   
+# }
 
 
-collate_current_policy <- function(current_simulation_params, common_params){
+collate_current_policy <- function(current_simulation_params, common_params, global_params){
   
   current_simulation_params = append(current_simulation_params, common_params)
   
@@ -335,9 +515,9 @@ collate_current_policy <- function(current_simulation_params, common_params){
     current_simulation_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
   
-  current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)   # The total number of features in the simulation
-  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
-  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
+  
+  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
+  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, global_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
@@ -434,37 +614,26 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, offset_probability_list, dev_probability_list){
-  output_object = list()
-  output_object$offsets_object <- list()
-  output_object$dev_object <- list()
-  output_object$unregulated_loss_object <- list()
-  output_object$credit_object <- list()
-  output_object$offset_bank_object <- list()
-  output_object$current_feature_layers = initial_feature_layers
-  output_object$index_object <- initialise_index_object(parcels, 
+  input_object = list()
+  input_object$offsets_object <- list()
+  input_object$dev_object <- list()
+  input_object$unregulated_loss_object <- list()
+  input_object$credit_object <- list()
+  input_object$offset_bank_object <- list()
+  input_object$current_feature_layers = initial_feature_layers
+  input_object$index_object <- initialise_index_object(parcels, 
                                                         initial_feature_layers, 
                                                         simulation_params, 
                                                         offset_indexes_to_exclude = c(which(unlist(offset_probability_list) == 0)), 
                                                         dev_indexes_to_exclude = which(unlist(dev_probability_list) == 0))
+  input_object$management_mode = lapply(seq(parcels$parcel_num), function(i) rep(list(0), length(initial_feature_layers)))
   
   current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
   if (simulation_params$use_specified_offset_metric == TRUE){
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$offset_metric_type)
   }
-  output_object$current_credit = current_credit
-  return(output_object)
-}
-
-initialise_trajectories <- function(feature_num, land_parcels, time_steps){
-  parcel_num =  length(land_parcels)
-  trajectories = generate_nested_list(outer_dim = parcel_num, inner_dim = feature_num)
-  for (parcel_ind in seq_len(parcel_num)){
-    for (eco_ind in seq_len(feature_num)){
-      parcel_dims = length(land_parcels[[parcel_ind]])
-      trajectories[[parcel_ind]][[eco_ind]] = array(0, c(time_steps, parcel_dims))
-    }
-  }
-  return(trajectories)
+  input_object$current_credit = current_credit
+  return(input_object)
 }
 
 
@@ -562,28 +731,28 @@ initialise_index_object <- function(parcels, initial_feature_layers, simulation_
   names(index_object$site_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$indexes_to_use = list()
-  
+    
   index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                               offset_indexes_to_exclude, 
                                                               parcels, 
                                                               initial_feature_layers, 
-                                                              simulation_params, 
-                                                              screen_site_zeros = simulation_params$screen_offset_zeros)
+                                                              screen_site_zeros = simulation_params$screen_offset_zeros,
+                                                              site_screen_size = simulation_params$site_screen_size,
+                                                              simulation_params$features_to_use_in_offset_calc)
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcels, 
                                                            initial_feature_layers, 
-                                                           simulation_params, 
-                                                           screen_site_zeros = simulation_params$screen_dev_zeros)
-  index_object$global_indexes = parcels$site_indexes
-  
+                                                           screen_site_zeros = simulation_params$screen_dev_zeros,
+                                                           site_screen_size = simulation_params$site_screen_size,
+                                                           simulation_params$features_to_use_in_offset_calc)
   return(index_object)
   
 }
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_feature_layers, simulation_params, screen_site_zeros){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_feature_layers, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
   
   if (screen_site_zeros == TRUE){
     
@@ -592,18 +761,17 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
                                                     function(j) sum(initial_feature_layers[[i]][[j]]) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
-                                           function(i) all(unlist(initial_parcel_sums[[i]][simulation_params$features_to_use_in_offset_calc]) == 0))))
+                                           function(i) all(unlist(initial_parcel_sums[[i]][features_to_use_in_offset_calc]) == 0))))
     indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  if (simulation_params$site_screen_size > 0){
+  if (site_screen_size > 0){
     parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
-    smalls_to_exclude = which(parcel_lengths < simulation_params$site_screen_size)
+    smalls_to_exclude = which(parcel_lengths < site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
   indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude)
-  
   return(indexes_to_use)
 }
 
@@ -639,8 +807,8 @@ split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, featu
     current_parcel = land_parcels[[parcel_ind]]
     parcel_dims = length(current_parcel)
     
-    for (eco_ind in seq_len(feature_num)){
-      current_feature_layers[[parcel_ind]][[eco_ind]] = landscape_ecology[[eco_ind]][current_parcel]
+    for (feature_ind in seq_len(feature_num)){
+      current_feature_layers[[parcel_ind]][[feature_ind]] = landscape_ecology[[feature_ind]][current_parcel]
     }
   }
   return(current_feature_layers)

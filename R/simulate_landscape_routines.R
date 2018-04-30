@@ -13,12 +13,12 @@ simulate_ecology_feature <- function(min_initial_eco_val, max_initial_eco_val, i
 
 simulate_ecology <- function(simulated_ecology_params, land_parcels){ 
   
-  for (eco_ind in 1:simulated_ecology_params$feature_num){
+  for (feature_ind in 1:simulated_ecology_params$feature_num){
     current_simulated_ecology <- simulate_ecology_feature(simulated_ecology_params$min_initial_eco_val, 
                                                           simulated_ecology_params$max_initial_eco_val, 
                                                           simulated_ecology_params$initial_eco_noise, 
                                                           land_parcels)
-    current_occupation_ratio = simulated_ecology_params$occupation_ratio[[eco_ind]]
+    current_occupation_ratio = simulated_ecology_params$occupation_ratio[[feature_ind]]
     
     if (current_occupation_ratio > 0){
       zero_site_inds = which(runif(length(current_simulated_ecology)) > current_occupation_ratio)
@@ -27,7 +27,7 @@ simulate_ecology <- function(simulated_ecology_params, land_parcels){
     
     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
     
-    if (eco_ind == 1){
+    if (feature_ind == 1){
       simulated_ecology <- current_simulated_ecology
     } else {
       simulated_ecology <- lapply(seq_along(land_parcels), function(j) append(simulated_ecology[[j]], current_simulated_ecology[[j]]))

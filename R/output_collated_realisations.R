@@ -8,8 +8,6 @@
 
 osim.output <- function(user_output_params = NULL, simulation_folder = NULL, loglevel = INFO){
   
-  flog.appender(appender.tee('osim.output.log'))
-  
   if (is.null(user_output_params)) {
     flog.error('provide plot params file')
     stop()
@@ -108,37 +106,14 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       }
     } 
     
+
     if (plot_flag == FALSE){
         flog.trace(' skipping scenario %d', scenario_ind )
     } else {
       
-      flog.info('Generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, output_params$plot_type)  
+      flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, output_params$plot_type)  
       if (file.exists(param_variants_filename)){
-        
-        # Use this line to dump everthing to the log, with the variable and the value each on a different 
-        # line, through will work where a variable has 2 or more values.
-        #flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
-        
-        # The code below was written to provide nicer loggin output, where each variable and its value(s) 
-        # are printed on one line in the log file 
-        # Note: this only works for variable that have 1, 2 or 3 values
-        
-        no.vars <- length(names(param_variants[[scenario_ind]]))
-        for( i in 1:no.vars) {
-          # if param has 3 values
-          if(length(param_variants[[scenario_ind]][[i]])==3){
-            flog.info(' %s = (%s, %s, %s)', names(param_variants[[scenario_ind]])[i], param_variants[[scenario_ind]][[i]][1], 
-                      param_variants[[scenario_ind]][[i]][2], param_variants[[scenario_ind]][[i]][3])
-            # if param has 2 values
-          } else if(length(param_variants[[scenario_ind]][[i]])==2){
-               flog.info(' %s = (%s, %s)', names(param_variants[[scenario_ind]])[i], param_variants[[scenario_ind]][[i]][1], 
-                      param_variants[[scenario_ind]][[i]][2])
-          } else {
-            flog.info(' %s = %s', names(param_variants[[scenario_ind]])[i], param_variants[[scenario_ind]][[i]] )
-          }
-        }
-        
-        
+        flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
       }
       
       if (class(output_params$features_to_plot) == 'character'){
@@ -160,16 +135,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
           sites_used = collated_realisations$sites_used
           stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
           mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
-          
-          #flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
-          
-          # Added code to pring the number of sites used for dev, offsets etc, on one line with the variable name
-          flog.info('Mean number of sites used for:')
-          for( i in 1:length(names(sites_used[stats_to_use])) ) {
-            flog.info(' %s = %s', names(sites_used[stats_to_use])[i], mean_sites_used[[i]] )
-          }
-          
-          
+          flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
         }
         
         if (output_params$output_plot == TRUE){

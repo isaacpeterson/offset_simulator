@@ -828,7 +828,7 @@ user_projection <- function(parcel_vals, min_eco_val, max_eco_val, decline_rate,
 # define feature_layers dynamics by logistic curve
 #' @export 
 logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, time_vec){
-  
+
   t_sh = -1/current_dec_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
   
   # define logistic curve given logistic parameter set.
