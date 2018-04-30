@@ -74,7 +74,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))){
     management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
   } else {
-    
+    management_mode = rep(list(rep(list(0), length*params_object$global_params$features_to_use_in_simulation)), parcels$land_parcel_num)
   }
   
   # select subset of feature layers to use in current simulation 
@@ -86,82 +86,49 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   management_dynamics <- select_feature_subset(management_dynamics, params_object$global_params$features_to_use_in_simulation)
   
   # Set up the object used to store all simulation inputs and pass them to the simulation function 
-  simulation_inputs = initialise_input_object(parcels, 
+  input_object = initialise_input_object(parcels, 
                                               initial_feature_layers_to_use, 
                                               current_simulation_params, 
                                               offset_probability_list, 
                                               dev_probability_list)
-  
-  input_object = list()
+  input_object$background_dynamics = background_dynamics
+  input_object$management_dynamics = management_dynamics
   input_object$global_params = global_params
   input_object$simulation_params_group = simulation_params_group
   input_obect$current_feature_layers = initial_feature_layers
   input_object$parcels = parcels
   input_object$dev_probability_list = dev_probability_list
   input_object$offset_probability_list = offset_probability_list
-  input_object$management_mode = lapply(seq(parcels$land_parcel_num), function(i) rep(list(0), length(initial_feature_layers)))
   return(params_object)
   
 }
 
 
+estimate_current_dynamics <- function(current_feature_dynamics_set){
+  
+  current_discriminator = rnorm(1, mean = 0, sd = 0.2)
+    
+  if (current_discriminator >= 0){
+    if (current_discriminator > 1){
+      current_discriminator = 1
+    }
+    current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(current_feature_dynamics_set$upper_bound - current_feature_dynamics_set$best_estimate)
+  } else{
+    if (current_discriminator < -1){
+      current_discriminator = -1
+    }
+    current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
+  }
+  return(current_feature_dynamics)
+  
+}
 
 build_dynamics <- function(sample_dynamics, feature_dynamics, parcel_num, mode_num, feature_num, time_vec){
   
-  dynamics_set = lapply(seq(parcel_num), function(i) feature_dynamics)
-  
-#   dynamics_set = lapply(seq(parcel_num), 
-#                         function(i) lapply(seq(feature_num), 
-#                                            function(j) lapply(seq(mode_num), 
-#                                                               function(k) feature_dynamics[[i]][[j]][[k]]
-  
-  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$upper_bound)
-  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$best_estimate)
-  lapply(seq(parcel_num), function(i) dynamics_set[[i]][[1]][[1]]$lower_bound)
-  
-  
-  
-  
-    feature_dynamics_upper = lapply(seq(feature_num), function(i) lapply(seq(mode_num), 
-                                                                       function(j) feature_dynamics[[i]][[j]]$upper_bound 
-                                                                       - feature_dynamics[[i]][[j]]$best_estimate))
-    
-    
-#   for (parcel_ind in seq(parcel_num)){
-#     for (feature_ind in seq(feature_num)){
-#         line_fractions = rnorm(mode_num, mean = 0, sd = 0.2)
-#         line_fractions[line_fractions < -1] = - 1
-#         line_fractions[line_fractions > 1] = 1
-#         lapply(seq_along(dynamics_set[[parcel_ind]][[feature_ind]]), dynamics_set[[i]][[feature_ind]][[mode_ind]]$)
-#     }
-#   }
-  for (feature_ind in seq(feature_num)){
-    current_feature_dynamics_set = vector('list', mode_num)
-    for (mode_ind in seq(mode_num)){
-      current_feature_dynamics = feature_dynamics[[feature_ind]][[mode_ind]]
-      
-      if (sample_dynamics == TRUE){
-        line_fractions = rnorm(parcel_num, mean = 0, sd = 0.2)
-        line_fractions[line_fractions < -1] = - 1
-        line_fractions[line_fractions > 1] = 1
-        
-        current_mode_dynamics_set = vector('list', parcel_num)
-        current_mode_dynamics_set[line_fractions >= 0] = lapply(which(line_fractions >= 0), 
-                                                           function(i) line_fractions[i]*(current_feature_dynamics$upper_bound - current_feature_dynamics$best_estimate))
-        current_mode_dynamics_set[line_fractions < 0] = lapply(which(line_fractions < 0), 
-                                                          function(i) line_fractions[i]*(current_feature_dynamics$best_estimate - current_feature_dynamics$lower_bound))
-        current_mode_dynamics_set = mapply('+', current_mode_dynamics_set, rep(list(current_feature_dynamics$best_estimate), parcel_num), SIMPLIFY = FALSE)
-        
-        splines = lapply(seq_along(current_mode_dynamics_set), function(i) smooth.spline(time_vec, current_mode_dynamics_set[[i]], df = 4))
-        
-      } else {
-        current_mode_dynamics_set = rep(list(current_feature_dynamics$best_estimate), parcel_num)
-      }
-      current_feature_dynamics_set[[mode_ind]] = splines
-    }
-    dynamics_set[[feature_ind]] = current_feature_dynamics_set
-  }
-  
+  dynamics_set = lapply(seq(parcel_num), 
+                        function(i) lapply(seq(feature_num), 
+                                           function(j) lapply(seq(mode_num), 
+                                                              function(k) estimate_current_dynamics(current_feature_dynamics_set = feature_dynamics[[j]][[k]]))))
   return(dynamics_set)
 }
 
