@@ -516,7 +516,7 @@ find_sites_used <- function(collated_data){
   sites_used$offset_bank = find_current_sites_used(collated_data$collated_offset_bank$site_indexes)
   sites_used$dev_credit = find_current_sites_used(collated_data$collated_dev_credit$site_indexes)
   
-  sites_used$sites_lost = find_current_sites_used(collated_data$collated_unregulated_loss$site_indexes)
+  sites_used$unregulated = find_current_sites_used(collated_data$collated_unregulated_loss$site_indexes)
    
   return(sites_used)
 }
