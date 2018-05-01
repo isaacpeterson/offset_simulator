@@ -413,7 +413,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
   collated_data = list()
   
   collated_data$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
-                                                                      current_site_groups = simulation_outputs$index_object$site_indexes$offsets,
+                                                                      current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
                                                                       current_trajectories, 
                                                                       current_decline_rates_initial, 
                                                                       collate_type = 'offsets', 
@@ -422,7 +422,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                       feature_ind)
   
   collated_data$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
-                                                                  current_site_groups = simulation_outputs$index_object$site_indexes$devs,
+                                                                  current_site_groups = simulation_outputs$index_object$site_indexes_used$devs,
                                                                   current_trajectories, 
                                                                   current_decline_rates_initial, 
                                                                   collate_type = 'devs', 
@@ -431,7 +431,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                   feature_ind)
   
   collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
-                                                                        current_site_groups = simulation_outputs$index_object$site_indexes$dev_credits,
+                                                                        current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
                                                                         current_trajectories, 
                                                                         current_decline_rates_initial, 
                                                                         collate_type = 'dev_credit', 
@@ -440,7 +440,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                         feature_ind)
   
   collated_data$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
-                                                                         current_site_groups = simulation_outputs$index_object$site_indexes$banking,
+                                                                         current_site_groups = simulation_outputs$index_object$site_indexes_used$banking,
                                                                          current_trajectories, 
                                                                          current_decline_rates_initial, 
                                                                          collate_type = 'offset_bank', 
@@ -449,7 +449,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                          feature_ind)
   
   collated_data$collated_unregulated_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$unregulated_loss_object,
-                                                                              current_site_groups = simulation_outputs$index_object$site_indexes$unregulated,
+                                                                              current_site_groups = simulation_outputs$index_object$site_indexes_used$unregulated,
                                                                               current_trajectories, 
                                                                               current_decline_rates_initial, 
                                                                               collate_type = 'unregulated_loss', 
@@ -477,7 +477,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
   collated_data$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
                                          impacts = collated_data$site_scale_impacts$net_impacts, 
                                          offset_yrs_to_use = collated_data$collated_offsets$offset_yrs, 
-                                         site_indexes = simulation_outputs$index_object$site_indexes$offsets)
+                                         site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
   
   collated_data$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
                                             impacts = list(collated_data$program_scale_impacts$program_total), 
