@@ -1,10 +1,102 @@
 #generic set of initialisation routines that are called for every simulation
-
-run_initialise_routines <- function(user_global_params = NULL, user_simulation_params = NULL, 
+build_simulation_params <- function(user_global_params = NULL, user_simulation_params = NULL, 
                                     user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL){
-
+  #' @import foreach
+  #' @import doParallel
+  #' @import abind
+  #' @import pixmap
   
-  params_object <- build_simulation_params(user_global_params, user_simulation_params, user_simulated_ecology_params)
+  default_global_params = initialise_default_global_params()
+  default_simulation_params = initialise_default_simulation_params()
+  default_simulated_ecology_params = initialise_default_simulated_ecology_params()
+  
+  if (!is.null(user_global_params) == TRUE){
+    global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
+    #check_global_params(global_params)
+  } else {
+    global_params = default_global_params
+  }
+  
+  if (!is.null(user_simulation_params) == TRUE){  
+    simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
+    #check_simulation_params(simulation_params)
+  } else{
+    simulation_params = default_simulation_params
+  }
+  
+  if (!is.null(user_simulated_ecology_params) == TRUE){  
+    simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
+  } else {
+    simulated_ecology_params = default_simulated_ecology_params
+  }
+  
+  # run simulation with identical realisation instantiation
+  if (global_params$set_seed == TRUE){
+    seed=123
+    flog.info('fixing random number seed to %d', 123)
+    set.seed(seed)
+  }
+  
+  #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
+  
+  simulation_params_object = build_simulation_variants(simulation_params)
+  global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
+  
+  simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
+                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params, global_params))
+  
+  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
+  simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
+  
+  for (scenario_ind in seq_along(simulation_params_group)){
+    current_simulation_params = simulation_params_group[[scenario_ind]]
+    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
+                         formatC( scenario_ind, width = 3, format = "d", flag = "0"),
+                         '_simulation_params')
+    saveRDS(current_simulation_params, paste0(file_prefix, '.rds'))
+    dump('current_simulation_params', simulation_params_file, append = TRUE)
+  }
+  
+  if (length(global_params$scenario_subset) == 1){
+    if (global_params$scenario_subset == 'all'){
+      global_params$scenario_subset = seq_along(simulation_params_group)
+    } else {
+      global_params$scenario_subset = global_params$scenario_subset
+    }
+  } else {
+    global_params$scenario_subset = global_params$scenario_subset
+  }
+  
+  global_params <- initialise_cores(global_params)
+  global_params$strt = Sys.time()
+  
+  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
+  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
+  
+  params_object = list()
+  params_object$global_params = global_params
+  params_object$simulation_params_group = simulation_params_group
+  params_object$simulated_ecology_params = simulated_ecology_params
+  return(params_object)
+  
+}
+
+
+generate_global_inputs <- function(params_object){
+
+  # generate simulated ecology
+  if (params_object$global_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                    include.dirs = FALSE, no.. = FALSE)
+    if ( (length(current_filenames) == 0) | (params_object$global_params$run_from_saved_simulated_data == FALSE)){
+      construct_simulated_data(params_object$simulated_ecology_params, 
+                               params_object$global_params$simulation_inputs_folder, 
+                               params_object$global_params$simulation_params_folder, 
+                               params_object$global_params$backup_simulation_inputs)
+    }
+  }
+  
   # Read in list object containing feature values by feature layer for all
   # sites.  This is 3-level nested list, the top level is parcel index, for each
   # parcel there is sublist containing the value of each feature for each cell
@@ -15,12 +107,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   # pixels in the parcel.
   
   initial_feature_layers <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_ecology.rds'))
-  
-  if (params_object$global_params$features_to_use_in_simulation == 'all'){
-    params_object$global_params$features_to_use_in_simulation = seq_along(initial_feature_layers[[1]])
-  } 
-  
-  params_object$global_params$feature_num = length(params_object$global_params$features_to_use_in_simulation) 
+
   
   # This is a list of vectors of length number of sites. First level is the parcel index; the second
   # level is the a vector containing the index values for the pixels in each
@@ -49,6 +136,22 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
     offset_probability_list <- rep(list(1/length(parcels$land_parcels)), length(parcels$land_parcels))
   }
   
+  if (class(params_object$global_params$features_to_use_in_simulation) == "character"){
+    if (params_object$global_params$features_to_use_in_simulation == 'all'){
+        features_to_use_in_simulation = seq_along(initial_feature_layers[[1]])
+    } 
+  } else {
+    features_to_use_in_simulation = params_object$global_params$features_to_use_in_simulation
+  }
+  feature_num = length(features_to_use_in_simulation) 
+  
+  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))){
+    management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
+  } else {
+    management_mode = rep(list(rep(list(0), feature_num)), parcels$land_parcel_num)
+  }
+  
   if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     background_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
@@ -71,35 +174,20 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
                                           user_simulation_dynamics$simulated_time_vec)
   }
   
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))){
-    management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
-  } else {
-    management_mode = rep(list(rep(list(0), length(params_object$global_params$features_to_use_in_simulation))), parcels$land_parcel_num)
-  }
-  
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
-  initial_feature_layers <- select_feature_subset(initial_feature_layers, params_object$global_params$features_to_use_in_simulation)
   
-  background_dynamics <- select_feature_subset(background_dynamics, params_object$global_params$features_to_use_in_simulation)
-  
-  management_dynamics <- select_feature_subset(management_dynamics, params_object$global_params$features_to_use_in_simulation)
-  
-  # Set up the object used to store all simulation inputs and pass them to the simulation function 
-  input_object = initialise_input_object(parcels, 
-                                         initial_feature_layers, 
-                                         current_simulation_params, 
-                                         offset_probability_list, 
-                                         dev_probability_list)
-  input_object$background_dynamics = background_dynamics
-  input_object$management_dynamics = management_dynamics
-  input_object$global_params = global_params
-  input_object$simulation_params_group = simulation_params_group
-  input_obect$current_feature_layers = initial_feature_layers
-  input_object$parcels = parcels
-  input_object$dev_probability_list = dev_probability_list
-  input_object$offset_probability_list = offset_probability_list
-  return(params_object)
+  initial_feature_layers <- select_feature_subset(initial_feature_layers, features_to_use_in_simulation)
+
+  global_input_object = list()
+  global_input_object$current_feature_layers = initial_feature_layers
+  global_input_object$parcels = parcels
+  global_input_object$background_dynamics = background_dynamics
+  global_input_object$management_dynamics = management_dynamics
+  global_input_object$dev_probability_list = dev_probability_list
+  global_input_object$offset_probability_list = offset_probability_list
+  global_input_object$management_mode = management_mode
+  return(global_input_object)
   
 }
 
@@ -149,98 +237,7 @@ initialise_output_object <- function(current_simulation_params, index_object){
   return(output_object)
 }
 
-build_simulation_params <- function(user_global_params, user_simulation_params, user_simulated_ecology_params){
-  #' @import foreach
-  #' @import doParallel
-  #' @import abind
-  #' @import pixmap
-  
-  default_global_params = initialise_default_global_params()
-  default_simulation_params = initialise_default_simulation_params()
-  default_simulated_ecology_params = initialise_default_simulated_ecology_params()
-  
-  if (!is.null(user_global_params) == TRUE){
-    global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
-    #check_global_params(global_params)
-  } else {
-    global_params = default_global_params
-  }
-  
-  if (!is.null(user_simulation_params) == TRUE){  
-    simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
-    #check_simulation_params(simulation_params)
-  } else{
-    simulation_params = default_simulation_params
-  }
-  
-  if (!is.null(user_simulated_ecology_params) == TRUE){  
-    simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
-  } else {
-    simulated_ecology_params = default_simulated_ecology_params
-  }
-  
-  # run simulation with identical realisation instantiation
-  if (global_params$set_seed == TRUE){
-    seed=123
-    flog.info('fixing random number seed to %d', 123)
-    set.seed(seed)
-  }
-  
-  
-  #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
-  
-  simulation_params_object = build_simulation_variants(simulation_params)
-  global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
-  
-  # generate simulated ecology
-  if (global_params$use_simulated_data == TRUE) {
-    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
-                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                    include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (global_params$run_from_saved_simulated_data == FALSE)){
-      construct_simulated_data(simulated_ecology_params, 
-                               global_params$simulation_inputs_folder, 
-                               global_params$simulation_params_folder, 
-                               global_params$backup_simulation_inputs)
-    }
-  }
-  
-  simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params, global_params))
-  
-  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
-  simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
-  
-  for (scenario_ind in seq_along(simulation_params_group)){
-    current_simulation_params = simulation_params_group[[scenario_ind]]
-    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
-                         formatC( scenario_ind, width = 3, format = "d", flag = "0"),
-                         '_simulation_params')
-    saveRDS(current_simulation_params, paste0(file_prefix, '.rds'))
-    dump('current_simulation_params', simulation_params_file, append = TRUE)
-  }
-  
-  if (length(global_params$scenario_subset) == 1){
-    if (global_params$scenario_subset == 'all'){
-      global_params$scenario_subset = seq_along(simulation_params_group)
-    } else {
-      global_params$scenario_subset = global_params$scenario_subset
-    }
-  } else {
-    global_params$scenario_subset = global_params$scenario_subset
-  }
-  
-  global_params <- initialise_cores(global_params)
-  global_params$strt = Sys.time()
-  
-  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
-  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
-  
-  params_object = list()
-  params_object$global_params = global_params
-  params_object$simulation_params_group = simulation_params_group
-  return(params_object)
-}
+
   
   
 check_param_conflicts <- function(simulation_params, simulated_ecology_params, global_params){
@@ -580,27 +577,18 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 
-initialise_input_object <- function(parcels, initial_feature_layers, simulation_params, offset_probability_list, dev_probability_list){
-  input_object = list()
-  input_object$offsets_object <- list()
-  input_object$dev_object <- list()
-  input_object$unregulated_loss_object <- list()
-  input_object$credit_object <- list()
-  input_object$offset_bank_object <- list()
-  input_object$current_feature_layers = initial_feature_layers
-  input_object$index_object <- initialise_index_object(parcels, 
-                                                        initial_feature_layers, 
-                                                        simulation_params, 
-                                                        offset_indexes_to_exclude = c(which(unlist(offset_probability_list) == 0)), 
-                                                        dev_indexes_to_exclude = which(unlist(dev_probability_list) == 0))
-  input_object$management_mode = lapply(seq(parcels$parcel_num), function(i) rep(list(0), length(initial_feature_layers)))
-  
+initialise_output_object <- function(simulation_params){
+  output_object = list()
+  output_object$offsets_object <- list()
+  output_object$dev_object <- list()
+  output_object$unregulated_loss_object <- list()
+  output_object$credit_object <- list()
+  output_object$offset_bank_object <- list()
   current_credit = array(0, length(simulation_params$features_to_use_in_offset_calc))
   if (simulation_params$use_specified_offset_metric == TRUE){
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$offset_metric_type)
   }
-  input_object$current_credit = current_credit
-  return(input_object)
+  output_object$current_credit = current_credit
 }
 
 
@@ -709,17 +697,16 @@ initialise_index_object <- function(parcels, initial_feature_layers, simulation_
   
   index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcels$site_indexes, 
                                                            dev_indexes_to_exclude,
-                                                           parcels, 
+                                                           parcels$land_parcels, 
                                                            initial_feature_layers, 
                                                            screen_site_zeros = simulation_params$screen_dev_zeros,
                                                            site_screen_size = simulation_params$site_screen_size,
                                                            simulation_params$features_to_use_in_offset_calc)
   return(index_object)
-  
 }
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, initial_feature_layers, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_feature_layers, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
   
   if (screen_site_zeros == TRUE){
     
@@ -733,18 +720,13 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, parcels, i
   }
   
   if (site_screen_size > 0){
-    parcel_lengths <- unlist(lapply(seq_along(parcels$land_parcels), function(i) length(parcels$land_parcels[[i]])))
+    parcel_lengths <- unlist(lapply(seq_along(land_parcels), function(i) length(land_parcels[[i]])))
     smalls_to_exclude = which(parcel_lengths < site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
-  indexes_to_use = screen_available_sites(global_indexes, indexes_to_exclude)
-  return(indexes_to_use)
-}
-
-screen_available_sites <- function(indexes_to_use, indexes_to_exclude){
-  
-  inds_to_remove = which(indexes_to_use %in% indexes_to_exclude)
+  inds_to_remove = which(global_indexes %in% indexes_to_exclude)
+  indexes_to_use = global_indexes
   if (length(inds_to_remove) > 0){
     indexes_to_use = indexes_to_use[-inds_to_remove]
   }
