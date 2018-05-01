@@ -74,7 +74,7 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))){
     management_mode <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_mode.rds'))
   } else {
-    management_mode = rep(list(rep(list(0), length*params_object$global_params$features_to_use_in_simulation)), parcels$land_parcel_num)
+    management_mode = rep(list(rep(list(0), length(params_object$global_params$features_to_use_in_simulation))), parcels$land_parcel_num)
   }
   
   # select subset of feature layers to use in current simulation 
@@ -87,10 +87,10 @@ run_initialise_routines <- function(user_global_params = NULL, user_simulation_p
   
   # Set up the object used to store all simulation inputs and pass them to the simulation function 
   input_object = initialise_input_object(parcels, 
-                                              initial_feature_layers_to_use, 
-                                              current_simulation_params, 
-                                              offset_probability_list, 
-                                              dev_probability_list)
+                                         initial_feature_layers, 
+                                         current_simulation_params, 
+                                         offset_probability_list, 
+                                         dev_probability_list)
   input_object$background_dynamics = background_dynamics
   input_object$management_dynamics = management_dynamics
   input_object$global_params = global_params
