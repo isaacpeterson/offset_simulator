@@ -243,6 +243,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
     management_mode = rep(list(rep(list(0), global_params$feature_num)), land_parcel_num)
   }
   
+  output_object$management_mode = management_mode
   return(output_object)
 }
 
@@ -675,12 +676,12 @@ initialise_index_object <- function(parcel_characteristics, initial_feature_laye
   
   index_object = list()
   index_object$banked_offset_pool = vector()
-  index_object$site_indexes = vector('list', 5)
-  names(index_object$site_indexes) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
+  index_object$site_indexes_used = vector('list', 5)
+  names(index_object$site_indexes_used) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
-  index_object$indexes_to_use = list()
+  index_object$available_indexes = list()
     
-  index_object$indexes_to_use$offsets = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
+  index_object$available_indexes$offsets = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
                                                               offset_indexes_to_exclude, 
                                                               parcel_characteristics, 
                                                               initial_feature_layers, 
@@ -688,7 +689,7 @@ initialise_index_object <- function(parcel_characteristics, initial_feature_laye
                                                               site_screen_size = simulation_params$site_screen_size,
                                                               simulation_params$features_to_use_in_offset_calc)
   
-  index_object$indexes_to_use$devs = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
+  index_object$available_indexes$devs = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcel_characteristics$land_parcels, 
                                                            initial_feature_layers, 
@@ -719,12 +720,12 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
   } 
   
   inds_to_remove = which(global_indexes %in% indexes_to_exclude)
-  indexes_to_use = global_indexes
+  available_indexes = global_indexes
   if (length(inds_to_remove) > 0){
-    indexes_to_use = indexes_to_use[-inds_to_remove]
+    available_indexes = available_indexes[-inds_to_remove]
   }
   
-  return(indexes_to_use)
+  return(available_indexes)
 }
 
 
