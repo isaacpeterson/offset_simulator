@@ -1,5 +1,5 @@
 
-simulate_ecology_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_eco_noise, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+simulate_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_eco_noise, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
   
   eco_scale = (max_initial_eco_val - min_initial_eco_val - initial_eco_noise)
   
@@ -11,30 +11,37 @@ simulate_ecology_feature <- function(min_initial_eco_val, max_initial_eco_val, i
   
 }
 
-simulate_ecology <- function(simulated_ecology_params, land_parcels){ 
+simulate_feature_layers <- function(simulated_ecology_params, parcel_characteristics, simulation_inputs_folder){ 
   
   for (feature_ind in 1:simulated_ecology_params$feature_num){
-    current_simulated_ecology <- simulate_ecology_feature(simulated_ecology_params$min_initial_eco_val, 
+    current_simulated_feature <- simulate_feature(simulated_ecology_params$min_initial_eco_val, 
                                                           simulated_ecology_params$max_initial_eco_val, 
                                                           simulated_ecology_params$initial_eco_noise, 
-                                                          land_parcels)
+                                                          parcel_characteristics$land_parcels)
     current_occupation_ratio = simulated_ecology_params$occupation_ratio[[feature_ind]]
     
     if (current_occupation_ratio > 0){
-      zero_site_inds = which(runif(length(current_simulated_ecology)) > current_occupation_ratio)
-      current_simulated_ecology[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_ecology[[i]]))
+      zero_site_inds = which(runif(length(current_simulated_feature)) > current_occupation_ratio)
+      current_simulated_feature[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_feature[[i]]))
     }
     
-    current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
+    current_feature_layer = matrix(data = 0, nrow = parcel_characteristics$landscape_dims[1], ncol = parcel_characteristics$landscape_dims[2])
+    current_feature_layer[unlist(parcel_characteristics$land_parcels)] = unlist(current_simulated_feature)
+    current_feature_raster = raster(current_feature_layer)
+    current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     
-    if (feature_ind == 1){
-      simulated_ecology <- current_simulated_ecology
-    } else {
-      simulated_ecology <- lapply(seq_along(land_parcels), function(j) append(simulated_ecology[[j]], current_simulated_ecology[[j]]))
-    }
+    writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
     
+#     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
+#     
+#     if (feature_ind == 1){
+#       simulated_ecology <- current_simulated_ecology
+#     } else {
+#       simulated_ecology <- lapply(seq_along(parcel_characteristics$land_parcels), function(j) append(simulated_ecology[[j]], current_simulated_ecology[[j]]))
+#     }
+#     
   }
-  return(simulated_ecology)
+
 }
 
 mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller set of sub arrays defined by vx and vy that fit together to give input array
@@ -93,7 +100,7 @@ log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, ti
 }
 
 
-# simulate_ecological_dynamics(parcel_num = length(objects_to_save$parcels$land_parcels), 
+# simulate_ecological_dynamics(parcel_num = length(objects_to_save$parcel_characteristics$land_parcels), 
 #                              sample_decline_rate = TRUE, 
 #                              mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
 #                              decline_rate_std = simulated_ecology_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
@@ -124,40 +131,13 @@ construct_simulated_data <- function(simulated_ecology_params, simulation_inputs
 
   objects_to_save = list()
 
-  objects_to_save$simulated_ecology_params <- simulated_ecology_params
-  
   objects_to_save$planning_units_array <- simulate_planning_units(simulated_ecology_params)
-  objects_to_save$parcels <- define_planning_units(objects_to_save$planning_units_array)
-  objects_to_save$parcel_ecology <- simulate_ecology(simulated_ecology_params, land_parcels = objects_to_save$parcels$land_parcels) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
-  
-  parcel_num = length(objects_to_save$parcels$land_parcels)
-  objects_to_save$dev_probability_list = rep(list(1/parcel_num), parcel_num)
+  objects_to_save$parcel_characteristics <- define_planning_units(objects_to_save$planning_units_array)
+  objects_to_save$dev_probability_list = rep(list(1/objects_to_save$parcel_characteristics$land_parcel_num), objects_to_save$parcel_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
-  
-#   objects_to_save$background_dynamics <- simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
-#                                                         parcel_num, 
-#                                                         initial_val = simulated_ecology_params$max_initial_eco_val, 
-#                                                         mean_decline_rates = simulated_ecology_params$mean_decline_rate, 
-#                                                         decline_rate_std = simulated_ecology_params$decline_rate_std, 
-#                                                         min_eco_val = simulated_ecology_params$local_min_eco_val, 
-#                                                         max_eco_val = simulated_ecology_params$local_max_eco_val, 
-#                                                         time_vec = simulated_ecology_params$simulated_time_vec)
-#   
-#   objects_to_save$management_dynamics = simulate_dynamics(sample_decline_rate = simulated_ecology_params$sample_decline_rate,
-#                                                            parcel_num = parcel_num, 
-#                                                            initial_val = simulated_ecology_params$min_initial_eco_val, 
-#                                                            mean_decline_rates = simulated_ecology_params$restoration_rate, 
-#                                                            decline_rate_std = simulated_ecology_params$decline_rate_std, 
-#                                                            min_eco_val = simulated_ecology_params$local_min_eco_val, 
-#                                                            max_eco_val = simulated_ecology_params$local_max_eco_val, 
-#                                                            time_vec = simulated_ecology_params$simulated_time_vec)
-  
-#  objects_to_save$management_mode = lapply(seq(parcel_num), function(i) rep(list(0), simulated_ecology_params$feature_num))
     
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
-
-  if (backup_simulation_inputs == TRUE){
-    save_simulation_inputs(objects_to_save, simulation_params_folder)
-  }
+  
+  simulate_feature_layers(simulated_ecology_params, objects_to_save$parcel_characteristics, simulation_inputs_folder) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
 }
