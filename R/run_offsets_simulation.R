@@ -7,7 +7,8 @@
 #' @import doRNG
 #' @import foreach
 #' @import futile.logger
-#' @export
+#' @import raster
+#' @export 
 #' 
 osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL, loglevel = WARN){
   
@@ -40,8 +41,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     # Extract out the parameters for the current scenario to be run
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
     
-    index_object <- initialise_index_object(global_input_object$parcels, 
-                                            global_input_object$current_feature_layers, 
+    index_object <- initialise_index_object(global_input_object$parcel_characteristics, 
+                                            global_input_object$parcel_layers, 
                                             current_simulation_params, 
                                             offset_indexes_to_exclude = which(unlist(global_input_object$offset_probability_list) == 0), 
                                             dev_indexes_to_exclude = which(unlist(global_input_object$dev_probability_list) == 0))
@@ -56,9 +57,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               sum(current_simulation_params$intervention_vec), 
               length(unlist(index_object$indexes_to_use$devs)),  # total number of sites available to develop
               length(unlist(index_object$indexes_to_use$offsets)), # total number sites avaulable to offset
-              length(global_input_object$parcels$land_parcels), # total number of parcles
-              global_input_object$parcels$landscape_dims[1], 
-              global_input_object$parcels$landscape_dims[2])
+              length(global_input_object$parcel_characteristics$land_parcels), # total number of parcles
+              global_input_object$parcel_characteristics$landscape_dims[1], 
+              global_input_object$parcel_characteristics$landscape_dims[2])
     
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages

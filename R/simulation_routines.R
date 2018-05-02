@@ -9,12 +9,12 @@ run_offset_simulation_routines <- function(input_object, current_simulation_para
   
   flog.info('current data dir is %s', current_data_dir)
   
-  output_object = initialise_output_object(current_simulation_params)
+  output_object = initialise_output_object(current_simulation_params, index_object, input_object$global_params, input_object$parcel_characteristics$land_parcel_num)
     
   # run the model and return outputs
   output_object <- run_simulation(input_object,
                                        output_object,
-                                       input_object$global_params,
+                                  input_object$global_params,
                                        current_simulation_params,
                                        current_data_dir)
   
@@ -31,7 +31,7 @@ run_offset_simulation_routines <- function(input_object, current_simulation_para
     # read current feature layer files over time series and arrange into data stack
     current_data_stack = form_data_stack(current_data_dir, 
                                          feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
-                                         land_parcels = parcels$land_parcels, 
+                                         land_parcels = parcel_characteristics$land_parcel_characteristics, 
                                          current_simulation_params$time_steps)
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
@@ -60,7 +60,7 @@ run_offset_simulation_routines <- function(input_object, current_simulation_para
         }
       }
       if ( global_params$write_movie == TRUE){
-        write_frames(current_data_stack, filetype = 'png', mov_folder, parcels, global_params, current_simulation_params, 
+        write_frames(current_data_stack, filetype = 'png', mov_folder, parcel_characteristics, global_params, current_simulation_params, 
                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
                      offset_yrs = unlist(output_object$offsets$offset_yrs))
       }
@@ -96,10 +96,10 @@ run_simulation <- function(input_object,
     
     # determine current set of available offset sites and calculate gains structure as detailed in current policy params
     output_object$offset_pool_object <- prepare_offset_pool(output_object,
-                                                                 current_simulation_params,
-                                                                 parcels,
-                                                                 input_object$background_dynamics_initial,  management_dynamics_initial, management_mode, 
-                                                                 yr)
+                                                            current_simulation_params,
+                                                            input_object,
+                                                            management_mode, 
+                                                            yr)
     
     # cycle through number of developments and associated offsets
     
@@ -122,7 +122,7 @@ run_simulation <- function(input_object,
                                                   intervention_vec = current_simulation_params$intervention_vec,
                                                   dev_indexes_to_use = output_object$index_object$indexes_to_use$devs,
                                                   decline_rates_initial,
-                                                  parcels$land_parcels,
+                                                  parcel_characteristics$land_parcel_characteristics,
                                                   yr,
                                                   current_simulation_params$offset_time_horizon)
         
@@ -162,7 +162,7 @@ run_simulation <- function(input_object,
                                     indexes_to_use = output_object$index_object$indexes_to_use$devs,
                                     output_object$current_feature_layers,
                                     decline_rates = output_object$decline_rates,
-                                    parcels$land_parcels,
+                                    parcel_characteristics$land_parcel_characteristics,
                                     yr,
                                     current_simulation_params$offset_time_horizon)  
         # if a match was found record current development and associated offsets and update site parameters.
@@ -303,7 +303,7 @@ select_current_policy <- function(current_simulation_params_set, region_num){
 
 
 # used after simulation has completed. Takes time series layer files for each feature and stacks
-form_data_stack <- function(current_data_dir, feature_string, land_parcels, time_steps){
+form_data_stack <- function(current_data_dir, feature_string, land_parcel_characteristics, time_steps){
   
   current_filenames <- list.files(path = current_data_dir,
                                   pattern = paste0('feature_', feature_string), all.files = FALSE,
@@ -326,7 +326,7 @@ stack_current_yr <- function(current_parcel, current_parcel_feature_layers, yr){
 }
 
 
-write_frames <- function(data_stack, filetype, mov_folder, parcels, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
+write_frames <- function(data_stack, filetype, mov_folder, parcel_characteristics, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
   graphics.off()
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
@@ -337,18 +337,18 @@ write_frames <- function(data_stack, filetype, mov_folder, parcels, global_param
   filename = paste0(mov_folder, "tmp%03d.", filetype, sep = '')
   
   if (filetype == 'png'){
-    png(filename, height = parcels$landscape_dims[1], width = parcels$landscape_dims[2])
+    png(filename, height = parcel_characteristics$landscape_dims[1], width = parcel_characteristics$landscape_dims[2])
   } else if (filetype == 'jpg'){
-    jpeg(filename, height = parcels$landscape_dims[1], width = parcels$landscape_dims[2])
+    jpeg(filename, height = parcel_characteristics$landscape_dims[1], width = parcel_characteristics$landscape_dims[2])
   }
   
   for (yr in seq(current_simulation_params$time_steps)){
     current_feature_layers = lapply(seq_along(data_stack), function(i) data_stack[[i]][yr, ])
-    landscape = array(0, parcels$landscape_dims)
-    landscape[unlist(parcels$land_parcels)] = unlist(current_feature_layers)
+    landscape = array(0, parcel_characteristics$landscape_dims)
+    landscape[unlist(parcel_characteristics$land_parcels)] = unlist(current_feature_layers)
     if (global_params$write_offset_layer == TRUE){
       offset_sites_to_use = which(offset_yrs <= yr)
-      landscape[unlist(parcels$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
+      landscape[unlist(parcel_characteristics$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
     } 
     image(landscape, zlim = c(0, current_simulation_params$max_eco_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
     
@@ -361,7 +361,7 @@ write_frames <- function(data_stack, filetype, mov_folder, parcels, global_param
 
 #write all offset parcels to single layer to output as image
 
-write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_site_indexes){ 
+write_site_mask <- function(output_filename, landscape_dims, land_parcel_characteristics, current_site_indexes){ 
   
   site_mask = array(0, landscape_dims)
   site_mask[ unlist(land_parcels[unlist(current_site_indexes)])] = 1
@@ -554,7 +554,7 @@ assess_banking_credit <- function(output_object, current_simulation_params){
 
 # determine characteristics of potential offset sites
 prepare_offset_pool <- function(output_object, current_simulation_params,
-                                parcels, background_dynamics_initial,  management_dynamics_initial, management_mode,  yr){
+                                parcel_characteristics, background_dynamics_initial,  management_dynamics_initial, management_mode,  yr){
   
   # if no developments or banked offsets for the current year return null object
   if (current_simulation_params$intervention_vec[yr] ==  0){
@@ -944,7 +944,7 @@ recalculate_probabilities <- function(current_probability_list){
 
 match_sites <- function(offset_pool_object, current_credit, dev_probability_list, offset_probability_list, current_simulation_params,
                         intervention_vec, indexes_to_use, current_feature_layers, decline_rates_initial,
-                        land_parcels, yr, time_horizon){
+                        land_parcel_characteristics, yr, time_horizon){
   
   match_object = false_match()
   
@@ -1057,7 +1057,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
 
 
 develop_from_credit <- function(current_feature_layers, current_credit, dev_probability_list, current_simulation_params, 
-                                intervention_vec, dev_indexes_to_use, decline_rates_initial, land_parcels, yr, time_horizon){
+                                intervention_vec, dev_indexes_to_use, decline_rates_initial, land_parcel_characteristics, yr, time_horizon){
   
   parcel_num_remaining = length(dev_indexes_to_use)
   
