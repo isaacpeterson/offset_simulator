@@ -7,13 +7,13 @@ write_folder <- function(current_folder){
 }
 
 #' @export
-scale_ecology <- function(landscape_ecology, max_eco_val, landscape_dims){
+scale_ecology <- function(landscape_ecology, landscape_dims){
   
   scaled_landscape_ecology <- list_of_zeros(length(landscape_ecology), landscape_dims) 
   
   for (feature_ind in seq_along(landscape_ecology)){
     if (max(landscape_ecology[[feature_ind]]) > 0){
-      scaled_landscape_ecology[[feature_ind]] = landscape_ecology[[feature_ind]]/max(landscape_ecology[[feature_ind]]) * max_eco_val
+      scaled_landscape_ecology[[feature_ind]] = landscape_ecology[[feature_ind]]/max(landscape_ecology[[feature_ind]])
     }
   }
   
@@ -29,12 +29,17 @@ shp_to_raster <- function(shp, raster_dims){
 }
 
 #' @export
-load_rasters <- function(current_data_path, current_filenames, layer_num){
-  if (layer_num == 'all'){
-    layer_num = length(current_filenames)
+load_rasters <- function(current_data_path, current_filenames, features_to_use){
+  if (class(features_to_use) == "character"){
+    if (features_to_use == 'all'){
+      features_to_use = seq_along(current_filenames)
+    } else {
+      flog.error('raster features poorly defined in params')
+    }
+    
   }
-  for (feature_ind in seq(layer_num)){
-    current_species_filename = paste0(current_data_path, current_filenames[feature_ind])
+  for (feature_ind in seq_along(features_to_use)){
+    current_species_filename = paste0(current_data_path, current_filenames[features_to_use[feature_ind]])
     current_raster = raster(current_species_filename)
     if (feature_ind == 1){
       raster_stack = current_raster

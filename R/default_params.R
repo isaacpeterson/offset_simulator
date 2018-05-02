@@ -1,6 +1,9 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
   
+  #setting this parameter to TRUE effectively evenly weights all features, setting to FALSE
+  #gives an implicit weighting depending on the values of the features layers
+  default_global_params$scale_features = TRUE
   # Set the random number seed
   default_global_params$set_seed = FALSE
   
@@ -8,6 +11,8 @@ initialise_default_global_params <- function(){
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
   default_global_params$scenario_subset = 'all'
+  
+  default_global_params$raster_file_type = '.tif'
   
   # If set to 'defaul', the values in set in
   # initialise_default_simulated_ecology_params() are used. Otherwise this can
