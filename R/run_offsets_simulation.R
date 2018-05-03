@@ -42,7 +42,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
     
     index_object <- initialise_index_object(global_input_object$parcel_characteristics, 
-                                            global_input_object$parcel_layers, 
+                                            global_input_object$site_feature_layers_initial, 
                                             current_simulation_params, 
                                             offset_indexes_to_exclude = which(unlist(global_input_object$offset_probability_list) == 0), 
                                             dev_indexes_to_exclude = which(unlist(global_input_object$dev_probability_list) == 0))
