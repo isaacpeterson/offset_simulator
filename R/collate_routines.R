@@ -9,7 +9,7 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, decli
                                                    nested_ind = feature_ind, output_type = 'nested')
     
     landscape_cfacs_object = collate_cfacs(combination_params,
-                                           current_parcel_feature_layers = current_initial_feature_layers,
+                                           current_site_feature_layers = current_initial_feature_layers,
                                            current_decline_rates = current_decline_rates_initial, 
                                            current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
                                            current_parcel_num_remaining = vector(),
@@ -161,7 +161,7 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 
 
 
-# current_parcel_feature_layers = current_initial_feature_layers
+# current_site_feature_layers = current_initial_feature_layers
 # current_decline_rates = current_decline_rates_initial 
 # current_offset_yrs = rep(1, length(current_initial_feature_layers)) 
 # current_parcel_num_remaining = vector()
@@ -169,12 +169,12 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 # collate_type = vector() 
 # use_cfac_type_in_sim = FALSE
 
-collate_cfacs <- function(combination_params, current_parcel_feature_layers, current_decline_rates, current_offset_yrs, 
+collate_cfacs <- function(combination_params, current_site_feature_layers, current_decline_rates, current_offset_yrs, 
                           current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
   cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, combination_params)
   
-  parcel_count = length(current_parcel_feature_layers)
+  parcel_count = length(current_site_feature_layers)
   
   if (cfac_type == 'landscape'){                    
     time_horizons <- generate_time_horizons(project_type = 'future', 
@@ -199,7 +199,7 @@ collate_cfacs <- function(combination_params, current_parcel_feature_layers, cur
     include_unregulated_loss = cfac_params$include_unregulated_loss
   }
   
-  cfacs_object = calc_cfacs(parcel_feature_layers = current_parcel_feature_layers, 
+  cfacs_object = calc_cfacs(site_feature_layers = current_site_feature_layers, 
                             parcel_num_remaining = current_parcel_num_remaining,
                             combination_params,
                             current_decline_rates, 
@@ -320,10 +320,10 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
     return(NULL)
   }
   
-  current_parcel_feature_layers = select_nested_subset(nested_object = current_model_outputs$parcel_feature_layers, nested_ind = feature_ind, output_type = 'nested') 
+  current_site_feature_layers = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'nested') 
   
   current_cfacs = collate_cfacs(combination_params, 
-                                current_parcel_feature_layers,
+                                current_site_feature_layers,
                                 current_decline_rates = current_decline_rates_initial[unlist(current_model_outputs$site_indexes)], 
                                 current_offset_yrs =  unlist(current_model_outputs$offset_yrs),
                                 current_parcel_num_remaining = current_model_outputs$parcel_num_remaining,
@@ -332,11 +332,11 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
                                 use_cfac_type_in_sim,
                                 feature_ind = 1)
   
-  parcel_feature_layers_to_use = select_nested_subset(nested_object = current_model_outputs$parcel_feature_layers, nested_ind = feature_ind, output_type = 'non-nested') 
+  site_feature_layers_to_use = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'non-nested') 
   
   collated_gains_degs <- assess_gains_degs(trajectories_to_use = current_trajectories[unlist(current_model_outputs$site_indexes)],
                                            cfacs_to_use = current_cfacs$cfacs,
-                                           parcel_feature_layers_to_use,
+                                           site_feature_layers_to_use,
                                            current_offset_yrs = unlist(current_model_outputs$offset_yrs),
                                            collate_type, 
                                            combination_params,
@@ -356,7 +356,7 @@ merge_vectors <- function(vec_a, vec_b, start_ind){
 }
 
 
-assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_feature_layers_to_use, current_offset_yrs, collate_type, combination_params, time_steps){
+assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_layers_to_use, current_offset_yrs, collate_type, combination_params, time_steps){
   
   tmp_object = list()
   parcel_num = length(trajectories_to_use)
@@ -365,9 +365,9 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, parcel_feature_
   
   tmp_object$nets = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum_cols(cfacs_to_use[[i]]))
   
-  tmp_object$rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum(parcel_feature_layers_to_use[[i]]))
+  tmp_object$rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum(site_feature_layers_to_use[[i]]))
   
-  tmp_object$avoided_loss = lapply(seq(parcel_num), function(i) sum(parcel_feature_layers_to_use[[i]]) - sum_cols(cfacs_to_use[[i]]))
+  tmp_object$avoided_loss = lapply(seq(parcel_num), function(i) sum(site_feature_layers_to_use[[i]]) - sum_cols(cfacs_to_use[[i]]))
   
   collated_object <- lapply(seq_along(tmp_object),
                             function(i) lapply(seq_along(tmp_object[[i]]), 
