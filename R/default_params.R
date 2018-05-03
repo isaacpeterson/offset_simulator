@@ -65,7 +65,7 @@ initialise_default_global_params <- function(){
 }
 
 
-intialise_default_simulation_dynamics <- function(){
+initialise_default_simulation_dynamics <- function(){
   
   default_simulation_dynamics = list()
   default_simulation_dynamics$simulated_time_vec = vector()
