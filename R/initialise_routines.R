@@ -119,7 +119,7 @@ generate_global_inputs <- function(params_object){
   # feature for the parcel are a vector of length given by the number of
   # pixels in the parcel.
   
-  parcel_layers <- split_ecology(feature_layers, parcel_characteristics$land_parcels)
+  site_feature_layers_initial <- split_ecology(feature_layers, parcel_characteristics$land_parcels)
   
   # This is a list of single values of length number of sites where the values
   # representing the probabilities of sites being developed. Default is that
@@ -145,7 +145,7 @@ generate_global_inputs <- function(params_object){
   
   if (class(params_object$global_params$features_to_use_in_simulation) == "character"){
     if (params_object$global_params$features_to_use_in_simulation == 'all'){
-        features_to_use_in_simulation = seq_along(initial_feature_layers[[1]])
+        features_to_use_in_simulation = seq_along(site_feature_layers_initial[[1]])
     } 
   } else {
     features_to_use_in_simulation = params_object$global_params$features_to_use_in_simulation
@@ -177,11 +177,9 @@ generate_global_inputs <- function(params_object){
   
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
-  
-  parcel_layers <- select_feature_subset(parcel_layers, features_to_use_in_simulation)
 
   global_input_object = list()
-  global_input_object$parcel_layers = parcel_layers
+  global_input_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, features_to_use_in_simulation)
   global_input_object$parcel_characteristics = parcel_characteristics
   global_input_object$background_dynamics = background_dynamics
   global_input_object$management_dynamics = management_dynamics
@@ -221,7 +219,7 @@ build_dynamics <- function(sample_dynamics, feature_dynamics, parcel_num, mode_n
   return(dynamics_set)
 }
 
-initialise_output_object <- function(current_simulation_params, index_object, global_params, land_parcel_num){
+initialise_output_object <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, land_parcel_num){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -229,6 +227,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$credit_object <- list()
   output_object$offset_bank_object <- list()
   output_object$offset_pool_object <- list()
+  output_object$site_feature_layers <- site_feature_layers_initial
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
   
   if (current_simulation_params$use_specified_offset_metric == TRUE){
@@ -398,7 +397,7 @@ overwrite_current_params <- function(user_params, default_params){
 
 select_feature_subset <- function(input_object, features_to_use){
   if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match initial_feature_layers_dimensions'))
+    flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match site_feature_layers_initial_dimensions'))
     stop()
   }
   input_object <- lapply(seq_along(input_object),
@@ -672,7 +671,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(parcel_characteristics, initial_feature_layers, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(parcel_characteristics, site_feature_layers_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector()
@@ -683,8 +682,8 @@ initialise_index_object <- function(parcel_characteristics, initial_feature_laye
     
   index_object$available_indexes$offsets = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
                                                               offset_indexes_to_exclude, 
-                                                              parcel_characteristics, 
-                                                              initial_feature_layers, 
+                                                              parcel_characteristics$land_parcels, 
+                                                              site_feature_layers_initial, 
                                                               screen_site_zeros = simulation_params$screen_offset_zeros,
                                                               site_screen_size = simulation_params$site_screen_size,
                                                               simulation_params$features_to_use_in_offset_calc)
@@ -692,7 +691,7 @@ initialise_index_object <- function(parcel_characteristics, initial_feature_laye
   index_object$available_indexes$devs = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
                                                            dev_indexes_to_exclude,
                                                            parcel_characteristics$land_parcels, 
-                                                           initial_feature_layers, 
+                                                           site_feature_layers_initial, 
                                                            screen_site_zeros = simulation_params$screen_dev_zeros,
                                                            site_screen_size = simulation_params$site_screen_size,
                                                            simulation_params$features_to_use_in_offset_calc)
@@ -700,13 +699,13 @@ initialise_index_object <- function(parcel_characteristics, initial_feature_laye
 }
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_feature_layers, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, site_feature_layers_initial, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
   
   if (screen_site_zeros == TRUE){
     
-    initial_parcel_sums = lapply(seq_along(initial_feature_layers), 
-                                 function(i) lapply(seq_along(initial_feature_layers[[i]]), 
-                                                    function(j) sum(initial_feature_layers[[i]][[j]]) ) )
+    initial_parcel_sums = lapply(seq_along(site_feature_layers_initial), 
+                                 function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
+                                                    function(j) sum(site_feature_layers_initial[[i]][[j]]) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                            function(i) all(unlist(initial_parcel_sums[[i]][features_to_use_in_offset_calc]) == 0))))
