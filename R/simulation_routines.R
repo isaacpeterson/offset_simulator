@@ -427,6 +427,7 @@ perform_unregulated_loss <- function(site_feature_layers, index_object, yr, curr
   # record characteristics of cleared site
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
                                                  pool_type = 'devs',
+                                                 site_feature_layers = output_object$site_feature_layers[unlist(unregulated_loss_object$site_indexes)],
                                                  calc_type = current_simulation_params$dev_calc_type,
                                                  cfacs_flag = current_simulation_params$dev_cfacs_flag,
                                                  adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
@@ -600,6 +601,7 @@ prepare_offset_pool <- function(output_object, current_simulation_params, input_
   #TODO pass output_obejct$current_feature_layers to preserve mempry (pool_object effectively doubles memory which is not good)
   offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
                                             pool_type = offset_pool_type,
+                                            site_feature_layers = output_object$site_feature_layers[unlist(offset_pool_object$site_indexes)],
                                             calc_type = current_simulation_params$offset_calc_type,
                                             cfacs_flag = current_simulation_params$offset_cfacs_flag,
                                             adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
@@ -971,6 +973,7 @@ match_sites <- function(offset_pool_object, current_credit, dev_probability_list
   
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
                                          pool_type = 'devs',
+                                         site_feature_layers = output_object$site_feature_layers[unlist(dev_pool_object$site_indexes)],
                                          calc_type = current_simulation_params$dev_calc_type,
                                          cfacs_flag = current_simulation_params$dev_cfacs_flag,
                                          adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
@@ -1063,6 +1066,7 @@ develop_from_credit <- function(site_feature_layers, current_credit, dev_probabi
   
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
                                          pool_type = 'devs',
+                                         site_feature_layers = output_object$site_feature_layers[unlist(offset_pool_object$site_indexes)],
                                          calc_type = current_simulation_params$dev_calc_type,
                                          cfacs_flag = current_simulation_params$dev_cfacs_flag,
                                          adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
@@ -1181,7 +1185,6 @@ record_site_characteristics <- function(site_feature_layers, current_pool, parce
   
   parcel_set_object = list()
   parcel_set_object$offset_yrs = rep(list(yr), length(current_pool))
-  parcel_set_object$site_feature_layers = site_feature_layers
   parcel_set_object$parcel_sums_at_offset = sum_sites(site_feature_layers)
   parcel_set_object$site_indexes = as.list(current_pool)
   parcel_set_object$parcel_num_remaining = rep(list(parcel_num_remaining), length(current_pool))
@@ -1632,12 +1635,12 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 }
 
 
-assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
+assess_current_pool <- function(pool_object, pool_type, site_feature_layers, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                 time_horizon_type, current_simulation_params, background_dynamics,  management_dynamics, management_mode, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
-  parcel_count = length(current_pool)
+
   offset_yrs = unlist(pool_object$offset_yrs)
   
   feature_num = length(current_simulation_params$features_to_use_in_simulation)
@@ -1651,11 +1654,11 @@ assess_current_pool <- function(pool_object, pool_type, calc_type, cfacs_flag, a
     cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(current_simulation_params$features_to_use_in_offset_calc))
   } else {
     
-    time_horizons <- generate_time_horizons(project_type = 'future', yr, offset_yrs, time_horizon, parcel_count)
+    time_horizons <- generate_time_horizons(project_type = 'future', yr, offset_yrs, time_horizon,length(current_pool))
     
     if (cfacs_flag == TRUE){
       
-      cfacs_object = calc_cfacs(site_feature_layers = pool_object$site_feature_layers,
+      cfacs_object = calc_cfacs(site_feature_layers,
                                 parcel_num_remaining = pool_object$parcel_num_remaining,
                                 current_simulation_params,
                                 management_mode_to_use = management_mode[current_pool],
