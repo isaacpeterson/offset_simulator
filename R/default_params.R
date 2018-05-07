@@ -15,12 +15,12 @@ initialise_default_global_params <- function(){
   default_global_params$raster_file_type = '.tif'
   
   # If set to 'defaul', the values in set in
-  # initialise_default_simulated_ecology_params() are used. Otherwise this can
-  # be set to point to a file, that contains the initialise_default_simulated_ecology_params() 
+  # initialise_default_feature_params() are used. Otherwise this can
+  # be set to point to a file, that contains the initialise_default_feature_params() 
   # function.
   # TODO(Isaac): check whether all params are needed or whether only the ones
   # that are overwritten need to be specified
-  default_global_params$user_simulated_ecology_params_file = 'default'  
+  default_global_params$user_feature_params_file = 'default'  
   
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
@@ -65,21 +65,6 @@ initialise_default_global_params <- function(){
 }
 
 
-initialise_default_simulation_dynamics <- function(){
-  
-  default_simulation_dynamics = list()
-  default_simulation_dynamics$simulated_time_vec = vector()
-  default_simulation_dynamics$background_dynamics = list()
-  default_simulation_dynamics$management_dynamics = list()
-  default_simulation_dynamics$background_mode_num = vector()
-  default_simulation_dynamics$management_mode_num = vector()
-  default_simulation_dynamics$sample_management_dynamics = TRUE 
-  default_simulation_dynamics$sample_background_dynamics = TRUE
-  
-  return(default_simulation_dynamics)
-}
-
-
 initialise_default_simulation_params <- function(){ 
 
   # Parameters controlling offset policy settings. Note that any of these
@@ -109,9 +94,6 @@ initialise_default_simulation_params <- function(){
     
     # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
-
-    # how the feature dynamics are determined
-    default_simulation_params$projection_type = 'logistic_function'
     
     # The maxoimum number of parcels can be selected to offset a single development
     default_simulation_params$max_offset_parcel_num = 10
@@ -262,60 +244,70 @@ initialise_default_simulation_params <- function(){
   return(default_simulation_params)
 }
 
-initialise_default_simulated_ecology_params <- function(){
+initialise_default_feature_params <- function(){
   
   # Construct the static initial landscape 
   
-  default_simulated_ecology_params = list()
+  default_feature_params = list()
   
   
   #how many feature layers to generate
-  default_simulated_ecology_params$feature_num = 1
+  default_feature_params$feature_num = 1
   
   # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_simulation_params$decline_rate_std
-  default_simulated_ecology_params$mean_decline_rates = rep(list(-1e-2), default_simulated_ecology_params$feature_num)
+  default_feature_params$mean_decline_rates = rep(list(-1e-2), default_feature_params$feature_num)
   
   #set this parameter to zero to yield no noise
-  default_simulated_ecology_params$decline_rate_std = rep(list(1e-3), default_simulated_ecology_params$feature_num)
+  default_feature_params$decline_rate_std = rep(list(1e-3), default_feature_params$feature_num)
   
-  default_simulated_ecology_params$simulated_time_vec = 1:100
+  default_feature_params$simulated_time_vec = 1:100
   
   # Number of pixels in (y, x) for the feature layes 
-  default_simulated_ecology_params$ecology_size = c(300, 300)
+  default_feature_params$ecology_size = c(300, 300)
   
   # Numnber of parcels in x (but total size varies)
-  default_simulated_ecology_params$parcel_num_x = 30 
+  default_feature_params$parcel_num_x = 30 
   
   
   # Numnber of parcels in y (but total size varies)
-  default_simulated_ecology_params$parcel_num_y = 30 
+  default_feature_params$parcel_num_y = 30 
   
+  # how the feature dynamics are determined
+  default_feature_params$projection_type = 'logistic_function'
   
-  default_simulated_ecology_params$site_width_variation_param = 1
+  default_feature_params$site_width_variation_param = 1
   # Minimum allowable initial ecological value of smallest ecological element
   # (pixel) ie min value to sample from
-  default_simulated_ecology_params$min_initial_eco_val = 20
+  default_feature_params$min_initial_eco_val = 20
   
   # Max allowable initial ecological value of largest element (pixel) ie max
   # value to sample from
-  default_simulated_ecology_params$max_initial_eco_val = 80
+  default_feature_params$max_initial_eco_val = 80
   
   # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
   #TODO add error flag  when the length of this does not match feature_num
-  default_simulated_ecology_params$occupation_ratio = list(1)
+  default_feature_params$occupation_ratio = list(1)
   
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45
-  default_simulated_ecology_params$initial_eco_noise = 10
+  default_feature_params$initial_eco_noise = 10
   
   # Defining multiple regions eg different states where different polcies can apply 
-  default_simulated_ecology_params$region_num_x = 1
+  default_feature_params$region_num_x = 1
   
   # Defining multiple regions eg different states where different rules can apply 
-  default_simulated_ecology_params$region_num_y = 1
+  default_feature_params$region_num_y = 1
   
-  return(default_simulated_ecology_params)
+  default_feature_params$simulated_time_vec = vector()
+  default_feature_params$background_dynamics_bounds = list()
+  default_feature_params$management_dynamics_bounds = list()
+  default_feature_params$background_mode_num = vector()
+  default_feature_params$management_mode_num = vector()
+  default_feature_params$sample_management_dynamics = TRUE 
+  default_feature_params$sample_background_dynamics = TRUE
+  default_feature_params$condition_class_bounds = list(list(c(0, 1)))
+  return(default_feature_params)
 }
 
 
