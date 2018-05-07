@@ -1,6 +1,6 @@
 #generic set of initialisation routines that are called for every simulation
 build_simulation_params <- function(user_global_params = NULL, user_simulation_params = NULL, 
-                                    user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL){
+                                    user_feature_params = NULL){
   #' @import foreach
   #' @import doParallel
   #' @import abind
@@ -8,7 +8,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
   
   default_global_params = initialise_default_global_params()
   default_simulation_params = initialise_default_simulation_params()
-  default_simulated_ecology_params = initialise_default_simulated_ecology_params()
+  default_feature_params = initialise_default_feature_params()
   
   if (!is.null(user_global_params) == TRUE){
     global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
@@ -24,10 +24,10 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
     simulation_params = default_simulation_params
   }
   
-  if (!is.null(user_simulated_ecology_params) == TRUE){  
-    simulated_ecology_params <- overwrite_current_params(user_params = user_simulated_ecology_params, default_params = default_simulated_ecology_params)
+  if (!is.null(user_feature_params) == TRUE){  
+    feature_params <- overwrite_current_params(user_params = user_feature_params, default_params = default_feature_params)
   } else {
-    simulated_ecology_params = default_simulated_ecology_params
+    feature_params = default_feature_params
   }
   
   # run simulation with identical realisation instantiation
@@ -37,7 +37,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
     set.seed(seed)
   }
   
-  #params_object <- check_param_conflicts(global_params, simulation_params, simulated_ecology_params)
+  #params_object <- check_param_conflicts(global_params, simulation_params, feature_params)
   
   simulation_params_object = build_simulation_variants(simulation_params)
   global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
@@ -74,7 +74,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params_group = simulation_params_group
-  params_object$simulated_ecology_params = simulated_ecology_params
+  params_object$feature_params = feature_params
   return(params_object)
   
 }
@@ -88,7 +88,7 @@ generate_global_inputs <- function(params_object){
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
     if ( (length(current_filenames) == 0) | (params_object$global_params$run_from_saved_simulated_data == FALSE)){
-      construct_simulated_data(params_object$simulated_ecology_params, 
+      construct_simulated_data(params_object$feature_params, 
                                params_object$global_params$simulation_inputs_folder, 
                                params_object$global_params$simulation_params_folder, 
                                params_object$global_params$backup_simulation_inputs)
@@ -151,48 +151,23 @@ generate_global_inputs <- function(params_object){
     features_to_use_in_simulation = params_object$global_params$features_to_use_in_simulation
   }
   
-  params_object$global_params$feature_num = length(features_to_use_in_simulation) 
-  
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
-    background_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
-  } else {
-    background_dynamics <- build_dynamics(user_simulation_dynamics$sample_background_dynamics, 
-                                          user_simulation_dynamics$background_dynamics, 
-                                          parcel_characteristics$land_parcel_num, 
-                                          user_simulation_dynamics$background_mode_num,
-                                          params_object$global_params$feature_num, 
-                                          user_simulation_dynamics$simulated_time_vec)
-  }
-  
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))){
-    management_dynamics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
-  } else {
-    management_dynamics <- build_dynamics(user_simulation_dynamics$sample_background_dynamics, 
-                                          user_simulation_dynamics$management_dynamics,
-                                          parcel_characteristics$land_parcel_num, 
-                                          user_simulation_dynamics$management_mode_num,
-                                          params_object$global_params$feature_num,
-                                          user_simulation_dynamics$simulated_time_vec)
-  }
-  
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
 
-  global_input_object = list()
-  global_input_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, features_to_use_in_simulation)
-  global_input_object$parcel_characteristics = parcel_characteristics
-  global_input_object$background_dynamics = background_dynamics
-  global_input_object$management_dynamics = management_dynamics
-  global_input_object$dev_probability_list = dev_probability_list
-  global_input_object$offset_probability_list = offset_probability_list
-  global_input_object$global_params = params_object$global_params
-  return(global_input_object)
+  input_data_object = list()
+  input_data_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, features_to_use_in_simulation)
+  input_data_object$parcel_characteristics = parcel_characteristics
+  input_data_object$dev_probability_list = dev_probability_list
+  input_data_object$offset_probability_list = offset_probability_list
+  input_data_object$global_params = params_object$global_params
+  input_data_object$feature_params = params_object$feature_params
+  return(input_data_object)
   
 }
 
 
 estimate_current_dynamics <- function(current_feature_dynamics_set){
-  
+
   current_discriminator = rnorm(1, mean = 0, sd = 0.2)
     
   if (current_discriminator >= 0){
@@ -206,20 +181,44 @@ estimate_current_dynamics <- function(current_feature_dynamics_set){
     }
     current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
   }
+  
   return(current_feature_dynamics)
   
 }
 
-build_dynamics <- function(sample_dynamics, feature_dynamics, parcel_num, mode_num, feature_num, time_vec){
+
+build_dynamics <- function(sample_dynamics, feature_dynamics_bounds, management_modes, parcel_num, feature_num, time_vec){
   
   dynamics_set = lapply(seq(parcel_num), 
                         function(i) lapply(seq(feature_num), 
-                                           function(j) lapply(seq(mode_num), 
-                                                              function(k) estimate_current_dynamics(current_feature_dynamics_set = feature_dynamics[[j]][[k]]))))
+                                           function(j) estimate_current_dynamics(feature_dynamics_bounds[[j]][[management_modes[[i]][[j]]]])))
+  
   return(dynamics_set)
+  
 }
 
-initialise_output_object <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, land_parcel_num){
+
+find_current_mode <- function(current_feature, current_condition_class_bounds){
+  
+  if (length(current_feature) > 0){
+    mode_discriminator = mean(current_feature)
+    current_modes = lapply(seq_along(current_condition_class_bounds), function(i) (mode_discriminator <= max(current_condition_class_bounds[[i]])) && (mode_discriminator > min(current_condition_class_bounds[[i]]) ))
+    mode_ind_to_use = which(unlist(current_modes) > 0)
+    if (length(mode_ind_to_use) != 1){
+      flog.error('poorly defined condition class bounds')
+      stop()
+    } else {
+      current_mode = mode_ind_to_use
+    }
+  } else {
+    current_mode = vector()
+  }
+  return(current_mode)
+  
+}
+
+initialise_output_object <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, parcel_characteristics, 
+                                     offset_probability_list, dev_probability_list, feature_params){
   output_object = list()
   output_object$offsets_object <- list()
   output_object$dev_object <- list()
@@ -237,21 +236,38 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$index_object = index_object
 
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))){
-    management_mode <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
+    management_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
   } else {
-    management_mode = rep(list(rep(list(0), global_params$feature_num)), land_parcel_num)
+    management_modes = lapply(seq_along(site_feature_layers_initial), function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
+                                                                                         function(j) find_current_mode(site_feature_layers_initial[[i]][[j]], 
+                                                                                                                       feature_params$condition_class_bounds[[j]])))
   }
   
-  output_object$management_mode = management_mode
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
+    feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+  } else {
+    
+    feature_dynamics <- build_dynamics(feature_params$sample_background_dynamics, 
+                                       feature_params$background_dynamics_bounds, 
+                                       management_modes, 
+                                       parcel_characteristics$land_parcel_num, 
+                                       feature_params$feature_num, 
+                                       feature_params$simulated_time_vec)
+    
+  }
+  
+  output_object$feature_dynamics = feature_dynamics
+  
+  output_object$management_modes = management_modes
   return(output_object)
 }
 
 
   
   
-check_param_conflicts <- function(simulation_params, simulated_ecology_params, global_params){
+check_param_conflicts <- function(simulation_params, feature_params, global_params){
   
-  feature_test = match(global_params$features_to_use_in_simulation, seq(simulated_ecology_params$feature_num))
+  feature_test = match(global_params$features_to_use_in_simulation, seq(feature_params$feature_num))
   if (any(is.na(feature_test))){
     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
     stop()
@@ -265,7 +281,7 @@ check_param_conflicts <- function(simulation_params, simulated_ecology_params, g
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params = simulation_params
-  params_object$simulated_ecology_params = simulated_ecology_params
+  params_object$feature_params = feature_params
   return(params_object)
 }
 
