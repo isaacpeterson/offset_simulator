@@ -143,9 +143,7 @@ run_simulation <- function(input_data_object,
                                                     current_simulation_params)
         }
         
-      } else {
-        credit_match_object = false_match()
-      }
+      } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
       
@@ -1099,8 +1097,8 @@ develop_from_credit <- function(input_data_object, output_object, current_simula
     subset_pool =  list_intersect(dev_pool_object$site_indexes, match_object$match_indexes)
     match_object$development_object = select_pool_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
   } else{
-    match_object$development_object = list()
-    match_object$current_credit = current_credit
+    #match_object$development_object = list()
+    #match_object$current_credit = output_object$current_credit
   }
   
   return(match_object)
