@@ -11,14 +11,14 @@ simulate_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_e
   
 }
 
-simulate_feature_layers <- function(simulated_ecology_params, parcel_characteristics, simulation_inputs_folder){ 
+simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder){ 
   
-  for (feature_ind in 1:simulated_ecology_params$feature_num){
-    current_simulated_feature <- simulate_feature(simulated_ecology_params$min_initial_eco_val, 
-                                                          simulated_ecology_params$max_initial_eco_val, 
-                                                          simulated_ecology_params$initial_eco_noise, 
+  for (feature_ind in 1:feature_params$feature_num){
+    current_simulated_feature <- simulate_feature(feature_params$min_initial_eco_val, 
+                                                          feature_params$max_initial_eco_val, 
+                                                          feature_params$initial_eco_noise, 
                                                           parcel_characteristics$land_parcels)
-    current_occupation_ratio = simulated_ecology_params$occupation_ratio[[feature_ind]]
+    current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
     if (current_occupation_ratio > 0){
       zero_site_inds = which(runif(length(current_simulated_feature)) > current_occupation_ratio)
@@ -68,15 +68,15 @@ mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller s
   
 }  
 
-simulate_planning_units <- function(simulated_ecology_params){
+simulate_planning_units <- function(feature_params){
   
-  parcel_num_x = simulated_ecology_params$parcel_num_x   #length in parcels of array in x 
-  parcel_num_y = simulated_ecology_params$parcel_num_y #length in parcels of array in y 
-  parcel_vx = split_vector(parcel_num_x, simulated_ecology_params$ecology_size[2], sd = simulated_ecology_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, simulated_ecology_params$ecology_size[1], sd = simulated_ecology_params$site_width_variation_param, min_width = 1) # as above for y
+  parcel_num_x = feature_params$parcel_num_x   #length in parcels of array in x 
+  parcel_num_y = feature_params$parcel_num_y #length in parcels of array in y 
+  parcel_vx = split_vector(parcel_num_x, feature_params$ecology_size[2], sd = feature_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
+  parcel_vy = split_vector(parcel_num_y, feature_params$ecology_size[1], sd = feature_params$site_width_variation_param, min_width = 1) # as above for y
   
-  pixel_indexes = 1:(simulated_ecology_params$ecology_size[1]*simulated_ecology_params$ecology_size[2])     #index all elements of ecology array
-  dim(pixel_indexes) = c(simulated_ecology_params$ecology_size[1], simulated_ecology_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 
+  pixel_indexes = 1:(feature_params$ecology_size[1]*feature_params$ecology_size[2])     #index all elements of ecology array
+  dim(pixel_indexes) = c(feature_params$ecology_size[1], feature_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 
   parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
   
   parcel_list = lapply(seq_along(parcels), function(i) array(i, dim(parcels[[i]])))
@@ -102,8 +102,8 @@ log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, ti
 
 # simulate_ecological_dynamics(parcel_num = length(objects_to_save$parcel_characteristics$land_parcels), 
 #                              sample_decline_rate = TRUE, 
-#                              mean_decline_rates = simulated_ecology_params$mean_decline_rates, 
-#                              decline_rate_std = simulated_ecology_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
+#                              mean_decline_rates = feature_params$mean_decline_rates, 
+#                              decline_rate_std = feature_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
 
 # simulate_dynamics <- function(sample_decline_rate, parcel_num, initial_val, mean_decline_rates, decline_rate_std, min_eco_val, max_eco_val, time_vec){
 #   
@@ -127,17 +127,17 @@ log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, ti
 #   return(feature_dynamics)
 # }
 
-construct_simulated_data <- function(simulated_ecology_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
+construct_simulated_data <- function(feature_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
 
   objects_to_save = list()
 
-  objects_to_save$planning_units_array <- simulate_planning_units(simulated_ecology_params)
+  objects_to_save$planning_units_array <- simulate_planning_units(feature_params)
   objects_to_save$parcel_characteristics <- define_planning_units(objects_to_save$planning_units_array)
   objects_to_save$dev_probability_list = rep(list(1/objects_to_save$parcel_characteristics$land_parcel_num), objects_to_save$parcel_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
     
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
   
-  simulate_feature_layers(simulated_ecology_params, objects_to_save$parcel_characteristics, simulation_inputs_folder) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
+  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
 }
