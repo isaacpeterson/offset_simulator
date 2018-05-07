@@ -20,7 +20,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data
   
-  global_input_object <- generate_global_inputs(params_object)
+  input_data_object <- generate_global_inputs(params_object)
   
   # Write initial logging info
   flog.info('Running %s scenarios with %s realisations on %s cores', 
@@ -40,12 +40,6 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     
     # Extract out the parameters for the current scenario to be run
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
-    
-    index_object <- initialise_index_object(global_input_object$parcel_characteristics, 
-                                            global_input_object$site_feature_layers_initial, 
-                                            current_simulation_params, 
-                                            offset_indexes_to_exclude = which(unlist(global_input_object$offset_probability_list) == 0), 
-                                            dev_indexes_to_exclude = which(unlist(global_input_object$dev_probability_list) == 0))
 
     flog.info('running scenario %s of %s in %s mode with %s offsets',  
               scenario_ind, 
@@ -53,14 +47,17 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               current_simulation_params$offset_calc_type, 
               current_simulation_params$offset_action_type)
     
-    flog.info('developing %s of %s available sites with %s available offset_sites in a landscape with %s sites and %s x %s elements', 
+    flog.info('developing %s sites in a landscape with %s sites and %s x %s elements', 
               sum(current_simulation_params$intervention_vec), 
-              length(unlist(index_object$indexes_to_use$devs)),  # total number of sites available to develop
-              length(unlist(index_object$indexes_to_use$offsets)), # total number sites avaulable to offset
-              length(global_input_object$parcel_characteristics$land_parcels), # total number of parcles
-              global_input_object$parcel_characteristics$landscape_dims[1], 
-              global_input_object$parcel_characteristics$landscape_dims[2])
+              length(input_data_object$parcel_characteristics$land_parcels), # total number of parcles
+              input_data_object$parcel_characteristics$landscape_dims[1], 
+              input_data_object$parcel_characteristics$landscape_dims[2])
     
+    index_object <- initialise_index_object(input_data_object$parcel_characteristics, 
+                                            input_data_object$site_feature_layers_initial, 
+                                            current_simulation_params, 
+                                            offset_indexes_to_exclude = which(unlist(input_data_object$offset_probability_list) == 0), 
+                                            dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
     
@@ -75,7 +72,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       # foreach runs realizations in parallel
       foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dorng%{
         
-        run_offset_simulation_routines(global_input_object, 
+        run_offset_simulation_routines(input_data_object, 
                                        current_simulation_params,
                                        index_object,
                                        scenario_ind,
@@ -86,7 +83,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       # case when running NON-DETERMINISTIC realisations in parallel
       foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dopar%{
         
-        run_offset_simulation_routines(global_input_object, 
+        run_offset_simulation_routines(input_data_object, 
                                        current_simulation_params,
                                        index_object,
                                        scenario_ind,
@@ -96,7 +93,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       # Case when running single realisation
       # TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
       for (realisation_ind in 1:params_object$global_params$realisation_num){
-        run_offset_simulation_routines(global_input_object,
+        run_offset_simulation_routines(input_data_object,
                                        current_simulation_params,
                                        index_object,
                                        scenario_ind,
