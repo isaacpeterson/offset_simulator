@@ -190,65 +190,71 @@ run_simulation <- function(input_data_object,
       }
     }
     
-    #select sites for clearing
+    output_object <- perform_unregulated_loss_routine(output_object, input_data_object, yr, current_simulation_params)
     
-#     output_object <- perform_unregulated_loss_routine(output_object$site_feature_layers,
-#                                                         output_object$index_object,
-#                                                         input_data_object$parcel_characteristics,
-#                                                         yr,
-#                                                         current_simulation_params,
-#                                                         decline_rates_initial,
-#                                                         current_simulation_params$offset_time_horizon)
-    
+    #output_object <- perform_assess_sites_routine()
   
-    
-#     if ( (length(unlist(output_object$offsets_object$site_indexes)) > 0) & (current_simulation_params$offset_action_type == 'restore')){
-#       
-#       # assess whether offsets have achieved their gains as determined in initial offset gains calculation
-#       assessed_parcel_sets_object <- assess_parcel_sets(output_object$site_feature_layers,
-#                                                         output_object$offsets_object,
-#                                                         output_object$index_object$site_indexes_used$offsets,
-#                                                         current_simulation_params,
-#                                                         decline_rates_initial,
-#                                                         current_simulation_params$offset_time_horizon,
-#                                                         yr)
-#       
-#       # update feature_layers change parameters
-#       output_object$decline_rates <- update_decline_rates(output_object$decline_rates,
-#                                                           restoration_rate = current_simulation_params$restoration_rate,
-#                                                           restoration_rate_std = current_simulation_params$restoration_rate_std,
-#                                                           features_to_use_in_offset_intervention = current_simulation_params$features_to_use_in_offset_intervention,
-#                                                           feature_num = feature_params$feature_num,
-#                                                           decline_rate_type = 'offset',
-#                                                           action_type = 'maintain',
-#                                                           site_indexes = assessed_parcel_sets_object$site_success_inds)
-#       
-#     }
-    
-    for (feature_ind in seq(feature_params$feature_num)){
+    for (feature_ind in seq(input_data_object$feature_params$feature_num)){
       feature_layers_to_save = lapply(seq_along(output_object$site_feature_layers), function(i) output_object$site_feature_layers[[i]][[feature_ind]])
       saveRDS(feature_layers_to_save, paste0(current_data_dir,
                                              'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
                                              '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     }
     
-    # update feature_layers for all sites (including those just developed/offset)
-    
     output_object$site_feature_layers = project_features(output_object$site_feature_layers,
-                                                         projection_type,
-                                                         feature_dynamics_to_use,
-                                                         management_modes_to_use,
+                                                         input_data_object$feature_params$projection_type,
+                                                         output_object$feature_dynamics,
+                                                         output_object$management_modes,
                                                          current_time_horizons = rep(list(1), length(output_object$site_feature_layers)),
                                                          current_simulation_params,
-                                                         features_to_project = seq_along(current_simulation_params$features_to_use_in_simulation),
+                                                         features_to_project = seq(input_data_object$feature_params$feature_num),
                                                          time_fill = FALSE)
+    
   }
   
   return(output_object)
   
 }
 
-
+perform_assess_sites_routine <- function(output_object){
+  #     if ( (length(unlist(output_object$offsets_object$site_indexes)) > 0) & (current_simulation_params$offset_action_type == 'restore')){
+  #       
+  #       # assess whether offsets have achieved their gains as determined in initial offset gains calculation
+  #       assessed_parcel_sets_object <- assess_parcel_sets(output_object$site_feature_layers,
+  #                                                         output_object$offsets_object,
+  #                                                         output_object$index_object$site_indexes_used$offsets,
+  #                                                         current_simulation_params,
+  #                                                         decline_rates_initial,
+  #                                                         current_simulation_params$offset_time_horizon,
+  #                                                         yr)
+  #       
+  #       # update feature_layers change parameters
+  #       output_object$decline_rates <- update_decline_rates(output_object$decline_rates,
+  #                                                           restoration_rate = current_simulation_params$restoration_rate,
+  #                                                           restoration_rate_std = current_simulation_params$restoration_rate_std,
+  #                                                           features_to_use_in_offset_intervention = current_simulation_params$features_to_use_in_offset_intervention,
+  #                                                           feature_num = feature_params$feature_num,
+  #                                                           decline_rate_type = 'offset',
+  #                                                           action_type = 'maintain',
+  #                                                           site_indexes = assessed_parcel_sets_object$site_success_inds)
+  
+  #     output_object$feature_dynamics = update_feature_dynamics(output_object$feature_dynamics, 
+  #                                                              output_object$feature_dynamics_modes,
+  #                                                              feature_params, 
+  #                                                              current_simulation_params$features_to_use_in_offset_intervention, 
+  #                                                              sample_dynamics = feature_params$sample_management_dynamics,
+  #                                                              action_type = current_simulation_params$offset_action_type, 
+  #                                                              current_pool = unlist(current_offset_object$site_indexes))
+  #     
+  #     output_object$management_modes = update_management_modes(output_object$management_modes, 
+  #                                                              feature_params,
+  #                                                              current_simulation_params$features_to_use_in_offset_intervention, 
+  #                                                              current_simulation_params$offset_action_type, 
+  #                                                              current_pool = unlist(current_offset_object$site_indexes))
+  
+  #       
+  #     }
+}
 # build nested list of feature_layers change parameters of used to determine how the feature_layers evolves in the absence of the
 # development and offset intervention. List length is determined by how many sites and list depth is determined by
 # how many features are currently in use
@@ -377,36 +383,33 @@ select_sites_to_clear <- function(available_site_indexes, current_simulation_par
 
 
 
-perform_unregulated_loss_routine<- function(site_feature_layers, index_object, parcel_characteristics, yr, current_simulation_params, decline_rates_initial, time_horizon){
+perform_unregulated_loss_routine <- function(output_object, input_data_object, yr, current_simulation_params){
   
   if (current_simulation_params$unregulated_loss_prob == 0){
     # return null object when clearing is inactive
-    return()
+    return(output_object)
   }
   
-  available_site_indexes = setdiff(parcel_characteristics$global_indexes, unique(unlist(index_object$site_indexes_used)))
+  available_site_indexes = setdiff(input_data_object$parcel_characteristics$global_indexes, unique(unlist(output_object$index_object$site_indexes_used)))
   
   inds_to_clear <- select_sites_to_clear(available_site_indexes, current_simulation_params)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
-    return()
+    return(output_object)
   } else {
     flog.info('unregulated losses %s' , as.vector(inds_to_clear))
   }
-  
-  # current remaining sites - used for calculation of cfac
-  parcel_num_remaining = length(available_site_indexes)
-  
+
   # store group of site characteristics in site characteristics object
-  unregulated_loss_object <- record_site_characteristics(site_feature_layers[inds_to_clear],
+  unregulated_loss_object <- record_site_characteristics(output_object$site_feature_layers[inds_to_clear],
                                                        inds_to_clear,
-                                                       parcel_num_remaining,
+                                                       parcel_num_remaining = length(available_site_indexes),
                                                        yr)
   
   # record characteristics of cleared site
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
                                                  pool_type = 'devs',
-                                                 site_feature_layers_to_use = site_feature_layers[unlist(unregulated_loss_object$site_indexes)],
+                                                 site_feature_layers_to_use = output_object$site_feature_layers[unlist(unregulated_loss_object$site_indexes)],
                                                  calc_type = current_simulation_params$dev_calc_type,
                                                  cfacs_flag = current_simulation_params$dev_cfacs_flag,
                                                  adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag,
@@ -419,19 +422,19 @@ perform_unregulated_loss_routine<- function(site_feature_layers, index_object, p
                                                  feature_dynamics,
                                                  management_modes,
                                                  feature_params,
-                                                 time_horizon,
+                                                 current_simulation_params$offset_time_horizon,
                                                  yr)  #determine future development parcel attributes
   
   # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
   if (!is.null(unregulated_loss_object)){
     output_object <- perform_clearing_routine(output_object,
-                                              feature_params = input_data_object$feature_params, 
+                                              input_data_object$feature_params, 
                                               current_dev_object = unregulated_loss_object,
                                               clearing_type = 'unregulated',
                                               current_simulation_params)
   }
   
-  return(unregulated_loss_object)
+  return(output_object)
 }
 
 
@@ -553,7 +556,6 @@ perform_clearing_routine <- function(output_object, feature_params, current_dev_
     output_object$credit_object <- append_current_group(output_object$credit_object, current_dev_object, append_routine = 'standard')
   } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
-    
     output_object$unregulated_loss_object <- append_current_group(output_object$unregulated_loss_object, current_dev_object, append_routine = 'standard')
   }
   
@@ -578,9 +580,8 @@ perform_clearing_routine <- function(output_object, feature_params, current_dev_
                                                            action_type = 'development', 
                                                            current_pool = unlist(current_dev_object$site_indexes))
   # implement ecological loss for developed sites (those with decline_rates = 0)
-  output_object$site_feature_layers <- kill_development_sites(output_object,
-                                                              current_dev_object,
-                                                              feature_params)
+  output_object$site_feature_layers <- kill_development_sites(output_object$site_feature_layers,
+                                                              current_dev_object)
   return(output_object)
 }
 
@@ -1003,7 +1004,7 @@ match_sites <- function(input_data_object, output_object, current_simulation_par
   current_pool_indexes = remove_index(current_pool_indexes, zero_inds)
   
   # store group of site characteristics in site characteristics object
-  dev_pool_object <- record_site_characteristics(output_object$current_credit[current_match_pool],
+  dev_pool_object <- record_site_characteristics(output_object$site_feature_layers[current_match_pool],
                                                current_match_pool,
                                                parcel_num_remaining,
                                                yr) 
@@ -1822,22 +1823,12 @@ append_current_object <- function(parcel_set_object, current_parcel_set_object, 
 
 
 
-kill_development_sites <- function(output_object, current_dev_object, feature_params){
+kill_development_sites <- function(site_feature_layers, current_dev_object){
   
-  site_feature_layers = output_object$site_feature_layers
-  development_sites = unlist(output_object$current_development_object$site_indexes)
-  #site_feature_layers[development_sites] = lapply(seq_along(site_feature_layers) array(0, length(site_feature_layers[[parcel_ind]][[feature_ind]]))
-#   for (parcel_ind in seq_along(site_feature_layers)){
-#     for (feature_ind in seq(feature_params$feature_num)){
-#       #select all development sites identified by decline rates = 0
-#       
-#       current_decline_rate = decline_rates[[parcel_ind]][[feature_ind]]
-#       if (output_object$management_modes == 0){
-#         #set all features of development sites to zero
-#         site_feature_layers[[parcel_ind]][[feature_ind]] = array(0, length(site_feature_layers[[parcel_ind]][[feature_ind]]))
-#       }
-#     }
-#   }
+  development_sites = unlist(current_dev_object$site_indexes)
+  site_feature_layers[development_sites] = lapply(seq_along(development_sites),
+                                                  function(i) lapply(seq_along(site_feature_layers[[i]]), 
+                                                                     function(j) array(0, length(site_feature_layers[[i]][[j]]))))
   return(site_feature_layers)
 }
 
@@ -1941,7 +1932,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
   if (include_potential_offsets == TRUE){
     offset_intervention_probs <- remove_neg_probs(current_offset_probability_list$weighted_probs, inds_to_accept)
-    offset_projections <- calc_offset_projections(current_simulation_params$projection_type,
+    offset_projections <- calc_offset_projections(feature_params$projection_type,
                                                   current_cfacs, 
                                                   offset_intervention_probs, 
                                                   current_simulation_params$restoration_rate, 
