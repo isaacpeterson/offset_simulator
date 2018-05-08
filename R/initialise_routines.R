@@ -166,8 +166,11 @@ generate_global_inputs <- function(params_object){
 }
 
 
-estimate_current_dynamics <- function(current_feature_dynamics_set){
+estimate_current_dynamics <- function(current_feature_dynamics_set, sample_dynamics){
 
+  if (sample_dynamics == FALSE){
+    current_feature_dynamics = current_feature_dynamics_set$best_estimate
+  } else {
   current_discriminator = rnorm(1, mean = 0, sd = 0.2)
     
   if (current_discriminator >= 0){
@@ -181,17 +184,18 @@ estimate_current_dynamics <- function(current_feature_dynamics_set){
     }
     current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
   }
-  
+  }
   return(current_feature_dynamics)
   
 }
 
 
-build_dynamics <- function(sample_dynamics, feature_dynamics_bounds, management_modes, parcel_num, feature_num, time_vec){
+
+build_dynamics <- function(sample_dynamics, feature_dynamics_bounds, feature_dynamics_modes, parcel_num, features_to_use, time_vec){
   
   dynamics_set = lapply(seq(parcel_num), 
-                        function(i) lapply(seq(feature_num), 
-                                           function(j) estimate_current_dynamics(feature_dynamics_bounds[[j]][[management_modes[[i]][[j]]]])))
+                        function(i) lapply(features_to_use, 
+                                           function(j) estimate_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]], sample_dynamics)))
   
   return(dynamics_set)
   
@@ -236,9 +240,9 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$index_object = index_object
 
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))){
-    management_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
+    feature_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
   } else {
-    management_modes = lapply(seq_along(site_feature_layers_initial), function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
+    feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
                                                                                          function(j) find_current_mode(site_feature_layers_initial[[i]][[j]], 
                                                                                                                        feature_params$condition_class_bounds[[j]])))
   }
@@ -249,16 +253,17 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
     
     feature_dynamics <- build_dynamics(feature_params$sample_background_dynamics, 
                                        feature_params$background_dynamics_bounds, 
-                                       management_modes, 
+                                       feature_dynamics_modes, 
                                        parcel_characteristics$land_parcel_num, 
-                                       feature_params$feature_num, 
+                                       features_to_use = seq(feature_params$feature_num), 
                                        feature_params$simulated_time_vec)
     
   }
   
   output_object$feature_dynamics = feature_dynamics
   
-  output_object$management_modes = management_modes
+  output_object$feature_dynamics_modes = feature_dynamics_modes
+  output_object$management_modes = lapply(seq_along(site_feature_layers_initial), function(i) rep(list(1), feature_params$feature_num))
   return(output_object)
 }
 
