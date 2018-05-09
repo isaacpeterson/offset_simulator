@@ -38,7 +38,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
     # read current feature layer files over time series and arrange into data stack
     current_data_stack = form_data_stack(current_data_dir, 
                                          feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
-                                         land_parcels = parcel_characteristics$land_parcels, 
+                                         land_parcels = input_data_object$parcel_characteristics$land_parcels, 
                                          current_simulation_params$time_steps)
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
@@ -67,7 +67,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
         }
       }
       if ( global_params$write_movie == TRUE){
-        write_frames(current_data_stack, filetype = 'png', mov_folder, parcel_characteristics, global_params, current_simulation_params, 
+        write_frames(current_data_stack, filetype = 'png', mov_folder, input_data_object$parcel_characteristics, global_params, current_simulation_params, 
                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
                      offset_yrs = unlist(output_object$offsets$offset_yrs))
       }
@@ -109,98 +109,30 @@ run_simulation <- function(input_data_object,
     
     for (current_dev_index in seq_len(current_simulation_params$intervention_vec[yr])){
       
+      ###### TODO REINSTATE OFFSETBANK ROUTINES ####
+      #           if (current_simulation_params$use_offset_bank == TRUE){
+      #             output_object$current_credit = assess_banking_credit(output_object, current_simulation_params)
+      #           }
+      
+      # attempt to develop from current available credit
       if (current_simulation_params$allow_developments_from_credit == TRUE){
-        
-        
-        ###### TODO REINSTATE OFFSETBANK ROUTINES ####
-        #           if (current_simulation_params$use_offset_bank == TRUE){
-        #             output_object$current_credit = assess_banking_credit(output_object, current_simulation_params)
-        #           }
-        # attempt to develop from current available credit
-        
-        flog.info(cat('current credit ', paste(output_object$current_credit), '\n'))
-        credit_match_object = develop_from_credit(input_data_object, 
-                                                  output_object,
-                                                  current_simulation_params,
-                                                  intervention_vec = current_simulation_params$intervention_vec,
-                                                  dev_indexes_to_use = output_object$index_object$available_indexes$devs,
-                                                  parcel_characteristics$land_parcels,
-                                                  yr,
-                                                  current_simulation_params$offset_time_horizon)
-        
-        # if development was permitted add current site to current group of developments, set all feature_layers of development site to zero
-        
-        if (credit_match_object$match_flag == TRUE){
-          
-          output_object$current_credit = credit_match_object$current_credit
-          flog.info(cat('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
-                        'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1)), '\n'))
-          
-          output_object <- perform_clearing_routine(output_object,
-                                                    feature_params = input_data_object$feature_params, 
-                                                    current_dev_object = credit_match_object$development_object,
-                                                    clearing_type = 'develop_from_credit',
-                                                    current_simulation_params)
-        }
-        
+        output_obejct <- perform_credit_match_routine (output_object, input_data_object, current_simulation_params, yr)
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      
-      if ( (credit_match_object$match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE)){
-        
-        #perform the matching routine - i.e. find a matching development/offset set 
-        # this is the trickiest set of routines and may need series of robustness checks.
-        
-        match_object <- match_sites(input_data_object, 
-                                    output_object,
-                                    current_simulation_params,
-                                    intervention_vec = current_simulation_params$intervention_vec,
-                                    indexes_to_use = output_object$index_object$available_indexes$devs,
-                                    parcel_characteristics$land_parcels,
-                                    yr,
-                                    current_simulation_params$offset_time_horizon)  
-        # if a match was found record current development and associated offsets and update site parameters.
-        
-        if (match_object$match_flag == TRUE){
-          
-          flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
-                        'with value', paste(round(unlist(match_object$development_object$parcel_vals_used), 1)), 
-                        '~~~~~~ offset with sites', paste(match_object$offset_object$site_indexes), 
-                        'of value', paste(round(unlist(match_object$offset_object$parcel_vals_used), 1)), '\n'))
-          
-          #update available credit
-          
-          output_object$current_credit = match_object$current_credit
-          
-          # remove selected offset sites from available pool, save offset site characteristics, update decline rates to implement offset.
-          output_object <- perform_offset_routine(output_object, 
-                                                  feature_params = input_data_object$feature_params, 
-                                                  current_offset_object = match_object$offset_object,
-                                                  current_simulation_params)
-          
-          # remove selected development sites from available pool, save development site characteristics,
-          # update decline rates to implement development loss.
-          output_object <- perform_clearing_routine(output_object,
-                                                    feature_params = input_data_object$feature_params, 
-                                                    current_dev_object = match_object$development_object,
-                                                    clearing_type = 'development',
-                                                    current_simulation_params)
-        }
+      if ( (output_object$credit_match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE)){
+        output_object <- perform_match_sites_routine(output_object, input_data_object, current_simulation_params, yr)
       }
     }
     
     output_object <- perform_unregulated_loss_routine(output_object, input_data_object, yr, current_simulation_params)
     
+    #TODO reinstate assess_sites
     #output_object <- perform_assess_sites_routine()
   
-    for (feature_ind in seq(input_data_object$feature_params$feature_num)){
-      feature_layers_to_save = lapply(seq_along(output_object$site_feature_layers), function(i) output_object$site_feature_layers[[i]][[feature_ind]])
-      saveRDS(feature_layers_to_save, paste0(current_data_dir,
-                                             'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
-                                             '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
-    }
+    perform_save_current_landscape_routines(input_data_object, output_object, current_data_dir, current_simulation_params, yr)
     
+    # update all features of all sites in landscape (both inside and outside development/offset program)
     output_object$site_feature_layers = project_features(output_object$site_feature_layers,
                                                          input_data_object$feature_params$projection_type,
                                                          output_object$feature_dynamics,
@@ -211,10 +143,88 @@ run_simulation <- function(input_data_object,
                                                          time_fill = FALSE)
     
   }
-  
   return(output_object)
-  
 }
+
+perform_save_current_landscape_routines <- function(input_data_object, output_object, current_data_dir, current_simulation_params, yr){
+  for (feature_ind in seq(input_data_object$feature_params$feature_num)){
+    feature_layers_to_save = lapply(seq_along(output_object$site_feature_layers), function(i) output_object$site_feature_layers[[i]][[feature_ind]])
+    saveRDS(feature_layers_to_save, paste0(current_data_dir,
+                                           'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
+                                           '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+  }
+}
+
+perform_match_sites_routine <- function(output_object, input_data_object, current_simulation_params, yr){
+  #perform the matching routine - i.e. find a matching development/offset set 
+  match_object <- match_sites(input_data_object, 
+                              output_object,
+                              current_simulation_params,
+                              intervention_vec = current_simulation_params$intervention_vec,
+                              indexes_to_use = output_object$index_object$available_indexes$devs,
+                              input_data_object$parcel_characteristics$land_parcels,
+                              yr,
+                              current_simulation_params$offset_time_horizon)  
+  # if a match was found record current development and associated offsets and update site parameters.
+  
+  if (match_object$match_flag == TRUE){
+    
+    flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
+                  'with value', paste(round(unlist(match_object$development_object$parcel_vals_used), 1)), 
+                  '~~~~~~ offset with sites', paste(match_object$offset_object$site_indexes), 
+                  'of value', paste(round(unlist(match_object$offset_object$parcel_vals_used), 1)), '\n'))
+    
+    #update available credit
+    
+    output_object$current_credit = match_object$current_credit
+    
+    # remove selected offset sites from available pool, save offset site characteristics, update decline rates to implement offset.
+    output_object <- perform_offset_routine(output_object, 
+                                            feature_params = input_data_object$feature_params, 
+                                            current_offset_object = match_object$offset_object,
+                                            current_simulation_params)
+    
+    # remove selected development sites from available pool, save development site characteristics,
+    # update decline rates to implement development loss.
+    output_object <- perform_clearing_routine(output_object,
+                                              feature_params = input_data_object$feature_params, 
+                                              current_dev_object = match_object$development_object,
+                                              clearing_type = 'development',
+                                              current_simulation_params)
+  }
+  return(output_object)
+}
+perform_credit_match_routine <- function(output_object, input_data_object, current_simulation_params, yr){
+  
+  flog.info(cat('current credit ', paste(output_object$current_credit), '\n'))
+  credit_match_object = develop_from_credit(input_data_object, 
+                                            output_object,
+                                            current_simulation_params,
+                                            intervention_vec = current_simulation_params$intervention_vec,
+                                            dev_indexes_to_use = output_object$index_object$available_indexes$devs,
+                                            input_data_object$parcel_characteristics$land_parcels,
+                                            yr,
+                                            current_simulation_params$offset_time_horizon)
+  
+  output_object$credit_match_flag = credit_match_object$match_flag
+  # if development was permitted add current site to current group of developments, set all feature_layers of development site to zero
+  if (credit_match_object$match_flag == TRUE){
+    
+    output_object$current_credit = credit_match_object$current_credit
+    
+    flog.info(cat('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
+                  'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1)), '\n'))
+    
+    output_object <- perform_clearing_routine(output_object,
+                                              feature_params = input_data_object$feature_params, 
+                                              current_dev_object = credit_match_object$development_object,
+                                              clearing_type = 'develop_from_credit',
+                                              current_simulation_params)
+    
+  }
+  return(output_object)
+}
+
 
 perform_assess_sites_routine <- function(output_object){
   #     if ( (length(unlist(output_object$offsets_object$site_indexes)) > 0) & (current_simulation_params$offset_action_type == 'restore')){
