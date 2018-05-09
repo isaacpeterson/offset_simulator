@@ -34,7 +34,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
   
   for (feature_ind in seq(feature_params$feature_num)){
     # select current layer index
-    current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
+    current_feature = input_data_object$global_params$features_to_use_in_simulation[feature_ind]
     # read current feature layer files over time series and arrange into data stack
     current_data_stack = form_data_stack(current_data_dir, 
                                          feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
@@ -116,11 +116,11 @@ run_simulation <- function(input_data_object,
       
       # attempt to develop from current available credit
       if (current_simulation_params$allow_developments_from_credit == TRUE){
-        output_obejct <- perform_credit_match_routine (output_object, input_data_object, current_simulation_params, yr)
+        output_object <- perform_credit_match_routine(output_object, input_data_object, current_simulation_params, yr)
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if ( (output_object$credit_match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE)){
+      if ( output_object$credit_match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE){
         output_object <- perform_match_sites_routine(output_object, input_data_object, current_simulation_params, yr)
       }
     }
@@ -150,7 +150,7 @@ perform_save_current_landscape_routines <- function(input_data_object, output_ob
   for (feature_ind in seq(input_data_object$feature_params$feature_num)){
     feature_layers_to_save = lapply(seq_along(output_object$site_feature_layers), function(i) output_object$site_feature_layers[[i]][[feature_ind]])
     saveRDS(feature_layers_to_save, paste0(current_data_dir,
-                                           'feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
+                                           'feature_', formatC(input_data_object$global_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"),
                                            '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
   }
 }
@@ -197,7 +197,8 @@ perform_match_sites_routine <- function(output_object, input_data_object, curren
 perform_credit_match_routine <- function(output_object, input_data_object, current_simulation_params, yr){
   
   flog.info(cat('current credit ', paste(output_object$current_credit), '\n'))
-  credit_match_object = develop_from_credit(input_data_object, 
+  if (any(output_object$current_credit) > 0){
+    credit_match_object = develop_from_credit(input_data_object, 
                                             output_object,
                                             current_simulation_params,
                                             intervention_vec = current_simulation_params$intervention_vec,
@@ -205,6 +206,9 @@ perform_credit_match_routine <- function(output_object, input_data_object, curre
                                             input_data_object$parcel_characteristics$land_parcels,
                                             yr,
                                             current_simulation_params$offset_time_horizon)
+  } else{
+    return(output_object)
+  }
   
   output_object$credit_match_flag = credit_match_object$match_flag
   # if development was permitted add current site to current group of developments, set all feature_layers of development site to zero
@@ -661,7 +665,7 @@ prepare_offset_pool <- function(output_object, current_simulation_params, input_
   }
   
   # determine current gains characteristics
-  #TODO pass output_obejct$current_feature_layers to preserve mempry (pool_object effectively doubles memory which is not good)
+
   offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
                                             pool_type = offset_pool_type,
                                             site_feature_layers_to_use = output_object$site_feature_layers[unlist(offset_pool_object$site_indexes)],
