@@ -197,7 +197,7 @@ perform_match_sites_routine <- function(output_object, input_data_object, curren
 perform_credit_match_routine <- function(output_object, input_data_object, current_simulation_params, yr){
   
   flog.info(cat('current credit ', paste(output_object$current_credit), '\n'))
-  if (any(output_object$current_credit) > 0){
+  if (any(output_object$current_credit > 0)){
     credit_match_object = develop_from_credit(input_data_object, 
                                             output_object,
                                             current_simulation_params,
@@ -207,6 +207,7 @@ perform_credit_match_routine <- function(output_object, input_data_object, curre
                                             yr,
                                             current_simulation_params$offset_time_horizon)
   } else{
+    output_object$credit_match_flag = FALSE
     return(output_object)
   }
   
