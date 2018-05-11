@@ -847,14 +847,14 @@ project_feature_layers <- function(projection_type, current_parcel_feature_layer
   
   # for maintain feature_layers or project development vals, copy current feature_layers to matrix of depth (time_horizon + 1)
   
-  if ( (current_dec_rate == 1) || (current_dec_rate == 0)){
+  if ( (current_dec_rate == 1) || (current_dec_rate == 0) || ( sum(current_parcel_feature_layers) == 0) ){
     # for maintain feature_layers copy current feature_layers to matrix of depth (time_horizon + 1)
     if (time_fill == TRUE){
       # return all feature_layers states over all time steps
-      projected_feature_layers = matrix(rep(current_parcel_feature_layers, (time_horizon + 1)), ncol = length(current_parcel_feature_layers), byrow = TRUE)
+      current_parcel_feature_layers = matrix(rep(current_parcel_feature_layers, (time_horizon + 1)), ncol = length(current_parcel_feature_layers), byrow = TRUE)
     } else {
       # project for single time step
-      projected_feature_layers = current_parcel_feature_layers
+      return(current_parcel_feature_layers)
     }
   } else {
     
@@ -867,14 +867,14 @@ project_feature_layers <- function(projection_type, current_parcel_feature_layer
     # update feature_layers according to function defined in project_feature_layers function
     # function parameters are contained in decline_rates array
     if (projection_type == 'logistic_function'){
-      projected_feature_layers = sapply(current_parcel_feature_layers, logistic_projection, min_eco_val, max_eco_val,
+      current_parcel_feature_layers = sapply(current_parcel_feature_layers, logistic_projection, min_eco_val, max_eco_val,
                                         current_dec_rate, time_vec)
     }
   }
   if (time_horizon == 0){
-    dim(projected_feature_layers) = c(1, length(projected_feature_layers))
+    dim(current_parcel_feature_layers) = c(1, length(current_parcel_feature_layers))
   }
-  return(projected_feature_layers)
+  return(current_parcel_feature_layers)
 }
 
 
@@ -883,7 +883,7 @@ project_feature_layers <- function(projection_type, current_parcel_feature_layer
 
 project_sites <- function(current_parcel_feature_layers, current_decline_rates, current_time_horizons, current_simulation_params, features_to_project, time_fill){
   
-  parcel_trajs = lapply(seq_along(current_parcel_feature_layers),
+  projected_features = lapply(seq_along(current_parcel_feature_layers),
                         function(i) lapply(features_to_project,
                                             function(j) project_feature_layers(current_simulation_params$projection_type,
                                                                                current_parcel_feature_layers[[i]][[j]],
@@ -893,7 +893,7 @@ project_sites <- function(current_parcel_feature_layers, current_decline_rates, 
                                                                                time_horizon = unlist(current_time_horizons[i]),
                                                                                time_fill)))
   
-  return(parcel_trajs)
+  return(projected_features)
 }
 
 
@@ -1370,7 +1370,6 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     return(match_object)
   } 
   
-  use_specified_offset_metric = current_simulation_params$use_specified_offset_metric
   metric_type = current_simulation_params$offset_metric_type
   current_features_to_use_in_offset_calc = current_simulation_params$features_to_use_in_offset_calc
   
@@ -1426,7 +1425,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   #create an array of threshold values defined by user based proportion 
   thresh = array(current_simulation_params$match_threshold_ratio * vals_to_match)         
   
-  pool_object <- select_pool_to_match(vals_to_match, current_features_to_use_in_offset_calc, use_specified_offset_metric, metric_type, thresh, 
+  pool_object <- select_pool_to_match(vals_to_match, current_features_to_use_in_offset_calc, current_simulation_params$use_specified_offset_metric, metric_type, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, screen_site_zeros)
   
   if (pool_object$break_flag == TRUE){
