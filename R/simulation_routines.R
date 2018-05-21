@@ -497,7 +497,6 @@ update_feature_dynamics <- function(site_feature_layers_to_use, feature_dynamics
                                       feature_dynamics_modes_to_use)
   }
   
-  browser()
   
   for (site_ind in seq_along(feature_dynamics_to_use)){
     feature_dynamics_to_use[[site_ind]][features_to_use] = current_dynamics[[site_ind]]
@@ -952,7 +951,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, d
     
     if (projection_type == 'by_element'){
       projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
-                                                       function(i) user_projection(current_site_feature_layer[i], feature_dynamics_to_use[, i], dynamics_update_type, perform_time_shift, time_vec, yr)))
+                                                       function(i) user_projection(current_site_feature_layer[i], feature_dynamics_to_use[[i]], dynamics_update_type, perform_time_shift, time_vec, yr)))
     } else if (projection_type == 'by_site'){
       
       projected_feature_layers = sapply(current_site_feature_layer, user_projection, feature_dynamics_to_use, dynamics_update_type, perform_time_shift, time_vec, yr)

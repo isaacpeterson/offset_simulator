@@ -250,7 +250,7 @@ initialise_default_feature_params <- function(){
   
   default_feature_params = list()
   
-  
+
   #how many feature layers to generate
   default_feature_params$feature_num = 1
   
@@ -310,6 +310,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
   default_feature_params$perform_management_dynamics_time_shift = vector()
   default_feature_params$management_dynamics_sample_type = vector()
+  default_feature_params$perform_background_dynamics_time_shift = vector()
   return(default_feature_params)
 }
 

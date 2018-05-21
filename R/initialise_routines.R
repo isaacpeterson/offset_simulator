@@ -225,17 +225,16 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
 
 
 build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, dynamics_update_type, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
-  #TODO restructure to remove simplify2array
-  #browser()
+
   if (sample_dynamics == TRUE){
     if (projection_type == 'by_element'){
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(features_to_use,
-                                               function(j) simplify2array(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                                               function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
                                                                                  function(k) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]],
                                                                                                                      site_feature_layers_to_use[[i]][[j]][[k]],
                                                                                                                      dynamics_update_type, 
-                                                                                                                     dynamics_sample_type)  ))))
+                                                                                                                     dynamics_sample_type)  )))
     } else if (projection_type == 'by_site'){
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
@@ -248,8 +247,8 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
     if (projection_type == 'by_element'){
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(features_to_use,
-                                               function(j) simplify2array(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
-                                                                  function(k) feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]]$best_estimate))))
+                                               function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                                                                  function(k) feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]]$best_estimate)))
     } else if (projection_type == 'by_site'){                                                                             
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
