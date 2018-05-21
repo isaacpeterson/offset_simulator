@@ -227,7 +227,7 @@ initialise_default_simulation_params <- function(){
   # impact because projected future value of the site is lower if there is
   # some probability the site may be stochasticly developed in the future
   
-  # default_simulation_params$include_unregulated_loss_in_dev_calc = default_simulation_params$include_unregulated_loss_in_offset_calc
+  default_simulation_params$include_unregulated_loss_in_dev_calc = default_simulation_params$include_unregulated_loss_in_offset_calc
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
@@ -267,13 +267,9 @@ initialise_default_feature_params <- function(){
   
   # Numnber of parcels in x (but total size varies)
   default_feature_params$parcel_num_x = 30 
-  
-  
+
   # Numnber of parcels in y (but total size varies)
   default_feature_params$parcel_num_y = 30 
-  
-  # how the feature dynamics are determined
-  default_feature_params$projection_type = 'logistic_function'
   
   default_feature_params$site_width_variation_param = 1
   # Minimum allowable initial ecological value of smallest ecological element
@@ -291,7 +287,7 @@ initialise_default_feature_params <- function(){
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45
-  default_feature_params$initial_eco_noise = 10
+  default_feature_params$feature_value_distribution_width = 10
   
   # Defining multiple regions eg different states where different polcies can apply 
   default_feature_params$region_num_x = 1
@@ -304,9 +300,16 @@ initialise_default_feature_params <- function(){
   default_feature_params$management_dynamics_bounds = list()
   default_feature_params$background_mode_num = vector()
   default_feature_params$management_mode_num = vector()
+  default_feature_params$initial_condition_class_bounds = vector()
   default_feature_params$sample_management_dynamics = TRUE 
   default_feature_params$sample_background_dynamics = TRUE
+  default_feature_params$dynamics_update_type = vector()
+  default_feature_params$dynamics_sample_type = vector()
+  default_feature_params$management_projection_type = vector()
+  default_feature_params$background_projection_type = vector()
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
+  default_feature_params$perform_management_dynamics_time_shift = vector()
+  default_feature_params$management_dynamics_sample_type = vector()
   return(default_feature_params)
 }
 
