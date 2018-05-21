@@ -26,13 +26,13 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                   current_data_dir)
   
   # save raw simulation data
-  if (global_params$save_output_object == TRUE){
+  if (input_data_object$global_params$save_simulation_outputs == TRUE){
     saveRDS(output_object, paste0(current_data_dir, 'realisation_',
                                   formatC(realisation_ind, width = 3, format = "d", flag = "0"),
                                   '_outputs.rds'))
   }
   
-  for (feature_ind in seq(feature_params$feature_num)){
+  for (feature_ind in seq(input_data_object$feature_params$feature_num)){
     # select current layer index
     current_feature = input_data_object$global_params$features_to_use_in_simulation[feature_ind]
     # read current feature layer files over time series and arrange into data stack
@@ -51,7 +51,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                                         realisation_ind,
                                                         feature_ind)
     
-    file_prefix = paste0(global_params$collated_folder,
+    file_prefix = paste0(input_data_object$global_params$collated_folder,
                          'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"),
                          '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"))
     
@@ -59,15 +59,15 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
     if ((realisation_ind == 1) && (feature_ind == 1)){
-      mov_folder = paste0(global_params$collated_folder, '/mov_', 
+      mov_folder = paste0(input_data_object$global_params$collated_folder, '/mov_', 
                           formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
-      if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
+      if( (input_data_object$global_params$write_movie == TRUE) || (input_data_object$global_params$write_offset_layer == TRUE) ){
         if(!(file.exists(mov_folder))){
           dir.create(mov_folder)
         }
       }
-      if ( global_params$write_movie == TRUE){
-        write_frames(current_data_stack, filetype = 'png', mov_folder, input_data_object$parcel_characteristics, global_params, current_simulation_params, 
+      if ( input_data_object$global_params$write_movie == TRUE){
+        write_frames(current_data_stack, filetype = 'png', mov_folder, input_data_object$parcel_characteristics, input_data_object$global_params, current_simulation_params, 
                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
                      offset_yrs = unlist(output_object$offsets$offset_yrs))
       }
@@ -75,8 +75,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
   }
   
   # delete current temporary files and folder
-  
-  if (global_params$save_output_object == FALSE){
+  if (input_data_object$global_params$save_simulation_outputs == FALSE){
     unlink(current_data_dir, recursive = TRUE)
   }
   
@@ -122,25 +121,29 @@ run_simulation <- function(input_data_object,
       #if insufficient credits accumulated to allow development attempt development with offset match.
       if ( output_object$credit_match_flag == FALSE && current_simulation_params$use_parcel_sets == TRUE){
         output_object <- perform_match_sites_routine(output_object, input_data_object, current_simulation_params, yr)
+        
       }
     }
     
-    output_object <- perform_unregulated_loss_routine(output_object, input_data_object, yr, current_simulation_params)
+    output_object <- perform_unregulated_loss_routine(output_object, input_data_object, current_simulation_params, yr)
     
     #TODO reinstate assess_sites
     #output_object <- perform_assess_sites_routine()
-  
+    
     perform_save_current_landscape_routines(input_data_object, output_object, current_data_dir, current_simulation_params, yr)
     
     # update all features of all sites in landscape (both inside and outside development/offset program)
     output_object$site_feature_layers = project_features(output_object$site_feature_layers,
-                                                         input_data_object$feature_params$projection_type,
+                                                         input_data_object$feature_params$background_projection_type,
+                                                         input_data_object$feature_params$dynamics_update_type, 
                                                          output_object$feature_dynamics,
-                                                         output_object$management_modes,
+                                                         output_object$feature_dynamics_modes,
                                                          current_time_horizons = rep(list(1), length(output_object$site_feature_layers)),
                                                          current_simulation_params,
                                                          features_to_project = seq(input_data_object$feature_params$feature_num),
-                                                         time_fill = FALSE)
+                                                         time_fill = FALSE,
+                                                         perform_time_shift = TRUE,
+                                                         yr)
     
   }
   return(output_object)
@@ -170,9 +173,9 @@ perform_match_sites_routine <- function(output_object, input_data_object, curren
   if (match_object$match_flag == TRUE){
     
     flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
-                  'with value', paste(round(unlist(match_object$development_object$parcel_vals_used), 1)), 
-                  '~~~~~~ offset with sites', paste(match_object$offset_object$site_indexes), 
-                  'of value', paste(round(unlist(match_object$offset_object$parcel_vals_used), 1)), '\n'))
+                  'with value', paste(match_object$development_object$parcel_vals_used), 
+                  '\n offset with sites', paste(match_object$offset_object$site_indexes), 
+                  'of value', paste(match_object$offset_object$parcel_vals_used), '\n'))
     
     #update available credit
     
@@ -182,7 +185,8 @@ perform_match_sites_routine <- function(output_object, input_data_object, curren
     output_object <- perform_offset_routine(output_object, 
                                             feature_params = input_data_object$feature_params, 
                                             current_offset_object = match_object$offset_object,
-                                            current_simulation_params)
+                                            current_simulation_params, 
+                                            yr)
     
     # remove selected development sites from available pool, save development site characteristics,
     # update decline rates to implement development loss.
@@ -190,22 +194,24 @@ perform_match_sites_routine <- function(output_object, input_data_object, curren
                                               feature_params = input_data_object$feature_params, 
                                               current_dev_object = match_object$development_object,
                                               clearing_type = 'development',
-                                              current_simulation_params)
+                                              current_simulation_params, 
+                                              yr)
+    
   }
   return(output_object)
 }
 perform_credit_match_routine <- function(output_object, input_data_object, current_simulation_params, yr){
   
-  flog.info(cat('current credit ', paste(output_object$current_credit), '\n'))
+  flog.info(cat('current credit ', paste(round(unlist(output_object$current_credit), 3)), '\n'))
   if (any(output_object$current_credit > 0)){
     credit_match_object = develop_from_credit(input_data_object, 
-                                            output_object,
-                                            current_simulation_params,
-                                            intervention_vec = current_simulation_params$intervention_vec,
-                                            dev_indexes_to_use = output_object$index_object$available_indexes$devs,
-                                            input_data_object$parcel_characteristics$land_parcels,
-                                            yr,
-                                            current_simulation_params$offset_time_horizon)
+                                              output_object,
+                                              current_simulation_params,
+                                              intervention_vec = current_simulation_params$intervention_vec,
+                                              dev_indexes_to_use = output_object$index_object$available_indexes$devs,
+                                              input_data_object$parcel_characteristics$land_parcels,
+                                              yr,
+                                              current_simulation_params$offset_time_horizon)
   } else{
     output_object$credit_match_flag = FALSE
     return(output_object)
@@ -217,8 +223,8 @@ perform_credit_match_routine <- function(output_object, input_data_object, curre
     
     output_object$current_credit = credit_match_object$current_credit
     
-    flog.info(cat('developed site with value', paste(round(unlist(credit_match_object$development_object$parcel_vals_used), 1)), 
-                  'from credit, remaining =', paste(round(unlist(credit_match_object$current_credit), 1)), '\n'))
+    flog.info(cat('developed site with value', paste(round(credit_match_object$development_object$parcel_vals_used, 3)), 
+                  'from credit, remaining =', paste(round(credit_match_object$current_credit, 3)), '\n'))
     
     output_object <- perform_clearing_routine(output_object,
                                               feature_params = input_data_object$feature_params, 
@@ -261,7 +267,7 @@ perform_assess_sites_routine <- function(output_object){
   #                                                              action_type = current_simulation_params$offset_action_type, 
   #                                                              current_pool = unlist(current_offset_object$site_indexes))
   #     
-  #     output_object$management_modes = update_management_modes(output_object$management_modes, 
+  #     output_object$feature_dynamics_modes = update_dynamics_modes(output_object$feature_dynamics_modes, 
   #                                                              feature_params,
   #                                                              current_simulation_params$features_to_use_in_offset_intervention, 
   #                                                              current_simulation_params$offset_action_type, 
@@ -398,7 +404,7 @@ select_sites_to_clear <- function(available_site_indexes, current_simulation_par
 
 
 
-perform_unregulated_loss_routine <- function(output_object, input_data_object, yr, current_simulation_params){
+perform_unregulated_loss_routine <- function(output_object, input_data_object, current_simulation_params, yr){
   
   if (current_simulation_params$unregulated_loss_prob == 0){
     # return null object when clearing is inactive
@@ -414,16 +420,16 @@ perform_unregulated_loss_routine <- function(output_object, input_data_object, y
   } else {
     flog.info('unregulated losses %s' , as.vector(inds_to_clear))
   }
-
+  
   # store group of site characteristics in site characteristics object
   unregulated_loss_object <- record_site_characteristics(output_object$site_feature_layers[inds_to_clear],
-                                                       inds_to_clear,
-                                                       parcel_num_remaining = length(available_site_indexes),
-                                                       yr)
+                                                         inds_to_clear,
+                                                         parcel_num_remaining = length(available_site_indexes),
+                                                         yr)
   
   # record characteristics of cleared site
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
-                                                 pool_type = 'devs',
+                                                 pool_type = 'developments',
                                                  site_feature_layers_to_use = output_object$site_feature_layers[unlist(unregulated_loss_object$site_indexes)],
                                                  calc_type = current_simulation_params$dev_calc_type,
                                                  cfacs_flag = current_simulation_params$dev_cfacs_flag,
@@ -435,7 +441,7 @@ perform_unregulated_loss_routine <- function(output_object, input_data_object, y
                                                  time_horizon_type = 'future',
                                                  current_simulation_params,
                                                  feature_dynamics,
-                                                 management_modes,
+                                                 feature_dynamics_modes,
                                                  feature_params,
                                                  current_simulation_params$offset_time_horizon,
                                                  yr)  #determine future development parcel attributes
@@ -453,43 +459,48 @@ perform_unregulated_loss_routine <- function(output_object, input_data_object, y
 }
 
 
-update_management_modes <- function(management_modes, feature_params, features_to_use_in_offset_intervention, action_type, current_pool){
+update_dynamics_modes <- function(feature_dynamics_modes, feature_params, features_to_use_in_offset_intervention, action_type, current_pool){
   
   for (current_parcel_ind in current_pool){
     
     if (action_type == 'development'){
-      management_modes[[current_parcel_ind]] <- rep(list(0), feature_params$feature_num)
+      feature_dynamics_modes[[current_parcel_ind]] <- rep(list(0), feature_params$feature_num)
     } else if (action_type == 'maintain'){
-      management_modes[[current_parcel_ind]][features_to_use_in_offset_intervention] = rep(list(0), length(features_to_use_in_offset_intervention))
+      feature_dynamics_modes[[current_parcel_ind]][features_to_use_in_offset_intervention] = rep(list(0), length(features_to_use_in_offset_intervention))
     } 
   }
   
-  return(management_modes)
+  return(feature_dynamics_modes)
   
 }
 
 
-
-update_feature_dynamics <- function(feature_dynamics_to_use, feature_dynamics_modes, feature_params, features_to_use_in_offset_intervention, sample_dynamics, action_type, current_pool){
+update_feature_dynamics <- function(site_feature_layers_to_use, feature_dynamics_to_use, feature_dynamics_modes_to_use, feature_params, features_to_use_in_offset_intervention, 
+                                    sample_dynamics, action_type, yr){
   
-  if (action_type == 'development'){
+  if (action_type == 'develop'){
     features_to_use = seq(feature_params$feature_num)
-    current_dynamics = lapply(seq_along(current_pool), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_use)))
+    current_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_use)))
   } else if (action_type == 'maintain'){
     features_to_use = features_to_use_in_offset_intervention
-    current_dynamics = lapply(seq_along(current_pool), function(i) rep(list(array(1, length(feature_params$simulated_time_vec))), length(features_to_use)))
+    current_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(1, length(feature_params$simulated_time_vec))), length(features_to_use)))
   } else if (action_type == 'restore'){
     features_to_use = features_to_use_in_offset_intervention
-    current_dynamics = build_dynamics(sample_dynamics, 
+    
+    current_dynamics = build_dynamics(site_feature_layers_to_use,
+                                      features_to_use,
+                                      feature_params$sample_management_dynamics,
+                                      feature_params$management_projection_type,
+                                      feature_params$dynamics_update_type,
+                                      dynamics_sample_type = feature_params$management_dynamics_sample_type,
                                       feature_params$management_dynamics_bounds, 
-                                      feature_dynamics_modes[current_pool], 
-                                      parcel_num = length(current_pool), 
-                                      features_to_use,  
-                                      time_vec = feature_params$simulated_time_vec)
+                                      feature_dynamics_modes_to_use)
   }
   
-  for (site_ind in seq_along(current_pool)){
-    feature_dynamics_to_use[[current_pool[site_ind] ]][features_to_use] = current_dynamics[[site_ind]]
+  browser()
+  
+  for (site_ind in seq_along(feature_dynamics_to_use)){
+    feature_dynamics_to_use[[site_ind]][features_to_use] = current_dynamics[[site_ind]]
   }
   
   return(feature_dynamics_to_use)
@@ -498,7 +509,7 @@ update_feature_dynamics <- function(feature_dynamics_to_use, feature_dynamics_mo
 
 
 # series of routines to implement offset
-perform_offset_routine <- function(output_object, feature_params, current_offset_object, current_simulation_params){
+perform_offset_routine <- function(output_object, feature_params, current_offset_object, current_simulation_params, yr){
   
   # if running in banking mode remove offset site from available bank
   if (current_simulation_params$use_offset_bank == TRUE){
@@ -510,21 +521,23 @@ perform_offset_routine <- function(output_object, feature_params, current_offset
     
   } else {
     # determine parcels used in matching routine and remove from available pool
+    current_pool = unlist(current_offset_object$site_indexes)
     output_object$index_object <- update_index_object(output_object$index_object, update_type = 'offset', current_offset_object$site_indexes)
     
-    output_object$feature_dynamics = update_feature_dynamics(output_object$feature_dynamics, 
-                                                             output_object$feature_dynamics_modes,
-                                                             feature_params, 
-                                                             current_simulation_params$features_to_use_in_offset_intervention, 
-                                                             sample_dynamics = feature_params$sample_management_dynamics,
-                                                             action_type = current_simulation_params$offset_action_type, 
-                                                             current_pool = unlist(current_offset_object$site_indexes))
-    
-    output_object$management_modes = update_management_modes(output_object$management_modes, 
-                                                             feature_params,
-                                                             current_simulation_params$features_to_use_in_offset_intervention, 
-                                                             current_simulation_params$offset_action_type, 
-                                                             current_pool = unlist(current_offset_object$site_indexes))
+    output_object$feature_dynamics[current_pool] = update_feature_dynamics(output_object$site_feature_layers[current_pool], 
+                                                                           output_object$feature_dynamics[current_pool], 
+                                                                           output_object$feature_dynamics_modes[current_pool],
+                                                                           feature_params, 
+                                                                           current_simulation_params$features_to_use_in_offset_intervention, 
+                                                                           sample_dynamics = feature_params$sample_management_dynamics,
+                                                                           action_type = current_simulation_params$offset_action_type, 
+                                                                           yr)
+    #note do same with current pool
+    output_object$feature_dynamics_modes = update_dynamics_modes(output_object$feature_dynamics_modes, 
+                                                                 feature_params,
+                                                                 current_simulation_params$features_to_use_in_offset_intervention, 
+                                                                 current_simulation_params$offset_action_type, 
+                                                                 current_pool = unlist(current_offset_object$site_indexes))
   }
   
   #record current offset site characteristics
@@ -553,7 +566,7 @@ remove_parcel_from_current_pool <- function(offset_pool_object, current_site_ind
 
 # routines to mark and destroy feature_layers in cleared sites e.g. Development or unregulated
 
-perform_clearing_routine <- function(output_object, feature_params, current_dev_object, clearing_type, current_simulation_params){
+perform_clearing_routine <- function(output_object, feature_params, current_dev_object, clearing_type, current_simulation_params, yr){
   
   if (length(current_dev_object$site_indexes) == 0){
     return(output_object)
@@ -579,21 +592,22 @@ perform_clearing_routine <- function(output_object, feature_params, current_dev_
     output_object$offset_pool_object <- remove_parcel_from_current_pool(output_object$offset_pool_object,
                                                                         current_site_indexes = current_dev_object$site_indexes)
   }
-
   
-  output_object$feature_dynamics = update_feature_dynamics(output_object$feature_dynamics, 
-                                                           output_object$feature_dynamics_modes,
-                                                           feature_params, 
-                                                           current_simulation_params$features_to_use_in_offset_intervention, 
-                                                           sample_dynamics = feature_params$sample_management_dynamics,
-                                                           action_type = 'development', 
-                                                           current_pool = unlist(current_dev_object$site_indexes))
+  current_pool = unlist(current_dev_object$site_indexes)
+  output_object$feature_dynamics[current_pool] = update_feature_dynamics(output_object$site_feature_layers[current_pool],
+                                                                         output_object$feature_dynamics[current_pool], 
+                                                                         output_object$feature_dynamics_modes[current_pool],
+                                                                         feature_params, 
+                                                                         current_simulation_params$features_to_use_in_offset_intervention, 
+                                                                         sample_dynamics = feature_params$sample_management_dynamics,
+                                                                         action_type = 'develop', 
+                                                                         yr)
   
-  output_object$management_modes = update_management_modes(output_object$management_modes, 
-                                                           feature_params,
-                                                           current_simulation_params$features_to_use_in_offset_intervention, 
-                                                           action_type = 'development', 
-                                                           current_pool = unlist(current_dev_object$site_indexes))
+  output_object$feature_dynamics_modes = update_dynamics_modes(output_object$feature_dynamics_modes, 
+                                                               feature_params,
+                                                               current_simulation_params$features_to_use_in_offset_intervention, 
+                                                               action_type = 'development', 
+                                                               current_pool = unlist(current_dev_object$site_indexes))
   # implement ecological loss for developed sites (those with decline_rates = 0)
   output_object$site_feature_layers <- kill_development_sites(output_object$site_feature_layers,
                                                               current_dev_object)
@@ -659,14 +673,14 @@ prepare_offset_pool <- function(output_object, current_simulation_params, input_
   } else {
     # when running in standard mode record current offsite site characteristics
     offset_pool_object <- record_site_characteristics(output_object$site_feature_layers[current_offset_pool],
-                                                    current_offset_pool,
-                                                    parcel_num_remaining = length(current_offset_pool),
-                                                    yr)   #arrange available parcel pool into form to use in parcel set determination
+                                                      current_offset_pool,
+                                                      parcel_num_remaining = length(current_offset_pool),
+                                                      yr)   #arrange available parcel pool into form to use in parcel set determination
     offset_pool_type = 'offsets'
   }
   
   # determine current gains characteristics
-
+  
   offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
                                             pool_type = offset_pool_type,
                                             site_feature_layers_to_use = output_object$site_feature_layers[unlist(offset_pool_object$site_indexes)],
@@ -680,7 +694,7 @@ prepare_offset_pool <- function(output_object, current_simulation_params, input_
                                             time_horizon_type = current_simulation_params$offset_time_horizon_type,
                                             current_simulation_params,
                                             output_object$feature_dynamics,
-                                            output_object$management_modes,
+                                            output_object$feature_dynamics_modes,
                                             input_data_object$feature_params,
                                             time_horizon = current_simulation_params$offset_time_horizon,
                                             yr)      #determine available parcel values, depending on what particular offset policy is in use using counterfactuals etc.
@@ -704,13 +718,11 @@ perform_banking_routine <- function(output_object, current_simulation_params, yr
   parcel_num_remaining = length(c(unlist(output_object$index_object$available_indexes$offsets),
                                   unlist(output_object$index_object$available_indexes$devs)))
   
-  
-  
   # record current offset pool characteristics
   current_banked_object <- record_site_characteristics(output_object$site_feature_layers[current_banked_offset_pool],
-                                                     current_pool = current_banked_offset_pool,
-                                                     parcel_num_remaining,
-                                                     yr)   # arrange current parcel data
+                                                       current_pool = current_banked_offset_pool,
+                                                       parcel_num_remaining,
+                                                       yr)   # arrange current parcel data
   
   output_object$offset_bank_object = append_current_group(object_to_append = output_object$offset_bank_object,
                                                           current_object = current_banked_object,
@@ -720,20 +732,21 @@ perform_banking_routine <- function(output_object, current_simulation_params, yr
   output_object$index_object <- update_index_object(output_object$index_object,
                                                     update_type = 'banking',
                                                     current_banked_offset_pool)
+  current_pool = unlist(current_banked_object$site_indexes)
+  output_object$feature_dynamics[current_pool] = update_feature_dynamics(output_object$site_feature_layers[current_pool], 
+                                                                         output_object$feature_dynamics[current_pool], 
+                                                                         output_object$feature_dynamics_modes[current_pool],
+                                                                         feature_params, 
+                                                                         current_simulation_params$features_to_use_in_offset_intervention, 
+                                                                         sample_dynamics = feature_params$sample_management_dynamics,
+                                                                         action_type = 'banking',
+                                                                         yr)
   
-  output_object$feature_dynamics = update_feature_dynamics(output_object$feature_dynamics, 
-                                                           output_object$feature_dynamics_modes,
-                                                           feature_params, 
-                                                           current_simulation_params$features_to_use_in_offset_intervention, 
-                                                           sample_dynamics = feature_params$sample_management_dynamics,
-                                                           action_type = current_simulation_params$offset_action_type, 
-                                                           current_pool = unlist(current_banked_object$site_indexes))
-  
-  output_object$management_modes = update_management_modes(output_object$management_modes, 
-                                                           feature_params,
-                                                           current_simulation_params$features_to_use_in_offset_intervention, 
-                                                           action_type = current_simulation_params$offset_action_type, 
-                                                           current_pool = unlist(current_banked_object$site_indexes))
+  output_object$feature_dynamics_modes = update_dynamics_modes(output_object$feature_dynamics_modes, 
+                                                               feature_params,
+                                                               current_simulation_params$features_to_use_in_offset_intervention, 
+                                                               action_type = current_simulation_params$offset_action_type, 
+                                                               current_pool)
   
   return(output_object)
 }
@@ -785,7 +798,7 @@ assess_parcel_sets <- function(site_feature_layers, offsets_object, offset_parce
 
 
 
-assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type, 
+assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type, time_fill,
                                      include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                      current_simulation_params, feature_dynamics, time_horizon, yr){
   
@@ -796,20 +809,22 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
   time_horizons <- generate_time_horizons(project_type = 'current', yr, offset_yrs, time_horizon, parcel_count)
   
   if (cfacs_flag == TRUE){
-
+    
     cfacs_object = calc_cfacs(site_feature_layers_to_use = output_object$site_feature_layers[current_pool],
                               parcel_num_remaining = pool_object$parcel_num_remaining,
                               current_simulation_params,
                               feature_params,
                               feature_dynamics_to_use = feature_dynamics[current_pool],
-                              management_modes_to_use = management_modes[current_pool],
+                              feature_dynamics_modes_to_use = feature_dynamics_modes[current_pool],
                               time_horizons,
                               offset_yrs,
                               include_potential_developments,
                               include_potential_offsets,
                               include_unregulated_loss,
                               adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
-                              features_to_project = current_simulation_params$features_to_use_in_offset_calc)
+                              features_to_project = current_simulation_params$features_to_use_in_offset_calc,
+                              time_fill,
+                              yr)
     
     cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
     
@@ -883,29 +898,45 @@ logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_d
 
 
 
-user_projection <- function(current_feature_vals, current_feature_dynamics, time_vec){
-  current_spline_fit <- smooth.spline(1:length(current_feature_dynamics), current_feature_dynamics)
-  inv_spline = splinefun(current_spline_fit$y, current_spline_fit$x)
-  projected_time = inv_spline(current_feature_vals) + time_vec
-  projected_feature_vals = predict(current_spline_fit, projected_time)$y
+user_projection <- function(current_feature_vals, current_feature_dynamics, dynamics_update_type, perform_time_shift, time_vec, yr){
+  
+  if (perform_time_shift == TRUE){
+    lower_interval = findInterval(current_feature_dynamics, current_feature_vals) == FALSE
+    upper_interval = findInterval(current_feature_dynamics, current_feature_vals) == TRUE
+    if ( (all(lower_interval == FALSE)) || (all(upper_interval == FALSE)) ){
+      stop()
+    }
+    lower_ind = which(current_feature_dynamics == max(current_feature_dynamics[lower_interval])) 
+    upper_ind = which(current_feature_dynamics == min(current_feature_dynamics[upper_interval]))
+    time_shift = approx(current_feature_dynamics[lower_ind:upper_ind], lower_ind:upper_ind, current_feature_vals)$y
+    projected_feature_vals = approx(1:length(current_feature_dynamics), current_feature_dynamics, time_shift+time_vec)$y
+  } else {
+    if (dynamics_update_type == 'by_differential'){
+      projected_feature_vals = current_feature_vals + cumsum(current_feature_dynamics)[yr + time_vec]
+    } else if (dynamics_update_type == 'by_function'){
+      projected_feature_vals = current_feature_dynamics[yr + time_vec]
+    }
+  }
+  
   return(projected_feature_vals)
 }
 
 
 # calculate the expected feature_layers under maintenaince, restoration
 
-project_feature_layers <- function(current_simulation_params, projection_type, current_site_feature_layers, feature_dynamics_to_use, management_mode_to_use, time_horizon, time_fill){
+project_feature_layers <- function(current_simulation_params, projection_type, dynamics_update_type, current_site_feature_layer, feature_dynamics_to_use, 
+                                   feature_dynamics_mode_to_use, time_horizon, perform_time_shift, time_fill, yr){
   
   # for maintain feature_layers copy current feature_layers to matrix of depth (time_horizon + 1)
   
-  if ( (management_mode_to_use == 0) ){
-   
+  if ( all(feature_dynamics_mode_to_use == 0) ){
+    
     if (time_fill == TRUE){
       # return all feature_layers states over all time steps
-      projected_feature_layers = matrix(rep(current_site_feature_layers, (time_horizon + 1)), ncol = length(current_site_feature_layers), byrow = TRUE)
+      projected_feature_layers = matrix(rep(current_site_feature_layer, (time_horizon + 1)), ncol = length(current_site_feature_layer), byrow = TRUE)
     } else {
       # project for single time step
-      projected_feature_layers = current_site_feature_layers
+      return(current_site_feature_layer)
     }
     
   } else {
@@ -919,14 +950,16 @@ project_feature_layers <- function(current_simulation_params, projection_type, c
     # update feature_layers according to function defined in project_feature_layers function
     # function parameters are contained in decline_rates array
     
-    if (projection_type == 'logistic_function'){
-      projected_feature_layers = sapply(current_site_feature_layers, logistic_projection, current_simulation_params$min_eco_val, current_simulation_params$max_eco_val,
-                                        management_mode_to_use, time_vec)
-    } else if (projection_type == 'user_projection'){
-      projected_feature_layers = sapply(current_site_feature_layers, user_projection, feature_dynamics_to_use, time_vec)
+    if (projection_type == 'by_element'){
+      projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
+                                                       function(i) user_projection(current_site_feature_layer[i], feature_dynamics_to_use[, i], dynamics_update_type, perform_time_shift, time_vec, yr)))
+    } else if (projection_type == 'by_site'){
+      
+      projected_feature_layers = sapply(current_site_feature_layer, user_projection, feature_dynamics_to_use, dynamics_update_type, perform_time_shift, time_vec, yr)
     }
+    
   }
-  if (time_horizon == 0){
+  if (length(dim(projected_feature_layers)) == 0){
     dim(projected_feature_layers) = c(1, length(projected_feature_layers))
   }
   return(projected_feature_layers)
@@ -936,19 +969,24 @@ project_feature_layers <- function(current_simulation_params, projection_type, c
 # project sites through all features - returns nested list of arrays where each nested array has length
 # defined by current_time_horizons and depth defined by feature number for all sites
 
-project_features <- function(current_site_feature_layers, projection_type, feature_dynamics_to_use, management_mode_to_use, current_time_horizons, current_simulation_params, features_to_project, time_fill){
+project_features <- function(current_site_feature_layers, projection_type, dynamics_update_type, feature_dynamics_to_use, feature_dynamics_modes_to_use, 
+                             current_time_horizons, current_simulation_params, features_to_project, perform_time_shift, time_fill, yr){
   
-  parcel_trajs = lapply(seq_along(current_site_feature_layers),
-                        function(i) lapply(features_to_project,
-                                           function(j) project_feature_layers(current_simulation_params,
-                                                                              projection_type,
-                                                                              current_site_feature_layers[[i]][[j]],
-                                                                              feature_dynamics_to_use[[i]][[j]],
-                                                                              management_mode_to_use[[i]][[j]],
-                                                                              time_horizon = unlist(current_time_horizons[i]),
-                                                                              time_fill)))
+  projected_features = lapply(seq_along(current_site_feature_layers),
+                              function(i) lapply(features_to_project,
+                                                 function(j) project_feature_layers(current_simulation_params,
+                                                                                    projection_type,
+                                                                                    dynamics_update_type, 
+                                                                                    current_site_feature_layers[[i]][[j]],
+                                                                                    feature_dynamics_to_use[[i]][[j]],
+                                                                                    feature_dynamics_modes_to_use[[i]][[j]],
+                                                                                    time_horizon = unlist(current_time_horizons[i]),
+                                                                                    perform_time_shift,
+                                                                                    time_fill, 
+                                                                                    yr)))
   
-  return(parcel_trajs)
+  
+  return(projected_features)
 }
 
 
@@ -997,7 +1035,7 @@ recalculate_probabilities <- function(current_probability_list){
 
 
 match_sites <- function(input_data_object, output_object, current_simulation_params, intervention_vec, indexes_to_use, land_parcels, yr, time_horizon){
-
+  
   match_object = false_match()
   
   current_pool_vals = output_object$offset_pool_object$parcel_vals_used
@@ -1020,12 +1058,11 @@ match_sites <- function(input_data_object, output_object, current_simulation_par
   
   # store group of site characteristics in site characteristics object
   dev_pool_object <- record_site_characteristics(output_object$site_feature_layers[current_match_pool],
-                                               current_match_pool,
-                                               parcel_num_remaining,
-                                               yr) 
-  
+                                                 current_match_pool,
+                                                 parcel_num_remaining,
+                                                 yr) 
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
-                                         pool_type = 'devs',
+                                         pool_type = 'developments',
                                          site_feature_layers_to_use = output_object$site_feature_layers[unlist(dev_pool_object$site_indexes)],
                                          calc_type = current_simulation_params$dev_calc_type,
                                          cfacs_flag = current_simulation_params$dev_cfacs_flag,
@@ -1037,12 +1074,12 @@ match_sites <- function(input_data_object, output_object, current_simulation_par
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          output_object$feature_dynamics, 
-                                         output_object$management_modes,
+                                         output_object$feature_dynamics_modes,
                                          input_data_object$feature_params,
                                          time_horizon,
                                          yr)  #determine future development parcel attributes
   
-
+  
   
   current_match_vals_pool = dev_pool_object$parcel_vals_used
   
@@ -1076,6 +1113,7 @@ match_sites <- function(input_data_object, output_object, current_simulation_par
       match_pool_to_use = current_pool_indexes  #if performing offset banking use any of the available banked offset pool
       pool_vals_to_use = current_pool_vals
     }
+    
     
     match_object <- match_from_pool(match_type = 'offset',
                                     current_pool = match_pool_to_use,
@@ -1125,7 +1163,7 @@ develop_from_credit <- function(input_data_object, output_object, current_simula
                                                  yr)
   
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
-                                         pool_type = 'devs',
+                                         pool_type = 'developments',
                                          site_feature_layers_to_use = output_object$site_feature_layers[unlist(dev_pool_object$site_indexes)],
                                          calc_type = current_simulation_params$dev_calc_type,
                                          cfacs_flag = current_simulation_params$dev_cfacs_flag,
@@ -1137,16 +1175,20 @@ develop_from_credit <- function(input_data_object, output_object, current_simula
                                          time_horizon_type = 'future',
                                          current_simulation_params,
                                          output_object$feature_dynamics,  
-                                         output_object$management_modes,
+                                         output_object$feature_dynamics_modes,
                                          input_data_object$feature_params,
                                          time_horizon,
                                          yr)
   
+  if (any(unlist(dev_pool_object$parcel_vals_used) < 0)){
+    
+  }
   #   subset_pool =  list_intersect(dev_pool_object$site_indexes, match_object$match_indexes)
   #   match_object$development_object = select_pool_subset(dev_pool_object, subset_pool = subset_pool$match_ind)
   
   if (length(unlist(dev_pool_object$site_indexes)) > 0){
-    pool_vals_to_use = dev_pool_object$parcel_vals_use
+    
+    pool_vals_to_use = dev_pool_object$parcel_vals_used
     
     match_object <- match_from_pool(match_type = 'development', 
                                     current_pool = dev_pool_object$site_indexes, 
@@ -1317,9 +1359,10 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   match_ind = which(euclidean_norm == min(euclidean_norm))
   
   if (length(match_ind) > 1){
+    
     #list where the duplicate occurred
-    flog.error(cat('duplicate match flag on ', parcel_vals_pool[match_ind]), '\n')
-    # chose first site of the multiple match
+    flog.error(cat('duplicate site value match flag on ', length(match_ind), 'sites \n'))
+    # sample site from multiple match pool
     match_ind = sample(match_ind, 1)
   }
   
@@ -1701,10 +1744,10 @@ generate_time_horizons <- function(project_type, yr, offset_yrs, time_horizon, p
 
 assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_use, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                                time_horizon_type, current_simulation_params, feature_dynamics, management_modes, feature_params, time_horizon, yr){
+                                time_horizon_type, current_simulation_params, feature_dynamics, feature_dynamics_modes, feature_params, time_horizon, yr){
   
   current_pool = unlist(pool_object$site_indexes)
-
+  
   offset_yrs = unlist(pool_object$offset_yrs)
   
   current_condition_vals = lapply(seq_along(pool_object$parcel_sums_at_offset),
@@ -1726,18 +1769,20 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
                                 current_simulation_params,
                                 feature_params,
                                 feature_dynamics_to_use = feature_dynamics[current_pool],
-                                management_modes_to_use = management_modes[current_pool],
+                                feature_dynamics_modes_to_use = feature_dynamics_modes[current_pool],
                                 time_horizons,
                                 offset_yrs,
                                 include_potential_developments,
                                 include_potential_offsets,
                                 include_unregulated_loss,
                                 adjust_cfacs_flag,
-                                features_to_project = current_simulation_params$features_to_use_in_offset_calc)
+                                features_to_project = current_simulation_params$features_to_use_in_offset_calc, 
+                                time_fill,
+                                yr)
       
       cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
     } else if (calc_type == 'restoration_gains'){
-      #management_mode_to_use = management_mode[current_pool],
+      #feature_dynamics_mode_to_use = feature_dynamics_mode[current_pool],
       cfac_vals = current_condition_vals
     } else {
       cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(current_simulation_params$features_to_use_in_offset_calc))
@@ -1746,39 +1791,61 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
     if (pool_type == 'offsets') {
       
       if (action_type == 'maintain'){
-        management_modes_to_use = lapply(seq_along(current_pool), function(i) rep(list(0), feature_params$feature_num))
+        feature_dynamics_modes = lapply(seq_along(current_pool), function(i) rep(list(0), feature_params$feature_num))
         feature_dynamics_to_use = feature_dynamics[current_pool]
       } else if (action_type == 'restore'){
-        #TODO add ability to assess current management_mode
-        management_modes_to_use = management_modes[current_pool]
-        feature_dynamics_to_use = lapply(seq_along(current_pool), 
-                              function(i) lapply(seq(feature_params$feature_num), 
-                                                 function(j) feature_params$management_dynamics_bounds[[j]] [[ management_modes_to_use[[i]][[j]] ]]$best_estimate ))
+        #TODO add ability to assess current feature_dynamics_mode
+        
+        feature_dynamics_modes = find_modes(projection_type = feature_params$management_projection_type, 
+                                            feature_layers_to_use = site_feature_layers_to_use, 
+                                            condition_class_bounds = feature_params$condition_class_bounds)
+        
+        feature_dynamics_to_use = build_dynamics(site_feature_layers = site_feature_layers_to_use,
+                                                 features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
+                                                 sample_dynamics = FALSE, 
+                                                 projection_type = feature_params$management_projection_type, 
+                                                 dynamics_update_type = 'by_function',
+                                                 dynamics_sample_type = feature_params$management_dynamics_sample_type,
+                                                 feature_dynamics_bounds = feature_params$management_dynamics_bounds, 
+                                                 feature_dynamics_modes)
+        
       } else if (action_type == 'protect'){
         feature_dynamics_to_use = feature_dynamics[current_pool]
+        feature_dynamics_modes_to_use = feature_dynamics_modes[current_pool]
       }
       
       projected_feature_layers = project_features(site_feature_layers_to_use,
-                                                  feature_params$projection_type,
+                                                  projection_type = feature_params$management_projection_type,
+                                                  feature_params$dynamics_update_type, 
                                                   feature_dynamics_to_use,
-                                                  management_modes_to_use,
+                                                  feature_dynamics_modes,
                                                   time_horizons,
                                                   current_simulation_params,
                                                   features_to_project = current_simulation_params$features_to_use_in_offset_calc,
-                                                  time_fill = FALSE)
-
+                                                  perform_time_shift = feature_params$perform_management_dynamics_time_shift,
+                                                  time_fill = FALSE,
+                                                  yr)
+      
       projected_vals = sum_sites(projected_feature_layers)
-    } else if (pool_type == 'devs') {
+    } else if (pool_type == 'developments') {
       projected_vals = cfac_vals
       cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(current_simulation_params$features_to_use_in_offset_calc))
     }
-    
   }
   
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
-  
+  if (any(unlist(pool_object$parcel_vals_used) < 0)){
+    browser()
+  }
   return(pool_object)
   
+}
+
+find_time_shift <- function(current_feature_vals, current_feature_dynamics){
+  lower_ind = which(current_feature_dynamics == max(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == FALSE])) 
+  upper_ind = which(current_feature_dynamics == min(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == TRUE]))
+  time_shift = approx(current_feature_dynamics[lower_ind:upper_ind], lower_ind:upper_ind, current_feature_vals)$y
+  return(time_shift)
 }
 
 
@@ -1850,9 +1917,9 @@ kill_development_sites <- function(site_feature_layers, current_dev_object){
 
 
 
-calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current_simulation_params, feature_params, feature_dynamics_to_use, management_modes_to_use,
+calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current_simulation_params, feature_params, feature_dynamics_to_use, feature_dynamics_modes_to_use,
                        time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                       adjust_cfacs_flag, features_to_project, time_fill){
+                       adjust_cfacs_flag, features_to_project, time_fill, yr){
   
   cfacs_object = list()
   if (adjust_cfacs_flag == TRUE){
@@ -1860,14 +1927,18 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
   } else {
     time_fill = FALSE
   }
+  
   cfacs_object$cfacs = project_features(site_feature_layers_to_use,
-                                        feature_params$projection_type,
+                                        feature_params$background_projection_type,
+                                        feature_params$dynamics_update_type, 
                                         feature_dynamics_to_use,
-                                        management_modes_to_use,
+                                        feature_dynamics_modes_to_use,
                                         time_horizons,
                                         current_simulation_params,
                                         features_to_project,
-                                        time_fill)
+                                        time_fill, 
+                                        perform_time_shift = feature_params$perform_background_dynamics_time_shift,
+                                        yr)
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
@@ -1877,7 +1948,8 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                                                current_simulation_params,
                                                parcel_num_remaining,
                                                time_horizons,
-                                               offset_yrs)
+                                               offset_yrs, 
+                                               yr)
     
     cfacs_object$cfacs_to_use = sum_trajectories(cfacs_object$adjusted_cfacs)
   } else{
@@ -1890,7 +1962,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
 
 
 adjust_cfacs <- function(current_cfacs, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                         current_simulation_params, parcel_num_remaining, time_horizons, offset_yrs){
+                         current_simulation_params, parcel_num_remaining, time_horizons, offset_yrs, yr){
   
   time_horizons = unlist(time_horizons)
   
@@ -1947,14 +2019,15 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
   if (include_potential_offsets == TRUE){
     offset_intervention_probs <- remove_neg_probs(current_offset_probability_list$weighted_probs, inds_to_accept)
-    offset_projections <- calc_offset_projections(feature_params$projection_type,
+    offset_projections <- calc_offset_projections(feature_params$background_projection_type,
                                                   current_cfacs, 
                                                   offset_intervention_probs, 
                                                   current_simulation_params$restoration_rate, 
                                                   time_horizons, 
                                                   feature_params$feature_num, 
                                                   current_simulation_params$min_eco_val, 
-                                                  current_simulation_params$max_eco_val)
+                                                  current_simulation_params$max_eco_val, 
+                                                  yr)
     
     summed_offset_projections <- sum_offset_projs(offset_projections,
                                                   offset_intervention_probs, 
@@ -2007,7 +2080,7 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-calc_offset_projections <- function(projection_type,current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
+calc_offset_projections <- function(projection_type,current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val, yr){
   
   parcel_num = length(current_cfacs)
   offset_projections = vector('list', parcel_num)
@@ -2026,13 +2099,27 @@ calc_offset_projections <- function(projection_type,current_cfacs, offset_probs,
         current_offset_projections[[feature_ind]][[proj_yr]] = array(0, dim(current_cfac))
         
         if (current_offset_probs[proj_yr] > 0){
-          
+          print('offset projections not working')
+          stop()
           current_offset_proj = project_feature_layers(current_simulation_params,
                                                        projection_type,
                                                        current_cfac[proj_yr, ],
                                                        restoration_rate,
                                                        (time_horizon - proj_yr),
-                                                       time_fill = TRUE)
+                                                       time_fill = TRUE, 
+                                                       yr)
+          
+          #           project_feature_layers(current_simulation_params,
+          #                                  projection_type,
+          #                                  dynamics_update_type, 
+          #                                  current_site_feature_layers[[i]][[j]],
+          #                                  feature_dynamics_to_use[[i]][[j]],
+          #                                  feature_dynamics_modes_to_use[[i]][[j]],
+          #                                  time_horizon = unlist(current_time_horizons[i]),
+          #                                  perform_time_shift,
+          #                                  time_fill, 
+          #                                  yr)))
+          
           
           current_offset_projections[[feature_ind]][[proj_yr]][proj_yr:time_horizon, ] = current_offset_proj 
         }
@@ -2092,9 +2179,10 @@ sum_clearing_offsets <- function(cfacs_include_clearing, summed_offset_projectio
 
 
 sum_cols_multi <- function(arr_to_use){
-  
-  if (length(dim(arr_to_use)) <= 1){
-    
+  if (length(dim(arr_to_use)) == 0){
+    print('length error')
+    stop()
+  }else if (length(dim(arr_to_use)) == 1){
     arr_out = t(t(arr_to_use))
   } else if (length(dim(arr_to_use)) == 2){
     arr_out = apply(arr_to_use, MARGIN = 1, sum)

@@ -81,7 +81,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
 
 
 generate_global_inputs <- function(params_object){
-
+  
   # generate simulated ecology
   if (params_object$global_params$use_simulated_data == TRUE) {
     current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
@@ -96,8 +96,8 @@ generate_global_inputs <- function(params_object){
   }
   
   raster_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, pattern = params_object$global_params$raster_file_type, all.files = FALSE, 
-                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
-                                  include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
+                                 include.dirs = FALSE, no.. = FALSE)
   if (length(raster_filenames) == 0){
     flog.error(paste('cannot find any raster files with extension', params_object$global_params$raster_file_type))
   }
@@ -107,8 +107,8 @@ generate_global_inputs <- function(params_object){
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
   parcel_characteristics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_characteristics.rds'))
-
-  feature_layers = scale_ecology(feature_layers, dim(feature_layers[[1]]))
+  
+  #feature_layers = scale_ecology(feature_layers, dim(feature_layers[[1]]))
   
   # build list object containing feature values by feature layer for all
   # sites.  This is 3-level nested list, the top level is parcel index, for each
@@ -145,7 +145,7 @@ generate_global_inputs <- function(params_object){
   
   if (class(params_object$global_params$features_to_use_in_simulation) == "character"){
     if (params_object$global_params$features_to_use_in_simulation == 'all'){
-        features_to_use_in_simulation = seq_along(site_feature_layers_initial[[1]])
+      features_to_use_in_simulation = seq_along(site_feature_layers_initial[[1]])
     } 
   } else {
     features_to_use_in_simulation = params_object$global_params$features_to_use_in_simulation
@@ -153,7 +153,7 @@ generate_global_inputs <- function(params_object){
   
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
-
+  
   input_data_object = list()
   input_data_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, features_to_use_in_simulation)
   input_data_object$parcel_characteristics = parcel_characteristics
@@ -166,47 +166,109 @@ generate_global_inputs <- function(params_object){
 }
 
 
-estimate_current_dynamics <- function(current_feature_dynamics_set, sample_dynamics){
 
-  if (sample_dynamics == FALSE){
-    current_feature_dynamics = current_feature_dynamics_set$best_estimate
-  } else {
-  current_discriminator = rnorm(1, mean = 0, sd = 0.2)
-    
+sample_current_dynamics <- function(current_feature_dynamics_set, current_feature_val, dynamics_update_type, dynamics_sample_type){
+
+  # TODO MUST INCLUDE ABILITY TO CHECK IF OUT OF BOUNDS AND SWITCH MODES
+  current_feature_dynamics = current_feature_dynamics_set$best_estimate
+  
+  if (dynamics_sample_type == 'by_initial_value'){
+    current_discriminator = current_feature_val - current_feature_dynamics_set$best_estimate[1]
+  } else if (dynamics_sample_type == 'by_distribution'){
+    current_discriminator = runif(n = 1, min = -1, max = 1)
+  }
+  
   if (current_discriminator >= 0){
-    if (current_discriminator > 1){
-      current_discriminator = 1
-    }
-    current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(current_feature_dynamics_set$upper_bound - current_feature_dynamics_set$best_estimate)
-  } else{
-    if (current_discriminator < -1){
-      current_discriminator = -1
-    }
-    current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
+    bound_to_use = current_feature_dynamics_set$upper_bound
+  } else {
+    bound_to_use = current_feature_dynamics_set$lower_bound
   }
+  
+  if (dynamics_sample_type == 'by_initial_value'){
+    current_discriminator = current_discriminator/(bound_to_use[1] - current_feature_dynamics_set$best_estimate[1])
   }
+  
+  current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
+  
+  if (dynamics_update_type == 'by_differential'){
+    current_feature_dynamics = diff(current_feature_dynamics)
+    if (any((cumsum(current_feature_dynamics) + current_feature_val) < 0)){
+      browser()
+    }
+  }
+  
+
   return(current_feature_dynamics)
   
 }
 
 
+#     if (current_discriminator >= 0){
+#       current_discriminator = current_discriminator/(current_feature_dynamics_set$upper_bound[1] - current_feature_dynamics_set$best_estimate[1])
+#       if (current_discriminator > 1){
+#         browser()
+#         current_discriminator = 1
+#       }
+# 
+#       current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(current_feature_dynamics_set$upper_bound - current_feature_dynamics_set$best_estimate)
+#     } else{
+#       current_discriminator = current_discriminator/(current_feature_dynamics_set$best_estimate[1] - current_feature_dynamics_set$lower_bound[1])
+#       
+#       if (current_discriminator < -1){
+#         browser()
+#         current_discriminator = -1
+#       }
+#       current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
+#     }
+#   }
+#   
 
-build_dynamics <- function(sample_dynamics, feature_dynamics_bounds, feature_dynamics_modes, parcel_num, features_to_use, time_vec){
+
+build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, dynamics_update_type, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
+  #TODO restructure to remove simplify2array
+  #browser()
+  if (sample_dynamics == TRUE){
+    if (projection_type == 'by_element'){
+      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(features_to_use,
+                                               function(j) simplify2array(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                                                                                 function(k) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]],
+                                                                                                                     site_feature_layers_to_use[[i]][[j]][[k]],
+                                                                                                                     dynamics_update_type, 
+                                                                                                                     dynamics_sample_type)  ))))
+    } else if (projection_type == 'by_site'){
+      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+                                               function(j) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]],
+                                                                                   mean(site_feature_layers_to_use[[i]][[j]]),
+                                                                                   dynamics_update_type, 
+                                                                                   dynamics_sample_type)  ))
+    }
+  } else {
+    if (projection_type == 'by_element'){
+      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(features_to_use,
+                                               function(j) simplify2array(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                                                                  function(k) feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]]$best_estimate))))
+    } else if (projection_type == 'by_site'){                                                                             
+      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+                                               function(j) feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]]$best_estimate))
+    }
+  }
   
-  dynamics_set = lapply(seq(parcel_num), 
-                        function(i) lapply(features_to_use, 
-                                           function(j) estimate_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]], sample_dynamics)))
   
   return(dynamics_set)
-  
 }
 
 
-find_current_mode <- function(current_feature, current_condition_class_bounds){
+find_current_mode <- function(current_feature_val, current_condition_class_bounds){
   
-  if (length(current_feature) > 0){
-    mode_discriminator = mean(current_feature)
-    current_modes = lapply(seq_along(current_condition_class_bounds), function(i) (mode_discriminator <= max(current_condition_class_bounds[[i]])) && (mode_discriminator > min(current_condition_class_bounds[[i]]) ))
+  if (length(current_feature_val) > 0){
+    
+    mode_discriminator = current_feature_val
+    current_modes = lapply(seq_along(current_condition_class_bounds), 
+                           function(i) (mode_discriminator <= max(current_condition_class_bounds[[i]])) && (mode_discriminator > min(current_condition_class_bounds[[i]]) ))
     mode_ind_to_use = which(unlist(current_modes) > 0)
     if (length(mode_ind_to_use) != 1){
       flog.error('poorly defined condition class bounds')
@@ -218,7 +280,27 @@ find_current_mode <- function(current_feature, current_condition_class_bounds){
     current_mode = vector()
   }
   return(current_mode)
+}
+
+
+
   
+find_modes <- function(projection_type, feature_layers_to_use, condition_class_bounds){
+  
+  if (projection_type == 'by_site' ){
+    feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+                                    function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+                                                       function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
+                                                                                     condition_class_bounds[[j]])))
+  } else if (projection_type == 'by_element'){
+    feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+                                    function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+                                                       function(j) sapply(feature_layers_to_use[[i]][[j]], 
+                                                                          find_current_mode, 
+                                                                          condition_class_bounds[[j]])))
+  }
+  
+  return(feature_dynamics_modes)
 }
 
 initialise_output_object <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, parcel_characteristics, 
@@ -236,40 +318,84 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   if (current_simulation_params$use_specified_offset_metric == TRUE){
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$current_offset_metric_type)
   }
+  
   output_object$current_credit = current_credit
+  output_object$credit_match_flag = FALSE
   output_object$index_object = index_object
-
+  
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))){
     feature_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
   } else {
-    feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
-                                                                                         function(j) find_current_mode(site_feature_layers_initial[[i]][[j]], 
-                                                                                                                       feature_params$condition_class_bounds[[j]])))
+
+    feature_dynamics_modes = find_modes(projection_type = feature_params$background_projection_type, 
+                                        feature_layers_to_use = site_feature_layers_initial, 
+                                        condition_class_bounds = feature_params$condition_class_bounds)
+    
   }
   
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
     
-    feature_dynamics <- build_dynamics(feature_params$sample_background_dynamics, 
+    feature_dynamics <- build_dynamics(site_feature_layers_initial,
+                                       features_to_use = seq(feature_params$feature_num),
+                                       feature_params$sample_background_dynamics,
+                                       feature_params$background_projection_type,
+                                       feature_params$dynamics_update_type,
+                                       feature_params$dynamics_sample_type,
                                        feature_params$background_dynamics_bounds, 
-                                       feature_dynamics_modes, 
-                                       parcel_characteristics$land_parcel_num, 
-                                       features_to_use = seq(feature_params$feature_num), 
-                                       feature_params$simulated_time_vec)
+                                       feature_dynamics_modes)
     
+#     management_dynamics <- build_dynamics(site_feature_layers_initial,
+    # features_to_use = feature_params$features_to_use_in_offset_interventionn,
+#    feature_params$sample_background_dynamics,
+#                                        feature_params$background_projection_type,
+#                                        feature_params$dynamics_update_type,
+#                                        feature_params$dynamics_sample_type,
+#                                        feature_params$management_dynamics_bounds, 
+
+#                                        feature_dynamics_modes)
   }
   
   output_object$feature_dynamics = feature_dynamics
-  
+  #output_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
   output_object$feature_dynamics_modes = feature_dynamics_modes
-  output_object$management_modes = lapply(seq_along(site_feature_layers_initial), function(i) rep(list(1), feature_params$feature_num))
+
   return(output_object)
 }
 
 
+
+
+
+
+
+build_splines <- function(feature_dynamics){
+  spline_set = lapply(seq_along(feature_dynamics), 
+                      function(i) lapply(seq_along(feature_dynamics[[i]]),
+                                         function(j) smooth.spline(1:length(feature_dynamics[[i]][[j]]), feature_dynamics[[i]][[j]])))
+
+  #   spline_object$inv_spline_set = lapply(seq_along(spline_set), 
+  #                       function(i) lapply(seq_along(spline_set[[i]]),
+  #                                          function(j) splinefun(spline_set[[i]][[j]]$y, spline_set[[i]][[j]]$x)))
   
-  
+#   spline_object = lapply(seq_along(feature_dynamics), 
+#                          function(i) lapply(seq_along(feature_dynamics[[i]]),
+#                                          function(j) splinefun(spline_set[[i]][[j]]$x, spline_set[[i]][[j]]$y)))
+#                                          
+  #inv_spline = splinefun(current_spline_fit$y, current_spline_fit$x)
+  return(spline_set)
+}
+
+check_feature_value_conflicts <- function(site_feature_layers_initial, feature_dynamics){
+  feature_value_conflicts = lapply(seq_along(site_feature_layers_initial), 
+                                   function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
+                                                      function(j) any(site_feature_layers_initial[[i]][[j]] > max(feature_dynamics[[i]][[j]]) 
+                                                                      || site_feature_layers_initial[[i]][[j]] < min(feature_dynamics[[i]][[j]])))) 
+  return(feature_value_conflicts)
+}
+
+
 check_param_conflicts <- function(simulation_params, feature_params, global_params){
   
   feature_test = match(global_params$features_to_use_in_simulation, seq(feature_params$feature_num))
@@ -422,7 +548,7 @@ select_feature_subset <- function(input_object, features_to_use){
     stop()
   }
   input_object <- lapply(seq_along(input_object),
-                          function(i) (input_object[[i]][features_to_use]))
+                         function(i) (input_object[[i]][features_to_use]))
   return(input_object)
 }
 
@@ -514,8 +640,6 @@ collate_current_policy <- function(current_simulation_params, common_params, glo
   current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, global_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
-  
-  current_simulation_params$allow_developments_from_credit = (current_simulation_params$allow_developments_from_credit) || (current_simulation_params$offset_bank_type == 'credit')
   
   current_simulation_params$use_parcel_sets = (current_simulation_params$offset_bank_type == 'parcel_set') || (current_simulation_params$use_offset_bank == FALSE)
   if ((current_simulation_params$offset_bank_type == 'parcel_set') || (current_simulation_params$use_offset_bank == FALSE)){
@@ -700,22 +824,22 @@ initialise_index_object <- function(parcel_characteristics, site_feature_layers_
   names(index_object$site_indexes_used) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
   
   index_object$available_indexes = list()
-    
+  
   index_object$available_indexes$offsets = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
-                                                              offset_indexes_to_exclude, 
-                                                              parcel_characteristics$land_parcels, 
-                                                              site_feature_layers_initial, 
-                                                              screen_site_zeros = simulation_params$screen_offset_zeros,
-                                                              site_screen_size = simulation_params$site_screen_size,
-                                                              simulation_params$features_to_use_in_offset_calc)
+                                                                 offset_indexes_to_exclude, 
+                                                                 parcel_characteristics$land_parcels, 
+                                                                 site_feature_layers_initial, 
+                                                                 screen_site_zeros = simulation_params$screen_offset_zeros,
+                                                                 site_screen_size = simulation_params$site_screen_size,
+                                                                 simulation_params$features_to_use_in_offset_calc)
   
   index_object$available_indexes$devs = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
-                                                           dev_indexes_to_exclude,
-                                                           parcel_characteristics$land_parcels, 
-                                                           site_feature_layers_initial, 
-                                                           screen_site_zeros = simulation_params$screen_dev_zeros,
-                                                           site_screen_size = simulation_params$site_screen_size,
-                                                           simulation_params$features_to_use_in_offset_calc)
+                                                              dev_indexes_to_exclude,
+                                                              parcel_characteristics$land_parcels, 
+                                                              site_feature_layers_initial, 
+                                                              screen_site_zeros = simulation_params$screen_dev_zeros,
+                                                              site_screen_size = simulation_params$site_screen_size,
+                                                              simulation_params$features_to_use_in_offset_calc)
   return(index_object)
 }
 
