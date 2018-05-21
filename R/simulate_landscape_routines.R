@@ -1,10 +1,17 @@
+simulate_site <- function(current_condition_class_set, element_num, feature_value_distribution_width){
+  current_mode = sample(seq(length(current_condition_class_set)), 1)
+  min_val = current_condition_class_set[[current_mode]][1] 
+  max_val = current_condition_class_set[[current_mode]][2] 
+  
+  scale_factor = (max_val - min_val - feature_value_distribution_width)
+  site_elements = min_val + scale_factor*runif(1)*array(1, element_num)
+  return(site_elements)
+}
 
-simulate_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_eco_noise, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+simulate_feature <- function(current_condition_class_set, feature_value_distribution_width, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
   
-  eco_scale = (max_initial_eco_val - min_initial_eco_val - initial_eco_noise)
-  
-  current_ecology = lapply(seq_along(land_parcels), function(i) min_initial_eco_val + eco_scale*runif(1)*array(1, length(land_parcels[[i]] )))
-  current_ecology_noise = lapply(seq_along(land_parcels), function(i) initial_eco_noise*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
+  current_ecology = lapply(seq_along(land_parcels), function(i) simulate_site(current_condition_class_set, element_num = length(land_parcels[[i]]), feature_value_distribution_width))
+  current_ecology_noise = lapply(seq_along(land_parcels), function(i) feature_value_distribution_width*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
   current_ecology = mapply('+', current_ecology, current_ecology_noise, SIMPLIFY = FALSE)
   
   return(current_ecology)
@@ -14,10 +21,13 @@ simulate_feature <- function(min_initial_eco_val, max_initial_eco_val, initial_e
 simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder){ 
   
   for (feature_ind in 1:feature_params$feature_num){
-    current_simulated_feature <- simulate_feature(feature_params$min_initial_eco_val, 
-                                                          feature_params$max_initial_eco_val, 
-                                                          feature_params$initial_eco_noise, 
-                                                          parcel_characteristics$land_parcels)
+    current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
+    current_mode = sample(seq(length(current_condition_class_set)), 1)
+
+    current_simulated_feature <- simulate_feature(current_condition_class_set, 
+                                                  feature_params$feature_value_distribution_width, 
+                                                  parcel_characteristics$land_parcels)
+    
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
     if (current_occupation_ratio > 0){
