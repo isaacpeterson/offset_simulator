@@ -1,16 +1,16 @@
 #use_cfac_type_in_sim = TRUE
 
-run_collate_routines <- function(simulation_outputs, current_trajectories, decline_rates_initial, initial_feature_layers, 
-                                 current_data_dir, combination_params, realisation_ind, feature_ind){
+run_collate_routines <- function(simulation_outputs, current_trajectories, feature_dynamics_initial, initial_feature_layers, 
+                                 current_data_dir, current_simulation_params, feature_params, realisation_ind, feature_ind){
   
-    current_decline_rates_initial = select_nested_subset(nested_object = decline_rates_initial, 
+    current_feature_dynamics_initial = select_nested_subset(nested_object = feature_dynamics_initial, 
                                                          nested_ind = feature_ind, output_type = 'nested')
     current_initial_feature_layers = select_nested_subset(nested_object = initial_feature_layers, 
                                                    nested_ind = feature_ind, output_type = 'nested')
     
-    landscape_cfacs_object = collate_cfacs(combination_params,
+    landscape_cfacs_object = collate_cfacs(current_simulation_params, feature_params,
                                            current_site_feature_layers = current_initial_feature_layers,
-                                           current_decline_rates = current_decline_rates_initial, 
+                                           current_feature_dynamics = current_feature_dynamics_initial, 
                                            current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
                                            current_parcel_num_remaining = vector(),
                                            cfac_type = 'landscape',
@@ -19,8 +19,8 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, decli
                                            feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
     
     collated_data = collate_simulation_outputs(simulation_outputs, current_trajectories, 
-                                            landscape_cfacs_object, current_decline_rates_initial, current_initial_feature_layers, 
-                                            combination_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
+                                            landscape_cfacs_object, current_feature_dynamics_initial, current_initial_feature_layers, 
+                                            current_simulation_params, feature_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
     
     return(collated_data)
   
@@ -162,17 +162,17 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 
 
 # current_site_feature_layers = current_initial_feature_layers
-# current_decline_rates = current_decline_rates_initial 
+# current_feature_dynamics = current_feature_dynamics_initial 
 # current_offset_yrs = rep(1, length(current_initial_feature_layers)) 
 # current_parcel_num_remaining = vector()
 # cfac_type = 'landscape'
 # collate_type = vector() 
 # use_cfac_type_in_sim = FALSE
 
-collate_cfacs <- function(combination_params, current_site_feature_layers, current_decline_rates, current_offset_yrs, 
+collate_cfacs <- function(current_simulation_params, feature_params, current_site_feature_layers, current_feature_dynamics, current_offset_yrs, 
                           current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
-  cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, combination_params)
+  cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, current_simulation_params, feature_params)
   
   parcel_count = length(current_site_feature_layers)
   
@@ -180,7 +180,7 @@ collate_cfacs <- function(combination_params, current_site_feature_layers, curre
     time_horizons <- generate_time_horizons(project_type = 'future', 
                                             yr = 1, 
                                             offset_yrs = rep(1, parcel_count), 
-                                            time_horizon = (combination_params$time_steps - 1), 
+                                            time_horizon = (current_simulation_params$time_steps - 1), 
                                             parcel_count)
     adjust_cfacs_flag = TRUE
     include_potential_developments = FALSE
@@ -189,9 +189,9 @@ collate_cfacs <- function(combination_params, current_site_feature_layers, curre
     
   } else {
     time_horizons = generate_time_horizons(project_type = 'current', 
-                                           yr = combination_params$time_steps, 
+                                           yr = current_simulation_params$time_steps, 
                                            offset_yrs = current_offset_yrs, 
-                                           time_horizon = (combination_params$time_steps - 1), 
+                                           time_horizon = (current_simulation_params$time_steps - 1), 
                                            parcel_count)
     adjust_cfacs_flag = cfac_params$adjust_cfacs_flag
     include_potential_developments = cfac_params$include_potential_developments
@@ -199,17 +199,21 @@ collate_cfacs <- function(combination_params, current_site_feature_layers, curre
     include_unregulated_loss = cfac_params$include_unregulated_loss
   }
   
-  cfacs_object = calc_cfacs(site_feature_layers = current_site_feature_layers, 
+  cfacs_object = calc_cfacs(site_feature_layers_to_use = current_site_feature_layers, 
                             parcel_num_remaining = current_parcel_num_remaining,
-                            combination_params,
-                            current_decline_rates, 
+                            current_simulation_params, 
+                            feature_params,
+                            feature_dynamics_to_use =current_feature_dynamics, 
                             time_horizons, 
                             offset_yrs = current_offset_yrs, 
                             include_potential_developments,
                             include_potential_offsets,
                             include_unregulated_loss,
                             adjust_cfacs_flag,
-                            features_to_project = 1)
+                            features_to_project = 1, 
+                            time_fill = TRUE, 
+                            yr = 1)
+  
   
   if (cfac_type == 'landscape'){
     background_cfacs = lapply(seq_along(cfacs_object$cfacs), function(i) cfacs_object$cfacs[[i]][[1]])    #extract from nested list
@@ -263,15 +267,15 @@ collate_program_scale_impacts <- function(collated_data){
 
 
 
-run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_decline_rates_initial, 
-                                           collate_type, combination_params, use_cfac_type_in_sim, feature_ind){
+run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_feature_dynamics_initial, 
+                                           collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
   collated_object = collate_gains_degs(current_model_outputs, 
                                        current_trajectories,
-                                       current_decline_rates_initial ,
+                                       current_feature_dynamics_initial ,
                                        collate_type, 
-                                       combination_params,
+                                       current_simulation_params, feature_params,
                                        use_cfac_type_in_sim, 
                                        feature_ind)
   
@@ -312,8 +316,8 @@ group_gains_degs <- function(collated_object, site_indexes){
 }
 
 
-collate_gains_degs <- function(current_model_outputs, current_trajectories, current_decline_rates_initial, 
-                               collate_type, combination_params, use_cfac_type_in_sim, feature_ind){ 
+collate_gains_degs <- function(current_model_outputs, current_trajectories, current_feature_dynamics_initial, 
+                               collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){ 
   
   
   if (length(unlist(current_model_outputs$site_indexes)) == 0){
@@ -322,9 +326,9 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
   
   current_site_feature_layers = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'nested') 
   
-  current_cfacs = collate_cfacs(combination_params, 
+  current_cfacs = collate_cfacs(current_simulation_params, feature_params, 
                                 current_site_feature_layers,
-                                current_decline_rates = current_decline_rates_initial[unlist(current_model_outputs$site_indexes)], 
+                                current_feature_dynamics = current_feature_dynamics_initial[unlist(current_model_outputs$site_indexes)], 
                                 current_offset_yrs =  unlist(current_model_outputs$offset_yrs),
                                 current_parcel_num_remaining = current_model_outputs$parcel_num_remaining,
                                 cfac_type = 'site_scale',
@@ -339,8 +343,8 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
                                            site_feature_layers_to_use,
                                            current_offset_yrs = unlist(current_model_outputs$offset_yrs),
                                            collate_type, 
-                                           combination_params,
-                                           time_steps = combination_params$time_steps)
+                                           current_simulation_params, feature_params,
+                                           time_steps = current_simulation_params$time_steps)
   
   collated_gains_degs$cfacs = lapply(seq_along(current_cfacs$cfacs_to_use), function(i) current_cfacs$cfacs_to_use[[i]][[1]])
   
@@ -356,7 +360,7 @@ merge_vectors <- function(vec_a, vec_b, start_ind){
 }
 
 
-assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_layers_to_use, current_offset_yrs, collate_type, combination_params, time_steps){
+assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_layers_to_use, current_offset_yrs, collate_type, current_simulation_params, feature_params, time_steps){
   
   tmp_object = list()
   parcel_num = length(trajectories_to_use)
@@ -375,17 +379,17 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_la
   names(collated_object) = names(tmp_object)
   
   if ((collate_type == 'offsets') | (collate_type == 'offset_bank')){
-    if (combination_params$offset_calc_type == 'restoration_gains'){
+    if (current_simulation_params$offset_calc_type == 'restoration_gains'){
       collated_object$nets = collated_object$rest_gains
-    } else if (combination_params$offset_calc_type == 'avoided_loss'){
+    } else if (current_simulation_params$offset_calc_type == 'avoided_loss'){
       collated_object$nets = collated_object$avoided_loss
-    } else if (combination_params$offset_calc_type == 'net_gains'){
+    } else if (current_simulation_params$offset_calc_type == 'net_gains'){
       collated_object$nets = collated_object$nets
     }
   } else {
-    if (combination_params$dev_calc_type == 'future_condition'){
+    if (current_simulation_params$dev_calc_type == 'future_condition'){
       collated_object$nets = collated_object$nets
-    } else if (combination_params$dev_calc_type == 'current_condition'){
+    } else if (current_simulation_params$dev_calc_type == 'current_condition'){
       collated_object$nets = collated_object$rest_gains
     }
     
@@ -408,52 +412,52 @@ select_nested_subset <- function(nested_object, nested_ind, output_type){
 
 
 collate_simulation_outputs <- function(simulation_outputs, current_trajectories, landscape_cfacs_object, 
-                            current_decline_rates_initial, current_initial_feature_layers, combination_params, use_cfac_type_in_sim, parcels, feature_ind){
+                            current_feature_dynamics_initial, current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_data = list()
   
   collated_data$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
                                                                       current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
                                                                       current_trajectories, 
-                                                                      current_decline_rates_initial, 
+                                                                      current_feature_dynamics_initial, 
                                                                       collate_type = 'offsets', 
-                                                                      combination_params,
+                                                                      current_simulation_params, feature_params,
                                                                       use_cfac_type_in_sim, 
                                                                       feature_ind)
   
   collated_data$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
                                                                   current_site_groups = simulation_outputs$index_object$site_indexes_used$devs,
                                                                   current_trajectories, 
-                                                                  current_decline_rates_initial, 
+                                                                  current_feature_dynamics_initial, 
                                                                   collate_type = 'devs', 
-                                                                  combination_params,
+                                                                  current_simulation_params, feature_params,
                                                                   use_cfac_type_in_sim, 
                                                                   feature_ind)
   
   collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
                                                                         current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
                                                                         current_trajectories, 
-                                                                        current_decline_rates_initial, 
+                                                                        current_feature_dynamics_initial, 
                                                                         collate_type = 'dev_credit', 
-                                                                        combination_params,
+                                                                        current_simulation_params, feature_params,
                                                                         use_cfac_type_in_sim, 
                                                                         feature_ind)
   
   collated_data$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
                                                                          current_site_groups = simulation_outputs$index_object$site_indexes_used$banking,
                                                                          current_trajectories, 
-                                                                         current_decline_rates_initial, 
+                                                                         current_feature_dynamics_initial, 
                                                                          collate_type = 'offset_bank', 
-                                                                         combination_params,
+                                                                         current_simulation_params, feature_params,
                                                                          use_cfac_type_in_sim, 
                                                                          feature_ind)
   
   collated_data$collated_unregulated_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$unregulated_loss_object,
                                                                               current_site_groups = simulation_outputs$index_object$site_indexes_used$unregulated,
                                                                               current_trajectories, 
-                                                                              current_decline_rates_initial, 
+                                                                              current_feature_dynamics_initial, 
                                                                               collate_type = 'unregulated_loss', 
-                                                                              combination_params,
+                                                                              current_simulation_params, feature_params,
                                                                               use_cfac_type_in_sim, 
                                                                               feature_ind)
   
@@ -545,44 +549,44 @@ collate_site_scale_impacts <- function(collated_site_scale_offsets, collated_sit
   return(site_scale_impacts)
 }
 
-get_current_sim_characteristics <- function(current_combination_params, realisation_num){
+get_current_sim_characteristics <- function(current_current_simulation_params, feature_params, realisation_num){
   
   sim_characteristics = vector()
-  sim_characteristics = paste0(sim_characteristics, current_combination_params$offset_calc_type, '_')
-  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_combination_params$use_offset_bank, '_')
-  if ((current_combination_params$use_offset_time_horizon == TRUE) & (current_combination_params$use_offset_bank == FALSE)){                                   
-    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_combination_params$offset_time_horizon)
+  sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$offset_calc_type, '_')
+  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_current_simulation_params$use_offset_bank, '_')
+  if ((current_current_simulation_params$use_offset_time_horizon == TRUE) & (current_current_simulation_params$use_offset_bank == FALSE)){                                   
+    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_current_simulation_params$offset_time_horizon)
   }
-  sim_characteristics = paste0(sim_characteristics, '_include_unregulated_loss_', current_combination_params$include_unregulated_loss_in_offset_calc)
+  sim_characteristics = paste0(sim_characteristics, '_include_unregulated_loss_', current_current_simulation_params$include_unregulated_loss_in_offset_calc)
   
   sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
-  #   sim_characteristics = paste0(current_combination_params$offset_calc_type, '_', current_combination_params$dev_calc_type, '_', current_combination_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                current_combination_params$use_offset_bank, '_')
+  #   sim_characteristics = paste0(current_current_simulation_params$offset_calc_type, '_', current_current_simulation_params$dev_calc_type, '_', current_current_simulation_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
+  #                                current_current_simulation_params$use_offset_bank, '_')
   #   
-  #   if (current_combination_params$use_offset_bank == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, current_combination_params$offset_bank_start, '_', current_combination_params$offset_bank_end, '_', 
-  #                                  current_combination_params$offset_bank_num, '_', current_combination_params$match_type)
+  #   if (current_current_simulation_params$use_offset_bank == TRUE){                                   
+  #     sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$offset_bank_start, '_', current_current_simulation_params$offset_bank_end, '_', 
+  #                                  current_current_simulation_params$offset_bank_num, '_', current_current_simulation_params$match_type)
   #   }
   #   
-  #   sim_characteristics = paste0(sim_characteristics, '_', current_combination_params$offset_action_type, '_')
-  #   if (current_combination_params$offset_action_type == 'restore'){
-  #     sim_characteristics = paste0(sim_characteristics, current_combination_params$restoration_rate, '_')
+  #   sim_characteristics = paste0(sim_characteristics, '_', current_current_simulation_params$offset_action_type, '_')
+  #   if (current_current_simulation_params$offset_action_type == 'restore'){
+  #     sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$restoration_rate, '_')
   #   }
   #   
-  #   if (current_combination_params$use_offset_time_horizon == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_combination_params$offset_time_horizon)
+  #   if (current_current_simulation_params$use_offset_time_horizon == TRUE){                                   
+  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_current_simulation_params$offset_time_horizon)
   #   }
   
   
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_combination_params$include_potential_developments_in_offset_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_current_simulation_params$include_potential_developments_in_offset_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_combination_params$include_potential_offsets_in_offset_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_current_simulation_params$include_potential_offsets_in_offset_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_unregulated_loss_', current_combination_params$include_unregulated_loss_in_dev_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_unregulated_loss_', current_current_simulation_params$include_unregulated_loss_in_dev_calc)
   
-  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_combination_params$include_potential_developments_in_dev_calc)
+  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_current_simulation_params$include_potential_developments_in_dev_calc)
   
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_combination_params$include_potential_offsets_in_dev_calc)
+  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_current_simulation_params$include_potential_offsets_in_dev_calc)
   
   
   return(sim_characteristics)
@@ -670,7 +674,7 @@ assess_landscape_loss <- function(landscape_vals, NNL_yr){
 }
 
 
-select_cfac_type <- function(collate_type, use_cfac_type_in_sim, combination_params){
+select_cfac_type <- function(collate_type, use_cfac_type_in_sim, current_simulation_params, feature_params){
   cfac_params = list()
   
   if (use_cfac_type_in_sim == FALSE){
@@ -681,15 +685,15 @@ select_cfac_type <- function(collate_type, use_cfac_type_in_sim, combination_par
   } else {
     
     if ((collate_type == 'devs') | (collate_type == 'dev_credit')){
-      include_unregulated_loss = combination_params$include_unregulated_loss_in_dev_calc
-      include_potential_developments = combination_params$include_potential_developments_in_dev_calc
-      include_potential_offsets = combination_params$include_potential_offsets_in_dev_calc
-      adjust_cfacs_flag = combination_params$adjust_dev_cfacs_flag
+      include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc
+      include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc
+      include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc
+      adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag
     } else {
-      include_unregulated_loss = combination_params$include_unregulated_loss_in_offset_calc
-      include_potential_developments = combination_params$include_potential_developments_in_offset_calc
-      include_potential_offsets = combination_params$include_potential_offsets_in_offset_calc
-      adjust_cfacs_flag = combination_params$adjust_offset_cfacs_flag
+      include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_offset_calc
+      include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc
+      include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc
+      adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag
     }
   }
   cfac_params$include_unregulated_loss = include_unregulated_loss

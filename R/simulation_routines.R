@@ -19,6 +19,8 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                            input_data_object$dev_probability_list, 
                                            input_data_object$feature_params)
   
+  feature_dynamics_initial = output_object$feature_dynamics
+  
   output_object <- run_simulation(input_data_object,
                                   output_object,
                                   input_data_object$global_params,
@@ -44,10 +46,11 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
     current_collated_realisation = run_collate_routines(output_object, 
                                                         current_data_stack,
-                                                        decline_rates_initial, 
+                                                        feature_dynamics_initial, 
                                                         simulation_inputs$site_feature_layers,  
                                                         current_data_dir, 
-                                                        current_simulation_params,
+                                                        current_simulation_params, 
+                                                        feature_params,
                                                         realisation_ind,
                                                         feature_ind)
     
@@ -319,12 +322,12 @@ form_data_stack <- function(current_data_dir, feature_string, land_parcels, time
                                   include.dirs = FALSE, no.. = FALSE)
   
   data_stack = lapply(seq_along(land_parcels), function(i) array(0, c(time_steps, length(land_parcels[[i]]))))
-  browser()
+
   for (yr in seq(time_steps)){
     site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
     data_stack <- lapply(seq_along(data_stack), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
   }
-  browser()
+
   return(data_stack)
 }
 
@@ -479,7 +482,6 @@ update_feature_dynamics <- function(site_feature_layers_to_use, feature_dynamics
                                     sample_dynamics, action_type, yr){
   
   if (action_type == 'develop'){
-    browser()
     features_to_use = seq(feature_params$feature_num)
     updated_feature_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_use)))
   } else if (action_type == 'maintain'){
