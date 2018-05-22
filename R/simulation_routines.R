@@ -20,7 +20,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                            input_data_object$feature_params)
   
   feature_dynamics_initial = output_object$feature_dynamics
-  feature_modes_initial = output_object$feature_dynamics_modes
+  feature_dynamics_modes_initial = output_object$feature_dynamics_modes
   
   output_object <- run_simulation(input_data_object,
                                   output_object,
@@ -46,7 +46,6 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
     
-
     current_feature_dynamics_initial = select_nested_subset(nested_object = feature_dynamics_initial, feature_ind, output_type = 'nested')
 
     current_initial_feature_layers = select_nested_subset(nested_object = input_data_object$site_feature_layers_initial, feature_ind, output_type = 'nested')
@@ -60,7 +59,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                                         current_initial_feature_layers,  
                                                         current_data_dir, 
                                                         current_simulation_params, 
-                                                        feature_params,
+                                                        input_data_object$feature_params,
                                                         realisation_ind,
                                                         feature_ind)
     
@@ -156,7 +155,7 @@ run_simulation <- function(input_data_object,
                                                          features_to_project = seq(input_data_object$feature_params$feature_num),
                                                          time_fill = FALSE,
                                                          perform_time_shift = input_data_object$feature_params$perform_background_dynamics_time_shift,
-                                                         yr)
+                                                         projection_yrs = rep(list(yr), length(output_object$site_feature_layers)))
     
   }
   return(output_object)
@@ -235,9 +234,9 @@ perform_credit_match_routine <- function(output_object, input_data_object, curre
   if (credit_match_object$match_flag == TRUE){
     
     output_object$current_credit = credit_match_object$current_credit
-    
-    flog.info(cat('developed site with value', paste(round(credit_match_object$development_object$parcel_vals_used, 3)), 
-                  'from credit, remaining =', paste(round(credit_match_object$current_credit, 3)), '\n'))
+    browser()
+    flog.info(cat('developed site with value', paste(credit_match_object$development_object$parcel_vals_used), 
+                  'from credit, remaining =', paste(credit_match_object$current_credit), '\n'))
     
     output_object <- perform_clearing_routine(output_object,
                                               feature_params = input_data_object$feature_params, 
@@ -860,7 +859,11 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
   time_horizons <- generate_time_horizons(project_type = 'current', yr, offset_yrs, time_horizon, parcel_count)
   
   if (cfacs_flag == TRUE){
-    
+    if (adjust_cfacs_flag == FALSE){
+      time_fill = FALSE
+    } else {
+      time_fill = TRUE
+    }
     cfacs_object = calc_cfacs(site_feature_layers_to_use = output_object$site_feature_layers[current_pool],
                               parcel_num_remaining = pool_object$parcel_num_remaining,
                               current_simulation_params,
@@ -875,6 +878,7 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
                               adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                               features_to_project = current_simulation_params$features_to_use_in_offset_calc,
                               time_fill,
+                              projection_yrs = rep(list(yr), length(site_feature_layers_to_use)),
                               yr)
     
     cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
@@ -949,7 +953,7 @@ logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_d
 
 
 
-user_projection <- function(current_feature_vals, current_feature_dynamics, dynamics_update_type, perform_time_shift, time_vec, yr){
+user_projection <- function(current_feature_vals, current_feature_dynamics, dynamics_update_type, perform_time_shift, time_vec, projection_yr){
   
   if (perform_time_shift == TRUE){
     lower_interval = findInterval(current_feature_dynamics, current_feature_vals) == FALSE
@@ -963,9 +967,9 @@ user_projection <- function(current_feature_vals, current_feature_dynamics, dyna
     projected_feature_vals = approx(1:length(current_feature_dynamics), current_feature_dynamics, time_shift+time_vec)$y
   } else {
     if (dynamics_update_type == 'by_differential'){
-      projected_feature_vals = current_feature_vals + cumsum(current_feature_dynamics)[yr + time_vec]
+      projected_feature_vals = current_feature_vals + cumsum(current_feature_dynamics)[projection_yr + time_vec]
     } else if (dynamics_update_type == 'by_function'){
-      projected_feature_vals = current_feature_dynamics[yr + time_vec]
+      projected_feature_vals = current_feature_dynamics[projection_yr + time_vec]
     }
   }
   
@@ -976,7 +980,7 @@ user_projection <- function(current_feature_vals, current_feature_dynamics, dyna
 # calculate the expected feature_layers under maintenaince, restoration
 
 project_feature_layers <- function(current_simulation_params, projection_type, dynamics_update_type, current_site_feature_layer, feature_dynamics_to_use, 
-                                   feature_dynamics_mode_to_use, time_horizon, perform_time_shift, time_fill, yr){
+                                   feature_dynamics_mode_to_use, time_horizon, perform_time_shift, time_fill, projection_yr){
   
   # for maintain feature_layers copy current feature_layers to matrix of depth (time_horizon + 1)
   
@@ -1003,10 +1007,10 @@ project_feature_layers <- function(current_simulation_params, projection_type, d
     
     if (projection_type == 'by_element'){
       projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
-                                                       function(i) user_projection(current_site_feature_layer[i], feature_dynamics_to_use[[i]], dynamics_update_type, perform_time_shift, time_vec, yr)))
+                                                       function(i) user_projection(current_site_feature_layer[i], feature_dynamics_to_use[[i]], dynamics_update_type, perform_time_shift, time_vec, projection_yr)))
     } else if (projection_type == 'by_site'){
       
-      projected_feature_layers = sapply(current_site_feature_layer, user_projection, feature_dynamics_to_use, dynamics_update_type, perform_time_shift, time_vec, yr)
+      projected_feature_layers = sapply(current_site_feature_layer, user_projection, feature_dynamics_to_use, dynamics_update_type, perform_time_shift, time_vec, projection_yr)
     }
     
   }
@@ -1021,7 +1025,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, d
 # defined by current_time_horizons and depth defined by feature number for all sites
 
 project_features <- function(current_site_feature_layers, projection_type, dynamics_update_type, feature_dynamics_to_use, feature_dynamics_modes_to_use, 
-                             current_time_horizons, current_simulation_params, features_to_project, perform_time_shift, time_fill, yr){
+                             current_time_horizons, current_simulation_params, features_to_project, perform_time_shift, time_fill, projection_yrs){
   
   projected_features = lapply(seq_along(current_site_feature_layers),
                               function(i) lapply(features_to_project,
@@ -1034,7 +1038,7 @@ project_features <- function(current_site_feature_layers, projection_type, dynam
                                                                                     time_horizon = unlist(current_time_horizons[i]),
                                                                                     perform_time_shift,
                                                                                     time_fill, 
-                                                                                    yr)))
+                                                                                    projection_yrs[[i]])))
   
   
   return(projected_features)
@@ -1814,7 +1818,11 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
     time_horizons <- generate_time_horizons(project_type = 'future', yr, offset_yrs, time_horizon,length(current_pool))
     
     if (cfacs_flag == TRUE){
-      
+      if (adjust_cfacs_flag == FALSE){
+        time_fill = FALSE
+      } else {
+        time_fill = TRUE
+      }
       cfacs_object = calc_cfacs(site_feature_layers_to_use,
                                 parcel_num_remaining = pool_object$parcel_num_remaining,
                                 current_simulation_params,
@@ -1829,6 +1837,7 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
                                 adjust_cfacs_flag,
                                 features_to_project = current_simulation_params$features_to_use_in_offset_calc, 
                                 time_fill,
+                                projection_yrs = rep(list(yr), length(site_feature_layers_to_use)),
                                 yr)
       
       cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
@@ -1875,7 +1884,7 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
                                                   features_to_project = current_simulation_params$features_to_use_in_offset_calc,
                                                   perform_time_shift = feature_params$perform_management_dynamics_time_shift,
                                                   time_fill = FALSE,
-                                                  yr)
+                                                  projection_yrs = rep(list(yr), length(site_feature_layers_to_use)))
       
       projected_vals = sum_sites(projected_feature_layers)
     } else if (pool_type == 'developments') {
@@ -1956,20 +1965,12 @@ kill_development_sites <- function(site_feature_layers_to_develop){
 }
 
 
-
-
-
 calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current_simulation_params, feature_params, feature_dynamics_to_use, feature_dynamics_modes_to_use,
                        time_horizons, offset_yrs, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                       adjust_cfacs_flag, features_to_project, time_fill, yr){
+                       adjust_cfacs_flag, features_to_project, time_fill, projection_yrs, yr){
   
   cfacs_object = list()
-  if (adjust_cfacs_flag == TRUE){
-    time_fill = TRUE
-  } else {
-    time_fill = FALSE
-  }
-  
+
   cfacs_object$cfacs = project_features(site_feature_layers_to_use,
                                         feature_params$background_projection_type,
                                         feature_params$dynamics_update_type, 
@@ -1980,7 +1981,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                                         features_to_project,
                                         time_fill, 
                                         perform_time_shift = feature_params$perform_background_dynamics_time_shift,
-                                        yr)
+                                        projection_yrs)
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
