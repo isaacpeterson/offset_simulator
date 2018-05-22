@@ -142,7 +142,7 @@ run_simulation <- function(input_data_object,
                                                          current_simulation_params,
                                                          features_to_project = seq(input_data_object$feature_params$feature_num),
                                                          time_fill = FALSE,
-                                                         perform_time_shift = TRUE,
+                                                         perform_time_shift = input_data_object$feature_params$perform_background_dynamics_time_shift,
                                                          yr)
     
   }
@@ -319,12 +319,12 @@ form_data_stack <- function(current_data_dir, feature_string, land_parcels, time
                                   include.dirs = FALSE, no.. = FALSE)
   
   data_stack = lapply(seq_along(land_parcels), function(i) array(0, c(time_steps, length(land_parcels[[i]]))))
-  
+  browser()
   for (yr in seq(time_steps)){
     site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
     data_stack <- lapply(seq_along(data_stack), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
   }
-  
+  browser()
   return(data_stack)
 }
 
@@ -479,15 +479,16 @@ update_feature_dynamics <- function(site_feature_layers_to_use, feature_dynamics
                                     sample_dynamics, action_type, yr){
   
   if (action_type == 'develop'){
+    browser()
     features_to_use = seq(feature_params$feature_num)
-    current_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_use)))
+    updated_feature_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_use)))
   } else if (action_type == 'maintain'){
     features_to_use = features_to_use_in_offset_intervention
-    current_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(1, length(feature_params$simulated_time_vec))), length(features_to_use)))
+    updated_feature_dynamics = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(array(1, length(feature_params$simulated_time_vec))), length(features_to_use)))
   } else if (action_type == 'restore'){
     features_to_use = features_to_use_in_offset_intervention
     
-    current_dynamics = build_dynamics(site_feature_layers_to_use,
+    current_feature_dynamics = build_dynamics(site_feature_layers_to_use,
                                       features_to_use,
                                       feature_params$sample_management_dynamics,
                                       feature_params$management_projection_type,
@@ -495,17 +496,52 @@ update_feature_dynamics <- function(site_feature_layers_to_use, feature_dynamics
                                       dynamics_sample_type = feature_params$management_dynamics_sample_type,
                                       feature_params$management_dynamics_bounds, 
                                       feature_dynamics_modes_to_use)
+    
+    time_shifts = find_time_shifts(site_feature_layers_to_use, current_feature_dynamics, features_to_use)
+    current_feature_dynamics = shift_dynamics(site_feature_layers_to_use, current_feature_dynamics, features_to_use, time_shifts)
+    
+    updated_feature_dynamics = feature_dynamics_to_use
+    for (site_ind in seq_along(site_feature_layers_to_use)){
+      updated_feature_dynamics[[site_ind]][features_to_use] = lapply(seq_along(current_feature_dynamics[[site_ind]]), 
+                                                                    function(i) lapply(seq_along(current_feature_dynamics[[site_ind]][[i]]), 
+                                                                                       function(j) append(feature_dynamics_to_use[[site_ind]][[i]][[j]][1:(yr - 1)], current_feature_dynamics[[site_ind]][[i]][[j]])))
+    }
+
   }
   
-  
-  for (site_ind in seq_along(feature_dynamics_to_use)){
-    feature_dynamics_to_use[[site_ind]][features_to_use] = current_dynamics[[site_ind]]
-  }
-  
-  return(feature_dynamics_to_use)
+  return(updated_feature_dynamics)
   
 }
 
+
+find_time_shifts <- function(site_feature_layers_to_use, current_feature_dynamics, features_to_use){
+  time_shifts = lapply(seq_along(site_feature_layers_to_use), 
+                       function(i) lapply(features_to_use, 
+                                          function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
+                                                             function(k) find_time_shift(current_feature_vals = site_feature_layers_to_use[[i]][[j]][k], 
+                                                                                         current_feature_dynamics[[i]][[j]][[k]]))))
+  return(time_shifts)
+  
+}
+shift_dynamics <- function(site_feature_layers_to_use, current_feature_dynamics, features_to_use, time_shifts){
+
+  shifted_dynamics = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(features_to_use, 
+                                               function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
+                                                                  function(k) approx(1:length(current_feature_dynamics[[i]][[j]][[k]]), 
+                                                                                     current_feature_dynamics[[i]][[j]][[k]], 
+                                                                                     time_shifts[[i]][[j]][[k]] + 0:(length(current_feature_dynamics[[i]][[j]][[k]]) - ceiling(time_shifts[[i]][[j]][[k]]) ))$y)))
+  
+  return(shifted_dynamics)
+}
+
+
+find_time_shift <- function(current_feature_vals, current_feature_dynamics){
+  lower_ind = which(current_feature_dynamics == max(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == FALSE])) 
+  upper_ind = which(current_feature_dynamics == min(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == TRUE]))
+  time_shift = approx(current_feature_dynamics[lower_ind:upper_ind], lower_ind:upper_ind, current_feature_vals)$y
+  return(time_shift)
+}
 
 # series of routines to implement offset
 perform_offset_routine <- function(output_object, feature_params, current_offset_object, current_simulation_params, yr){
@@ -593,6 +629,7 @@ perform_clearing_routine <- function(output_object, feature_params, current_dev_
   }
   
   current_pool = unlist(current_dev_object$site_indexes)
+
   output_object$feature_dynamics[current_pool] = update_feature_dynamics(output_object$site_feature_layers[current_pool],
                                                                          output_object$feature_dynamics[current_pool], 
                                                                          output_object$feature_dynamics_modes[current_pool],
@@ -608,8 +645,9 @@ perform_clearing_routine <- function(output_object, feature_params, current_dev_
                                                                action_type = 'development', 
                                                                current_pool = unlist(current_dev_object$site_indexes))
   # implement ecological loss for developed sites (those with decline_rates = 0)
-  output_object$site_feature_layers <- kill_development_sites(output_object$site_feature_layers,
-                                                              current_dev_object)
+
+  output_object$site_feature_layers[current_pool] <- kill_development_sites(output_object$site_feature_layers[current_pool])
+
   return(output_object)
 }
 
@@ -903,7 +941,7 @@ user_projection <- function(current_feature_vals, current_feature_dynamics, dyna
     lower_interval = findInterval(current_feature_dynamics, current_feature_vals) == FALSE
     upper_interval = findInterval(current_feature_dynamics, current_feature_vals) == TRUE
     if ( (all(lower_interval == FALSE)) || (all(upper_interval == FALSE)) ){
-      stop()
+      browser()
     }
     lower_ind = which(current_feature_dynamics == max(current_feature_dynamics[lower_interval])) 
     upper_ind = which(current_feature_dynamics == min(current_feature_dynamics[upper_interval]))
@@ -1834,18 +1872,12 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
   
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   if (any(unlist(pool_object$parcel_vals_used) < 0)){
-    browser()
+   # browser()
   }
   return(pool_object)
   
 }
 
-find_time_shift <- function(current_feature_vals, current_feature_dynamics){
-  lower_ind = which(current_feature_dynamics == max(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == FALSE])) 
-  upper_ind = which(current_feature_dynamics == min(current_feature_dynamics[findInterval(current_feature_dynamics, current_feature_vals) == TRUE]))
-  time_shift = approx(current_feature_dynamics[lower_ind:upper_ind], lower_ind:upper_ind, current_feature_vals)$y
-  return(time_shift)
-}
 
 
 # function to append current object characteristics to group
@@ -1902,15 +1934,11 @@ append_current_object <- function(parcel_set_object, current_parcel_set_object, 
 }
 
 
+kill_development_sites <- function(site_feature_layers_to_develop){
 
-
-kill_development_sites <- function(site_feature_layers, current_dev_object){
+  developed_feature_layers = lapply(seq_along(site_feature_layers_to_develop), function(i) lapply(seq_along(site_feature_layers_to_develop[[i]]),  function(j) array(0, length(site_feature_layers_to_develop[[i]][[j]]))))
   
-  development_sites = unlist(current_dev_object$site_indexes)
-  site_feature_layers[development_sites] = lapply(seq_along(development_sites),
-                                                  function(i) lapply(seq_along(site_feature_layers[[i]]), 
-                                                                     function(j) array(0, length(site_feature_layers[[i]][[j]]))))
-  return(site_feature_layers)
+  return(developed_feature_layers)
 }
 
 
