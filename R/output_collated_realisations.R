@@ -45,7 +45,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
   }
   
   if (output_params$output_plot == TRUE){
-  # write plots to nx * ny subplots
+    # write plots to nx * ny subplots
     setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
   }
   
@@ -81,7 +81,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
   }
   
   plot.ctr <- 1
-
+  
   for (scenario_ind in scenario_vec){
     
     flog.info('_________________________________')
@@ -106,9 +106,9 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       }
     } 
     
-
+    
     if (plot_flag == FALSE){
-        flog.trace(' skipping scenario %d', scenario_ind )
+      flog.trace(' skipping scenario %d', scenario_ind )
     } else {
       
       flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, output_params$plot_type)  
@@ -117,13 +117,18 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       }
       
       if (class(output_params$features_to_plot) == 'character'){
-        features_to_plot = seq(current_simulation_params$feature_num)
+        if (output_params$features_to_plot == 'all'){
+          features_to_plot = global_params$features_to_use_in_simulation
+        } else {
+          flog.error("features to plot parameter is poorly defined assign vector of integers or 'all'")
+        }
       }  else {
         features_to_plot = output_params$features_to_plot
       }
-        
+      
       for (feature_ind in features_to_plot){
-        current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
+        
+        current_feature = global_params$features_to_use_in_simulation[feature_ind]
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = output_params$string_width, format = "d", flag = "0"),
                                                  feature_string = formatC(current_feature, width = output_params$string_width, format = "d", flag = "0"),
@@ -139,26 +144,46 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         }
         
         if (output_params$output_plot == TRUE){
+          
           if (output_params$plot_type == 'impacts'){
+            if (length(output_params$site_impact_plot_lims_set) < length(features_to_plot)){
+              site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
+              program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
+              landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
+            } else {
+              site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]]
+              program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]]
+              landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]]
+            }
+            
             plot_impact_set(collated_realisations,
                             current_simulation_params,
                             output_params,
                             global_params,
                             realisation_num = collated_realisations$realisation_num,
-                            site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]],
-                            program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]],
-                            landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]],
+                            site_plot_lims,
+                            program_plot_lims,
+                            landscape_plot_lims,
                             feature_ind,
                             output_params$sets_to_plot)
           } else if (output_params$plot_type == 'outcomes'){
+            if (length(output_params$site_outcome_plot_lims_set) < length(features_to_plot)){
+              site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
+              program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
+              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
+            } else {
+              site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
+              program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
+              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
+            }
             plot_outcome_set(collated_realisations,
                              current_simulation_params,
                              output_params,
                              global_params,
                              realisation_num = collated_realisations$realisation_num,
-                             site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]],
-                             program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]],
-                             landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]],
+                             site_plot_lims,
+                             program_plot_lims,
+                             landscape_plot_lims,
                              current_feature,
                              output_params$sets_to_plot)
           }
