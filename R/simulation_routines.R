@@ -20,6 +20,7 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                            input_data_object$feature_params)
   
   feature_dynamics_initial = output_object$feature_dynamics
+  feature_modes_initial = output_object$feature_dynamics_modes
   
   output_object <- run_simulation(input_data_object,
                                   output_object,
@@ -44,10 +45,19 @@ run_offset_simulation_routines <- function(input_data_object, current_simulation
                                          current_simulation_params$time_steps)
     
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
+    
+
+    current_feature_dynamics_initial = select_nested_subset(nested_object = feature_dynamics_initial, feature_ind, output_type = 'nested')
+
+    current_initial_feature_layers = select_nested_subset(nested_object = input_data_object$site_feature_layers_initial, feature_ind, output_type = 'nested')
+    
+    current_feature_dynamics_modes_initial = select_nested_subset(nested_object = feature_dynamics_modes_initial, feature_ind, output_type = 'nested')
+    
     current_collated_realisation = run_collate_routines(output_object, 
                                                         current_data_stack,
-                                                        feature_dynamics_initial, 
-                                                        simulation_inputs$site_feature_layers,  
+                                                        current_feature_dynamics_initial,
+                                                        current_feature_dynamics_modes_initial,
+                                                        current_initial_feature_layers,  
                                                         current_data_dir, 
                                                         current_simulation_params, 
                                                         feature_params,
@@ -841,6 +851,8 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
                                      include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                      current_simulation_params, feature_dynamics, time_horizon, yr){
   
+  stop()
+  print('reinstate routine')
   current_pool = unlist(pool_object$site_indexes)
   parcel_count = length(current_pool)
   offset_yrs = unlist(pool_object$offset_yrs)
@@ -1874,7 +1886,7 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
   
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   if (any(unlist(pool_object$parcel_vals_used) < 0)){
-   # browser()
+    #browser()
   }
   return(pool_object)
   
@@ -1942,6 +1954,7 @@ kill_development_sites <- function(site_feature_layers_to_develop){
   
   return(developed_feature_layers)
 }
+
 
 
 

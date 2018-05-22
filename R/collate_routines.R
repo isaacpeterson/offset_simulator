@@ -1,28 +1,25 @@
 #use_cfac_type_in_sim = TRUE
 
-run_collate_routines <- function(simulation_outputs, current_trajectories, feature_dynamics_initial, initial_feature_layers, 
+run_collate_routines <- function(simulation_outputs, current_trajectories, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, 
                                  current_data_dir, current_simulation_params, feature_params, realisation_ind, feature_ind){
   
-    current_feature_dynamics_initial = select_nested_subset(nested_object = feature_dynamics_initial, 
-                                                         nested_ind = feature_ind, output_type = 'nested')
-    current_initial_feature_layers = select_nested_subset(nested_object = initial_feature_layers, 
-                                                   nested_ind = feature_ind, output_type = 'nested')
-    
-    landscape_cfacs_object = collate_cfacs(current_simulation_params, feature_params,
-                                           current_site_feature_layers = current_initial_feature_layers,
-                                           current_feature_dynamics = current_feature_dynamics_initial, 
-                                           current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
-                                           current_parcel_num_remaining = vector(),
-                                           cfac_type = 'landscape',
-                                           collate_type = vector(), 
-                                           use_cfac_type_in_sim = FALSE, 
-                                           feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
-    
-    collated_data = collate_simulation_outputs(simulation_outputs, current_trajectories, 
-                                            landscape_cfacs_object, current_feature_dynamics_initial, current_initial_feature_layers, 
-                                            current_simulation_params, feature_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
-    
-    return(collated_data)
+  browser()
+  landscape_cfacs_object = collate_cfacs(current_simulation_params, feature_params,
+                                         current_site_feature_layers = current_initial_feature_layers,
+                                         current_feature_dynamics = current_feature_dynamics_initial,
+                                         current_feature_dynamics_modes_initial,
+                                         current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
+                                         current_parcel_num_remaining = vector(),
+                                         cfac_type = 'landscape',
+                                         collate_type = vector(), 
+                                         use_cfac_type_in_sim = FALSE, 
+                                         feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
+  browser()
+  collated_data = collate_simulation_outputs(simulation_outputs, current_trajectories, 
+                                             landscape_cfacs_object, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, 
+                                             current_simulation_params, feature_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
+  
+  return(collated_data)
   
 }
 
@@ -63,7 +60,7 @@ find_collated_files <- function(file_path, scenario_string, feature_string, real
     realisation_num = net_realisation_num
     print(paste0('WARNING: Only found ', realisation_num, ' realisation files for scenario ', scenario_string, ', feature ', feature_string, ', in ', file_path))
   }
-
+  
   
   filenames_to_use = current_filenames[seq(realisation_num)]
   filenames_to_use = lapply(seq_along(filenames_to_use), function(i) paste0(file_path, '/', filenames_to_use[i]))
@@ -115,7 +112,7 @@ expand_current_collated_realisation <- function(expand_type, collated_object, ne
 append_nested_realisation <- function(collated_set, collated_element, realisation_ind){
   
   net_names = union(names(collated_set), names(collated_element))
-
+  
   collated_set = expand_current_collated_realisation(expand_type = 'set', collated_set, net_names, realisation_ind)
   collated_element = expand_current_collated_realisation(expand_type = 'single', collated_element, net_names, realisation_ind)
   
@@ -169,7 +166,7 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 # collate_type = vector() 
 # use_cfac_type_in_sim = FALSE
 
-collate_cfacs <- function(current_simulation_params, feature_params, current_site_feature_layers, current_feature_dynamics, current_offset_yrs, 
+collate_cfacs <- function(current_simulation_params, feature_params, current_site_feature_layers, current_feature_dynamics, current_feature_dynamics_modes, current_offset_yrs, 
                           current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
   cfac_params <- select_cfac_type(collate_type, use_cfac_type_in_sim, current_simulation_params, feature_params)
@@ -182,6 +179,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                                             offset_yrs = rep(1, parcel_count), 
                                             time_horizon = (current_simulation_params$time_steps - 1), 
                                             parcel_count)
+    
     adjust_cfacs_flag = TRUE
     include_potential_developments = FALSE
     include_potential_offsets = FALSE
@@ -203,7 +201,8 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                             parcel_num_remaining = current_parcel_num_remaining,
                             current_simulation_params, 
                             feature_params,
-                            feature_dynamics_to_use =current_feature_dynamics, 
+                            feature_dynamics_to_use = current_feature_dynamics, 
+                            feature_dynamics_modes_to_use = current_feature_dynamics_modes,
                             time_horizons, 
                             offset_yrs = current_offset_yrs, 
                             include_potential_developments,
@@ -213,7 +212,6 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                             features_to_project = 1, 
                             time_fill = TRUE, 
                             yr = 1)
-  
   
   if (cfac_type == 'landscape'){
     background_cfacs = lapply(seq_along(cfacs_object$cfacs), function(i) cfacs_object$cfacs[[i]][[1]])    #extract from nested list
@@ -267,7 +265,7 @@ collate_program_scale_impacts <- function(collated_data){
 
 
 
-run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_feature_dynamics_initial, 
+run_site_scale_collate_routine <- function(current_model_outputs, current_site_groups, current_trajectories, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
                                            collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
@@ -316,7 +314,7 @@ group_gains_degs <- function(collated_object, site_indexes){
 }
 
 
-collate_gains_degs <- function(current_model_outputs, current_trajectories, current_feature_dynamics_initial, 
+collate_gains_degs <- function(current_model_outputs, current_trajectories, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
                                collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){ 
   
   
@@ -412,58 +410,58 @@ select_nested_subset <- function(nested_object, nested_ind, output_type){
 
 
 collate_simulation_outputs <- function(simulation_outputs, current_trajectories, landscape_cfacs_object, 
-                            current_feature_dynamics_initial, current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
+                                       current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_data = list()
   
   collated_data$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
-                                                                      current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
+                                                                   current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
+                                                                   current_trajectories, 
+                                                                   current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                   collate_type = 'offsets', 
+                                                                   current_simulation_params, feature_params,
+                                                                   use_cfac_type_in_sim, 
+                                                                   feature_ind)
+  
+  collated_data$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
+                                                               current_site_groups = simulation_outputs$index_object$site_indexes_used$devs,
+                                                               current_trajectories, 
+                                                               current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                               collate_type = 'devs', 
+                                                               current_simulation_params, feature_params,
+                                                               use_cfac_type_in_sim, 
+                                                               feature_ind)
+  
+  collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
+                                                                     current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
+                                                                     current_trajectories, 
+                                                                     current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                     collate_type = 'dev_credit', 
+                                                                     current_simulation_params, feature_params,
+                                                                     use_cfac_type_in_sim, 
+                                                                     feature_ind)
+  
+  collated_data$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
+                                                                      current_site_groups = simulation_outputs$index_object$site_indexes_used$banking,
                                                                       current_trajectories, 
-                                                                      current_feature_dynamics_initial, 
-                                                                      collate_type = 'offsets', 
+                                                                      current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                      collate_type = 'offset_bank', 
                                                                       current_simulation_params, feature_params,
                                                                       use_cfac_type_in_sim, 
                                                                       feature_ind)
   
-  collated_data$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
-                                                                  current_site_groups = simulation_outputs$index_object$site_indexes_used$devs,
-                                                                  current_trajectories, 
-                                                                  current_feature_dynamics_initial, 
-                                                                  collate_type = 'devs', 
-                                                                  current_simulation_params, feature_params,
-                                                                  use_cfac_type_in_sim, 
-                                                                  feature_ind)
-  
-  collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
-                                                                        current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
-                                                                        current_trajectories, 
-                                                                        current_feature_dynamics_initial, 
-                                                                        collate_type = 'dev_credit', 
-                                                                        current_simulation_params, feature_params,
-                                                                        use_cfac_type_in_sim, 
-                                                                        feature_ind)
-  
-  collated_data$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
-                                                                         current_site_groups = simulation_outputs$index_object$site_indexes_used$banking,
-                                                                         current_trajectories, 
-                                                                         current_feature_dynamics_initial, 
-                                                                         collate_type = 'offset_bank', 
-                                                                         current_simulation_params, feature_params,
-                                                                         use_cfac_type_in_sim, 
-                                                                         feature_ind)
-  
   collated_data$collated_unregulated_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$unregulated_loss_object,
-                                                                              current_site_groups = simulation_outputs$index_object$site_indexes_used$unregulated,
-                                                                              current_trajectories, 
-                                                                              current_feature_dynamics_initial, 
-                                                                              collate_type = 'unregulated_loss', 
-                                                                              current_simulation_params, feature_params,
-                                                                              use_cfac_type_in_sim, 
-                                                                              feature_ind)
+                                                                           current_site_groups = simulation_outputs$index_object$site_indexes_used$unregulated,
+                                                                           current_trajectories, 
+                                                                           current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                           collate_type = 'unregulated_loss', 
+                                                                           current_simulation_params, feature_params,
+                                                                           use_cfac_type_in_sim, 
+                                                                           feature_ind)
   
   collated_data$site_scale_impacts <- collate_site_scale_impacts(collated_site_scale_offsets = collated_data$collated_offsets$summed_gains_degs$nets,
-                                                   collated_site_scale_devs = collated_data$collated_devs$summed_gains_degs$nets)
-
+                                                                 collated_site_scale_devs = collated_data$collated_devs$summed_gains_degs$nets)
+  
   collated_data$landscape <- calc_landscape_characteristics(current_trajectories, landscape_cfacs_object)
   
   collated_data$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collated_data$landscape$summed_site_trajectories)
@@ -471,33 +469,33 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
   collated_data$program_scale_impacts <- collate_program_scale_impacts(collated_data)
   
   collated_data$program_cfacs = collate_program_cfacs(simulation_outputs, 
-                                                         landscape_cfacs_object$background_cfacs, 
-                                                         collated_data$collated_offsets, 
-                                                         collated_data$collated_devs, 
-                                                         collated_data$collated_dev_credit, 
-                                                         collated_data$collated_offset_bank, 
-                                                         collated_data$collated_unregulated_loss)
+                                                      landscape_cfacs_object$background_cfacs, 
+                                                      collated_data$collated_offsets, 
+                                                      collated_data$collated_devs, 
+                                                      collated_data$collated_dev_credit, 
+                                                      collated_data$collated_offset_bank, 
+                                                      collated_data$collated_unregulated_loss)
   
   collated_data$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
-                                         impacts = collated_data$site_scale_impacts$net_impacts, 
-                                         offset_yrs_to_use = collated_data$collated_offsets$offset_yrs, 
-                                         site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
+                                                     impacts = collated_data$site_scale_impacts$net_impacts, 
+                                                     offset_yrs_to_use = collated_data$collated_offsets$offset_yrs, 
+                                                     site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
   
   collated_data$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
-                                            impacts = list(collated_data$program_scale_impacts$program_total), 
-                                            offset_yrs_to_use = list(1), 
-                                            site_indexes = vector())
+                                                        impacts = list(collated_data$program_scale_impacts$program_total), 
+                                                        offset_yrs_to_use = list(1), 
+                                                        site_indexes = vector())
   
   collated_data$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
-                                              impacts = list(collated_data$landscape$landscape_impact), 
-                                              offset_yrs_to_use = list(1), 
-                                              site_indexes = vector())
+                                                          impacts = list(collated_data$landscape$landscape_impact), 
+                                                          offset_yrs_to_use = list(1), 
+                                                          site_indexes = vector())
   
   collated_data$net_program_loss = assess_landscape_loss(landscape_vals = collated_data$program_outcomes$net_outcome, 
-                                                            NNL_yr = unlist(collated_data$program_scale_NNL$NNL))
+                                                         NNL_yr = unlist(collated_data$program_scale_NNL$NNL))
   
   collated_data$net_landscape_loss = assess_landscape_loss(landscape_vals = collated_data$landscape$net_landscape, 
-                                                              NNL_yr = unlist(collated_data$landscape_scale_NNL$NNL))
+                                                           NNL_yr = unlist(collated_data$landscape_scale_NNL$NNL))
   
   collated_data$sites_used = find_sites_used(collated_data)
   return(collated_data)
@@ -521,7 +519,7 @@ find_sites_used <- function(collated_data){
   sites_used$dev_credit = find_current_sites_used(collated_data$collated_dev_credit$site_indexes)
   
   sites_used$unregulated = find_current_sites_used(collated_data$collated_unregulated_loss$site_indexes)
-   
+  
   return(sites_used)
 }
 
@@ -610,7 +608,7 @@ find_list_mean <- function(list_to_sum){
   if (length(sets_to_use) == 0){
     list_mean = list()
   } else {
-      list_mean <- Reduce('+', list_to_sum[sets_to_use])/length(sets_to_use)
+    list_mean <- Reduce('+', list_to_sum[sets_to_use])/length(sets_to_use)
   }
   return(list_mean)
 }
