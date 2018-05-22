@@ -234,7 +234,7 @@ perform_credit_match_routine <- function(output_object, input_data_object, curre
   if (credit_match_object$match_flag == TRUE){
     
     output_object$current_credit = credit_match_object$current_credit
-    browser()
+
     flog.info(cat('developed site with value', paste(credit_match_object$development_object$parcel_vals_used), 
                   'from credit, remaining =', paste(credit_match_object$current_credit), '\n'))
     

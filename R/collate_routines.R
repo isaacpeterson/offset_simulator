@@ -3,7 +3,7 @@
 run_collate_routines <- function(simulation_outputs, current_trajectories, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, 
                                  current_data_dir, current_simulation_params, feature_params, realisation_ind, feature_ind){
   
-  browser()
+
   landscape_cfacs_object = collate_cfacs(current_simulation_params, feature_params,
                                          current_site_feature_layers = current_initial_feature_layers,
                                          current_feature_dynamics = current_feature_dynamics_initial,
@@ -14,7 +14,8 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, curre
                                          collate_type = vector(), 
                                          use_cfac_type_in_sim = FALSE, 
                                          feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
-  browser()
+  
+
   collated_data = collate_simulation_outputs(simulation_outputs, current_trajectories, 
                                              landscape_cfacs_object, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, 
                                              current_simulation_params, feature_params, use_cfac_type_in_sim = TRUE, parcels, feature_ind)
@@ -180,12 +181,14 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                                             time_horizon = (current_simulation_params$time_steps - 1), 
                                             parcel_count)
     
-    adjust_cfacs_flag = TRUE
+    
     include_potential_developments = FALSE
     include_potential_offsets = FALSE
-    include_unregulated_loss = TRUE
+    #TODO REINSTATE THIS TO TRUE
+    adjust_cfacs_flag = FALSE
+    include_unregulated_loss = FALSE
     
-  } else {
+  } else if (cfac_type == 'site_scale'){
     time_horizons = generate_time_horizons(project_type = 'current', 
                                            yr = current_simulation_params$time_steps, 
                                            offset_yrs = current_offset_yrs, 
@@ -211,6 +214,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                             adjust_cfacs_flag,
                             features_to_project = 1, 
                             time_fill = TRUE, 
+                            projection_yrs = current_offset_yrs, 
                             yr = 1)
   
   if (cfac_type == 'landscape'){
@@ -269,14 +273,16 @@ run_site_scale_collate_routine <- function(current_model_outputs, current_site_g
                                            collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){
   
   collated_object = list()
+
   collated_object = collate_gains_degs(current_model_outputs, 
                                        current_trajectories,
-                                       current_feature_dynamics_initial ,
+                                       current_feature_dynamics_initial,
+                                       current_feature_dynamics_modes_initial, 
                                        collate_type, 
                                        current_simulation_params, feature_params,
                                        use_cfac_type_in_sim, 
                                        feature_ind)
-  
+
   if (length(collated_object) > 0){
     collated_object$grouped_gains_degs = group_gains_degs(collated_object, current_site_groups)
     collated_object$summed_gains_degs = sum_gains_degs(collated_object$grouped_gains_degs)
@@ -317,26 +323,43 @@ group_gains_degs <- function(collated_object, site_indexes){
 collate_gains_degs <- function(current_model_outputs, current_trajectories, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
                                collate_type, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind){ 
   
-  
-  if (length(unlist(current_model_outputs$site_indexes)) == 0){
+  current_pool = unlist(current_model_outputs$site_indexes)
+  if (length(current_pool) == 0){
     return(NULL)
   }
   
-  current_site_feature_layers = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'nested') 
-  
+  current_site_feature_layers = lapply(seq_along(current_pool), function(i) list(current_trajectories[[current_pool[i]]] [current_model_outputs$offset_yrs[[i]], ]))
+  current_feature_dynamics_to_use = current_feature_dynamics_initial[current_pool]
+#   current_feature_dynamics_to_use = lapply(seq_along(current_feature_dynamics_to_use), 
+#                                            function(i) lapply(seq_along(current_feature_dynamics_to_use[[i]], 
+
   current_cfacs = collate_cfacs(current_simulation_params, feature_params, 
                                 current_site_feature_layers,
-                                current_feature_dynamics = current_feature_dynamics_initial[unlist(current_model_outputs$site_indexes)], 
-                                current_offset_yrs =  unlist(current_model_outputs$offset_yrs),
+                                current_feature_dynamics = current_feature_dynamics_to_use,
+                                current_feature_dynamics_modes = current_feature_dynamics_modes_initial[current_pool],
+                                current_offset_yrs = unlist(current_model_outputs$offset_yrs),
                                 current_parcel_num_remaining = current_model_outputs$parcel_num_remaining,
                                 cfac_type = 'site_scale',
                                 collate_type, 
                                 use_cfac_type_in_sim,
                                 feature_ind = 1)
+
+#   collate_cfacs(current_simulation_params, feature_params,
+#                 current_site_feature_layers = current_initial_feature_layers,
+#                 current_feature_dynamics = current_feature_dynamics_initial,
+#                 current_feature_dynamics_modes_initial,
+#                 current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
+#                 current_parcel_num_remaining = vector(),
+#                 cfac_type = 'landscape',
+#                 collate_type = vector(), 
+#                 use_cfac_type_in_sim = FALSE, 
+#                 feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
   
-  site_feature_layers_to_use = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'non-nested') 
+  #site_feature_layers_to_use = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'non-nested') 
   
-  collated_gains_degs <- assess_gains_degs(trajectories_to_use = current_trajectories[unlist(current_model_outputs$site_indexes)],
+  site_feature_layers_to_use = unlist(current_site_feature_layers, recursive = FALSE)
+
+  collated_gains_degs <- assess_gains_degs(trajectories_to_use = current_trajectories[unlist(current_pool)],
                                            cfacs_to_use = current_cfacs$cfacs,
                                            site_feature_layers_to_use,
                                            current_offset_yrs = unlist(current_model_outputs$offset_yrs),
@@ -413,7 +436,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                        current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_data = list()
-  
+
   collated_data$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
                                                                    current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
                                                                    current_trajectories, 
