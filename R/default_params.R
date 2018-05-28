@@ -303,7 +303,6 @@ initialise_default_feature_params <- function(){
   default_feature_params$initial_condition_class_bounds = vector()
   default_feature_params$sample_management_dynamics = TRUE 
   default_feature_params$sample_background_dynamics = TRUE
-  default_feature_params$dynamics_update_type = vector()
   default_feature_params$dynamics_sample_type = vector()
   default_feature_params$management_projection_type = vector()
   default_feature_params$background_projection_type = vector()
@@ -311,6 +310,9 @@ initialise_default_feature_params <- function(){
   default_feature_params$perform_management_dynamics_time_shift = vector()
   default_feature_params$management_dynamics_sample_type = vector()
   default_feature_params$perform_background_dynamics_time_shift = vector()
+  default_feature_params$unique_site_vals = TRUE
+  default_feature_params$management_update_dynamics_by_differential = TRUE
+  default_feature_params$background_update_dynamics_by_differential = TRUE
   return(default_feature_params)
 }
 
