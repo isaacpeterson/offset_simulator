@@ -1,5 +1,5 @@
-simulate_site <- function(current_condition_class_set, element_num, feature_value_distribution_width){
-  current_mode = sample(seq(length(current_condition_class_set)), 1)
+simulate_site <- function(current_condition_class_set, current_mode, element_num, feature_value_distribution_width){
+
   min_val = current_condition_class_set[[current_mode]][1] 
   max_val = current_condition_class_set[[current_mode]][2] 
   
@@ -8,23 +8,30 @@ simulate_site <- function(current_condition_class_set, element_num, feature_valu
   return(site_elements)
 }
 
-simulate_feature <- function(current_condition_class_set, feature_value_distribution_width, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+simulate_feature <- function(current_condition_class_set, current_mode_set, feature_value_distribution_width, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
+
+  current_ecology = lapply(seq_along(land_parcels), function(i) simulate_site(current_condition_class_set, 
+                                                                              current_mode_set[[i]],
+                                                                              element_num = length(land_parcels[[i]]), 
+                                                                              feature_value_distribution_width))
   
-  current_ecology = lapply(seq_along(land_parcels), function(i) simulate_site(current_condition_class_set, element_num = length(land_parcels[[i]]), feature_value_distribution_width))
-  current_ecology_noise = lapply(seq_along(land_parcels), function(i) feature_value_distribution_width*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
-  current_ecology = mapply('+', current_ecology, current_ecology_noise, SIMPLIFY = FALSE)
+  if (feature_value_distribution_width > 0){
+    current_ecology_noise = lapply(seq_along(land_parcels), function(i) feature_value_distribution_width*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
+    current_ecology = mapply('+', current_ecology, current_ecology_noise, SIMPLIFY = FALSE)
+  }
   
   return(current_ecology)
   
 }
 
-simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder){ 
+simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder, condition_class_modes){ 
   
   for (feature_ind in 1:feature_params$feature_num){
-    current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
-    current_mode = sample(seq(length(current_condition_class_set)), 1)
 
+    current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
+    current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])   
     current_simulated_feature <- simulate_feature(current_condition_class_set, 
+                                                  current_condition_mode_set,
                                                   feature_params$feature_value_distribution_width, 
                                                   parcel_characteristics$land_parcels)
     
@@ -39,7 +46,6 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_feature_layer[unlist(parcel_characteristics$land_parcels)] = unlist(current_simulated_feature)
     current_feature_raster = raster(current_feature_layer)
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
-    
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
     
 #     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
@@ -145,9 +151,13 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
   objects_to_save$parcel_characteristics <- define_planning_units(objects_to_save$planning_units_array)
   objects_to_save$dev_probability_list = rep(list(1/objects_to_save$parcel_characteristics$land_parcel_num), objects_to_save$parcel_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
+
+  objects_to_save$condition_class_modes = lapply(seq(objects_to_save$parcel_characteristics$land_parcel_num), 
+                                                 function(i) lapply(seq_along(feature_params$initial_condition_class_bounds), 
+                                                                    function(j) sample(seq_along(feature_params$initial_condition_class_bounds[[j]]), 1)))
     
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
   
-  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
+  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
   
 }
