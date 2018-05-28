@@ -167,9 +167,8 @@ generate_global_inputs <- function(params_object){
 
 
 
-sample_current_dynamics <- function(current_feature_dynamics_set, current_feature_val, dynamics_update_type, dynamics_sample_type){
-
-  # TODO MUST INCLUDE ABILITY TO CHECK IF OUT OF BOUNDS AND SWITCH MODES
+sample_current_dynamics <- function(current_feature_dynamics_set, current_feature_val, update_dynamics_by_differential, dynamics_sample_type){
+  
   current_feature_dynamics = current_feature_dynamics_set$best_estimate
   
   if (dynamics_sample_type == 'by_initial_value'){
@@ -188,16 +187,16 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
     current_discriminator = current_discriminator/(bound_to_use[1] - current_feature_dynamics_set$best_estimate[1])
   }
   
-  current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
-  
-  if (dynamics_update_type == 'by_differential'){
-    current_feature_dynamics = diff(current_feature_dynamics)
-    if (any((cumsum(current_feature_dynamics) + current_feature_val) < 0)){
-      browser()
-    }
+  if (current_discriminator >= 1){
+    current_feature_dynamics = current_feature_val + diff(bound_to_use)
+  } else {
+    current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
   }
   
-
+  if (update_dynamics_by_differential == TRUE){
+    current_feature_dynamics = diff(current_feature_dynamics)
+  } 
+  
   return(current_feature_dynamics)
   
 }
@@ -224,7 +223,7 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
 #   
 
 
-build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, dynamics_update_type, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
+build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, update_dynamics_by_differential, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
 
   if (sample_dynamics == TRUE){
     if (projection_type == 'by_element'){
@@ -233,14 +232,14 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
                                                function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
                                                                                  function(k) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]] [k] ]],
                                                                                                                      site_feature_layers_to_use[[i]][[j]][[k]],
-                                                                                                                     dynamics_update_type, 
+                                                                                                                     update_dynamics_by_differential, 
                                                                                                                      dynamics_sample_type)  )))
     } else if (projection_type == 'by_site'){
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
                                                function(j) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]],
                                                                                    mean(site_feature_layers_to_use[[i]][[j]]),
-                                                                                   dynamics_update_type, 
+                                                                                   update_dynamics_by_differential, 
                                                                                    dynamics_sample_type)  ))
     }
   } else {
@@ -282,7 +281,6 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 }
 
 
-
   
 find_modes <- function(projection_type, feature_layers_to_use, condition_class_bounds){
   
@@ -322,8 +320,8 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$credit_match_flag = FALSE
   output_object$index_object = index_object
   
-  if (file.exists(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))){
-    feature_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_mode.rds'))
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))){
+    feature_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
   } else {
 
     feature_dynamics_modes = find_modes(projection_type = feature_params$background_projection_type, 
@@ -340,7 +338,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
                                        features_to_use = seq(feature_params$feature_num),
                                        feature_params$sample_background_dynamics,
                                        feature_params$background_projection_type,
-                                       feature_params$dynamics_update_type,
+                                       feature_params$background_update_dynamics_by_differential,
                                        feature_params$dynamics_sample_type,
                                        feature_params$background_dynamics_bounds, 
                                        feature_dynamics_modes)
@@ -349,7 +347,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
     # features_to_use = feature_params$features_to_use_in_offset_interventionn,
 #    feature_params$sample_background_dynamics,
 #                                        feature_params$background_projection_type,
-#                                        feature_params$dynamics_update_type,
+#                                        feature_params$background_update_dynamics_by_differential,
 #                                        feature_params$dynamics_sample_type,
 #                                        feature_params$management_dynamics_bounds, 
 
