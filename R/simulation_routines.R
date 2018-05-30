@@ -2056,7 +2056,7 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
     if (pool_type == 'offsets') {
       
       if (action_type == 'maintain'){
-        feature_dynamics_modes_to_use = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(0), feature_params$feature_num))
+        feature_dynamics_modes_to_use = lapply(seq_along(site_feature_layers_to_use), function(i) rep(list(-1), feature_params$feature_num))
 
       } else if (action_type == 'restore'){
         #TODO add ability to assess current feature_dynamics_mode
@@ -2067,7 +2067,7 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
 #                                               condition_class_bounds = feature_params$condition_class_bounds)
 
         browser()
-        feature_dynamics_to_use = build_dynamics(site_feature_layers = site_feature_layers_to_use,
+        restoration_dynamics = build_dynamics(site_feature_layers = site_feature_layers_to_use,
                                                  features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
                                                  sample_dynamics = FALSE, 
                                                  projection_type = feature_params$management_projection_type, 
@@ -2075,14 +2075,16 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
                                                  dynamics_sample_type = feature_params$management_dynamics_sample_type,
                                                  feature_dynamics_bounds = feature_params$management_dynamics_bounds, 
                                                  feature_dynamics_modes_to_use)
+        
+        projection_yrs = find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
+                                             site_feature_layers_to_use, yr, 
+                                             features_to_project = current_simulation_params$features_to_use_in_offset_calc, 
+                                             restoration_dynamics, 
+                                             projection_type = feature_params$management_projection_type, 
+                                             unique_site_vals = feature_params$unique_site_vals)
       } 
 
-      projection_yrs = find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
-                                           site_feature_layers_to_use, yr, 
-                                           features_to_project = current_simulation_params$features_to_use_in_offset_calc, 
-                                           feature_dynamics_to_use, 
-                                           projection_type = feature_params$management_projection_type, 
-                                           unique_site_vals = feature_params$unique_site_vals)
+      
 
       browser()
       projected_feature_layers = project_features(site_feature_layers_to_use,
