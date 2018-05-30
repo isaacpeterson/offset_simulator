@@ -313,6 +313,8 @@ initialise_default_feature_params <- function(){
   default_feature_params$unique_site_vals = TRUE
   default_feature_params$management_update_dynamics_by_differential = TRUE
   default_feature_params$background_update_dynamics_by_differential = TRUE
+  default_feature_params$site_sample_type = 'uniform'
+  default_feature_params$initial_site_sd = 1
   return(default_feature_params)
 }
 
