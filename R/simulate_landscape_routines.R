@@ -1,9 +1,18 @@
-simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd){
+simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, unique_site_vals){
 
   if (site_sample_type == 'trunc_norm'){
-    site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+    if (unique_site_vals == TRUE){
+      site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+    } else{
+      site_elements = array(1, length(site_elements))*rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+      
+    }
   } else if (site_sample_type == 'uniform'){
-    site_elements = current_condition_class_bounds[1] + runif(length(site_elements))*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
+    if (unique_site_vals == TRUE){
+      site_elements = current_condition_class_bounds[1] + runif(length(site_elements))*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
+    } else {
+      site_elements = array(1, length(site_elements))*runif(1)*(current_condition_class_bounds[3] - current_condition_class_bounds[1])
+    }
   }
   
   return(site_elements)
@@ -20,7 +29,8 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
                              function(i) simulate_site_feature(feature_params$site_sample_type, 
                                                                current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
                                                                element_num = length(parcel_characteristics$land_parcels[[i]]),
-                                                               feature_params$initial_site_sd) )
+                                                               feature_params$initial_site_sd, 
+                                                               feature_params$unique_site_vals) )
     
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
