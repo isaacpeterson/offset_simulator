@@ -120,7 +120,7 @@ generate_global_inputs <- function(params_object){
   # pixels in the parcel.
   
   site_feature_layers_initial <- split_ecology(feature_layers, parcel_characteristics$land_parcels)
-  
+
   # This is a list of single values of length number of sites where the values
   # representing the probabilities of sites being developed. Default is that
   # all sites have equal probability simulated data, with user data this must
@@ -168,7 +168,7 @@ generate_global_inputs <- function(params_object){
 
 
 sample_current_dynamics <- function(current_feature_dynamics_set, current_feature_val, update_dynamics_by_differential, dynamics_sample_type){
-  
+
   current_feature_dynamics = current_feature_dynamics_set$best_estimate
   
   if (dynamics_sample_type == 'by_initial_value'){
@@ -183,6 +183,9 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
     bound_to_use = current_feature_dynamics_set$lower_bound
   }
   
+  if (length(bound_to_use) != length(current_feature_dynamics_set$best_estimate)){
+    browser()
+  }
   if (dynamics_sample_type == 'by_initial_value'){
     current_discriminator = current_discriminator/(bound_to_use[1] - current_feature_dynamics_set$best_estimate[1])
   }
@@ -329,13 +332,15 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
                                         condition_class_bounds = feature_params$condition_class_bounds)
     
   }
+
+  feature_dynamics_modes = select_feature_subset(feature_dynamics_modes, global_params$features_to_use_in_simulation)
   
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
     
     feature_dynamics <- build_dynamics(site_feature_layers_initial,
-                                       features_to_use = seq(feature_params$feature_num),
+                                       features_to_use = seq_along(global_params$features_to_use_in_simulation),
                                        feature_params$sample_background_dynamics,
                                        feature_params$background_projection_type,
                                        feature_params$background_update_dynamics_by_differential,
@@ -353,7 +358,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
 
 #                                        feature_dynamics_modes)
   }
-  
+
   output_object$feature_dynamics = feature_dynamics
   #output_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
   output_object$feature_dynamics_modes = feature_dynamics_modes
@@ -393,25 +398,25 @@ check_feature_value_conflicts <- function(site_feature_layers_initial, feature_d
 }
 
 
-check_param_conflicts <- function(simulation_params, feature_params, global_params){
-  
-  feature_test = match(global_params$features_to_use_in_simulation, seq(feature_params$feature_num))
-  if (any(is.na(feature_test))){
-    flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
-    stop()
-  } 
-  
-  offset_calc_test = 
-    if (any(is.na(offset_calc_test))){
-      flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
-      stop()
-    } 
-  params_object = list()
-  params_object$global_params = global_params
-  params_object$simulation_params = simulation_params
-  params_object$feature_params = feature_params
-  return(params_object)
-}
+# check_param_conflicts <- function(simulation_params, feature_params, global_params){
+#   
+#   feature_test = match(global_params$features_to_use_in_simulation, seq(feature_params$feature_num))
+#   if (any(is.na(feature_test))){
+#     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
+#     stop()
+#   } 
+#   
+# 
+#     if (any(is.na(offset_calc_test))){
+#       flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
+#       stop()
+#     } 
+#   params_object = list()
+#   params_object$global_params = global_params
+#   params_object$simulation_params = simulation_params
+#   params_object$feature_params = feature_params
+#   return(params_object)
+# }
 
 
 initialise_cores <- function(global_params){
