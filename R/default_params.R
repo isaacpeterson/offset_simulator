@@ -263,7 +263,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$simulated_time_vec = 1:100
   
   # Number of pixels in (y, x) for the feature layes 
-  default_feature_params$ecology_size = c(300, 300)
+  default_feature_params$landscape_size = c(300, 300)
   
   # Numnber of parcels in x (but total size varies)
   default_feature_params$parcel_num_x = 30 

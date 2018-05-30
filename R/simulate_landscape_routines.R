@@ -16,7 +16,7 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
     current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
     
-    current_ecology = lapply(seq_along(parcel_characteristics$land_parcels), 
+    current_simulated_feature = lapply(seq_along(parcel_characteristics$land_parcels), 
                              function(i) simulate_site_feature(feature_params$site_sample_type, 
                                                                current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
                                                                element_num = length(parcel_characteristics$land_parcels[[i]]),
@@ -35,14 +35,6 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
 
-#     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
-#     
-#     if (feature_ind == 1){
-#       simulated_ecology <- current_simulated_ecology
-#     } else {
-#       simulated_ecology <- lapply(seq_along(parcel_characteristics$land_parcels), function(j) append(simulated_ecology[[j]], current_simulated_ecology[[j]]))
-#     }
-#     
   }
 
 }
@@ -75,12 +67,12 @@ simulate_planning_units <- function(feature_params){
   
   parcel_num_x = feature_params$parcel_num_x   #length in parcels of array in x 
   parcel_num_y = feature_params$parcel_num_y #length in parcels of array in y 
-  parcel_vx = split_vector(parcel_num_x, feature_params$ecology_size[2], sd = feature_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, feature_params$ecology_size[1], sd = feature_params$site_width_variation_param, min_width = 1) # as above for y
+  parcel_vx = split_vector(parcel_num_x, feature_params$landscape_size[2], sd = feature_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to landscape size, composed of n elements where n is the parcel dimension in x
+  parcel_vy = split_vector(parcel_num_y, feature_params$landscape_size[1], sd = feature_params$site_width_variation_param, min_width = 1) # as above for y
   
-  pixel_indexes = 1:(feature_params$ecology_size[1]*feature_params$ecology_size[2])     #index all elements of ecology array
-  dim(pixel_indexes) = c(feature_params$ecology_size[1], feature_params$ecology_size[2])  # arrange ecology array index vector into array of landscape dimensions 
-  parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
+  pixel_indexes = 1:(feature_params$landscape_size[1]*feature_params$landscape_size[2])     #index all elements of landscape array
+  dim(pixel_indexes) = c(feature_params$landscape_size[1], feature_params$landscape_size[2])  # arrange landscape array index vector into array of landscape dimensions 
+  parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the landscape array into a series of subarrays with dimensions sz_x by sz_y
   
   parcel_list = lapply(seq_along(parcels), function(i) array(i, dim(parcels[[i]])))
   parcel_array = array(0, dim(pixel_indexes))
@@ -145,6 +137,6 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
     
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
   
-  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) #generate initial ecology as randomised landscape divided into land parcels where each parcel is a cell composed of numerical elements
+  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) 
   
 }
