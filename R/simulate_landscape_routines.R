@@ -1,27 +1,12 @@
-simulate_site <- function(current_condition_class_set, current_mode, element_num, feature_value_distribution_width){
+simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd){
 
-  min_val = current_condition_class_set[[current_mode]][1] 
-  max_val = current_condition_class_set[[current_mode]][2] 
-  
-  scale_factor = (max_val - min_val - feature_value_distribution_width)
-  site_elements = min_val + scale_factor*runif(1)*array(1, element_num)
-  return(site_elements)
-}
-
-simulate_feature <- function(current_condition_class_set, current_mode_set, feature_value_distribution_width, land_parcels){    #initialise ecolgy in a slice by slice fashion representing each ecological dimension
-
-  current_ecology = lapply(seq_along(land_parcels), function(i) simulate_site(current_condition_class_set, 
-                                                                              current_mode_set[[i]],
-                                                                              element_num = length(land_parcels[[i]]), 
-                                                                              feature_value_distribution_width))
-  
-  if (feature_value_distribution_width > 0){
-    current_ecology_noise = lapply(seq_along(land_parcels), function(i) feature_value_distribution_width*array( runif( length( land_parcels[[i]] ) ), length(land_parcels[[i]] )))
-    current_ecology = mapply('+', current_ecology, current_ecology_noise, SIMPLIFY = FALSE)
+  if (site_sample_type == 'trunc_norm'){
+    site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+  } else if (site_sample_type == 'uniform'){
+    site_elements = current_condition_class_bounds[1] + runif(length(site_elements))*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
   }
   
-  return(current_ecology)
-  
+  return(site_elements)
 }
 
 simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder, condition_class_modes){ 
@@ -29,11 +14,13 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
   for (feature_ind in 1:feature_params$feature_num){
 
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
-    current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])   
-    current_simulated_feature <- simulate_feature(current_condition_class_set, 
-                                                  current_condition_mode_set,
-                                                  feature_params$feature_value_distribution_width, 
-                                                  parcel_characteristics$land_parcels)
+    current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
+    
+    current_ecology = lapply(seq_along(parcel_characteristics$land_parcels), 
+                             function(i) simulate_site_feature(feature_params$site_sample_type, 
+                                                               current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
+                                                               element_num = length(parcel_characteristics$land_parcels[[i]]),
+                                                               feature_params$initial_site_sd) )
     
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
@@ -47,7 +34,7 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_feature_raster = raster(current_feature_layer)
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
-    
+
 #     current_simulated_ecology <- lapply(seq_along(current_simulated_ecology), function(i) list(current_simulated_ecology[[i]]))
 #     
 #     if (feature_ind == 1){
