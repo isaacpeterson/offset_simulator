@@ -241,7 +241,7 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
                                                function(j) sample_current_dynamics(feature_dynamics_bounds[[j]][[feature_dynamics_modes[[i]][[j]]]],
-                                                                                   mean(site_feature_layers_to_use[[i]][[j]]),
+                                                                                   unique(site_feature_layers_to_use[[i]][[j]]),
                                                                                    update_dynamics_by_differential, 
                                                                                    dynamics_sample_type)  ))
     }
@@ -290,7 +290,7 @@ find_modes <- function(projection_type, feature_layers_to_use, condition_class_b
   if (projection_type == 'by_site' ){
     feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
                                     function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                       function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
+                                                       function(j) find_current_mode(unique(feature_layers_to_use[[i]][[j]]), 
                                                                                      condition_class_bounds[[j]])))
   } else if (projection_type == 'by_element'){
     feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
@@ -477,10 +477,7 @@ check_simulation_params <- function(simulation_params){
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
   
-  #   if (mean(unlist(decline_rates_initial)) > simulation_params$restoration_rate){
-  #     flog.error('restoration parameter set below decline rate')
-  #     stop()
-  #   }
+
   
   for (offset_action_ind in seq_along(offset_action_set)){
     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
