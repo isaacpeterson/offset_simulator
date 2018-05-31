@@ -4,14 +4,14 @@ simulate_site_feature <- function(site_sample_type, current_condition_class_boun
     if (unique_site_vals == TRUE){
       site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
     } else{
-      site_elements = array(1, length(site_elements))*rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+      site_elements = array(1, element_num)*rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
       
     }
   } else if (site_sample_type == 'uniform'){
     if (unique_site_vals == TRUE){
-      site_elements = current_condition_class_bounds[1] + runif(length(site_elements))*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
+      site_elements = current_condition_class_bounds[1] + runif(element_num)*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
     } else {
-      site_elements = array(1, length(site_elements))*runif(1)*(current_condition_class_bounds[3] - current_condition_class_bounds[1])
+      site_elements = array(1, element_num)*runif(1)*(current_condition_class_bounds[3] - current_condition_class_bounds[1])
     }
   }
   
