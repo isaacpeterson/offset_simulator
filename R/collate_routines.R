@@ -283,7 +283,7 @@ collate_program_scale_outcomes <- function(simulation_outputs, summed_site_traje
 
 collate_program_scale_impacts <- function(collated_data){
   program_scale_impacts = list()
-
+  
   program_scale_impacts$offset_site_gains = Reduce('+', collated_data$collated_offsets$summed_gains_degs$nets)
   program_scale_impacts$offset_bank_gains = Reduce('+', collated_data$collated_offset_bank$summed_gains_degs$nets)
   program_scale_impacts$dev_site_losses = Reduce('+', collated_data$collated_devs$summed_gains_degs$nets)
@@ -707,10 +707,11 @@ assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_in
   
   NNL_absolute = lapply(seq_along(impacts), function(i) assess_NNL(impacts[[i]]) )
   
+  browser()
   NNL_object$NNL = lapply(seq_along(NNL_absolute), function(i) (NNL_absolute[[i]] - offset_yrs_to_use[[i]]))
-  NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
-  
+
   if (length(unlist(NNL_object$NNL)) >0){
+    NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
     NNL_object$NNL_mean = mean(unlist(NNL_object$NNL))
   } else {
     NNL_object$NNL_mean = vector()
