@@ -191,6 +191,7 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
   }
   
   if (current_discriminator >= 1){
+    browser()
     current_feature_dynamics = current_feature_val + diff(bound_to_use)
   } else {
     current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
@@ -314,7 +315,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$offset_pool_object <- list()
   output_object$site_feature_layers <- site_feature_layers_initial
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
-  browser()
+
   if (current_simulation_params$use_specified_offset_metric == TRUE){
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = current_simulation_params$offset_metric_type)
   }
@@ -348,21 +349,21 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
                                        feature_params$background_dynamics_bounds, 
                                        feature_dynamics_modes)
     
-#     management_dynamics <- build_dynamics(site_feature_layers_initial,
-    # features_to_use = feature_params$features_to_use_in_offset_interventionn,
-#    feature_params$sample_background_dynamics,
-#                                        feature_params$background_projection_type,
-#                                        feature_params$background_update_dynamics_by_differential,
-#                                        feature_params$dynamics_sample_type,
-#                                        feature_params$management_dynamics_bounds, 
-
-#                                        feature_dynamics_modes)
+    management_dynamics <- build_dynamics(site_feature_layers_initial,
+                                          features_to_use = feature_params$features_to_use_in_offset_interventionn,
+                                          feature_params$sample_background_dynamics,
+                                          feature_params$management_projection_type,
+                                          update_dynamics_by_differential = FALSE,
+                                          feature_params$dynamics_sample_type,
+                                          feature_params$management_dynamics_bounds, 
+                                          feature_dynamics_modes)
+    
   }
 
   output_object$feature_dynamics = feature_dynamics
   #output_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
   output_object$feature_dynamics_modes = feature_dynamics_modes
-
+  output_object$management_dynamics = management_dynamics
   return(output_object)
 }
 
