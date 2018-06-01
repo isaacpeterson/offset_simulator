@@ -44,7 +44,7 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_feature_raster = raster(current_feature_layer)
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
-
+    
   }
 
 }
