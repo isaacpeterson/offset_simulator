@@ -223,9 +223,10 @@ match_sites_routine <- function(output_object, input_data_object, current_simula
   }
   return(output_object)
 }
+
 credit_match_routine <- function(output_object, input_data_object, current_simulation_params, yr){
   
-  flog.info(cat('current credit ', paste(round(unlist(output_object$current_credit), 3)), '\n'))
+  flog.info(cat('current credit ', paste(round(unlist(output_object$current_credit), 1)), '\n'))
   if (any(output_object$current_credit > 0)){
     credit_match_object = develop_from_credit(input_data_object, 
                                               output_object,
@@ -1758,8 +1759,8 @@ select_pool_to_match <- function(vals_to_match, current_features_to_use_in_offse
 }
 
 transform_features_to_offset_metric <- function(pool_vals, metric_type){
-  
-  if (metric_type == 'euclidian_norm'){
+  browser()
+  if (metric_type == 'euclidean_norm'){
     if (class(pool_vals) == 'list'){
       pool_vals = lapply(seq_along(pool_vals), function(i) sqrt(sum(pool_vals[[i]]^2)))
     }  else {

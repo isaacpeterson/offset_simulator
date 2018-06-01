@@ -314,7 +314,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$offset_pool_object <- list()
   output_object$site_feature_layers <- site_feature_layers_initial
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
-  
+  browser()
   if (current_simulation_params$use_specified_offset_metric == TRUE){
     current_credit = transform_features_to_offset_metric(current_credit, metric_type = current_simulation_params$offset_metric_type)
   }
