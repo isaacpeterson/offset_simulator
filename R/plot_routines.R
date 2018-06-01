@@ -124,6 +124,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     
     NNL_object <- find_NNL_characteristics(collated_realisations$program_scale_NNL$NNL_mean, 
                                            collated_realisations$program_scale_impacts$program_total)
+    
     overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
                                           collated_realisations$program_scale_impacts$net_dev_losses,
                                           collated_realisations$program_scale_impacts$program_total),
@@ -398,8 +399,7 @@ plot_split_realisations <- function(plot_type, rest_gains, avoided_loss, nets, p
 
 
 find_list_mean <- function(list_to_average){
-    list_mean = Reduce('+', list_to_average)
-    list_mean = list_mean/length(list_mean)
+    list_mean = Reduce('+', list_to_average)/length(list_to_average)
     return(list_mean)
 }
 
