@@ -316,7 +316,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
   
   if (current_simulation_params$use_specified_offset_metric == TRUE){
-    current_credit = transform_features_to_offset_metric(current_credit, metric_type = simulation_params$current_offset_metric_type)
+    current_credit = transform_features_to_offset_metric(current_credit, metric_type = current_simulation_params$offset_metric_type)
   }
   
   output_object$current_credit = current_credit
