@@ -49,23 +49,12 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
   }
   
-  global_params_filename <- paste0(simulation_params_folder, '/global_params.rds')
-  if (!file.exists(global_params_filename)){
-    flog.error(paste('offsetsim run parameter file not found in ', global_params_filename))
-    stop()
-  } else {
-    flog.info('reading %s', global_params_filename)
-    
-    # get the parameters values for all scenarios in the run
-    global_params = readRDS(global_params_filename)
-  }
-  
   # get the names of all parameter files, separated into run scenarios
   scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_simulation_params', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
   
-  # check_plot_options(output_params, global_params, scenario_filenames)
+  
   
   if (!file.exists(output_plot_folder)){
     flog.info('creating output plot folder %s', output_plot_folder)
@@ -89,6 +78,8 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
+    
+    # check_plot_options(output_params, current_simulation_params, scenario_filenames)
     
     param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
     
@@ -118,7 +109,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       
       if (class(output_params$features_to_plot) == 'character'){
         if (output_params$features_to_plot == 'all'){
-          features_to_plot = global_params$features_to_use_in_simulation
+          features_to_plot = current_simulation_params$features_to_use_in_simulation
         } else {
           flog.error("features to plot parameter is poorly defined assign vector of integers or 'all'")
         }
@@ -128,7 +119,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       
       for (feature_ind in features_to_plot){
         
-        current_feature = global_params$features_to_use_in_simulation[feature_ind]
+        current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = output_params$string_width, format = "d", flag = "0"),
                                                  feature_string = formatC(current_feature, width = output_params$string_width, format = "d", flag = "0"),
@@ -159,7 +150,6 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
             plot_impact_set(collated_realisations,
                             current_simulation_params,
                             output_params,
-                            global_params,
                             realisation_num = collated_realisations$realisation_num,
                             site_plot_lims,
                             program_plot_lims,
@@ -179,7 +169,6 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
             plot_outcome_set(collated_realisations,
                              current_simulation_params,
                              output_params,
-                             global_params,
                              realisation_num = collated_realisations$realisation_num,
                              site_plot_lims,
                              program_plot_lims,
