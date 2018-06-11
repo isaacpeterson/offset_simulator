@@ -21,7 +21,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data
   
-  input_data_object <- generate_global_inputs(params_object)
+
   
   # Write initial logging info
   flog.info('Running %s scenarios with %s realisations on %s cores', 
@@ -33,7 +33,6 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # reun (as defined by params_object$global_params$scenario_subset) then only
   # run these. By default params_object$global_params$scenario_subset
   
-
   for (scenario_ind in params_object$global_params$scenario_subset){
     
     # Store the start time
@@ -41,6 +40,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     
     # Extract out the parameters for the current scenario to be run
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
+    
+    input_data_object <- generate_global_inputs(params_object, current_simulation_params)
 
     flog.info('running scenario %s of %s in %s mode with %s offsets',  
               scenario_ind, 
@@ -56,7 +57,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     
     index_object <- initialise_index_object(input_data_object$parcel_characteristics, 
                                             input_data_object$site_feature_layers_initial, 
-                                            current_simulation_params, 
+                                            current_simulation_params,
                                             offset_indexes_to_exclude = which(unlist(input_data_object$offset_probability_list) == 0), 
                                             dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
     # Work out if more than one core is specified, and if so, run the
@@ -75,6 +76,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         
         run_offset_simulation_routines(input_data_object, 
                                        current_simulation_params,
+                                       params_object$global_params, 
+                                       params_object$feature_params,
                                        index_object,
                                        scenario_ind,
                                        realisation_ind)
@@ -85,6 +88,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         
         run_offset_simulation_routines(input_data_object, 
                                        current_simulation_params,
+                                       params_object$global_params, 
+                                       params_object$feature_params,
                                        index_object,
                                        scenario_ind,
                                        realisation_ind)
@@ -96,6 +101,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         
         run_offset_simulation_routines(input_data_object,
                                        current_simulation_params,
+                                       params_object$global_params, 
+                                       params_object$feature_params,
                                        index_object,
                                        scenario_ind,
                                        realisation_ind)
