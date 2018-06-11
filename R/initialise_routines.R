@@ -19,7 +19,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
   
   if (!is.null(user_simulation_params) == TRUE){  
     simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
-    #check_simulation_params(simulation_params)
+    check_simulation_params(simulation_params, global_params)
   } else{
     simulation_params = default_simulation_params
   }
@@ -43,7 +43,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
   global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
   
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) collate_current_policy(simulation_params_object$param_variants[[i]], simulation_params_object$common_params, global_params))
+                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
   
   dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
   simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
@@ -80,7 +80,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
 }
 
 
-generate_global_inputs <- function(params_object){
+generate_global_inputs <- function(params_object, current_simulation_params){
   
   # generate simulated ecology
   if (params_object$global_params$use_simulated_data == TRUE) {
@@ -102,7 +102,8 @@ generate_global_inputs <- function(params_object){
     flog.error(paste('cannot find any raster files with extension', params_object$global_params$raster_file_type))
   }
   
-  feature_raster_layers = load_rasters(params_object$global_params$simulation_inputs_folder, raster_filenames, features_to_use = params_object$global_params$features_to_use)
+  
+  feature_raster_layers = load_rasters(params_object$global_params$simulation_inputs_folder, raster_filenames, features_to_use = current_simulation_params$features_to_use_in_simulation)
   
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
@@ -142,25 +143,13 @@ generate_global_inputs <- function(params_object){
   } else {
     offset_probability_list <- rep(list(1/length(parcel_characteristics$land_parcels)), length(parcel_characteristics$land_parcels))
   }
-  
-  if (class(params_object$global_params$features_to_use_in_simulation) == "character"){
-    if (params_object$global_params$features_to_use_in_simulation == 'all'){
-      features_to_use_in_simulation = seq_along(site_feature_layers_initial[[1]])
-    } 
-  } else {
-    features_to_use_in_simulation = params_object$global_params$features_to_use_in_simulation
-  }
-  
-  # select subset of feature layers to use in current simulation 
-  # (e.g. if there 100 layers just run with 10 of them)
-  
+ 
   input_data_object = list()
-  input_data_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, features_to_use_in_simulation)
+  input_data_object$site_feature_layers_initial = select_feature_subset(site_feature_layers_initial, current_simulation_params$features_to_use_in_simulation)
   input_data_object$parcel_characteristics = parcel_characteristics
   input_data_object$dev_probability_list = dev_probability_list
   input_data_object$offset_probability_list = offset_probability_list
-  input_data_object$global_params = params_object$global_params
-  input_data_object$feature_params = params_object$feature_params
+
   return(input_data_object)
   
 }
@@ -206,25 +195,6 @@ sample_current_dynamics <- function(current_feature_dynamics_set, current_featur
 }
 
 
-#     if (current_discriminator >= 0){
-#       current_discriminator = current_discriminator/(current_feature_dynamics_set$upper_bound[1] - current_feature_dynamics_set$best_estimate[1])
-#       if (current_discriminator > 1){
-#         browser()
-#         current_discriminator = 1
-#       }
-# 
-#       current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(current_feature_dynamics_set$upper_bound - current_feature_dynamics_set$best_estimate)
-#     } else{
-#       current_discriminator = current_discriminator/(current_feature_dynamics_set$best_estimate[1] - current_feature_dynamics_set$lower_bound[1])
-#       
-#       if (current_discriminator < -1){
-#         browser()
-#         current_discriminator = -1
-#       }
-#       current_feature_dynamics = current_feature_dynamics_set$best_estimate - current_discriminator*(current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound)
-#     }
-#   }
-#   
 
 
 build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, update_dynamics_by_differential, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
@@ -334,14 +304,14 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
     
   }
 
-  feature_dynamics_modes = select_feature_subset(feature_dynamics_modes, global_params$features_to_use_in_simulation)
+  feature_dynamics_modes = select_feature_subset(feature_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
   
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
     
     feature_dynamics <- build_dynamics(site_feature_layers_initial,
-                                       features_to_use = seq_along(global_params$features_to_use_in_simulation),
+                                       features_to_use = seq_along(current_simulation_params$features_to_use_in_simulation),
                                        feature_params$sample_background_dynamics,
                                        feature_params$background_projection_type,
                                        feature_params$background_update_dynamics_by_differential,
@@ -364,6 +334,7 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   #output_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
   output_object$feature_dynamics_modes = feature_dynamics_modes
   output_object$management_dynamics = management_dynamics
+
   return(output_object)
 }
 
@@ -401,7 +372,7 @@ check_feature_value_conflicts <- function(site_feature_layers_initial, feature_d
 
 # check_param_conflicts <- function(simulation_params, feature_params, global_params){
 #   
-#   feature_test = match(global_params$features_to_use_in_simulation, seq(feature_params$feature_num))
+#   feature_test = match(global_params$features_to_use_in_simulation, seq(global_params$feature_num))
 #   if (any(is.na(feature_test))){
 #     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
 #     stop()
@@ -473,13 +444,12 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-check_simulation_params <- function(simulation_params){
+check_simulation_params <- function(simulation_params, global_params){
   
   offset_action_set = simulation_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
                              'protected_condition', 'current_condition', 'restored_condition')
   
-
   
   for (offset_action_ind in seq_along(offset_action_set)){
     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
@@ -498,16 +468,6 @@ check_simulation_params <- function(simulation_params){
   }
   valid_dev_calc_type = c('future_condition', 'current_condition')
   check_current_param(simulation_params$dev_calc_type, valid_dev_calc_type)
-  
-  #   if ( (length(simulation_params$mean_decline_rates) != length(global_params$features_to_use_in_simulation)) ){
-  #     flog.error(cat('\n decline rates mean parameter does not match feature number'))
-  #     stop()
-  #   }
-  #   
-  #   if ( (length(simulation_params$decline_rate_std) != length(global_params$features_to_use_in_simulation)) ){
-  #     flog.error(cat('\n decline rates std parameter dpes not match feature number'))
-  #     stop()
-  #   }
   
 }
 
@@ -626,19 +586,26 @@ generate_simulation_combs <- function(simulation_params_group){
 # }
 
 
-collate_current_policy <- function(current_simulation_params, common_params, global_params){
+process_current_simulation_params <- function(current_simulation_params, common_params){
   
   current_simulation_params = append(current_simulation_params, common_params)
+  
+  if (class(current_simulation_params$features_to_use_in_simulation) == "character"){
+    if (current_simulation_params$features_to_use_in_simulation == 'all'){
+      current_simulation_params$features_to_use_in_simulation = seq_along(site_feature_layers_initial[[1]])
+    } 
+  } 
+  
+  current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)
   
   if (current_simulation_params$use_offset_bank == TRUE){
     current_simulation_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
   } else {
     current_simulation_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
-  
-  
-  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, global_params$features_to_use_in_simulation)
-  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, global_params$features_to_use_in_simulation)
+
+  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
+  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
@@ -692,6 +659,10 @@ collate_current_policy <- function(current_simulation_params, common_params, glo
   current_simulation_params$adjust_dev_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_dev_calc,
                                                           current_simulation_params$include_potential_offsets_in_dev_calc,
                                                           current_simulation_params$include_unregulated_loss_in_dev_calc) == TRUE)
+
+  
+  # select subset of feature layers to use in current simulation 
+  # (e.g. if there 100 layers just run with 10 of them)
   return(current_simulation_params)
   
 }
