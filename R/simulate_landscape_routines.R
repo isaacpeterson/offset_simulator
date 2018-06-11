@@ -20,7 +20,7 @@ simulate_site_feature <- function(site_sample_type, current_condition_class_boun
 
 simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder, condition_class_modes){ 
   
-  for (feature_ind in 1:feature_params$feature_num){
+  for (feature_ind in 1:feature_params$simulated_feature_num){
 
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
     current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
