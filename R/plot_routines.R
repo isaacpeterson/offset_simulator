@@ -1,4 +1,4 @@
-plot_outcome_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, 
+plot_outcome_set <- function(collated_realisations, current_simulation_params, plot_params,
                              realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
   if (plot_params$plot_site == TRUE){
@@ -98,7 +98,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 }
 
 
-plot_impact_set <- function(collated_realisations, current_simulation_params, plot_params, global_params, realisation_num, 
+plot_impact_set <- function(collated_realisations, current_simulation_params, plot_params, realisation_num, 
                             site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, sets_to_plot){
   
   # Plot the site scale impacts
@@ -350,6 +350,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     }
     
     # Overlay the net impact of the offset and development impact 
+    browser()
     if (plot_site_net_impact == TRUE){
       overlay_plot_list(plot_type, net_plot_list[current_set_to_plot], yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
                         col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
