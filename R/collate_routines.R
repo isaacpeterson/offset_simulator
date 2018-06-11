@@ -306,6 +306,7 @@ run_site_scale_collate_routine <- function(current_model_outputs, current_site_g
   collated_object = list()
 
 
+
   collated_object = collate_gains_degs(current_model_outputs, 
                                        current_trajectories,
                                        current_feature_dynamics_initial,
@@ -424,11 +425,18 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_la
   avoided_loss = lapply(seq(parcel_num), function(i) sum(site_feature_layers_to_use[[i]]) - cfac_sums[[i]])
   rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum(site_feature_layers_to_use[[i]]))
   net_gains = mapply('-', impact_trajectories, cfac_sums)
+
+  if (length(impact_trajectories) == 1){
+    net_gains = list(net_gains)
+  }
+  
   collated_object = list(net_gains, avoided_loss, rest_gains)
 
+  
   collated_object <- lapply(seq_along(collated_object),
                             function(i) lapply(seq_along(collated_object[[i]]), 
                                                function(j) merge_vectors(array(0, time_steps), collated_object[[i]][[j]], current_offset_yrs[j])))
+  
   names(collated_object) = c('nets', 'avoided_loss', 'rest_gains')
   
   if ((collate_type == 'offsets') | (collate_type == 'offset_bank')){
@@ -469,51 +477,59 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
   
   collated_data = list()
 
-
   collated_data$collated_devs = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$dev_object,
                                                                current_site_groups = simulation_outputs$index_object$site_indexes_used$devs,
                                                                current_trajectories, 
-                                                               current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                               current_feature_dynamics_initial, 
+                                                               current_feature_dynamics_modes_initial, 
                                                                collate_type = 'devs', 
-                                                               current_simulation_params, feature_params,
+                                                               current_simulation_params, 
+                                                               feature_params,
                                                                use_cfac_type_in_sim, 
                                                                feature_ind)
+  
 
   collated_data$collated_offsets <- run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offsets_object,
                                                                    current_site_groups = simulation_outputs$index_object$site_indexes_used$offsets,
                                                                    current_trajectories, 
-                                                                   current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                   current_feature_dynamics_initial, 
+                                                                   current_feature_dynamics_modes_initial, 
                                                                    collate_type = 'offsets', 
-                                                                   current_simulation_params, feature_params,
+                                                                   current_simulation_params, 
+                                                                   feature_params,
                                                                    use_cfac_type_in_sim, 
                                                                    feature_ind)
-  
-
   
   collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
                                                                      current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
                                                                      current_trajectories, 
-                                                                     current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                     current_feature_dynamics_initial, 
+                                                                     current_feature_dynamics_modes_initial, 
                                                                      collate_type = 'dev_credit', 
-                                                                     current_simulation_params, feature_params,
+                                                                     current_simulation_params, 
+                                                                     feature_params,
                                                                      use_cfac_type_in_sim, 
                                                                      feature_ind)
   
   collated_data$collated_offset_bank = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$offset_bank_object, 
                                                                       current_site_groups = simulation_outputs$index_object$site_indexes_used$banking,
                                                                       current_trajectories, 
-                                                                      current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                      current_feature_dynamics_initial, 
+                                                                      current_feature_dynamics_modes_initial, 
                                                                       collate_type = 'offset_bank', 
-                                                                      current_simulation_params, feature_params,
+                                                                      current_simulation_params, 
+                                                                      feature_params,
                                                                       use_cfac_type_in_sim, 
                                                                       feature_ind)
-  
+
   collated_data$collated_unregulated_loss = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$unregulated_loss_object,
                                                                            current_site_groups = simulation_outputs$index_object$site_indexes_used$unregulated,
                                                                            current_trajectories, 
-                                                                           current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                                                           current_feature_dynamics_initial, 
+                                                                           current_feature_dynamics_modes_initial, 
                                                                            collate_type = 'unregulated_loss', 
-                                                                           current_simulation_params, feature_params,
+                                                                           current_simulation_params, 
+                                                                           feature_params,
                                                                            use_cfac_type_in_sim, 
                                                                            feature_ind)
   
@@ -707,7 +723,6 @@ assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_in
   
   NNL_absolute = lapply(seq_along(impacts), function(i) assess_NNL(impacts[[i]]) )
   
-  browser()
   NNL_object$NNL = lapply(seq_along(NNL_absolute), function(i) (NNL_absolute[[i]] - offset_yrs_to_use[[i]]))
 
   if (length(unlist(NNL_object$NNL)) >0){

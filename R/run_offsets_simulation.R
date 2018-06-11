@@ -80,7 +80,6 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        realisation_ind)
       }
     } else if ((params_object$global_params$number_of_cores > 1) && (params_object$global_params$realisation_num > 1)){
-      
       # case when running NON-DETERMINISTIC realisations in parallel
       foreach(realisation_ind = seq_len(params_object$global_params$realisation_num)) %dopar%{
         
@@ -94,6 +93,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       # Case when running single realisation
       # TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
       for (realisation_ind in 1:params_object$global_params$realisation_num){
+        
         run_offset_simulation_routines(input_data_object,
                                        current_simulation_params,
                                        index_object,

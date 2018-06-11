@@ -422,7 +422,7 @@ check_feature_value_conflicts <- function(site_feature_layers_initial, feature_d
 
 initialise_cores <- function(global_params){
   max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
-  
+
   if (is.character(global_params$number_of_cores)){
     if (global_params$number_of_cores == 'all'){
       current_crs = max_crs
@@ -445,6 +445,7 @@ initialise_cores <- function(global_params){
       } 
     }
   }
+
   global_params$number_of_cores = current_crs
   
   clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = global_params$number_of_cores processors
