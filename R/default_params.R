@@ -39,10 +39,6 @@ initialise_default_global_params <- function(){
 
   # Specify how many cores to run on. Default setting here it to use single core
   default_global_params$number_of_cores = 1
-
-  # What subset of features to use in the simulation (specified by the index
-  # of the feature e.g. c(1,4,13)
-  default_global_params$features_to_use_in_simulation = 'all' 
   
   # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
@@ -88,6 +84,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$intervention_vec[intervention_locs] = 1
     
 
+    default_simulation_params$features_to_use_in_simulation = 'all'
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
     default_simulation_params$features_to_use_in_offset_calc = 1
@@ -252,13 +249,13 @@ initialise_default_feature_params <- function(){
   
 
   #how many feature layers to generate
-  default_feature_params$feature_num = 1
+  default_feature_params$simulated_feature_num = 1
   
   # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_simulation_params$decline_rate_std
-  default_feature_params$mean_decline_rates = rep(list(-1e-2), default_feature_params$feature_num)
+  default_feature_params$mean_decline_rates = rep(list(-1e-2), default_feature_params$simulated_feature_num)
   
   #set this parameter to zero to yield no noise
-  default_feature_params$decline_rate_std = rep(list(1e-3), default_feature_params$feature_num)
+  default_feature_params$decline_rate_std = rep(list(1e-3), default_feature_params$simulated_feature_num)
   
   default_feature_params$simulated_time_vec = 1:100
   
