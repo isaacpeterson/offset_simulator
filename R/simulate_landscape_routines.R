@@ -1,11 +1,14 @@
 simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, unique_site_vals){
 
+  if (length(initial_site_sd) == 0){
+    initial_site_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1]) / 3
+  }
+  
   if (site_sample_type == 'trunc_norm'){
     if (unique_site_vals == TRUE){
       site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
     } else{
       site_elements = array(1, element_num)*rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
-      
     }
   } else if (site_sample_type == 'uniform'){
     if (unique_site_vals == TRUE){
