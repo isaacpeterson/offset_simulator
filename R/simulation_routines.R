@@ -150,7 +150,7 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
                                          feature_dynamics_to_use = output_object$feature_dynamics, 
                                          projection_type = feature_params$background_projection_type, 
                                          unique_site_vals = feature_params$unique_site_vals)
-    
+
     output_object$site_feature_layers = project_features(output_object$site_feature_layers,
                                                          feature_params$background_projection_type,
                                                          feature_params$background_update_dynamics_by_differential, 
@@ -196,7 +196,7 @@ match_sites_routine <- function(output_object, data_object, current_simulation_p
     flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
                   'with value', paste( lapply(match_object$development_object$parcel_vals_used, round, 1)), '\n',
                   'offset with sites', paste(match_object$offset_object$site_indexes), 
-                  'wih value', paste( lapply(match_object$offset_object$parcel_vals_used, round, 1)), '\n'))
+                  'with value', paste( lapply(match_object$offset_object$parcel_vals_used, round, 1)), '\n'))
     
     #update available credit
     
@@ -575,23 +575,23 @@ find_time_shifts <- function(site_feature_layers_to_use, current_feature_dynamic
   if (projection_type == 'by_element'){
     time_shifts = lapply(seq_along(site_feature_layers_to_use), 
                          function(i) lapply(features_to_use, 
-                                            function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
+                                            function(j) unlist(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
                                                                function(k) find_time_shift(current_feature_val = site_feature_layers_to_use[[i]][[j]][k], 
-                                                                                           current_feature_dynamics_set[[i]][[j]][[k]]))))
+                                                                                           current_feature_dynamics_set[[i]][[j]][[k]])))))
   } else if (projection_type == 'by_site'){
     
     if (unique_site_vals == TRUE){
       time_shifts = lapply(seq_along(site_feature_layers_to_use), 
                            function(i) lapply(features_to_use, 
-                                              function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
+                                              function(j) unlist(lapply(seq_along(site_feature_layers_to_use[[i]][[j]]),
                                                                  function(k) find_time_shift(current_feature_val = site_feature_layers_to_use[[i]][[j]][k], 
-                                                                                             current_feature_dynamics_set[[i]][[j]]))))
+                                                                                             current_feature_dynamics_set[[i]][[j]])))))
     } else{
       
       time_shifts = lapply(seq_along(site_feature_layers_to_use), 
-                           function(i) lapply(features_to_use, 
+                           function(i) unlist(lapply(features_to_use, 
                                               function(j) find_time_shift(current_feature_val = unique(as.vector(site_feature_layers_to_use[[i]][[j]])), 
-                                                                          current_feature_dynamics_set[[i]][[j]])))
+                                                                          current_feature_dynamics_set[[i]][[j]]))))
     }
   }
   
@@ -911,6 +911,7 @@ prepare_offset_pool <- function(output_object, current_simulation_params, featur
     offset_pool_type = 'offsets'
   }
   
+
   # determine current gains characteristics
   current_pool = unlist(current_pool)
   offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
@@ -1134,7 +1135,7 @@ logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_d
 
 user_projection <- function(current_feature_val, current_feature_dynamics, update_dynamics_by_differential, 
                             perform_dynamics_time_shift, time_vec, projection_yr){
-  ####### NOTE NEED TO CHECK WHETEHR RETURNS ARE CORRECT TO YR
+  ####### TODO NOTE NEED TO CHECK WHETEHR RETURNS ARE CORRECT TO YR
   if (perform_dynamics_time_shift == TRUE){
     
     current_feature_dynamics <- shift_dynamics(current_feature_val, 
@@ -1209,6 +1210,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
                                                                                      time_vec, 
                                                                                      projection_yrs[[i]])))
       } else {
+
         projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
                                                          function(i) user_projection(current_site_feature_layer[i], 
                                                                                      feature_dynamics_to_use[[i]], 
@@ -1259,7 +1261,6 @@ project_features <- function(current_site_feature_layers, projection_type, updat
   } else {
     site_feature_layers_to_use = current_site_feature_layers
   }
-  
   
   projected_features = lapply(seq_along(current_site_feature_layers),
                               function(i) lapply(features_to_project,
@@ -1374,7 +1375,6 @@ match_sites <- function(data_object, output_object, match_type, current_simulati
                                          feature_params,
                                          time_horizon,
                                          yr)  #determine future development parcel attributes
-  
   
   current_match_vals_pool = dev_pool_object$parcel_vals_used
   
@@ -1831,7 +1831,6 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   #create an array of threshold values defined by user based proportion 
   thresh = array(current_simulation_params$match_threshold_ratio * vals_to_match)         
   
-  
   pool_object <- select_pool_to_match(vals_to_match, current_features_to_use_in_offset_calc, current_simulation_params$use_specified_offset_metric, 
                                       current_simulation_params$offset_metric_type, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, screen_site_zeros)
@@ -2110,9 +2109,9 @@ assess_current_pool <- function(pool_object, pool_type, site_feature_layers_to_u
                                              unique_site_vals = feature_params$unique_site_vals)
         
         feature_dynamics_to_use = management_dynamics_to_use
-        
+
       } 
-      
+
       projected_feature_layers = project_features(site_feature_layers_to_use,
                                                   projection_type = feature_params$management_projection_type,
                                                   feature_params$management_update_dynamics_by_differential, 
@@ -2291,7 +2290,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
   
   projection_yrs = find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift, 
                                        site_feature_layers_to_use, yr, features_to_project, feature_dynamics_to_use, projection_type, unique_site_vals)
-  
+
   cfacs_object$cfacs = project_features(site_feature_layers_to_use,
                                         feature_params$background_projection_type,
                                         feature_params$background_update_dynamics_by_differential, 
