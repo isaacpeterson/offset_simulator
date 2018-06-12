@@ -298,6 +298,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$background_mode_num = vector()
   default_feature_params$management_mode_num = vector()
   default_feature_params$initial_condition_class_bounds = vector()
+  default_feature_params$management_condition_class_bounds = vector()
   default_feature_params$sample_management_dynamics = TRUE 
   default_feature_params$sample_background_dynamics = TRUE
   default_feature_params$dynamics_sample_type = vector()
@@ -312,6 +313,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$background_update_dynamics_by_differential = TRUE
   default_feature_params$site_sample_type = 'uniform'
   default_feature_params$initial_site_sd = 1
+  default_feature_params$project_by_mean = FALSE
   return(default_feature_params)
 }
 
