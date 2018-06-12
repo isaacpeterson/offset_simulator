@@ -156,7 +156,7 @@ generate_global_inputs <- function(params_object, current_simulation_params){
 
 
 
-sample_current_dynamics <- function(current_feature_dynamics_group, current_mode, current_feature_val, update_dynamics_by_differential, sample_dynamics, dynamics_sample_type){
+sample_current_dynamics <- function(current_feature_dynamics_group, current_mode, current_feature_val, store_dynamics_as_differential, sample_dynamics, dynamics_sample_type){
 
   if (current_mode == 0){
     current_feature_dynamics = list()
@@ -176,9 +176,7 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
     current_discriminator = runif(n = 1, min = -1, max = 1)
   }
   
-  if (length(current_discriminator) == 0){
-    browser()
-  }
+
   if (current_discriminator >= 0){
     bound_to_use = current_feature_dynamics_set$upper_bound
   } else {
@@ -199,7 +197,7 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
     current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
   }
   
-  if (update_dynamics_by_differential == TRUE){
+  if (store_dynamics_as_differential == TRUE){
     current_feature_dynamics = diff(current_feature_dynamics)
   } 
   
@@ -210,7 +208,7 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
 
 
 
-build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, update_dynamics_by_differential, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
+build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, store_dynamics_as_differential, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
 
 
     if (projection_type == 'by_element'){
@@ -220,7 +218,7 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
                                                                                  function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
                                                                                                                      feature_dynamics_modes[[i]][[j]][k],
                                                                                                                      site_feature_layers_to_use[[i]][[j]][[k]],
-                                                                                                                     update_dynamics_by_differential, 
+                                                                                                                     store_dynamics_as_differential, 
                                                                                                                      sample_dynamics,
                                                                                                                      dynamics_sample_type)  )))
     } else if (projection_type == 'by_site'){
@@ -229,7 +227,7 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
                                                function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
                                                                                    feature_dynamics_modes[[i]][[j]],
                                                                                    unique(site_feature_layers_to_use[[i]][[j]]),
-                                                                                   update_dynamics_by_differential, 
+                                                                                   store_dynamics_as_differential, 
                                                                                    sample_dynamics,
                                                                                    dynamics_sample_type)  ))
     }
@@ -314,33 +312,40 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
 
   feature_dynamics_modes = select_feature_subset(feature_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
 
+  
   feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), 
                                   function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
                                                      function(j) feature_dynamics_modes[[i]][[j]] * as.numeric(sum(site_feature_layers_initial[[i]][[j]]) > 0)))
   
-  feature_dynamics_modes = 
+  if (feature_params$background_projection_type == 'by_element'){
+    feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), 
+                                    function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
+                                                       function(j) rep(feature_dynamics_modes[[i]][[j]], length(site_feature_layers_initial[[i]][[j]]))))
+  }
+  
+
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
-    browser()
+
     feature_dynamics <- build_dynamics(site_feature_layers_initial,
                                        features_to_use = seq_along(current_simulation_params$features_to_use_in_simulation),
                                        feature_params$sample_background_dynamics,
                                        feature_params$background_projection_type,
-                                       feature_params$background_update_dynamics_by_differential,
+                                       store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
                                        feature_params$dynamics_sample_type,
                                        feature_params$background_dynamics_bounds, 
                                        feature_dynamics_modes)
     
     management_dynamics <- build_dynamics(site_feature_layers_initial,
-                                          features_to_use = feature_params$features_to_use_in_offset_interventionn,
-                                          feature_params$sample_background_dynamics,
+                                          features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
+                                          feature_params$sample_management_dynamics,
                                           feature_params$management_projection_type,
-                                          update_dynamics_by_differential = FALSE,
+                                          store_dynamics_as_differential = FALSE,
                                           feature_params$dynamics_sample_type,
                                           feature_params$management_dynamics_bounds, 
                                           feature_dynamics_modes)
-    
+
   }
 
   output_object$feature_dynamics = feature_dynamics
