@@ -159,7 +159,7 @@ generate_global_inputs <- function(params_object, current_simulation_params){
 sample_current_dynamics <- function(current_feature_dynamics_group, current_mode, current_feature_val, store_dynamics_as_differential, sample_dynamics, dynamics_sample_type){
 
   if (current_mode == 0){
-    current_feature_dynamics = list()
+    current_feature_dynamics = array(0, length(current_feature_dynamics_group[[1]]$best_estimate))
     return(current_feature_dynamics)
   } else {
     current_feature_dynamics_set = current_feature_dynamics_group[[current_mode]]
@@ -208,7 +208,8 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
 
 
 
-build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, store_dynamics_as_differential, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
+build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, projection_type, store_dynamics_as_differential, 
+                           unique_site_vals, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
 
 
     if (projection_type == 'by_element'){
@@ -222,7 +223,10 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
                                                                                                                      sample_dynamics,
                                                                                                                      dynamics_sample_type)  )))
     } else if (projection_type == 'by_site'){
-      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+      
+      if (unique_site_vals == FALSE){
+        
+        dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
                             function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
                                                function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
                                                                                    feature_dynamics_modes[[i]][[j]],
@@ -230,8 +234,19 @@ build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_d
                                                                                    store_dynamics_as_differential, 
                                                                                    sample_dynamics,
                                                                                    dynamics_sample_type)  ))
+        
+      } else {
+        
+        dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                              function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+                                                 function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
+                                                                                     feature_dynamics_modes[[i]][[j]],
+                                                                                     mean(site_feature_layers_to_use[[i]][[j]]),
+                                                                                     store_dynamics_as_differential, 
+                                                                                     sample_dynamics,
+                                                                                     dynamics_sample_type)  ))
     }
-
+  }
   return(dynamics_set)
 }
 
@@ -262,13 +277,21 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 
 
   
-find_modes <- function(projection_type, feature_layers_to_use, condition_class_bounds){
+find_modes <- function(projection_type, feature_layers_to_use, condition_class_bounds, unique_site_vals){
   
   if (projection_type == 'by_site' ){
+    if (unique_site_vals == FALSE){
     feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
                                     function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
                                                        function(j) find_current_mode(unique(feature_layers_to_use[[i]][[j]]), 
                                                                                      condition_class_bounds[[j]])))
+    } else {
+      feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+                                      function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+                                                         function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
+                                                                                       condition_class_bounds[[j]])))
+    }
+    
   } else if (projection_type == 'by_element'){
     feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
                                     function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
@@ -276,6 +299,8 @@ find_modes <- function(projection_type, feature_layers_to_use, condition_class_b
                                                                           find_current_mode, 
                                                                           condition_class_bounds[[j]])))
   }
+  
+
   
   return(feature_dynamics_modes)
 }
@@ -300,30 +325,29 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
   output_object$credit_match_flag = FALSE
   output_object$index_object = index_object
 
-  if (file.exists(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))){
-    feature_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
-    
-  } else {
+#   if (file.exists(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))){
+#     background_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
+#     
+#   } else {
+# 
+#     background_dynamics_modes = find_modes(projection_type = feature_params$background_projection_type, 
+#                                         feature_layers_to_use = site_feature_layers_initial, 
+#                                         condition_class_bounds = feature_params$condition_class_bounds)
+#     
+#     background_dynamics_modes = select_feature_subset(background_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
+#   }
 
-    feature_dynamics_modes = find_modes(projection_type = feature_params$background_projection_type, 
-                                        feature_layers_to_use = site_feature_layers_initial, 
-                                        condition_class_bounds = feature_params$condition_class_bounds)
-  }
-
-  feature_dynamics_modes = select_feature_subset(feature_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
-
+  background_dynamics_modes = find_modes(projection_type = feature_params$background_projection_type, 
+                                         feature_layers_to_use = site_feature_layers_initial, 
+                                         condition_class_bounds = feature_params$condition_class_bounds, 
+                                         unique_site_vals = feature_params$unique_site_vals)
   
-  feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), 
-                                  function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
-                                                     function(j) feature_dynamics_modes[[i]][[j]] * as.numeric(sum(site_feature_layers_initial[[i]][[j]]) > 0)))
   
-  if (feature_params$background_projection_type == 'by_element'){
-    feature_dynamics_modes = lapply(seq_along(site_feature_layers_initial), 
-                                    function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
-                                                       function(j) rep(feature_dynamics_modes[[i]][[j]], length(site_feature_layers_initial[[i]][[j]]))))
-  }
+  management_dynamics_modes = find_modes(projection_type = feature_params$management_projection_type, 
+                                         feature_layers_to_use = site_feature_layers_initial, 
+                                         condition_class_bounds = feature_params$management_condition_class_bounds, 
+                                         unique_site_vals = feature_params$unique_site_vals)
   
-
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   } else {
@@ -333,24 +357,26 @@ initialise_output_object <- function(current_simulation_params, index_object, gl
                                        feature_params$sample_background_dynamics,
                                        feature_params$background_projection_type,
                                        store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
+                                       feature_params$unique_site_vals,
                                        feature_params$dynamics_sample_type,
                                        feature_params$background_dynamics_bounds, 
-                                       feature_dynamics_modes)
+                                       background_dynamics_modes)
     
     management_dynamics <- build_dynamics(site_feature_layers_initial,
                                           features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
                                           feature_params$sample_management_dynamics,
                                           feature_params$management_projection_type,
                                           store_dynamics_as_differential = FALSE,
-                                          feature_params$dynamics_sample_type,
+                                          feature_params$unique_site_vals,
+                                          feature_params$management_dynamics_sample_type,
                                           feature_params$management_dynamics_bounds, 
-                                          feature_dynamics_modes)
+                                          management_dynamics_modes)
 
   }
 
   output_object$feature_dynamics = feature_dynamics
   #output_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
-  output_object$feature_dynamics_modes = feature_dynamics_modes
+  output_object$feature_dynamics_modes = background_dynamics_modes
   output_object$management_dynamics = management_dynamics
 
   return(output_object)
