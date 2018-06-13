@@ -176,27 +176,26 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
     current_discriminator = runif(n = 1, min = -1, max = 1)
   }
   
-
   if (current_discriminator >= 0){
-    bound_to_use = current_feature_dynamics_set$upper_bound
+    factor_to_use = current_feature_dynamics_set$upper_bound - current_feature_dynamics_set$best_estimate
   } else {
-    bound_to_use = current_feature_dynamics_set$lower_bound
+    factor_to_use = current_feature_dynamics_set$best_estimate - current_feature_dynamics_set$lower_bound
   }
   
-  if (length(bound_to_use) != length(current_feature_dynamics_set$best_estimate)){
-    browser()
-  }
   if (dynamics_sample_type == 'by_initial_value'){
-    current_discriminator = current_discriminator/(bound_to_use[1] - current_feature_dynamics_set$best_estimate[1])
+    current_discriminator = current_discriminator/(factor_to_use[1])
   }
   
   if (current_discriminator >= 1){
     browser()
-    current_feature_dynamics = current_feature_val + diff(bound_to_use)
+    
   } else {
-    current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*(bound_to_use - current_feature_dynamics_set$best_estimate)   
+    current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*factor_to_use   
   }
   
+  if (any(current_feature_dynamics > 1)){
+    browser()
+  }
   if (store_dynamics_as_differential == TRUE){
     current_feature_dynamics = diff(current_feature_dynamics)
   } 
