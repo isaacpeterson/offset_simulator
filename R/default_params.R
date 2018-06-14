@@ -314,6 +314,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$site_sample_type = 'uniform'
   default_feature_params$initial_site_sd = 1
   default_feature_params$project_by_mean = FALSE
+  default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   return(default_feature_params)
 }
 
