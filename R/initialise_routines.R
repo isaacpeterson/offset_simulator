@@ -910,7 +910,7 @@ split_ecology_to_land_parcels <- function(landscape_ecology, land_parcels, featu
     parcel_dims = length(current_parcel)
     
     for (feature_ind in seq_len(feature_num)){
-      current_feature_layers[[parcel_ind]][[feature_ind]] = landscape_ecology[[feature_ind]][current_parcel]
+      current_feature_layers[[parcel_ind]][[feature_ind]] = matrix(landscape_ecology[[feature_ind]][current_parcel], nrow = 1)
     }
   }
   return(current_feature_layers)
