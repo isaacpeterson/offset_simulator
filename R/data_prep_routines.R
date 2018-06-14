@@ -78,7 +78,7 @@ save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
 split_ecology <- function(landscape_ecology, land_parcels){
   current_ecology = lapply(seq_along(land_parcels), 
                            function(i) lapply(seq_along(landscape_ecology), 
-                                              function(j) landscape_ecology[[j]][land_parcels[[i]]]))
+                                              function(j) matrix(landscape_ecology[[j]][land_parcels[[i]]], nrow = 1)))
   return(current_ecology)
 }
 
