@@ -155,16 +155,6 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 }
 
 
-
-
-# current_site_feature_layers = current_initial_feature_layers
-# current_feature_dynamics = current_feature_dynamics_initial 
-# current_offset_yrs = rep(1, length(current_initial_feature_layers)) 
-# current_parcel_num_remaining = vector()
-# cfac_type = 'landscape'
-# collate_type = vector() 
-# use_cfac_type_in_sim = FALSE
-
 collate_cfacs <- function(current_simulation_params, feature_params, current_site_feature_layers, current_feature_dynamics, current_feature_dynamics_modes, current_offset_yrs, 
                           current_parcel_num_remaining, cfac_type, collate_type, use_cfac_type_in_sim, feature_ind){
   
@@ -200,6 +190,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     
   }
 
+
   cfacs_object = list()
   cfacs_object$cfacs = project_features(current_site_feature_layers,
                                         feature_params$background_projection_type,
@@ -208,27 +199,10 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                                         feature_dynamics_modes_to_use = current_feature_dynamics_modes,
                                         time_horizons,
                                         current_simulation_params,
-                                        features_to_project = 1,
-                                        time_fill = TRUE, 
                                         perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
+                                        time_fill = TRUE, 
                                         unique_site_vals = feature_params$unique_site_vals,
                                         projection_yrs = current_offset_yrs)
-  
-#   cfacs_object = calc_cfacs(site_feature_layers_to_use = current_site_feature_layers, 
-#                             parcel_num_remaining = current_parcel_num_remaining,
-#                             current_simulation_params, 
-#                             feature_params,
-#                             feature_dynamics_to_use = current_feature_dynamics, 
-#                             feature_dynamics_modes_to_use = current_feature_dynamics_modes,
-#                             time_horizons, 
-#                             offset_yrs = current_offset_yrs, 
-#                             include_potential_developments,
-#                             include_potential_offsets,
-#                             include_unregulated_loss,
-#                             adjust_cfacs_flag,
-#                             features_to_project = 1, 
-#                             time_fill = TRUE, 
-#                             projection_yrs = current_offset_yrs)
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
@@ -243,6 +217,13 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     
     cfacs_object$cfacs_to_use = sum_trajectories(cfacs_object$adjusted_cfacs)
   } else{
+    browser()
+    
+    for (site_ind in 1:length(cfacs_object$cfacs)){
+      a = sum_trajectories(cfacs_object$cfacs[site_ind])
+      print(site_ind)
+    }
+    
     cfacs_object$cfacs_to_use = sum_trajectories(cfacs_object$cfacs)
   }
   
@@ -361,10 +342,10 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
     return(NULL)
   }
   
-  current_site_feature_layers = lapply(seq_along(current_pool), function(i) list(current_trajectories[[current_pool[i]]] [current_model_outputs$offset_yrs[[i]], ]))
+  current_site_feature_layers = lapply(seq_along(current_pool), function(i) list(matrix(current_trajectories[[current_pool[i]]] [current_model_outputs$offset_yrs[[i]], ], nrow = 1)))
+  
   current_feature_dynamics_to_use = current_feature_dynamics_initial[current_pool]
-#   current_feature_dynamics_to_use = lapply(seq_along(current_feature_dynamics_to_use), 
-#                                            function(i) lapply(seq_along(current_feature_dynamics_to_use[[i]], 
+
 
   current_cfacs = collate_cfacs(current_simulation_params, feature_params, 
                                 current_site_feature_layers,
@@ -376,19 +357,6 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
                                 collate_type, 
                                 use_cfac_type_in_sim,
                                 feature_ind = 1)
-  
-#   collate_cfacs(current_simulation_params, feature_params,
-#                 current_site_feature_layers = current_initial_feature_layers,
-#                 current_feature_dynamics = current_feature_dynamics_initial,
-#                 current_feature_dynamics_modes_initial,
-#                 current_offset_yrs = rep(1, length(current_initial_feature_layers)), 
-#                 current_parcel_num_remaining = vector(),
-#                 cfac_type = 'landscape',
-#                 collate_type = vector(), 
-#                 use_cfac_type_in_sim = FALSE, 
-#                 feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
-  
-  #site_feature_layers_to_use = select_nested_subset(nested_object = current_model_outputs$site_feature_layers, nested_ind = feature_ind, output_type = 'non-nested') 
   
   site_feature_layers_to_use = unlist(current_site_feature_layers, recursive = FALSE)
 
