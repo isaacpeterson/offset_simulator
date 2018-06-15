@@ -176,7 +176,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     include_unregulated_loss = FALSE
     
   } else if (cfac_type == 'site_scale'){
-    
+    browser()
     time_horizons = generate_time_horizons(project_type = 'current', 
                                            yr = current_simulation_params$time_steps, 
                                            offset_yrs = current_offset_yrs, 

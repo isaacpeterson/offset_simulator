@@ -99,9 +99,12 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
   #run through main time loop
   for (yr in seq_len(current_simulation_params$time_steps)){
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    flog.info('t = %s', yr)
     
-    # if running multiple regions with distinct policies cycle through each region
+    if (current_simulation_params$allow_developments_from_credit == TRUE){
+      flog.info(cat('t = ', yr, ' current credit =', paste(round(unlist(output_object$current_credit), 1))), '\n') 
+    } else {
+      flog.info('t = %s', yr) 
+    }
     
     #when running in offset banking select out current set of sites to add to bank
     
@@ -110,12 +113,10 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
     }
     
     # determine current set of available offset sites and calculate gains structure as detailed in current policy params
-    output_object$offset_pool_object <- prepare_offset_pool(output_object, current_simulation_params, feature_params, data_object, yr)
+    output_object$offset_pool_object <- build_offset_pool(output_object, current_simulation_params, feature_params, data_object, yr)
     
     # cycle through number of developments and associated offsets
-    if (current_simulation_params$allow_developments_from_credit == TRUE){
-      flog.info(cat('current credit ', paste(round(unlist(output_object$current_credit), 1)), '\n'))
-    }
+
     
     for (current_dev_index in seq_len(current_simulation_params$intervention_vec[yr])){
       
@@ -153,7 +154,6 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
                                          project_by_mean = feature_params$project_by_mean,
                                          unique_site_vals = feature_params$unique_site_vals)
     
-
     output_object$site_feature_layers = project_features(output_object$site_feature_layers,
                                                          feature_params$background_projection_type,
                                                          feature_params$background_update_dynamics_by_differential, 
@@ -164,7 +164,8 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
                                                          perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
                                                          time_fill = FALSE,
                                                          unique_site_vals = feature_params$unique_site_vals,
-                                                         projection_yrs)
+                                                         projection_yrs, 
+                                                         condition_class_bounds = feature_params$condition_class_bounds)
 
   }
   
@@ -877,7 +878,7 @@ assess_banking_credit <- function(output_object, current_simulation_params){
 }
 
 # determine characteristics of potential offset sites
-prepare_offset_pool <- function(output_object, current_simulation_params, feature_params, data_object,  yr){
+build_offset_pool <- function(output_object, current_simulation_params, feature_params, data_object,  yr){
   
   # if no developments or banked offsets for the current year return null object
   if (current_simulation_params$intervention_vec[yr] ==  0){
@@ -1176,8 +1177,8 @@ user_projection <- function(current_feature_val, current_feature_dynamics, updat
 
 # calculate the expected feature_layers under maintenaince, restoration
 
-project_feature_layers <- function(current_simulation_params, projection_type, update_dynamics_by_differential, current_site_feature_layer, feature_dynamics_to_use, 
-                                   feature_dynamics_mode_to_use, time_horizon, perform_dynamics_time_shift, time_fill, projection_yrs){
+project_feature_layer <- function(current_simulation_params, projection_type, update_dynamics_by_differential, current_site_feature_layer, feature_dynamics_to_use, 
+                                   feature_dynamics_mode_to_use, current_condition_class_bounds, time_horizon, perform_dynamics_time_shift, time_fill, projection_yrs){
   
   # for maintain feature_layers copy current feature_layers to matrix of depth (time_horizon + 1)
   
@@ -1189,7 +1190,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
     
     if (time_fill == TRUE){
       # return all feature_layers states over all time steps
-      projected_feature_layers = matrix(rep(current_site_feature_layer, (time_horizon + 1)), ncol = length(current_site_feature_layer), byrow = TRUE)
+      projected_feature = matrix(rep(current_site_feature_layer, (time_horizon + 1)), ncol = length(current_site_feature_layer), byrow = TRUE)
     } else {
       # project for single time step
       return(current_site_feature_layer)
@@ -1199,10 +1200,10 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
     
     if (time_fill == TRUE){
       # return all feature_layers states over all time steps
-      projected_feature_layers = matrix(rep(array(0, length(current_site_feature_layer)), (time_horizon + 1)), ncol = length(current_site_feature_layer), byrow = TRUE)
+      projected_feature = matrix(rep(array(0, length(current_site_feature_layer)), (time_horizon + 1)), ncol = length(current_site_feature_layer), byrow = TRUE)
     } else {
       # project for single time step
-      projected_feature_layers = matrix(rep(0, length(current_site_feature_layer)), ncol = length(current_site_feature_layer))
+      projected_feature = matrix(rep(0, length(current_site_feature_layer)), ncol = length(current_site_feature_layer))
       
     }
   } else {
@@ -1213,12 +1214,12 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
       time_vec = time_horizon
     }
     
-    # update feature_layers according to function defined in project_feature_layers function
+    # update feature_layers according to function defined in project_feature_layer function
     # function parameters are contained in decline_rates array
     
     if (projection_type == 'by_element'){
       if (perform_dynamics_time_shift == TRUE){
-        projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
+        projected_feature = simplify2array(lapply(seq_along(current_site_feature_layer), 
                                                          function(i) user_projection(current_site_feature_layer[i], 
                                                                                      feature_dynamics_to_use[i], 
                                                                                      update_dynamics_by_differential, 
@@ -1227,7 +1228,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
                                                                                      projection_yrs[i])))
       } else {
 
-        projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
+        projected_feature = simplify2array(lapply(seq_along(current_site_feature_layer), 
                                                          function(i) user_projection(current_site_feature_layer[i], 
                                                                                      feature_dynamics_to_use[[i]], 
                                                                                      update_dynamics_by_differential, 
@@ -1256,38 +1257,24 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
       }
       
       current_feature_dynamics = matrix( rep(current_feature_dynamics, length(current_site_feature_layer)), byrow = FALSE, nrow = length(time_vec))
- 
-      projected_feature_layers = matrix(rep(current_site_feature_layer, length(time_vec)), byrow = TRUE, nrow = length(time_vec)) + current_feature_dynamics
+      projected_feature = matrix(rep(current_site_feature_layer, length(time_vec)), byrow = TRUE, nrow = length(time_vec)) + current_feature_dynamics
       
-      # particular operation for generating counterfactual so it includes the original value
+      # enforce limits on projection
+      projected_feature[projected_feature > max(current_condition_class_bounds[[feature_dynamics_mode_to_use]])] = max(current_condition_class_bounds[[feature_dynamics_mode_to_use]])
+      projected_feature[projected_feature < min(current_condition_class_bounds[[feature_dynamics_mode_to_use]])] = min(current_condition_class_bounds[[feature_dynamics_mode_to_use]])
+      
+      # operation for generating counterfactual so it includes the original value
       if (time_fill == TRUE){
-        projected_feature_layers = rbind(matrix(current_site_feature_layer, nrow = 1), projected_feature_layers)
+        projected_feature = rbind(matrix(current_site_feature_layer, nrow = 1), projected_feature)
       }
       
-#       if (perform_projection_time_shift == TRUE){
-#         projected_feature_layers = simplify2array(lapply(seq_along(current_site_feature_layer), 
-#                                                          function(i) user_projection(current_site_feature_layer[i], 
-#                                                                                      feature_dynamics_to_use, 
-#                                                                                      update_dynamics_by_differential, 
-#                                                                                      perform_dynamics_time_shift, 
-#                                                                                      time_vec, 
-#                                                                                      projection_yrs[[i]])))
-#       } else {
-#         projected_feature_layers = sapply(current_site_feature_layer, 
-#                                           user_projection, 
-#                                           feature_dynamics_to_use, 
-#                                           update_dynamics_by_differential, 
-#                                           perform_dynamics_time_shift, 
-#                                           time_vec, 
-#                                           projection_yrs)
-#       }
     }
     
   }
-  if (length(dim(projected_feature_layers)) == 0){
-    dim(projected_feature_layers) = c(1, length(projected_feature_layers))
+  if (length(dim(projected_feature)) == 0){
+    dim(projected_feature) = c(1, length(projected_feature))
   }
-  return(projected_feature_layers)
+  return(projected_feature)
 }
 
 
@@ -1295,7 +1282,7 @@ project_feature_layers <- function(current_simulation_params, projection_type, u
 # defined by current_time_horizons and depth defined by feature number for all sites
 
 project_features <- function(current_site_feature_layers, projection_type, update_dynamics_by_differential, feature_dynamics_to_use, feature_dynamics_modes_to_use, 
-                             current_time_horizons, current_simulation_params, perform_dynamics_time_shift, time_fill, unique_site_vals, projection_yrs){
+                             current_time_horizons, current_simulation_params, perform_dynamics_time_shift, time_fill, unique_site_vals, projection_yrs, condition_class_bounds){
   
   if (unique_site_vals == FALSE){
     current_site_feature_layers = lapply(seq_along(current_site_feature_layers), 
@@ -1305,16 +1292,18 @@ project_features <- function(current_site_feature_layers, projection_type, updat
   
   projected_features = lapply(seq_along(current_site_feature_layers),
                               function(i) lapply(seq_along(current_site_feature_layers[[i]]),
-                                                 function(j) project_feature_layers(current_simulation_params,
+                                                 function(j) project_feature_layer(current_simulation_params,
                                                                                     projection_type,
                                                                                     update_dynamics_by_differential, 
                                                                                     current_site_feature_layers[[i]][[ j ]],
                                                                                     feature_dynamics_to_use[[i]][[ j ]],
                                                                                     feature_dynamics_modes_to_use[[i]][[ j ]],
+                                                                                    condition_class_bounds[[j]],
                                                                                     time_horizon = unlist(current_time_horizons[i]),
                                                                                     perform_dynamics_time_shift,
                                                                                     time_fill, 
                                                                                     projection_yrs[[i]][[j]])))
+  
   if (unique_site_vals == FALSE){
 
     projected_features = lapply(seq_along(projected_features), 
@@ -2127,6 +2116,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                 time_fill,
                                 yr)
       
+      
       cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
     } else if (calc_type == 'restoration_gains'){
       
@@ -2187,20 +2177,24 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                   perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift,
                                                   time_fill = FALSE,
                                                   unique_site_vals = feature_params$unique_site_vals,
-                                                  projection_yrs)
+                                                  projection_yrs, 
+                                                  condition_class_bounds = feature_params$condition_class_bounds)
       
       projected_vals = sum_sites(projected_feature_layers)
       
     } else if (pool_type == 'developments') {
-
       projected_vals = cfac_vals
       cfac_vals = list_of_zeros(length(pool_object$parcel_sums_at_offset), length(current_simulation_params$features_to_use_in_offset_calc))
+      
     }
   }
   
   
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   
+  if (all(unlist(pool_object$parcel_vals_used) == 0)){
+    browser()
+  }
 
   return(pool_object)
   
@@ -2355,7 +2349,8 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                                         perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
                                         time_fill, 
                                         unique_site_vals = feature_params$unique_site_vals,
-                                        projection_yrs)
+                                        projection_yrs, 
+                                        condition_class_bounds = feature_params$condition_class_bounds)
   
   
   if (adjust_cfacs_flag == TRUE){
@@ -2519,7 +2514,7 @@ calc_offset_projections <- function(projection_type,current_cfacs, offset_probs,
         if (current_offset_probs[proj_yr] > 0){
           print('offset projections not working')
           stop()
-          current_offset_proj = project_feature_layers(current_simulation_params,
+          current_offset_proj = project_feature_layer(current_simulation_params,
                                                        projection_type,
                                                        current_cfac[proj_yr, ],
                                                        restoration_rate,
@@ -2527,7 +2522,7 @@ calc_offset_projections <- function(projection_type,current_cfacs, offset_probs,
                                                        time_fill = TRUE, 
                                                        yr)
           
-          #           project_feature_layers(current_simulation_params,
+          #           project_feature_layer(current_simulation_params,
           #                                  projection_type,
           #                                  update_dynamics_by_differential, 
           #                                  current_site_feature_layers[[i]][[j]],
