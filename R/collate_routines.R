@@ -217,13 +217,6 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     
     cfacs_object$cfacs_to_use = sum_trajectories(cfacs_object$adjusted_cfacs)
   } else{
-    browser()
-    
-    for (site_ind in 1:length(cfacs_object$cfacs)){
-      a = sum_trajectories(cfacs_object$cfacs[site_ind])
-      print(site_ind)
-    }
-    
     cfacs_object$cfacs_to_use = sum_trajectories(cfacs_object$cfacs)
   }
   
@@ -393,7 +386,7 @@ assess_gains_degs <- function(trajectories_to_use, cfacs_to_use, site_feature_la
   avoided_loss = lapply(seq(parcel_num), function(i) sum(site_feature_layers_to_use[[i]]) - cfac_sums[[i]])
   rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - sum(site_feature_layers_to_use[[i]]))
   net_gains = mapply('-', impact_trajectories, cfac_sums)
-
+  
   if (length(impact_trajectories) == 1){
     net_gains = list(net_gains)
   }
@@ -468,6 +461,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                                    use_cfac_type_in_sim, 
                                                                    feature_ind)
   
+
   collated_data$collated_dev_credit = run_site_scale_collate_routine(current_model_outputs = simulation_outputs$credit_object, 
                                                                      current_site_groups = simulation_outputs$index_object$site_indexes_used$dev_credits,
                                                                      current_trajectories, 
@@ -504,6 +498,8 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
   collated_data$site_scale_impacts <- collate_site_scale_impacts(collated_site_scale_offsets = collated_data$collated_offsets$summed_gains_degs$nets,
                                                                  collated_site_scale_devs = collated_data$collated_devs$summed_gains_degs$nets)
   
+
+  
   collated_data$landscape <- calc_landscape_characteristics(current_trajectories, landscape_cfacs_object)
   
   collated_data$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collated_data$landscape$summed_site_trajectories)
@@ -522,12 +518,12 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                      impacts = collated_data$site_scale_impacts$net_impacts, 
                                                      offset_yrs_to_use = collated_data$collated_offsets$offset_yrs, 
                                                      site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
-  
+
   collated_data$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
                                                         impacts = list(collated_data$program_scale_impacts$program_total), 
                                                         offset_yrs_to_use = list(1), 
                                                         site_indexes = vector())
-  
+
   collated_data$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
                                                           impacts = list(collated_data$landscape$landscape_impact), 
                                                           offset_yrs_to_use = list(1), 
@@ -665,14 +661,20 @@ prepare_realisations <- function(realisations){   #remove unsuccessful offset pr
 
 
 assess_NNL <- function(current_impacts){
-  potential_NNL <- which(current_impacts > 0)
-  for (NNL_yr in potential_NNL){
-    if (all(current_impacts[NNL_yr:length(current_impacts)] > 0)){
-      return(NNL_yr)
+
+  NNL_flag = FALSE
+  
+  for (NNL_yr in seq_along(current_impacts)){
+    NNL_flag = all(current_impacts[NNL_yr:length(current_impacts)] > 0)
+    if (NNL_flag == TRUE){
       break
     }
   }
-  NNL_yr = vector()
+  
+  if (NNL_flag == FALSE){
+    NNL_yr = vector()
+  } 
+  
   return(NNL_yr)
 }
 
