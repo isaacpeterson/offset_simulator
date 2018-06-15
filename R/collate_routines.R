@@ -202,7 +202,8 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                                         perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
                                         time_fill = TRUE, 
                                         unique_site_vals = feature_params$unique_site_vals,
-                                        projection_yrs = current_offset_yrs)
+                                        projection_yrs = current_offset_yrs, 
+                                        condition_class_bounds = feature_params$condition_class_bounds)
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
@@ -536,6 +537,7 @@ collate_simulation_outputs <- function(simulation_outputs, current_trajectories,
                                                            NNL_yr = unlist(collated_data$landscape_scale_NNL$NNL))
   
   collated_data$sites_used = find_sites_used(collated_data)
+
   return(collated_data)
   
 }
@@ -711,7 +713,11 @@ assess_landscape_loss <- function(landscape_vals, NNL_yr){
   if (length(NNL_yr)>0){
     landscape_loss$NNL_loss = 1 - landscape_vals[NNL_yr]/landscape_vals[1]
   }
-  landscape_loss$total_loss = 1 - landscape_vals[length(landscape_vals)]/landscape_vals[1]
+  if (length(landscape_vals) > 0){
+    if (landscape_vals[1] !=0){
+      landscape_loss$total_loss = 1 - landscape_vals[length(landscape_vals)]/landscape_vals[1]
+    }
+  }
   return(landscape_loss)
 }
 
