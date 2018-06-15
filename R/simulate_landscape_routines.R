@@ -1,14 +1,19 @@
-simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, unique_site_vals){
+simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
 
   if (length(initial_site_sd) == 0){
     initial_site_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1]) / 3
   }
   
+  if (length(initial_site_mean_sd) == 0){
+    initial_site_mean_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1])
+  }
+  
   if (site_sample_type == 'trunc_norm'){
+    site_mean = rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_mean_sd)
     if (unique_site_vals == TRUE){
-      site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+      site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=site_mean, sd = initial_site_sd)
     } else{
-      site_elements = array(1, element_num)*rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_sd)
+      site_elements = array(site_mean, element_num)
     }
   } else if (site_sample_type == 'uniform'){
     if (unique_site_vals == TRUE){
@@ -17,7 +22,7 @@ simulate_site_feature <- function(site_sample_type, current_condition_class_boun
       site_elements = array(1, element_num)*runif(1)*(current_condition_class_bounds[3] - current_condition_class_bounds[1])
     }
   }
-  
+
   return(site_elements)
 }
 
@@ -29,11 +34,12 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
     
     current_simulated_feature = lapply(seq_along(parcel_characteristics$land_parcels), 
-                             function(i) simulate_site_feature(feature_params$site_sample_type, 
-                                                               current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
-                                                               element_num = length(parcel_characteristics$land_parcels[[i]]),
-                                                               feature_params$initial_site_sd, 
-                                                               feature_params$unique_site_vals) )
+                                       function(i) simulate_site_feature(feature_params$site_sample_type, 
+                                                                         current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
+                                                                         element_num = length(parcel_characteristics$land_parcels[[i]]),
+                                                                         feature_params$initial_site_sd, 
+                                                                         feature_params$initial_site_mean_sd,
+                                                                         feature_params$unique_site_vals) )
     
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
