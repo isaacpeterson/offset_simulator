@@ -74,7 +74,7 @@ save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
   }
 }
 
-#' @export
+
 split_ecology <- function(landscape_ecology, land_parcels){
   current_ecology = lapply(seq_along(land_parcels), 
                            function(i) lapply(seq_along(landscape_ecology), 
@@ -82,18 +82,18 @@ split_ecology <- function(landscape_ecology, land_parcels){
   return(current_ecology)
 }
 
-#' @export
-generate_nested_list <- function(outer_dim, inner_dim){
-  if (outer_dim > 0){
-    nested_list <- vector('list', outer_dim)
-  } else {
-    nested_list = list()
-  }
-  for (outer_ind in seq_len(outer_dim)){
-    nested_list[[outer_ind]] <- vector('list', inner_dim)
-  }
-  return(nested_list)
-}
+# #' @export
+# generate_nested_list <- function(outer_dim, inner_dim){
+#   if (outer_dim > 0){
+#     nested_list <- vector('list', outer_dim)
+#   } else {
+#     nested_list = list()
+#   }
+#   for (outer_ind in seq_len(outer_dim)){
+#     nested_list[[outer_ind]] <- vector('list', inner_dim)
+#   }
+#   return(nested_list)
+# }
 
 #' @export
 define_planning_units <- function(planning_units_array){
