@@ -11,17 +11,15 @@
 #' @import truncnorm
 #' @export 
 #' 
-osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL, loglevel = WARN){
+osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, loglevel = WARN){
   
   flog.threshold(loglevel)
   flog.info('starting offsetsim')
   
-  params_object <- build_simulation_params(user_global_params, user_simulation_params, user_simulated_ecology_params)
+  params_object <- build_simulation_params(user_global_params, user_simulation_params, user_feature_params)
   
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data
-  
-
   
   # Write initial logging info
   flog.info('Running %s scenarios with %s realisations on %s cores', 
@@ -41,7 +39,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     # Extract out the parameters for the current scenario to be run
     current_simulation_params <- params_object$simulation_params_group[[scenario_ind]]
     
-    input_data_object <- generate_global_inputs(params_object, current_simulation_params)
+    #load objects from files etc
+    input_data_object <- build_input_data(params_object, current_simulation_params)
 
     flog.info('running scenario %s of %s in %s mode with %s offsets',  
               scenario_ind, 
@@ -62,7 +61,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                             dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
-    
+
     # TODO(Isaac) test whether can set check and set seed if necessary much
     # earlier in the code before run_initialise_routines() is called
     if (params_object$global_params$number_of_cores > 1 && params_object$global_params$set_seed == TRUE){
