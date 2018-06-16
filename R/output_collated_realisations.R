@@ -119,10 +119,9 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       
       for (feature_ind in features_to_plot){
         
-        current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
         collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = output_params$string_width, format = "d", flag = "0"),
-                                                 feature_string = formatC(current_feature, width = output_params$string_width, format = "d", flag = "0"),
+                                                 feature_string = formatC(feature_ind, width = output_params$string_width, format = "d", flag = "0"),
                                                  output_params$realisation_num)
         
         collated_realisations = bind_collated_realisations(collated_filenames)

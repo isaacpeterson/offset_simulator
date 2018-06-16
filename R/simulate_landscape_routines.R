@@ -46,6 +46,7 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
     if (current_occupation_ratio > 0){
       zero_site_inds = which(runif(length(current_simulated_feature)) > current_occupation_ratio)
       current_simulated_feature[zero_site_inds] = lapply(zero_site_inds, function(i) 0*(current_simulated_feature[[i]]))
+
     }
     
     current_feature_layer = matrix(data = 0, nrow = parcel_characteristics$landscape_dims[1], ncol = parcel_characteristics$landscape_dims[2])
