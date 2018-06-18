@@ -341,11 +341,11 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
                                          condition_class_bounds = feature_params$initial_condition_class_bounds, 
                                          unique_site_vals = feature_params$unique_site_vals)
   
-  
-  management_dynamics_modes = build_modes(projection_type = feature_params$management_projection_type, 
-                                         feature_layers_to_use = site_feature_layers_initial, 
-                                         condition_class_bounds = feature_params$initial_condition_class_bounds, 
-                                         unique_site_vals = feature_params$unique_site_vals)
+  management_dynamics_modes = background_dynamics_modes
+#   management_dynamics_modes = build_modes(projection_type = feature_params$management_projection_type, 
+#                                          feature_layers_to_use = site_feature_layers_initial, 
+#                                          condition_class_bounds = feature_params$initial_condition_class_bounds, 
+#                                          unique_site_vals = feature_params$unique_site_vals)
   
   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
@@ -370,6 +370,7 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
                                           feature_params$management_dynamics_sample_type,
                                           feature_params$management_dynamics_bounds, 
                                           management_dynamics_modes)
+
   }
 
   input_object$feature_dynamics = feature_dynamics
