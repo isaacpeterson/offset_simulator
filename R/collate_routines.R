@@ -12,7 +12,7 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, curre
                                          cfac_type = 'landscape',
                                          collate_type = vector(), 
                                          use_cfac_type_in_sim = FALSE, 
-                                         feature_ind = 1) #set to feature_ind = 1 as at this point there is only 1 selected feature
+                                         feature_ind)
   
   collated_data = collate_simulation_outputs(simulation_outputs, current_trajectories, 
                                              landscape_cfacs_object, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, 
@@ -24,7 +24,9 @@ run_collate_routines <- function(simulation_outputs, current_trajectories, curre
 
 
 calc_landscape_characteristics <- function(current_trajectories, landscape_cfacs_object){
+
   landscape_object = list()
+
   landscape_object$summed_site_trajectories = lapply(seq_along(current_trajectories), function(i) sum_cols(current_trajectories[[i]]))
   landscape_object$net_landscape = Reduce('+', landscape_object$summed_site_trajectories)
   landscape_object$landscape_cfacs = landscape_cfacs_object$net_background_cfacs
@@ -174,7 +176,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     #TODO REINSTATE THIS TO TRUE
     adjust_cfacs_flag = FALSE
     include_unregulated_loss = FALSE
-    
+
   } else if (cfac_type == 'site_scale'){
 
     time_horizons = generate_time_horizons(project_type = 'current', 
@@ -192,6 +194,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
 
 
   cfacs_object = list()
+  
   cfacs_object$cfacs = project_features(current_site_feature_layers,
                                         feature_params$background_projection_type,
                                         feature_params$background_update_dynamics_by_differential, 
@@ -203,7 +206,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                                         time_fill = TRUE, 
                                         unique_site_vals = feature_params$unique_site_vals,
                                         projection_yrs = current_offset_yrs, 
-                                        condition_class_bounds = feature_params$condition_class_bounds)
+                                        condition_class_bounds = feature_params$condition_class_bounds[feature_ind])
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
@@ -350,7 +353,7 @@ collate_gains_degs <- function(current_model_outputs, current_trajectories, curr
                                 cfac_type = 'site_scale',
                                 collate_type, 
                                 use_cfac_type_in_sim,
-                                feature_ind = 1)
+                                feature_ind)
   
   site_feature_layers_to_use = unlist(current_site_feature_layers, recursive = FALSE)
 
@@ -435,7 +438,8 @@ select_nested_subset <- function(nested_object, nested_ind, output_type){
 
 
 collate_simulation_outputs <- function(simulation_outputs, current_trajectories, landscape_cfacs_object, 
-                                       current_feature_dynamics_initial, current_feature_dynamics_modes_initial, current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
+                                       current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
+                                       current_initial_feature_layers, current_simulation_params, feature_params, use_cfac_type_in_sim, parcels, feature_ind){
   
   collated_data = list()
 
