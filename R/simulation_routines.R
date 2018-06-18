@@ -149,6 +149,7 @@ run_simulation <- function(data_object, output_object, global_params, feature_pa
                                          output_object$site_feature_layers, 
                                          yr, 
                                          feature_dynamics_to_use = output_object$feature_dynamics, 
+                                         output_object$feature_dynamics_modes,
                                          projection_type = feature_params$background_projection_type, 
                                          project_by_mean = feature_params$project_by_mean,
                                          unique_site_vals = feature_params$unique_site_vals)
@@ -591,7 +592,7 @@ merge_dynamics <- function(feature_dynamics_to_update, features_to_update, curre
 }
 
 
-find_time_shifts <- function(site_feature_layers_to_use, current_feature_dynamics_set, projection_type, project_by_mean, unique_site_vals){
+find_time_shifts <- function(site_feature_layers_to_use, current_feature_dynamics_set, feature_dynamics_modes_to_use, projection_type, project_by_mean, unique_site_vals){
 
   if (projection_type == 'by_element'){
     time_shifts = lapply(seq_along(site_feature_layers_to_use), 
@@ -607,7 +608,8 @@ find_time_shifts <- function(site_feature_layers_to_use, current_feature_dynamic
         time_shifts = lapply(seq_along(site_feature_layers_to_use), 
                              function(i) unlist(lapply(seq_along(site_feature_layers_to_use[[i]]), 
                                                        function(j) find_time_shift(current_feature_val = mean(site_feature_layers_to_use[[i]][[j]]), 
-                                                                                   current_feature_dynamics_set[[i]][[j]]))))
+                                                                                   current_feature_dynamics_set[[i]][[j]], 
+                                                                                   feature_dynamics_modes_to_use[[i]][[j]]))))
       } else {
         time_shifts = lapply(seq_along(site_feature_layers_to_use), 
                            function(i) lapply(seq_along(site_feature_layers_to_use[[i]]), 
@@ -685,15 +687,28 @@ shift_dynamics_set <- function(site_feature_layers_to_use, current_feature_dynam
 
 shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use, current_time_shift, time_fill, update_dynamics_by_differential){
   
+#   if (current_time_shift == 1){
+#     if (abs(current_feature_dynamics_to_use[1] != current_feature_val) > 1e-5){
+#       browser()
+#     }
+#   }
+  
+#   if ((current_time_shift - round(current_time_shift)) == 0){
+#     if (abs(current_feature_dynamics_to_use[1] - current_feature_val) > 1e-5){
+#     browser()
+#     }
+#   }
+  
   if (length(current_time_shift) > 0){
     if (time_fill == TRUE){
+
       time_vec = current_time_shift + 0:(length(current_feature_dynamics_to_use) - ceiling(current_time_shift))
     } else {
       time_vec = current_time_shift 
     }
-    current_shifted_dynamics = approx(1:length(current_feature_dynamics_to_use), 
-                                      current_feature_dynamics_to_use, 
-                                      time_vec)$y
+    current_shifted_dynamics = approx(1:length(current_feature_dynamics_to_use), current_feature_dynamics_to_use, time_vec)$y
+    
+
     if (update_dynamics_by_differential == TRUE){
       current_shifted_dynamics = diff(current_shifted_dynamics)
     }
@@ -712,16 +727,17 @@ shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use,
 
 
 
-find_time_shift <- function(current_feature_val, current_feature_dynamics_to_use){
+find_time_shift <- function(current_feature_val, current_feature_dynamics_to_use, current_feature_dynamics_mode){
 
-  if (all(current_feature_dynamics_to_use == 0)){
-    time_shift = 1
-    return(time_shift)
-  }
+  
+#   if (all(current_feature_dynamics_to_use == 0)){
+#     time_shift = 1
+#     return(time_shift)
+#   }
   
   min_loc = which(current_feature_dynamics_to_use == min(current_feature_dynamics_to_use))
   intervals = findInterval(current_feature_dynamics_to_use, current_feature_val)
-  peak_loc = which( diff(diff(current_feature_dynamics_to_use) >= 0) < 0)
+  peak_loc = which( diff(diff(current_feature_dynamics_to_use) >= 0) < 0) + 1
   
   if (length(peak_loc) > 0){
     peak_loc = which(current_feature_dynamics_to_use == max(current_feature_dynamics_to_use[peak_loc]))[1]
@@ -746,23 +762,23 @@ find_time_shift <- function(current_feature_val, current_feature_dynamics_to_use
     #condition for which all current feature val is on current_feature_dynamics curve
     
     lower_bound = min(which(abs(diff(intervals)) == 1))
-    if (length(lower_bound) < 1){
-      browser()
-    }
     
-    if (lower_bound > peak_loc){
+   if ((peak_loc > 1 ) & (lower_bound >= peak_loc)){
+
       time_shift = 1
+      
     } else{
       time_shift = approx(current_feature_dynamics_to_use[lower_bound:(lower_bound + 1)], lower_bound:(lower_bound + 1), current_feature_val)$y
     }
     
   }
   
-  if (length(time_shift) == 0){
-    browser()
-  }
+#   if (time_shift == 1){
+#     browser()
+#   }
   return(time_shift)
 }
+
 
 # series of routines to implement offset
 offset_routine <- function(output_object, feature_params, current_offset_object, current_simulation_params, yr){
@@ -1191,7 +1207,20 @@ user_projection <- function(current_feature_val, current_feature_dynamics, updat
 
 
 
-# calculate the expected feature_layers under maintenaince, restoration
+# current_site_feature_layer = current_site_feature_layers[[1]][[1]]
+#                  feature_params$background_projection_type,
+#                  feature_params$background_update_dynamics_by_differential, 
+#                  feature_dynamics_to_use = current_feature_dynamics[[1]][[1]],
+#                  feature_dynamics_modes_to_use = current_feature_dynamics_modes[[1]][[1]],
+#                  time_horizons[1],
+#                  current_simulation_params,
+#                  perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
+#                  time_fill = TRUE, 
+#                  unique_site_vals = feature_params$unique_site_vals,
+#                  projection_yrs = current_offset_yrs[1], 
+#                  condition_class_bounds = feature_params$condition_class_bounds)
+
+
 
 project_feature_layer <- function(current_simulation_params, projection_type, update_dynamics_by_differential, current_site_feature_layer, feature_dynamics_to_use, 
                                   feature_dynamics_mode_to_use, current_condition_class_bounds, time_horizon, perform_dynamics_time_shift, time_fill, projection_yrs){
@@ -1716,7 +1745,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   if (length(match_ind) > 1){
     
     #list where the duplicate occurred
-    flog.error(cat('duplicate site value match flag on ', length(match_ind), 'sites \n'))
+    flog.error(cat('duplicate site value match on ', length(match_ind), 'sites \n'))
     # sample site from multiple match pool
     match_ind = sample(match_ind, 1)
   }
@@ -2139,7 +2168,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                 include_potential_offsets,
                                 include_unregulated_loss,
                                 adjust_cfacs_flag,
-                                time_fill,
+                                time_fill = TRUE,
                                 yr)
       
       cfac_vals = nested_list_tail(cfacs_object$cfacs_to_use)
@@ -2164,12 +2193,13 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
         #                                               feature_layers_to_use = site_feature_layers_to_use, 
         #                                               condition_class_bounds = feature_params$condition_class_bounds
         # unique_site_vals = feature_params$unique_site_vals)
-        
 
+        
         time_shifts = find_projection_yrs(perform_dynamics_time_shift = feature_params$update_offset_dynamics_by_time_shift, 
                                           site_feature_layers_to_use, 
                                           yr, 
                                           management_dynamics_to_use, 
+                                          feature_dynamics_modes_to_use,
                                           projection_type = feature_params$management_projection_type, 
                                           project_by_mean = feature_params$project_by_mean,
                                           unique_site_vals = feature_params$unique_site_vals)
@@ -2182,11 +2212,12 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                      time_shifts, 
                                                      unique_site_vals = feature_params$unique_site_vals, 
                                                      time_fill = TRUE)
-        
-        
+
         projection_yrs = find_projection_yrs(perform_dynamics_time_shift = FALSE, 
-                                             site_feature_layers_to_use, yr, 
+                                             site_feature_layers_to_use, 
+                                             yr = 1, 
                                              management_dynamics_to_use, 
+                                             feature_dynamics_modes_to_use,
                                              projection_type = feature_params$management_projection_type, 
                                              project_by_mean = feature_params$project_by_mean,
                                              unique_site_vals = feature_params$unique_site_vals)
@@ -2218,8 +2249,12 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   
   if (any(unlist(pool_object$parcel_vals_used) < 0)){
-    browser()
-    which(unlist(lapply(seq_along(pool_object$parcel_vals_used), function(i) pool_object$parcel_vals_used[[i]][[1]] < 0)))
+
+    for (f_ind in seq_along(current_simulation_params$features_to_use_in_simulation)){
+      bad_inds = which(unlist(lapply(seq_along(pool_object$parcel_vals_used), function(i) any(unlist(pool_object$parcel_vals_used[[i]][[f_ind]]) < 0))))
+      print(paste(f_ind, feature_dynamics_modes_to_use[bad_inds]))
+    }
+    
   }
 
   return(pool_object)
@@ -2341,12 +2376,12 @@ kill_site_features <- function(site_feature_layers_to_develop){
 
 
 find_projection_yrs <- function(perform_dynamics_time_shift, current_site_feature_layers, yr, 
-                                feature_dynamics_to_use, projection_type, project_by_mean, unique_site_vals){
+                                feature_dynamics_to_use, feature_dynamics_modes_to_use, projection_type, project_by_mean, unique_site_vals){
   
   if (perform_dynamics_time_shift == FALSE){
     projection_yrs = lapply(seq_along(current_site_feature_layers), function(i) rep(list(yr), length(current_site_feature_layers[[i]])))
   } else {
-    projection_yrs = find_time_shifts(current_site_feature_layers, feature_dynamics_to_use, projection_type, project_by_mean, unique_site_vals)
+    projection_yrs = find_time_shifts(current_site_feature_layers, feature_dynamics_to_use, feature_dynamics_modes_to_use,projection_type, project_by_mean, unique_site_vals)
 
   }
   
@@ -2363,6 +2398,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                                        site_feature_layers_to_use, 
                                        yr, 
                                        feature_dynamics_to_use, 
+                                       feature_dynamics_modes_to_use,
                                        projection_type, project_by_mean, unique_site_vals)
 
   cfacs_object$cfacs = project_features(site_feature_layers_to_use,
@@ -2377,7 +2413,6 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                                         unique_site_vals = feature_params$unique_site_vals,
                                         projection_yrs, 
                                         condition_class_bounds = feature_params$condition_class_bounds)
-  
   
   if (adjust_cfacs_flag == TRUE){
     cfacs_object$adjusted_cfacs = adjust_cfacs(cfacs_object$cfacs,
