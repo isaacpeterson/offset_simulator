@@ -74,6 +74,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
   saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
   saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
   
+  
   params_object = list()
   params_object$global_params = global_params
   params_object$simulation_params_group = simulation_params_group
@@ -317,7 +318,7 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
 
   if (current_simulation_params$use_specified_offset_metric == TRUE){
-    current_credit = transform_features_to_offset_metric(current_credit, metric_type = current_simulation_params$offset_metric_type)
+    current_credit = unlist(user_transform_function(current_credit))
   }
   
   input_object$current_credit = current_credit
@@ -361,6 +362,11 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
                                        feature_params$background_dynamics_bounds, 
                                        background_dynamics_modes)
 
+    if (any(is.na(unlist(feature_dynamics)))){
+      print('poorly defined feature_dynamics')
+      browser()
+    }
+  
     management_dynamics <- build_dynamics(site_feature_layers_initial,
                                           features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
                                           feature_params$sample_management_dynamics,
@@ -370,6 +376,12 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
                                           feature_params$management_dynamics_sample_type,
                                           feature_params$management_dynamics_bounds, 
                                           management_dynamics_modes)
+    
+    if (any(is.na(unlist(feature_dynamics)))){
+      print('poorly defined management_dynamics')
+      browser()
+    }
+    
 
   }
 
