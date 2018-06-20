@@ -7,6 +7,8 @@ initialise_default_global_params <- function(){
   # Set the random number seed
   default_global_params$set_seed = FALSE
   
+  default_global_params$save_output_raster = FALSE
+  
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
