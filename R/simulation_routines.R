@@ -50,12 +50,10 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
     
     current_feature_dynamics_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics, feature_ind, output_type = 'nested')
-    
     current_initial_feature_layers = select_nested_subset(nested_object = data_object$site_feature_layers_initial, feature_ind, output_type = 'nested')
-    
     current_feature_dynamics_modes_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics_modes, feature_ind, output_type = 'nested')
   
-    current_collated_realisation = run_collate_routines(output_object, 
+    current_collated_feature = run_collate_routines(output_object, 
                                                         current_data_stack,
                                                         current_feature_dynamics_initial,
                                                         current_feature_dynamics_modes_initial,
@@ -70,24 +68,51 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                          'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"),
                          '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"))
     
-    saveRDS(current_collated_realisation, paste0(file_prefix, '_feature_',
+    saveRDS(current_collated_feature, paste0(file_prefix, '_feature_',
                                                  formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
     
-    if ((realisation_ind == 1) && (feature_ind == 1)){
-      mov_folder = paste0(global_params$collated_folder, '/mov_', 
-                          formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
-      if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
-        if(!(file.exists(mov_folder))){
-          dir.create(mov_folder)
-        }
-      }
-      if ( global_params$write_movie == TRUE){
-        write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$parcel_characteristics, global_params, current_simulation_params, 
-                     offset_site_indexes = unlist(output_object$offsets$site_indexes), 
-                     offset_yrs = unlist(output_object$offsets$offset_yrs))
+    browser()
+    if (current_simulation_params$use_specified_offset_metric == TRUE){
+      if (feature_ind == 1){
+        collated_feature_set = setNames(lapply(seq_along(current_collated_feature), 
+                                               function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
+                                                                            function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
+                                                                                               function(k) list(current_collated_feature[[i]][[j]][[k]]))), 
+                                                                     names(current_collated_feature[[i]]))), names(current_collated_feature))
+      } else {
+        collated_feature_set = setNames(lapply(seq_along(current_collated_feature), 
+                                               function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
+                                                                            function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
+                                                                                               function(k) append(collated_feature_set[[i]][[j]][[k]], list(current_collated_feature[[i]][[j]][[k]])))), 
+                                                                     names(current_collated_feature[[i]]))), names(current_collated_feature))
       }
     }
+    
+    browser()
+    
+#     a = setNames(lapply(seq_along(current_collated_feature), 
+#                     function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
+#                                                  function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
+#                                                                     function(k) user_transform_function(collated_feature_set[[i]][[j]][[k]]))), 
+#                                           names(current_collated_feature[[i]]))), names(current_collated_feature))
+
+#     if ((realisation_ind == 1) && (feature_ind == 1)){
+#       mov_folder = paste0(global_params$collated_folder, '/mov_', 
+#                           formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
+#       if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
+#         if(!(file.exists(mov_folder))){
+#           dir.create(mov_folder)
+#         }
+#       }
+#       if ( global_params$write_movie == TRUE){
+#         write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$parcel_characteristics, global_params, current_simulation_params, 
+#                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
+#                      offset_yrs = unlist(output_object$offsets$offset_yrs))
+#       }
+#     }
   }
+  
+
   
   # delete current temporary files and folder
   if (global_params$save_simulation_outputs == FALSE){
@@ -178,6 +203,7 @@ save_landscape_routine <- function(data_object, output_object, current_data_dir,
                                     function(i) output_object$site_feature_layers[[i]][[feature_ind]])
     file_prefix = paste0('feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
                          '_yr_', formatC(yr, width = 3, format = "d", flag = "0"))
+    
     saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
     if (global_params$save_output_raster == TRUE){
       current_raster_folder = paste0(current_data_dir, '/output_rasters/')
@@ -192,12 +218,19 @@ save_landscape_routine <- function(data_object, output_object, current_data_dir,
     
   }
   
-  if ((global_params$save_output_raster == TRUE) & (current_simulation_params$use_specified_offset_metric == TRUE)){
+  if (current_simulation_params$use_specified_offset_metric == TRUE){
     current_metric_layers = lapply(seq_along(output_object$site_feature_layers), function(i) user_transform_function(output_object$site_feature_layers[[i]]))
+    
     for (feature_ind in seq_along(current_metric_layers[[1]])){
-      current_feature_layer = matrix(0, nrow = data_object$parcel_characteristics$landscape_dims[1], ncol = data_object$parcel_characteristics$landscape_dims[2])
-      current_feature_layer[unlist(data_object$parcel_characteristics$land_parcels)] = unlist(lapply(seq_along(current_metric_layers), function(i) current_metric_layers[[i]][feature_ind]))
-      writeRaster(current_feature_raster, paste0(current_raster_folder, 'metric_layer_', feature_ind, '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif'), overwrite = TRUE)
+      file_prefix = paste0('metric_layer_', feature_ind, '_yr_', formatC(yr, width = 3, format = "d", flag = "0"))
+      feature_layer_to_save = lapply(seq_along(current_metric_layers), function(i) current_metric_layers[[i]][[feature_ind]])
+      saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
+      
+      if(global_params$save_output_raster == TRUE){
+        current_feature_layer = matrix(0, nrow = data_object$parcel_characteristics$landscape_dims[1], ncol = data_object$parcel_characteristics$landscape_dims[2])
+        current_feature_layer[unlist(data_object$parcel_characteristics$land_parcels)] = unlist(feature_layer_to_save)
+        writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
+      }
     }
   }
   
