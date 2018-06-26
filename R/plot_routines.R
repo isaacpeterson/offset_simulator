@@ -63,13 +63,12 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     dev_site_indexes_to_use = collated_realisations$collated_devs$site_indexes
   }
   
-  
   x_lab = ''
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
     overlay_trajectories(dev_site_indexes_to_use,
                          current_simulation_params$use_offset_bank,
-                         trajectories = collated_realisations$landscape$summed_site_trajectories, 
+                         trajectories = collated_realisations$site_scale$outcomes, 
                          realisation_ind = 1, 
                          plot_col = 'red', 
                          plot_type, 
@@ -84,7 +83,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   if (plot_site_offset_outcome == TRUE){
     overlay_trajectories(offset_site_indexes_to_use, 
                          current_simulation_params$use_offset_bank,
-                         trajectories = collated_realisations$landscape$summed_site_trajectories, 
+                         trajectories = collated_realisations$site_scale$outcomes, 
                          realisation_ind = 1, 
                          plot_col = 'darkgreen', 
                          plot_type, 
@@ -125,9 +124,9 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     NNL_object <- find_NNL_characteristics(collated_realisations$program_scale_NNL$NNL_mean, 
                                            collated_realisations$program_scale_impacts$program_total)
     
-    overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
-                                          collated_realisations$program_scale_impacts$net_dev_losses,
-                                          collated_realisations$program_scale_impacts$program_total),
+    overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale_impacts$net_offset_gains, recursive = FALSE), 
+                                          unlist(collated_realisations$program_scale_impacts$net_dev_losses, recursive = FALSE),
+                                                 unlist(collated_realisations$program_scale_impacts$program_total, recursive = FALSE)),
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -136,6 +135,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          legend_loc = 'topleft',
                          legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                          plot_lims = program_plot_lims)
+    
     if (length(NNL_object$mean_NNL) >0){
       abline(v = NNL_object$mean_NNL, lty = 2)
     }
@@ -158,7 +158,8 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
   if (plot_params$plot_landscape == TRUE){
     NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale_NNL$NNL_mean, 
                                            collated_realisations$landscape$landscape_impact)
-    overlay_realisations(plot_list = list(collated_realisations$landscape$landscape_impact),
+    
+    overlay_realisations(plot_list = collated_realisations$landscape$landscape_impact,
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -220,8 +221,10 @@ NNL_test <- function(NNL_set, collated_impacts){
 
 find_NNL_characteristics <- function(NNL_set, collated_impacts){
   
+  collated_impacts = unlist(collated_impacts, recursive = FALSE)
   NNL_to_use <- NNL_test(NNL_set, collated_impacts)
   # get the mean values of the list of vecs
+
   mean_collated_impact <- find_list_mean(collated_impacts)
   
   # get the last element of the mean vec
@@ -311,7 +314,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     current_set_to_plot = sets_to_plot[plot_ind]
     # Plot the impact of the offset site(s) 
     if (plot_site_offset_impact == TRUE){
-      
+
       overlay_impact(collated_object = offset_set,
                      current_simulation_params$use_offset_bank,
                      visualisation_type = 'stacked', 
@@ -364,7 +367,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 overlay_impact <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
                            plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
                            set_to_plot, plot_lims, time_steps){
-  
+  browser()
   if (offset_bank == FALSE){
     collated_traj_set = collated_object$nets[[realisation_ind]]
     site_indexes = unlist(collated_object$site_indexes[[realisation_ind]][set_to_plot])

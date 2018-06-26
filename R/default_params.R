@@ -75,7 +75,7 @@ initialise_default_simulation_params <- function(){
   # as it's easy to create a large number scenarios.
 
     default_simulation_params = list()
-
+    default_simulation_params$transform_params = vector()
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
     default_simulation_params$intervention_num = 50
@@ -318,6 +318,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$project_by_mean = FALSE
   default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   default_feature_params$initial_site_mean_sd = 1
+
   return(default_feature_params)
 }
 

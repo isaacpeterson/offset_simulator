@@ -318,7 +318,7 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
 
   if (current_simulation_params$use_specified_offset_metric == TRUE){
-    current_credit = unlist(user_transform_function(current_credit))
+    current_credit = unlist(user_transform_function(current_credit, current_simulation_params$transform_params))
   }
   
   input_object$current_credit = current_credit

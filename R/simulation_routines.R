@@ -39,47 +39,46 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
   }
   
   for (feature_ind in seq_along(current_simulation_params$features_to_use_in_simulation)){
-    # select current layer index
-    current_feature = current_simulation_params$features_to_use_in_simulation[feature_ind]
-    # read current feature layer files over time series and arrange into data stack
-    current_data_stack = form_data_stack(current_data_dir, 
-                                         feature_string = formatC(current_feature, width = 3, format = "d", flag = "0"), 
-                                         land_parcels = data_object$parcel_characteristics$land_parcels, 
-                                         current_simulation_params$time_steps)
-    
+
     # run series of routines used to calculate gains and losses at multiple scales over current feature layer
     
-    current_feature_dynamics_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics, feature_ind, output_type = 'nested')
-    current_initial_feature_layers = select_nested_subset(nested_object = data_object$site_feature_layers_initial, feature_ind, output_type = 'nested')
-    current_feature_dynamics_modes_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics_modes, feature_ind, output_type = 'nested')
-  
-    current_collated_feature = run_collate_routines(output_object, 
-                                                        current_data_stack,
-                                                        current_feature_dynamics_initial,
-                                                        current_feature_dynamics_modes_initial,
-                                                        current_initial_feature_layers,  
-                                                        current_data_dir, 
-                                                        current_simulation_params, 
-                                                        feature_params,
-                                                        realisation_ind,
-                                                        feature_ind)
+    current_collated_feature = run_collate_routines(output_object,
+                                                    data_object, 
+                                                    simulation_input_object,
+                                                    current_data_dir, 
+                                                    current_simulation_params, 
+                                                    feature_params,
+                                                    realisation_ind,
+                                                    feature_ind, 
+                                                    use_offset_metric = FALSE)
     
     file_prefix = paste0(global_params$collated_folder,
                          'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"),
                          '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"))
     
     saveRDS(current_collated_feature, paste0(file_prefix, '_feature_',
-                                                 formatC(current_feature, width = 3, format = "d", flag = "0"), '.rds'))
+                                                 formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), '.rds'))
     
-    browser()
     if (current_simulation_params$use_specified_offset_metric == TRUE){
+      current_collated_feature = run_collate_routines(output_object,
+                                                      data_object, 
+                                                      simulation_input_object,
+                                                      current_data_dir, 
+                                                      current_simulation_params, 
+                                                      feature_params,
+                                                      realisation_ind,
+                                                      feature_ind, 
+                                                      use_offset_metric = TRUE)
+      
       if (feature_ind == 1){
+        
         collated_feature_set = setNames(lapply(seq_along(current_collated_feature), 
                                                function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
                                                                             function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
                                                                                                function(k) list(current_collated_feature[[i]][[j]][[k]]))), 
                                                                      names(current_collated_feature[[i]]))), names(current_collated_feature))
       } else {
+        
         collated_feature_set = setNames(lapply(seq_along(current_collated_feature), 
                                                function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
                                                                             function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
@@ -87,14 +86,7 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                                                                      names(current_collated_feature[[i]]))), names(current_collated_feature))
       }
     }
-    
-    browser()
-    
-#     a = setNames(lapply(seq_along(current_collated_feature), 
-#                     function(i) setNames( lapply(seq_along(current_collated_feature[[i]]), 
-#                                                  function(j) lapply(seq_along(current_collated_feature[[i]][[j]]), 
-#                                                                     function(k) user_transform_function(collated_feature_set[[i]][[j]][[k]]))), 
-#                                           names(current_collated_feature[[i]]))), names(current_collated_feature))
+
 
 #     if ((realisation_ind == 1) && (feature_ind == 1)){
 #       mov_folder = paste0(global_params$collated_folder, '/mov_', 
@@ -110,9 +102,34 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
 #                      offset_yrs = unlist(output_object$offsets$offset_yrs))
 #       }
 #     }
+    
   }
-  
 
+  
+#   if (current_simulation_params$use_specified_offset_metric == TRUE){
+#      
+#     for (feature_ind in 1){
+#       file_prefix = paste0('metric_layer_', formatC(feature_ind, width = 3, format = "d", flag = "0"))
+#       current_data_stack = form_data_stack(current_data_dir, 
+#                                            file_pattern = file_prefix, 
+#                                            land_parcels = data_object$parcel_characteristics$land_parcels, 
+#                                            current_simulation_params$time_steps)
+#       
+#       current_collated_feature = run_collate_routines(output_object, 
+#                                                       data_object$site_feature_layers_initial, 
+#                                                       current_data_stack,
+#                                                       simulation_input_object$feature_dynamics,
+#                                                       simulation_input_object$feature_dynamics_modes,
+#                                                       current_data_dir, 
+#                                                       current_simulation_params, 
+#                                                       feature_params,
+#                                                       realisation_ind,
+#                                                       feature_ind = current_simulation_params$features_to_use_in_simulation, 
+#                                                       use_offset_metric = TRUE)
+#       
+#     }
+#     
+#   }
   
   # delete current temporary files and folder
   if (global_params$save_simulation_outputs == FALSE){
@@ -219,10 +236,10 @@ save_landscape_routine <- function(data_object, output_object, current_data_dir,
   }
   
   if (current_simulation_params$use_specified_offset_metric == TRUE){
-    current_metric_layers = lapply(seq_along(output_object$site_feature_layers), function(i) user_transform_function(output_object$site_feature_layers[[i]]))
+    current_metric_layers = lapply(seq_along(output_object$site_feature_layers), function(i) user_transform_function(output_object$site_feature_layers[[i]], current_simulation_params$transform_params))
     
     for (feature_ind in seq_along(current_metric_layers[[1]])){
-      file_prefix = paste0('metric_layer_', feature_ind, '_yr_', formatC(yr, width = 3, format = "d", flag = "0"))
+      file_prefix = paste0('metric_layer_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '_yr_', formatC(yr, width = 3, format = "d", flag = "0"))
       feature_layer_to_save = lapply(seq_along(current_metric_layers), function(i) current_metric_layers[[i]][[feature_ind]])
       saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
       
@@ -397,31 +414,24 @@ select_current_policy <- function(current_simulation_params_set, region_num){
 
 
 # used after simulation has completed. Takes time series layer files for each feature and stacks
-form_data_stack <- function(current_data_dir, feature_string, land_parcels, time_steps){
-  
-  current_filenames <- list.files(path = current_data_dir,
-                                  pattern = paste0('feature_', feature_string), all.files = FALSE,
-                                  include.dirs = FALSE, no.. = FALSE)
-  
-  data_stack = lapply(seq_along(land_parcels), function(i) array(0, c(time_steps, length(land_parcels[[i]]))))
-  
-  #   yr = yr + 1
-  #   site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
-  #   data_stack = lapply(seq_along(data_stack), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
-  
-  for (yr in seq(time_steps)){
-    site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
-    data_stack <- lapply(seq_along(data_stack), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
-  }
-  
-  return(data_stack)
-}
+# form_data_stack <- function(current_data_dir, file_pattern, land_parcels, time_steps){
+#   
+#   current_filenames <- list.files(path = current_data_dir,
+#                                   pattern = file_pattern, all.files = FALSE,
+#                                   include.dirs = FALSE, no.. = FALSE)
+#   
+#   data_stack = rep(list(matrix(0, nrow = 1, ncol = time_steps)), length(land_parcels))
+# 
+#   for (yr in seq(time_steps)){
+#     site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
+#     site_feature_layers = lapply(seq_along(site_feature_layers), function(i) sum(site_feature_layers[[i]]))
+#     data_stack <- lapply(seq_along(land_parcels), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
+#   }
+# 
+#   return(data_stack)
+# }
 
 
-stack_current_yr <- function(current_parcel, current_site_feature_layers, yr){
-  current_parcel[yr, ] = current_site_feature_layers
-  return(current_parcel)
-}
 
 
 write_frames <- function(data_stack, filetype, mov_folder, parcel_characteristics, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
@@ -473,15 +483,6 @@ write_site_mask <- function(output_filename, landscape_dims, land_parcels, curre
 }
 
 
-# remove site from current offset pool
-remove_site_from_pool <- function(offset_pool_object, current_site_indexes){
-  subset_pool_to_remove <- list_intersect(offset_pool_object$site_indexes, current_site_indexes)
-  if (length(subset_pool_to_remove$match_ind) > 0){
-    subset_pool_to_use <- seq_along(offset_pool_object$site_indexes)[-subset_pool_to_remove$match_ind]
-    offset_pool_object <- select_pool_subset(offset_pool_object, subset_pool_to_use)
-  }
-  return(offset_pool_object)
-}
 
 
 #sample over uniform random vector, indicies less than the threshold level are selected for clearing
@@ -852,13 +853,13 @@ offset_routine <- function(output_object, feature_params, current_offset_object,
   output_object$offsets_object <- append_current_group(output_object$offsets_object, current_offset_object, append_routine = 'standard')
   
   #remove offset sites from available pool
-  output_object$offset_pool_object <- remove_parcel_from_current_pool(output_object$offset_pool_object,
+  output_object$offset_pool_object <- remove_site_from_current_pool(output_object$offset_pool_object,
                                                                       current_site_indexes = current_offset_object$site_indexes)
   return(output_object)
 }
 
 # remove site characteristics from current pool of available sites
-remove_parcel_from_current_pool <- function(offset_pool_object, current_site_indexes){
+remove_site_from_current_pool <- function(offset_pool_object, current_site_indexes){
   # work out indexes of current sites in pool
   sites_to_remove <- list_intersect(offset_pool_object$site_indexes, current_site_indexes)
   if (length(sites_to_remove$match_ind) > 0){
@@ -897,7 +898,7 @@ clearing_routine <- function(output_object, feature_params, current_dev_object, 
   
   if (length(current_dev_object$site_indexes) > 0){
     # if any development was allowed remove developed site from available offset pool
-    output_object$offset_pool_object <- remove_parcel_from_current_pool(output_object$offset_pool_object,
+    output_object$offset_pool_object <- remove_site_from_current_pool(output_object$offset_pool_object,
                                                                         current_site_indexes = current_dev_object$site_indexes)
   }
   
@@ -986,7 +987,6 @@ build_offset_pool <- function(output_object, current_simulation_params, feature_
     offset_pool_type = 'offsets'
   }
   
-
   # determine current gains characteristics
   current_pool = unlist(current_pool)
   offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
@@ -1139,6 +1139,7 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
                               adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                               time_fill,
                               yr)
+    
     cfacs_to_use = sum_trajectories(cfacs)
     cfac_vals = nested_list_tail(cfacs_to_use)
     
@@ -1244,21 +1245,6 @@ user_projection <- function(current_feature_val, current_feature_dynamics, updat
   
   return(projected_feature_vals)
 }
-
-
-
-# current_site_feature_layer = current_site_feature_layers[[1]][[1]]
-#                  feature_params$background_projection_type,
-#                  feature_params$background_update_dynamics_by_differential, 
-#                  feature_dynamics_to_use = current_feature_dynamics[[1]][[1]],
-#                  feature_dynamics_modes_to_use = current_feature_dynamics_modes[[1]][[1]],
-#                  time_horizons[1],
-#                  current_simulation_params,
-#                  perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
-#                  time_fill = TRUE, 
-#                  unique_site_vals = feature_params$unique_site_vals,
-#                  projection_yrs = current_offset_yrs[1], 
-#                  condition_class_bounds = feature_params$condition_class_bounds)
 
 
 
@@ -2194,7 +2180,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
 
 
       if (current_simulation_params$use_specified_offset_metric == TRUE){
-        cfacs = lapply(seq_along(cfacs), function(i) user_transform_function(cfacs[[i]]))
+        cfacs = lapply(seq_along(cfacs), function(i) user_transform_function(cfacs[[i]], current_simulation_params$transform_params))
       }
 
       cfac_vals = sum_sites(cfacs)
@@ -2264,7 +2250,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                   condition_class_bounds = feature_params$condition_class_bounds)
       
       if (current_simulation_params$use_specified_offset_metric == TRUE){
-        projected_feature_layers = lapply(seq_along(projected_feature_layers), function(i) user_transform_function(projected_feature_layers[[i]]))
+        projected_feature_layers = lapply(seq_along(projected_feature_layers), function(i) user_transform_function(projected_feature_layers[[i]], current_simulation_params$transform_params))
       }
       
       projected_vals = sum_sites(projected_feature_layers)
@@ -2277,10 +2263,11 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
   
   pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   
-  if (any(unlist(pool_object$parcel_vals_used)<0)){
-
+  if (any(is.na(pool_object$parcel_vals_used))){
+    browser()
     for (f_ind in seq_along(pool_object$parcel_vals_used[[1]])){
       bad_inds = which(unlist(lapply(seq_along(pool_object$parcel_vals_used), function(i) any(unlist(pool_object$parcel_vals_used[[i]][[f_ind]]) < 0))))
+      
       print(unlist(lapply(bad_inds, function(i) feature_dynamics_modes_to_use[[i]][f_ind])))
     }
   }
@@ -2352,25 +2339,6 @@ append_current_group <- function(object_to_append, current_object, append_routin
                                            current_object,
                                            append_type = 'as_list',
                                            inds_to_append = seq_along(object_to_append))
-  #   if (append_routine == 'banked_offset'){
-  #     appended_object <- append_current_object(object_to_append,
-  #                                              current_object,
-  #                                              append_type = 'as_list',
-  #                                              inds_to_append = seq_along(object_to_append))      #record current offset parcels in offsets object containing all offsets info
-  #   } else {
-  #record current offset parcels in offsets object containing all offset characteristics
-  # needs a two step process as site_indexes are nested and the others are not
-  
-  #     appended_object <- append_current_object(object_to_append,
-  #                                              current_object,
-  #                                              append_type = 'as_list',
-  #                                              inds_to_append = which(!(names(current_object) == 'site_indexes')))
-  
-  #     appended_object <- append_current_object(appended_object,
-  #                                              current_object,
-  #                                              append_type = 'as_group',
-  #                                              inds_to_append = which(names(current_object) == 'site_indexes'))
-  # }
   return(appended_object)
   
 }
@@ -2674,28 +2642,27 @@ sum_clearing_offsets <- function(cfacs_include_clearing, summed_offset_projectio
 }
 
 
-sum_cols_multi <- function(arr_to_use){
-  if (length(dim(arr_to_use)) == 0){
-    print('length error')
-    stop()
-  }else if (length(dim(arr_to_use)) == 1){
-    arr_out = t(t(arr_to_use))
-  } else if (length(dim(arr_to_use)) == 2){
-    arr_out = apply(arr_to_use, MARGIN = 1, sum)
-    arr_out = t(t(arr_out))
-  } else if (length(dim(arr_to_use)) == 3){
-    arr_out = apply(arr_to_use, MARGIN = c(1, 3), sum)
-    dim(arr_out) = c(dim(arr_out), 1)
-    arr_out = aperm(arr_out, c(1, 3, 2))
+
+sum_cols <- function(array_to_sum){
+  
+  if (length(dim(array_to_sum)) <= 1){
+    summed_array = matrix(sum(array_to_sum), ncol = 1)
+  } else if (length(dim(array_to_sum)) == 2){
+    summed_array = matrix(apply(array_to_sum, MARGIN = 1, sum), ncol = 1)
+  } else if (length(dim(array_to_sum)) == 3){
+    summed_array = apply(array_to_sum, MARGIN = c(1, 3), sum)
+    dim(summed_array) = c(dim(summed_array), 1)
+    summed_array = aperm(summed_array, c(1, 3, 2))
   }
-  return(arr_out)
+  return(summed_array)
 }
+
 
 
 # sum through features for each site to yield single dimensional site state vector for each feature
 sum_trajectories <- function(traj_list, features_to_use_in_offset_calc){
   
   parcel_traj_list = lapply(seq_along(traj_list), function(i) lapply(seq_along(traj_list[[i]]),
-                                                                     function(j) sum_cols_multi(traj_list[[i]][[j]])))
+                                                                     function(j) sum_cols(traj_list[[i]][[j]])))
   return(parcel_traj_list)
 }
