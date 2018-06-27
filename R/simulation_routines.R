@@ -48,7 +48,6 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                                                     current_data_dir, 
                                                     current_simulation_params, 
                                                     feature_params,
-                                                    realisation_ind,
                                                     feature_ind, 
                                                     use_offset_metric = FALSE)
     
@@ -66,7 +65,6 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                                                       current_data_dir, 
                                                       current_simulation_params, 
                                                       feature_params,
-                                                      realisation_ind,
                                                       feature_ind, 
                                                       use_offset_metric = TRUE)
       
@@ -105,7 +103,7 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
     
   }
 
-  
+  browser()
 #   if (current_simulation_params$use_specified_offset_metric == TRUE){
 #      
 #     for (feature_ind in 1){
@@ -822,11 +820,11 @@ offset_routine <- function(output_object, feature_params, current_offset_object,
   
   # if running in banking mode remove offset site from available bank
   if (current_simulation_params$use_offset_bank == TRUE){
-    banked_offset_pool = output_object$offset_bank_object$site_indexes
+    banked_offset_pool = output_object$interventions$offset_bank_object$site_indexes
     banked_offset_inds_used = list_intersect(banked_offset_pool, current_offset_object$site_indexes)
     
     # determine parcels used in matching routine and remove from available pool
-    output_object$offset_bank_object$site_indexes = remove_index(banked_offset_pool, banked_offset_inds_used$match_ind)
+    output_object$interventions$offset_bank_object$site_indexes = remove_index(banked_offset_pool, banked_offset_inds_used$match_ind)
     
   } else {
     # determine parcels used in matching routine and remove from available pool
@@ -850,7 +848,7 @@ offset_routine <- function(output_object, feature_params, current_offset_object,
   }
   
   #record current offset site characteristics
-  output_object$offsets_object <- append_current_group(output_object$offsets_object, current_offset_object, append_routine = 'standard')
+  output_object$interventions$offsets_object <- append_current_group(output_object$interventions$offsets_object, current_offset_object, append_routine = 'standard')
   
   #remove offset sites from available pool
   output_object$offset_pool_object <- remove_site_from_current_pool(output_object$offset_pool_object,
@@ -886,14 +884,14 @@ clearing_routine <- function(output_object, feature_params, current_dev_object, 
   if (clearing_type == 'development'){
     #record current development site characteristics
     
-    output_object$dev_object <- append_current_group(output_object$dev_object, current_dev_object, append_routine = 'standard')
+    output_object$interventions$dev_object <- append_current_group(output_object$interventions$dev_object, current_dev_object, append_routine = 'standard')
     
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
-    output_object$credit_object <- append_current_group(output_object$credit_object, current_dev_object, append_routine = 'standard')
+    output_object$interventions$credit_object <- append_current_group(output_object$interventions$credit_object, current_dev_object, append_routine = 'standard')
   } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
-    output_object$unregulated_loss_object <- append_current_group(output_object$unregulated_loss_object, current_dev_object, append_routine = 'standard')
+    output_object$interventions$unregulated_loss_object <- append_current_group(output_object$interventions$unregulated_loss_object, current_dev_object, append_routine = 'standard')
   }
   
   if (length(current_dev_object$site_indexes) > 0){
@@ -931,7 +929,7 @@ assess_banking_credit <- function(output_object, current_simulation_params){
   
   offset_credit = nested_list_sum(output_object$offset_pool_object$parcel_vals_used)
   
-  dev_list = append(output_object$credit_object$parcel_vals_used, output_object$dev_object$parcel_vals_used)
+  dev_list = append(output_object$interventions$credit_object$parcel_vals_used, output_object$interventions$dev_object$parcel_vals_used)
   
   if (length(dev_list) > 0){
     # determine total development losses
@@ -968,14 +966,14 @@ build_offset_pool <- function(output_object, current_simulation_params, feature_
     # if running in offset bank mode select sites from current region
     flog.error('offset bank in development')
     stop()
-    subset_pool = output_object$offset_bank_object$site_indexes
+    subset_pool = output_object$interventions$offset_bank_object$site_indexes
     
     # find set of offset characteristics that apply to current set of available sites
-    offset_pool_object <- select_pool_subset(output_object$offset_bank_object, subset_pool)
+    offset_pool_object <- select_pool_subset(output_object$interventions$offset_bank_object, subset_pool)
     
     # find set of current cumulative site vals, record as projected val as calculation is from time
     # of original offset to current time for banking
-    offset_pool_object$projected_vals <- find_current_parcel_sums(output_object$site_feature_layers[unlist(output_object$offset_bank_object$site_indexes[subset_pool])])
+    offset_pool_object$projected_vals <- find_current_parcel_sums(output_object$site_feature_layers[unlist(output_object$interventions$offset_bank_object$site_indexes[subset_pool])])
     
     offset_pool_type = 'offset_bank'
   } else {
@@ -1038,7 +1036,7 @@ banking_routine <- function(output_object, current_simulation_params, yr){
                                                        parcel_num_remaining,
                                                        yr)   # arrange current parcel data
   
-  output_object$offset_bank_object = append_current_group(object_to_append = output_object$offset_bank_object,
+  output_object$interventions$offset_bank_object = append_current_group(object_to_append = output_object$interventions$offset_bank_object,
                                                           current_object = current_banked_object,
                                                           append_routine = 'banked_offset')
   
@@ -2038,20 +2036,22 @@ sum_feature_layers <- function(site_feature_layers){
 
 #remove site from available pool for offsets and developments. This is a two stage process to cover when offsets and developments may not overlap
 update_index_object <- function(index_object, update_type, site_indexes){
-  #remove parcel from available list
+  #remove site from available list
   index_object$available_indexes$offsets = setdiff(index_object$available_indexes$offsets, site_indexes)
   index_object$available_indexes$devs = setdiff(index_object$available_indexes$devs, site_indexes)
   
+  
+  
   if (update_type == 'offset'){
-    index_object$site_indexes_used$offsets = append(index_object$site_indexes_used$offsets, list(site_indexes))
+    index_object$site_indexes_used$offsets_object = append(index_object$site_indexes_used$offsets, list(site_indexes))
   } else if (update_type == 'development'){
-    index_object$site_indexes_used$devs = append(index_object$site_indexes_used$devs, list(site_indexes))
+    index_object$site_indexes_used$dev_object = append(index_object$site_indexes_used$dev_object, list(site_indexes))
   } else if (update_type == 'unregulated'){
-    index_object$site_indexes_used$unregulated = append(index_object$site_indexes_used$unregulated, list(site_indexes))
+    index_object$site_indexes_used$unregulated_loss_object = append(index_object$site_indexes_used$unregulated_loss_object, list(site_indexes))
   } else if (update_type == 'develop_from_credit'){
-    index_object$site_indexes_used$dev_credit = append(index_object$site_indexes_used$dev_credits, list(site_indexes))
+    index_object$site_indexes_used$credit_object = append(index_object$site_indexes_used$credit_object, list(site_indexes))
   } else if (update_type == 'banking'){
-    index_object$site_indexes_used$banking = append(index_object$site_indexes_used$banking, list(site_indexes))
+    index_object$site_indexes_used$offset_bank_object = append(index_object$site_indexes_used$offset_bank_object, list(site_indexes))
   }
   
   return(index_object)

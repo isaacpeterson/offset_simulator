@@ -308,11 +308,10 @@ build_modes <- function(projection_type, feature_layers_to_use, condition_class_
 build_simulation_inputs <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, parcel_characteristics, 
                                      offset_probability_list, dev_probability_list, feature_params){
   input_object = list()
-  input_object$offsets_object <- list()
-  input_object$dev_object <- list()
-  input_object$unregulated_loss_object <- list()
-  input_object$credit_object <- list()
-  input_object$offset_bank_object <- list()
+  
+  input_object$interventions = vector('list', 5)
+  names(input_object$interventions) = names(index_object$site_indexes_used)
+
   input_object$offset_pool_object <- list()
   input_object$site_feature_layers <- site_feature_layers_initial
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
@@ -848,7 +847,7 @@ initialise_index_object <- function(parcel_characteristics, site_feature_layers_
   index_object = list()
   index_object$banked_offset_pool = vector()
   index_object$site_indexes_used = vector('list', 5)
-  names(index_object$site_indexes_used) = c('offsets', 'devs', 'illegals', 'dev_credits', 'banking')
+  names(index_object$site_indexes_used) = c('offsets_object', 'dev_object', 'unregulated_loss_object', 'credit_object', 'offset_bank_object')
   
   index_object$available_indexes = list()
   
