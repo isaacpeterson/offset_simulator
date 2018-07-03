@@ -2165,7 +2165,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                       time_fill,
                                                                                       yr), recursive = FALSE), current_simulation_params$transform_params)))
         if (time_fill == TRUE){
-          cfac_vals = lapply(seq_along(cfacs), function(i) cfacs[[i]][nrow(cfacs[[i]]), ])
+          cfac_vals = lapply(seq_along(cfacs), function(i) matrix(cfacs[[i]][nrow(cfacs[[i]]), ], ncol = ncol(cfacs[[i]])))
         } else{
           cfac_vals = cfacs
         }
@@ -2240,13 +2240,15 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       projected_vals = sum_sites(projected_feature_layers)
       
     } else if (pool_type == 'developments') {
-      projected_vals = cfac_vals
-      cfac_vals = lapply(seq_along(projected_vals), function(i) matrix(0, ncol = ncol(projected_vals[[1]]), nrow = nrow(projected_vals[[1]])))
+      projected_vals = lapply(seq_along(cfac_vals), function(i) matrix(0, ncol = ncol(cfac_vals[[i]]), nrow = nrow(cfac_vals[[i]])))
     }
   }
 
-  pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
-  
+  if (pool_type == 'developments') {
+    pool_object$parcel_vals_used = mapply('-', cfac_vals, projected_vals, SIMPLIFY = FALSE)
+  } else {
+    pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
+  }
   if (any(is.na(pool_object$parcel_vals_used))){
     browser()
     for (f_ind in seq_along(pool_object$parcel_vals_used[[1]])){
@@ -2393,7 +2395,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                            condition_class_bounds = feature_params$condition_class_bounds)
   
   if (adjust_cfacs_flag == TRUE){
-    browser()
+
     cfacs = adjust_cfacs(cfacs,
                          include_potential_developments,
                          include_potential_offsets,
@@ -2460,8 +2462,6 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
     counter_weights <- lapply(seq_len(parcel_num), function(i) counter_weights[[i]] - current_offset_probability_list$weights[[i]])
   }
   
-  browser()
-  
   inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
   counter_weights <- remove_neg_probs(counter_weights, inds_to_accept)
   
@@ -2469,6 +2469,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
   adjusted_cfacs = lapply(seq_along(current_cfacs), function(i) lapply(seq_along(current_cfacs[[i]]),
                                                                        function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
+  
   if (include_potential_offsets == TRUE){
     offset_intervention_probs <- remove_neg_probs(current_offset_probability_list$weighted_probs, inds_to_accept)
     offset_projections <- calc_offset_projections(feature_params$background_projection_type,
