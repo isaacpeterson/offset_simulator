@@ -151,7 +151,7 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$allow_developments_from_credit = TRUE
   
   #use a specified offset metric in the site match calculation
-  default_simulation_params$use_specified_offset_metric = FALSE
+  default_simulation_params$use_offset_metric = FALSE
   
   # define the offset metric function
   default_simulation_params$offset_metric_type = 'euclidean_norm'
@@ -340,7 +340,7 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$lwd_vec = c(3, 0.5)
   default_output_params$plot_subset_type = 'all'
   default_output_params$plot_subset_param = 'all'
-  
+  default_output_params$plot_offset_metric = FALSE
   default_output_params$plot_site_offset = TRUE 
   default_output_params$plot_site_dev = TRUE
   default_output_params$plot_site_net = TRUE
