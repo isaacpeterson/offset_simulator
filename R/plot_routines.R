@@ -32,7 +32,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
   }
   
   if (plot_params$plot_landscape == TRUE){ 
-    plot_outcomes(collated_realisations$landscape$net_landscape, 
+    plot_outcomes(collated_realisations$landscape_scale$landscape_outcome, 
                   plot_type = 'landscape', 
                   enforce_limits = TRUE, 
                   include_legend = FALSE, 
@@ -40,7 +40,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
-                  collated_realisations$landscape$landscape_cfacs[[1]], 
+                  collated_realisations$landscape_scale$landscape_cfacs[[1]], 
                   plot_params$landscape_outcome_lwd_vec, 
                   outcome_col = plot_params$landscape_col, 
                   cfac_col = plot_params$cfac_col,
@@ -56,11 +56,11 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   
   if (current_simulation_params$use_offset_bank == TRUE){
-    offset_site_indexes_to_use = collated_realisations$collated_offset_bank$site_indexes
-    dev_site_indexes_to_use = collated_realisations$collated_dev_credit$site_indexes
+    offset_site_indexes_to_use = collated_realisations$offset_bank_object$site_indexes
+    dev_site_indexes_to_use = collated_realisations$credit_object$site_indexes
   } else{
-    offset_site_indexes_to_use = collated_realisations$collated_offsets$site_indexes
-    dev_site_indexes_to_use = collated_realisations$collated_devs$site_indexes
+    offset_site_indexes_to_use = collated_realisations$offsets_object$site_indexes
+    dev_site_indexes_to_use = collated_realisations$dev_object$site_indexes
   }
   
   x_lab = ''
@@ -140,8 +140,8 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
       abline(v = NNL_object$mean_NNL, lty = 2)
     }
     
-    dev_yrs = collated_realisations$collated_devs$offset_yrs
-    last_dev_yr =  mean(unlist(lapply(seq_along(dev_yrs), function(i) dev_yrs[[i]][ length(dev_yrs[[i]] )])))
+    last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
+                     function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$offset_yrs), 1))))
     dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
     if (last_dev_yr < dev_end){
       line_to_use = last_dev_yr
@@ -157,9 +157,9 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
   # Plot the landscape scale impacts
   if (plot_params$plot_landscape == TRUE){
     NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale_NNL$NNL_mean, 
-                                           collated_realisations$landscape$landscape_impact)
+                                           collated_realisations$landscape_scale$landscape_scale_impact)
     
-    overlay_realisations(plot_list = collated_realisations$landscape$landscape_impact,
+    overlay_realisations(plot_list = collated_realisations$landscape_scale$landscape_scale_impact,
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -296,12 +296,13 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   stats_to_use = unlist(collated_realisations$sites_used)
   x_lab = ''
   if (current_simulation_params$use_offset_bank == FALSE){
-    offset_set = collated_realisations$collated_offsets
-    dev_set = collated_realisations$collated_devs
-    if (max(sets_to_plot) > length(dev_set$site_indexes[[realisation_ind]])){
-      stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$site_indexes[[realisation_ind]]), ' sites'))
-    }
-    net_plot_list = collated_realisations$site_scale_impacts$net_impacts[[realisation_ind]][sets_to_plot]
+    offset_set = collated_realisations$site_scale_impacts$offsets_object
+    dev_set = collated_realisations$site_scale_impacts$dev_object
+
+#     if (max(sets_to_plot) > length(dev_set[[realisation_ind]]$site_indexes)){
+#       stop(cat('\nexample set to plot exceeds total development number of ', length(dev_set$site_indexes[[realisation_ind]]), ' sites'))
+#     }
+    net_plot_list = collated_realisations$site_scale_net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
     
   } else {
     offset_set = collated_realisations$program_scale_impacts$net_offset_gains
@@ -367,13 +368,13 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 overlay_impact <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
                            plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
                            set_to_plot, plot_lims, time_steps){
-  browser()
+
   if (offset_bank == FALSE){
-    collated_traj_set = collated_object$nets[[realisation_ind]]
-    site_indexes = unlist(collated_object$site_indexes[[realisation_ind]][set_to_plot])
-    inds_to_plot = which(unlist(collated_object$site_indexes[[realisation_ind]]) %in% site_indexes)
+    collated_traj_set = collated_object[[realisation_ind]]$nets
+    site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
+    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)
     if (plot_from_impact_yr){
-      offset_yrs = collated_object$offset_yrs[[realisation_ind]][inds_to_plot]
+      offset_yrs = collated_object[[realisation_ind]]$offset_yrs[inds_to_plot]
     } else {
       offset_yrs = rep(list(1), length(inds_to_plot))
     }
