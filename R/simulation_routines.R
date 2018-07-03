@@ -2403,9 +2403,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
                          current_simulation_params,
                          parcel_num_remaining,
                          time_horizons,
-                         offset_yrs, 
-                         yr)
-    
+                         offset_yrs)
   } 
   return(cfacs)
   
@@ -2413,7 +2411,7 @@ calc_cfacs <- function(site_feature_layers_to_use, parcel_num_remaining, current
 
 
 adjust_cfacs <- function(current_cfacs, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                         current_simulation_params, parcel_num_remaining, time_horizons, offset_yrs, yr){
+                         current_simulation_params, parcel_num_remaining, time_horizons, offset_yrs){
   
   time_horizons = unlist(time_horizons)
   
@@ -2465,7 +2463,6 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
   inds_to_accept = lapply(seq_along(counter_weights), function(i) counter_weights[[i]] >= 0)
   counter_weights <- remove_neg_probs(counter_weights, inds_to_accept)
   
-  
   adjusted_cfacs = lapply(seq_along(current_cfacs), function(i) lapply(seq_along(current_cfacs[[i]]),
                                                                        function(j) current_cfacs[[i]][[j]]*matrix(rep(counter_weights[[i]], dim(current_cfacs[[i]][[j]])[2]),
                                                                                                                   nrow = dim(current_cfacs[[i]][[j]])[1], byrow = FALSE)))
@@ -2479,8 +2476,7 @@ adjust_cfacs <- function(current_cfacs, include_potential_developments, include_
                                                   time_horizons, 
                                                   current_simulation_params$feature_num, 
                                                   current_simulation_params$min_eco_val, 
-                                                  current_simulation_params$max_eco_val, 
-                                                  yr)
+                                                  current_simulation_params$max_eco_val)
     
     summed_offset_projections <- sum_offset_projs(offset_projections,
                                                   offset_intervention_probs, 
@@ -2533,7 +2529,7 @@ generate_weights <- function(perform_weight, calc_type, offset_intervention_scal
 
 
 
-calc_offset_projections <- function(projection_type,current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val, yr){
+calc_offset_projections <- function(projection_type,current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
   
   parcel_num = length(current_cfacs)
   offset_projections = vector('list', parcel_num)
@@ -2559,8 +2555,19 @@ calc_offset_projections <- function(projection_type,current_cfacs, offset_probs,
                                                       current_cfac[proj_yr, ],
                                                       restoration_rate,
                                                       (time_horizon - proj_yr),
-                                                      time_fill = TRUE, 
-                                                      yr)
+                                                      time_fill = TRUE)
+          
+          project_feature_layer(current_simulation_params, 
+                                projection_type, 
+                                update_dynamics_by_differential, 
+                                current_site_feature_layer, 
+                                feature_dynamics_to_use, 
+                                feature_dynamics_mode_to_use, 
+                                current_condition_class_bounds, 
+                                time_horizon, 
+                                perform_dynamics_time_shift, 
+                                time_fill, 
+                                projection_yrs)
           
           #           project_feature_layer(current_simulation_params,
           #                                  projection_type,

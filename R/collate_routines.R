@@ -19,6 +19,7 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
                              names(simulation_outputs$interventions))
   parcel_num_remaining_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$parcel_num_remaining), 
                                   names(simulation_outputs$interventions))
+  object_name_pool = unlist(lapply(seq_along(intervention_pool), function(i) rep(names(intervention_pool)[i], length(intervention_pool[[i]]))))
   
   if (use_offset_metric == FALSE) {
     site_features_at_intervention = build_site_features_at_intervention(data_object$parcel_characteristics$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
@@ -26,33 +27,48 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
     current_feature_dynamics_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics, feature_ind, output_type = 'nested')
     current_feature_dynamics_modes_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics_modes, feature_ind, output_type = 'nested')
     
-    collate_object$site_scale_cfacs = build_site_scale_cfacs(site_features_at_intervention, 
-                                                             simulation_outputs, 
-                                                             data_object$parcel_characteristics$land_parcel_num, 
-                                                             current_feature_dynamics_initial, 
-                                                             current_feature_dynamics_modes_initial, 
-                                                             intervention_pool, 
-                                                             parcel_num_remaining_pool, 
-                                                             offset_yrs_pool, 
-                                                             current_simulation_params, 
-                                                             feature_params, 
-                                                             use_cfac_type_in_sim = TRUE, 
-                                                             feature_ind, 
-                                                             use_offset_metric)
+    collate_object$site_scale_cfacs = vector('list', data_object$parcel_characteristics$land_parcel_num)
+    collate_object$site_scale_cfacs[unlist(intervention_pool)] = unlist(lapply(seq_along(unlist(intervention_pool)),
+                                                                        function(i) collate_cfacs(current_simulation_params, 
+                                                                                                  feature_params,
+                                                                                                  site_features_at_intervention[unlist(intervention_pool)[i]],
+                                                                                                  simulation_input_object$feature_dynamics[unlist(intervention_pool)[i]],
+                                                                                                  simulation_input_object$feature_dynamics_modes[unlist(intervention_pool)[i]],
+                                                                                                  projection_yrs = list(as.vector(unlist(offset_yrs_pool)[i])),
+                                                                                                  current_parcel_num_remaining = unlist(parcel_num_remaining_pool)[i],
+                                                                                                  cfac_type = 'site_scale',
+                                                                                                  object_type = object_name_pool[i], 
+                                                                                                  use_cfac_type_in_sim = TRUE, 
+                                                                                                  condition_class_bounds = feature_params$condition_class_bounds, 
+                                                                                                  use_offset_metric)), recursive = FALSE)
     
     current_initial_feature_layer = select_nested_subset(nested_object = simulation_input_object$site_feature_layers, feature_ind, output_type = 'nested')
     
-    collate_object$background_cfacs = collate_cfacs(current_simulation_params, feature_params,
-                                                    current_site_feature_layers = current_initial_feature_layer,
-                                                    current_feature_dynamics = current_feature_dynamics_initial,
-                                                    current_feature_dynamics_modes_initial,
-                                                    projection_yrs = rep(list(1), length(current_initial_feature_layer)),
-                                                    current_parcel_num_remaining = vector(),
-                                                    cfac_type = 'background',
-                                                    object_type = vector(), 
-                                                    use_cfac_type_in_sim = FALSE, 
-                                                    condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
-                                                    use_offset_metric)
+#     collate_object$background_cfacs = collate_cfacs(current_simulation_params, feature_params,
+#                                                     current_site_feature_layers = current_initial_feature_layer,
+#                                                     current_feature_dynamics = current_feature_dynamics_initial,
+#                                                     current_feature_dynamics_modes_initial,
+#                                                     projection_yrs = rep(list(1), length(current_initial_feature_layer)),
+#                                                     current_parcel_num_remaining = vector(),
+#                                                     cfac_type = 'background',
+#                                                     object_type = vector(), 
+#                                                     use_cfac_type_in_sim = FALSE, 
+#                                                     condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
+#                                                     use_offset_metric)
+    
+    collate_object$background_cfacs = unlist(lapply(seq_along(simulation_input_object$site_feature_layers),
+                                                                        function(i) collate_cfacs(current_simulation_params, 
+                                                                                                  feature_params,
+                                                                                                  current_initial_feature_layer[i],
+                                                                                                  simulation_input_object$feature_dynamics[i],
+                                                                                                  simulation_input_object$feature_dynamics_modes[i],
+                                                                                                  projection_yrs = rep(list(1), length(current_initial_feature_layer)),
+                                                                                                  current_parcel_num_remaining = vector(),
+                                                                                                  cfac_type = 'background',
+                                                                                                  object_type = vector(), 
+                                                                                                  use_cfac_type_in_sim = FALSE, 
+                                                                                                  condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
+                                                                                                  use_offset_metric)), recursive = FALSE)
     
     site_features_at_intervention = unlist(site_features_at_intervention, recursive = FALSE)
     collate_object$summed_site_features_at_intervention = lapply(seq_along(site_features_at_intervention), function(i) sum_cols(site_features_at_intervention[[i]]))
@@ -81,7 +97,6 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
                                                                                                                use_offset_metric), current_simulation_params$transform_params)))
     
     
-    object_type_group_names = unlist(lapply(seq_along(intervention_pool), function(i) rep(names(intervention_pool)[i], length(intervention_pool[[i]]))))
     
     collate_object$site_scale_cfacs = vector('list', data_object$parcel_characteristics$land_parcel_num)
     collate_object$site_scale_cfacs[unlist(intervention_pool)] = lapply(seq_along(unlist(intervention_pool)),
@@ -93,7 +108,7 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
                                                                                                                                    projection_yrs = list(as.vector(unlist(offset_yrs_pool)[i])),
                                                                                                                                    current_parcel_num_remaining = unlist(parcel_num_remaining_pool)[i],
                                                                                                                                    cfac_type = 'site_scale',
-                                                                                                                                   object_type = object_type_group_names[i], 
+                                                                                                                                   object_type = object_name_pool[i], 
                                                                                                                                    use_cfac_type_in_sim = FALSE, 
                                                                                                                                    condition_class_bounds = feature_params$condition_class_bounds, 
                                                                                                                                    use_offset_metric), current_simulation_params$transform_params)))
@@ -214,8 +229,6 @@ build_site_scale_cfacs <- function(site_features_at_intervention, simulation_out
                                                    use_offset_metric)
   }
   
-  
-
   return(site_scale_cfacs)
 }
 
@@ -408,10 +421,9 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                          include_potential_offsets,
                          include_unregulated_loss,
                          current_simulation_params,
-                         parcel_num_remaining,
+                         current_parcel_num_remaining,
                          time_horizons,
-                         offset_yrs, 
-                         yr)
+                         projection_yrs)
   } 
   
   
@@ -596,11 +608,13 @@ assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_s
   
   parcel_num = length(site_scale_outcomes_to_use)
   impact_trajectories = lapply(seq(parcel_num), function(i) site_scale_outcomes_to_use[[i]][current_offset_yrs[i]:time_steps])
+  browser()
   
   avoided_loss = lapply(seq(parcel_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
   rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
   net_gains = mapply('-', impact_trajectories, cfacs_to_use, SIMPLIFY = FALSE)
   
+
   collate_object = list(net_gains, avoided_loss, rest_gains)
 
   if (any(is.na(unlist(collate_object)))){
