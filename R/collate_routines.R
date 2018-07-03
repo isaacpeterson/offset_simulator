@@ -572,28 +572,28 @@ stack_current_yr <- function(current_site, current_vals, yr){
 
 merge_vectors <- function(vec_a, vec_b, start_ind){
 
-  if (length(vec_a) == 0){
-    browser()
-  }
-  
-  if (length(vec_b) == 0){
-    browser()
-  }
-  
-  if (length(start_ind) == 0){
-    browser()
-  }
-  if (any(is.na(vec_b))){
-    browser()
-  }
-  
-  if (any(is.na(vec_a))){
-    browser()
-  }
-  
-  if (length(vec_a) < (start_ind + length(vec_b) - 1)){
-    browser()
-  }
+#   if (length(vec_a) == 0){
+#     browser()
+#   }
+#   
+#   if (length(vec_b) == 0){
+#     browser()
+#   }
+#   
+#   if (length(start_ind) == 0){
+#     browser()
+#   }
+#   if (any(is.na(vec_b))){
+#     browser()
+#   }
+#   
+#   if (any(is.na(vec_a))){
+#     browser()
+#   }
+#   
+#   if (length(vec_a) < (start_ind + length(vec_b) - 1)){
+#     browser()
+#   }
 
   
   
@@ -608,20 +608,17 @@ assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_s
   
   parcel_num = length(site_scale_outcomes_to_use)
   impact_trajectories = lapply(seq(parcel_num), function(i) site_scale_outcomes_to_use[[i]][current_offset_yrs[i]:time_steps])
-  browser()
   
   avoided_loss = lapply(seq(parcel_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
   rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
   net_gains = mapply('-', impact_trajectories, cfacs_to_use, SIMPLIFY = FALSE)
   
-
   collate_object = list(net_gains, avoided_loss, rest_gains)
 
-  if (any(is.na(unlist(collate_object)))){
-    browser()
-  }
+#   if (any(is.na(unlist(collate_object)))){
+#     browser()
+#   }
   
-
   collate_object <- lapply(seq_along(collate_object),
                             function(i) lapply(seq_along(collate_object[[i]]), 
                                                function(j) merge_vectors(array(0, time_steps), collate_object[[i]][[j]], current_offset_yrs[j])))
