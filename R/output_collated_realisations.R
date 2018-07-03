@@ -117,13 +117,37 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         features_to_plot = output_params$features_to_plot
       }
       
-      for (feature_ind in features_to_plot){
+      if ((output_params$plot_offset_metric == TRUE) & (current_simulation_params$use_offset_metric == TRUE)){
+        features_to_use = append(features_to_plot, (max(features_to_plot) + 1))
+      } else{
+        features_to_use = features_to_plot
+      }
+      
+      if (output_params$plot_type == 'impacts'){
+      
+        site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
+        program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
+        landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
+      } else {
+        site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
+        program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
+        landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
+      }
+      
+      for (feature_ind in features_to_use){
         
-        collated_filenames = find_collated_files(file_path = collated_folder,
+        if (feature_ind > max(features_to_plot)){
+
+          collated_filenames = list.files(path = collated_folder, all.files = FALSE,
+                                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                          include.dirs = FALSE, no.. = FALSE, pattern = '_metric')
+          collated_filenames = lapply(seq_along(collated_filenames), function(i) paste0(collated_folder, '/', collated_filenames[i]))
+        } else {
+          collated_filenames = find_collated_files(file_path = collated_folder,
                                                  scenario_string = formatC(scenario_ind, width = output_params$string_width, format = "d", flag = "0"),
                                                  feature_string = formatC(feature_ind, width = output_params$string_width, format = "d", flag = "0"),
                                                  output_params$realisation_num)
-        
+        }
         collated_realisations = bind_collated_realisations(collated_filenames)
         
         if (output_params$print_dev_offset_sites == TRUE){
@@ -135,17 +159,19 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         
         if (output_params$output_plot == TRUE){
           
-          if (output_params$plot_type == 'impacts'){
-            if (length(output_params$site_impact_plot_lims_set) < length(features_to_plot)){
-              site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
-              program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
-              landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
-            } else {
+          if (length(output_params$site_impact_plot_lims_set) == length(features_to_use)){
+            if (output_params$plot_type == 'impacts'){
               site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]]
               program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]]
               landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]]
+            } else {
+              site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
+              program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
+              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
             }
-            
+          }
+          
+          if (output_params$plot_type == 'impacts'){
             plot_impact_set(collated_realisations,
                             current_simulation_params,
                             output_params,
@@ -156,15 +182,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
                             feature_ind,
                             output_params$sets_to_plot)
           } else if (output_params$plot_type == 'outcomes'){
-            if (length(output_params$site_outcome_plot_lims_set) < length(features_to_plot)){
-              site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
-              program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
-              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
-            } else {
-              site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
-              program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
-              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
-            }
+
             plot_outcome_set(collated_realisations,
                              current_simulation_params,
                              output_params,
@@ -175,6 +193,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
                              current_feature,
                              output_params$sets_to_plot)
           }
+          
           plot.ctr <- plot.ctr + 1
           #flog.info(' finished writing plot %d', scenario_ind)
         } 
