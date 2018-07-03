@@ -99,15 +99,16 @@ build_input_data <- function(params_object, current_simulation_params){
     }
   }
   
-  raster_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, pattern = params_object$global_params$raster_file_type, all.files = FALSE, 
+  feature_raster_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, 
+                                 pattern = params_object$global_params$raster_file_type, all.files = FALSE, 
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, 
                                  include.dirs = FALSE, no.. = FALSE)
-  if (length(raster_filenames) == 0){
+  
+  if (length(feature_raster_filenames) == 0){
     flog.error(paste('cannot find any raster files with extension', params_object$global_params$raster_file_type))
   }
   
-  
-  feature_raster_layers = load_rasters(params_object$global_params$simulation_inputs_folder, raster_filenames, features_to_use = current_simulation_params$features_to_use_in_simulation)
+  feature_raster_layers = load_rasters(params_object$global_params$simulation_inputs_folder, feature_raster_filenames, features_to_use = current_simulation_params$features_to_use_in_simulation)
   
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
@@ -316,8 +317,8 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
   input_object$site_feature_layers <- site_feature_layers_initial
   current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
 
-  if (current_simulation_params$use_specified_offset_metric == TRUE){
-    current_credit = unlist(user_transform_function(current_credit, current_simulation_params$transform_params))
+  if (current_simulation_params$use_offset_metric == TRUE){
+    current_credit = user_transform_function(current_credit, current_simulation_params$transform_params)
   }
   
   input_object$current_credit = current_credit
