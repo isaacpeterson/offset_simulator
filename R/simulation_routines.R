@@ -19,7 +19,7 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                                                     index_object, 
                                                     global_params,
                                                     data_object$site_feature_layers_initial,
-                                                    data_object$parcel_characteristics, 
+                                                    data_object$site_characteristics_object, 
                                                     data_object$offset_probability_list, 
                                                     data_object$dev_probability_list, 
                                                     feature_params)
@@ -67,7 +67,7 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
     #         }
     #       }
     #       if ( global_params$write_movie == TRUE){
-    #         write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$parcel_characteristics, global_params, current_simulation_params, 
+    #         write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$site_characteristics_object, global_params, current_simulation_params, 
     #                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
     #                      offset_yrs = unlist(output_object$offsets$offset_yrs))
     #       }
@@ -190,8 +190,8 @@ save_landscape_routine <- function(data_object, output_object, current_data_dir,
       if (!file.exists(current_raster_folder)){
         dir.create(current_raster_folder, recursive = TRUE)
       }
-      current_feature_layer = matrix(0, nrow = data_object$parcel_characteristics$landscape_dims[1], ncol = data_object$parcel_characteristics$landscape_dims[2])
-      current_feature_layer[unlist(data_object$parcel_characteristics$land_parcels)] = unlist(feature_layer_to_save)
+      current_feature_layer = matrix(0, nrow = data_object$site_characteristics_object$landscape_dims[1], ncol = data_object$site_characteristics_object$landscape_dims[2])
+      current_feature_layer[unlist(data_object$site_characteristics_object$land_parcels)] = unlist(feature_layer_to_save)
       current_feature_raster = raster(current_feature_layer)
       writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
     }
@@ -207,8 +207,8 @@ save_landscape_routine <- function(data_object, output_object, current_data_dir,
       saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
       
       if(global_params$save_output_raster == TRUE){
-        current_feature_layer = matrix(0, nrow = data_object$parcel_characteristics$landscape_dims[1], ncol = data_object$parcel_characteristics$landscape_dims[2])
-        current_feature_layer[unlist(data_object$parcel_characteristics$land_parcels)] = unlist(feature_layer_to_save)
+        current_feature_layer = matrix(0, nrow = data_object$site_characteristics_object$landscape_dims[1], ncol = data_object$site_characteristics_object$landscape_dims[2])
+        current_feature_layer[unlist(data_object$site_characteristics_object$land_parcels)] = unlist(feature_layer_to_save)
         writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
       }
     }
@@ -224,7 +224,7 @@ match_sites_routine <- function(output_object, data_object, current_simulation_p
                               current_simulation_params,
                               feature_params, 
                               intervention_vec = current_simulation_params$intervention_vec,
-                              data_object$parcel_characteristics$land_parcels,
+                              data_object$site_characteristics_object$land_parcels,
                               yr,
                               current_simulation_params$offset_time_horizon)  
   # if a match was found record current development and associated offsets and update site parameters.
@@ -270,7 +270,7 @@ credit_match_routine <- function(output_object, data_object, current_simulation_
                                               feature_params,
                                               intervention_vec = current_simulation_params$intervention_vec,
                                               dev_indexes_to_use = output_object$index_object$available_indexes$devs,
-                                              data_object$parcel_characteristics$land_parcels,
+                                              data_object$site_characteristics_object$land_parcels,
                                               yr,
                                               current_simulation_params$offset_time_horizon)
   } else{
@@ -397,7 +397,7 @@ select_current_policy <- function(current_simulation_params_set, region_num){
 
 
 
-write_frames <- function(data_stack, filetype, mov_folder, parcel_characteristics, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
+write_frames <- function(data_stack, filetype, mov_folder, site_characteristics_object, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
   graphics.off()
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
@@ -408,20 +408,20 @@ write_frames <- function(data_stack, filetype, mov_folder, parcel_characteristic
   filename = paste0(mov_folder, "tmp%03d.", filetype, sep = '')
   
   if (filetype == 'png'){
-    png(filename, height = parcel_characteristics$landscape_dims[1], width = parcel_characteristics$landscape_dims[2])
+    png(filename, height = site_characteristics_object$landscape_dims[1], width = site_characteristics_object$landscape_dims[2])
   } else if (filetype == 'jpg'){
-    jpeg(filename, height = parcel_characteristics$landscape_dims[1], width = parcel_characteristics$landscape_dims[2])
+    jpeg(filename, height = site_characteristics_object$landscape_dims[1], width = site_characteristics_object$landscape_dims[2])
   }
   
   for (yr in seq(current_simulation_params$time_steps)){
     site_feature_layers = lapply(seq_along(data_stack), function(i) data_stack[[i]][yr, ])
-    landscape = array(0, parcel_characteristics$landscape_dims)
-    landscape[unlist(parcel_characteristics$land_parcels)] = unlist(site_feature_layers)
+    landscape = array(0, site_characteristics_object$landscape_dims)
+    landscape[unlist(site_characteristics_object$land_parcels)] = unlist(site_feature_layers)
     
     
     if (global_params$write_offset_layer == TRUE){
       offset_sites_to_use = which(offset_yrs <= yr)
-      landscape[unlist(parcel_characteristics$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
+      landscape[unlist(site_characteristics_object$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
     } 
     image(landscape, zlim = c(0, current_simulation_params$max_eco_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
     
@@ -467,7 +467,7 @@ unregulated_loss_routine <- function(output_object, data_object, current_simulat
     return(output_object)
   }
   
-  available_site_indexes = setdiff(data_object$parcel_characteristics$global_indexes, unique(unlist(output_object$index_object$site_indexes_used)))
+  available_site_indexes = setdiff(data_object$site_characteristics_object$global_indexes, unique(unlist(output_object$index_object$site_indexes_used)))
   
   inds_to_clear <- select_sites_to_clear(available_site_indexes, current_simulation_params)
   

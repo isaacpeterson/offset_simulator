@@ -112,7 +112,7 @@ build_input_data <- function(params_object, current_simulation_params){
   
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
-  parcel_characteristics <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'parcel_characteristics.rds'))
+  site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   
 
   # build list object containing feature values by feature layer for all
@@ -124,7 +124,7 @@ build_input_data <- function(params_object, current_simulation_params){
   # feature for the parcel are a vector of length given by the number of
   # pixels in the parcel.
   
-  site_feature_layers_initial <- split_ecology(feature_layers, parcel_characteristics$land_parcels)
+  site_feature_layers_initial <- split_ecology(feature_layers, site_characteristics_object$land_parcels)
 
   # This is a list of single values of length number of sites where the values
   # representing the probabilities of sites being developed. Default is that
@@ -134,7 +134,7 @@ build_input_data <- function(params_object, current_simulation_params){
   if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))){
     dev_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
   } else {
-    dev_probability_list <- rep(list(1/length(parcel_characteristics$land_parcels)), length(parcel_characteristics$land_parcels))
+    dev_probability_list <- rep(list(1/length(site_characteristics_object$land_parcels)), length(site_characteristics_object$land_parcels))
   }
   
   # This is a list of single values of length number of sites, where the values
@@ -145,12 +145,12 @@ build_input_data <- function(params_object, current_simulation_params){
   if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))){
     offset_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
   } else {
-    offset_probability_list <- rep(list(1/length(parcel_characteristics$land_parcels)), length(parcel_characteristics$land_parcels))
+    offset_probability_list <- rep(list(1/length(site_characteristics_object$land_parcels)), length(site_characteristics_object$land_parcels))
   }
  
   input_data_object = list()
   input_data_object$site_feature_layers_initial = site_feature_layers_initial
-  input_data_object$parcel_characteristics = parcel_characteristics
+  input_data_object$site_characteristics_object = site_characteristics_object
   input_data_object$dev_probability_list = dev_probability_list
   input_data_object$offset_probability_list = offset_probability_list
 
@@ -306,7 +306,7 @@ build_modes <- function(projection_type, feature_layers_to_use, condition_class_
   return(feature_dynamics_modes)
 }
 
-build_simulation_inputs <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, parcel_characteristics, 
+build_simulation_inputs <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, site_characteristics_object, 
                                      offset_probability_list, dev_probability_list, feature_params){
   input_object = list()
   
@@ -843,7 +843,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(parcel_characteristics, site_feature_layers_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(site_characteristics_object, site_feature_layers_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = vector()
@@ -852,17 +852,17 @@ initialise_index_object <- function(parcel_characteristics, site_feature_layers_
   
   index_object$available_indexes = list()
   
-  index_object$available_indexes$offsets = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
+  index_object$available_indexes$offsets = set_available_indexes(global_indexes = site_characteristics_object$site_indexes, 
                                                                  offset_indexes_to_exclude, 
-                                                                 parcel_characteristics$land_parcels, 
+                                                                 site_characteristics_object$land_parcels, 
                                                                  site_feature_layers_initial, 
                                                                  screen_site_zeros = simulation_params$screen_offset_zeros,
                                                                  site_screen_size = simulation_params$site_screen_size,
                                                                  simulation_params$features_to_use_in_offset_calc)
   
-  index_object$available_indexes$devs = set_available_indexes(global_indexes = parcel_characteristics$site_indexes, 
+  index_object$available_indexes$devs = set_available_indexes(global_indexes = site_characteristics_object$site_indexes, 
                                                               dev_indexes_to_exclude,
-                                                              parcel_characteristics$land_parcels, 
+                                                              site_characteristics_object$land_parcels, 
                                                               site_feature_layers_initial, 
                                                               screen_site_zeros = simulation_params$screen_dev_zeros,
                                                               site_screen_size = simulation_params$site_screen_size,

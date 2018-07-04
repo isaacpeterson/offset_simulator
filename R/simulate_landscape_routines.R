@@ -1,4 +1,5 @@
-simulate_site_feature <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
+#' @export
+simulate_site_feature_elements <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
 
   if (length(initial_site_sd) == 0){
     initial_site_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1]) / 3
@@ -28,13 +29,14 @@ simulate_site_feature <- function(site_sample_type, current_condition_class_boun
 
 simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder, condition_class_modes){ 
   
+  
   for (feature_ind in 1:feature_params$simulated_feature_num){
 
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
     current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
     
     current_simulated_feature = lapply(seq_along(parcel_characteristics$land_parcels), 
-                                       function(i) simulate_site_feature(feature_params$site_sample_type, 
+                                       function(i) simulate_site_feature_elements(feature_params$site_sample_type, 
                                                                          current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
                                                                          element_num = length(parcel_characteristics$land_parcels[[i]]),
                                                                          feature_params$initial_site_sd, 
@@ -147,7 +149,7 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
   objects_to_save = list()
 
   objects_to_save$planning_units_array <- simulate_planning_units(feature_params)
-  objects_to_save$parcel_characteristics <- define_planning_units(objects_to_save$planning_units_array)
+  objects_to_save$site_characteristics <- define_planning_units(objects_to_save$planning_units_array)
   objects_to_save$dev_probability_list = rep(list(1/objects_to_save$parcel_characteristics$land_parcel_num), objects_to_save$parcel_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
 
