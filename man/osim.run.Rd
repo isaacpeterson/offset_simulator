@@ -5,17 +5,16 @@
 \title{Runs the Offset Simulator}
 \usage{
 osim.run(user_global_params = NULL, user_simulation_params = NULL,
-  user_simulated_ecology_params = NULL, user_simulation_dynamics = NULL,
-  loglevel = WARN)
+  user_feature_params = NULL, loglevel = WARN)
 }
 \arguments{
 \item{user_global_params}{user configured parameters to use}
 
 \item{user_simulation_params}{user configured parameters to use}
 
-\item{user_simulated_ecology_params}{user configured parameters to use}
-
 \item{loglevel}{logging level to use, for instance futile.logger::WARN}
+
+\item{user_simulated_ecology_params}{user configured parameters to use}
 }
 \description{
 Runs the Offset Simulator
