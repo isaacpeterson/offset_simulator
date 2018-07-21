@@ -22,12 +22,12 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
   object_name_pool = unlist(lapply(seq_along(intervention_pool), function(i) rep(names(intervention_pool)[i], length(intervention_pool[[i]]))))
   
   if (use_offset_metric == FALSE) {
-    site_features_at_intervention = build_site_features_at_intervention(data_object$parcel_characteristics$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
+    site_features_at_intervention = build_site_features_at_intervention(data_object$site_characteristics_object$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
     
     current_feature_dynamics_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics, feature_ind, output_type = 'nested')
     current_feature_dynamics_modes_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics_modes, feature_ind, output_type = 'nested')
     
-    collate_object$site_scale_cfacs = vector('list', data_object$parcel_characteristics$land_parcel_num)
+    collate_object$site_scale_cfacs = vector('list', data_object$site_characteristics_object$land_parcel_num)
     collate_object$site_scale_cfacs[unlist(intervention_pool)] = unlist(lapply(seq_along(unlist(intervention_pool)),
                                                                         function(i) collate_cfacs(current_simulation_params, 
                                                                                                   feature_params,
@@ -75,10 +75,10 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
     
   } else {
 
-    site_features_at_intervention_set = vector('list', data_object$parcel_characteristics$land_parcel_num)
+    site_features_at_intervention_set = vector('list', data_object$site_characteristics_object$land_parcel_num)
 
     for (feature_ind in current_simulation_params$features_to_use_in_simulation){
-      site_features_at_intervention = build_site_features_at_intervention(data_object$parcel_characteristics$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
+      site_features_at_intervention = build_site_features_at_intervention(data_object$site_characteristics_object$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
       site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
     }
     
@@ -98,7 +98,7 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
     
     
     
-    collate_object$site_scale_cfacs = vector('list', data_object$parcel_characteristics$land_parcel_num)
+    collate_object$site_scale_cfacs = vector('list', data_object$site_characteristics_object$land_parcel_num)
     collate_object$site_scale_cfacs[unlist(intervention_pool)] = lapply(seq_along(unlist(intervention_pool)),
                                                                         function(i) sum_cols(user_transform_function(collate_cfacs(current_simulation_params, 
                                                                                                                                    feature_params,
@@ -399,11 +399,16 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
     include_potential_offsets = cfac_params$include_potential_offsets
     include_unregulated_loss = cfac_params$include_unregulated_loss
   }
-
-  projection_yrs = lapply(seq_along(projection_yrs), function(i) rep(list(projection_yrs[[i]]), current_simulation_params$feature_num))
   
+  projection_yrs = lapply(seq_along(current_feature_dynamics_modes), 
+                          function(i) lapply(seq_along(current_feature_dynamics_modes[[i]]), 
+                                             function(j) rep(list(projection_yrs[[i]]), length(unique(current_feature_dynamics_modes[[i]][[j]])))))
+  
+#   projection_yrs = lapply(seq_along(projection_yrs), 
+#                           function(i) rep(list(projection_yrs[[i]]), current_simulation_params$feature_num))
+#   
   cfacs = project_features(current_site_feature_layers,
-                           feature_params$background_projection_type,
+                           feature_params$background_dynamics_type,
                            feature_params$background_update_dynamics_by_differential, 
                            feature_dynamics_to_use = current_feature_dynamics,
                            feature_dynamics_modes_to_use = current_feature_dynamics_modes,
@@ -412,6 +417,7 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
                            perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
                            time_fill = TRUE, 
                            unique_site_vals = feature_params$unique_site_vals,
+                           unique_site_modes = feature_params$unique_site_modes,
                            projection_yrs, 
                            condition_class_bounds)
     
