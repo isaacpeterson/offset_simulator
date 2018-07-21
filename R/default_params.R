@@ -8,7 +8,7 @@ initialise_default_global_params <- function(){
   default_global_params$set_seed = FALSE
   
   default_global_params$save_output_raster = FALSE
-  
+  default_global_params$feature_raster_files = '/simulation_inputs/feature_1.tif'
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
@@ -304,13 +304,14 @@ initialise_default_feature_params <- function(){
   default_feature_params$sample_management_dynamics = TRUE 
   default_feature_params$sample_background_dynamics = TRUE
   default_feature_params$dynamics_sample_type = vector()
-  default_feature_params$management_projection_type = vector()
-  default_feature_params$background_projection_type = vector()
+  default_feature_params$management_dynamics_type = vector()
+  default_feature_params$background_dynamics_type = vector()
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
   default_feature_params$perform_management_dynamics_time_shift = vector()
   default_feature_params$management_dynamics_sample_type = vector()
   default_feature_params$perform_background_dynamics_time_shift = vector()
   default_feature_params$unique_site_vals = TRUE
+  default_feature_params$unique_site_modes = TRUE
   default_feature_params$management_update_dynamics_by_differential = TRUE
   default_feature_params$background_update_dynamics_by_differential = TRUE
   default_feature_params$site_sample_type = 'uniform'
@@ -318,7 +319,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$project_by_mean = FALSE
   default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   default_feature_params$initial_site_mean_sd = 1
-
+  
   return(default_feature_params)
 }
 
