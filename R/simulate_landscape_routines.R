@@ -1,6 +1,12 @@
 #' @export
-simulate_site_feature_elements <- function(site_sample_type, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
+simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
 
+  if (current_condition_class_modes == 0){
+    site_elements = array(0, element_num)
+    return(site_elements)
+  }
+  current_condition_class_bounds = current_condition_class_set[[current_condition_class_modes]]
+  
   if (length(initial_site_sd) == 0){
     initial_site_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1]) / 3
   }
@@ -27,22 +33,38 @@ simulate_site_feature_elements <- function(site_sample_type, current_condition_c
   return(site_elements)
 }
 
-simulate_feature_layers <- function(feature_params, parcel_characteristics, simulation_inputs_folder, condition_class_modes){ 
+simulate_feature_layers <- function(feature_params, site_characteristics, simulation_inputs_folder, condition_class_modes){ 
   
   
   for (feature_ind in 1:feature_params$simulated_feature_num){
 
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
     current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
-    
-    current_simulated_feature = lapply(seq_along(parcel_characteristics$land_parcels), 
-                                       function(i) simulate_site_feature_elements(feature_params$site_sample_type, 
-                                                                         current_condition_class_bounds = current_condition_class_set[[current_condition_mode_set[[i]]]],
-                                                                         element_num = length(parcel_characteristics$land_parcels[[i]]),
-                                                                         feature_params$initial_site_sd, 
-                                                                         feature_params$initial_site_mean_sd,
-                                                                         feature_params$unique_site_vals) )
-    
+    current_simulated_feature = lapply(seq_along(site_characteristics$land_parcels), function(i) matrix(array(0, length(site_characteristics$land_parcels[[i]])), nrow = 1))
+    for (site_ind in seq_along(site_characteristics$land_parcels)){
+      
+      for (mode_ind in seq_along(unique(current_condition_mode_set[[site_ind]]))){
+        current_element_set = which(current_condition_mode_set[[site_ind]] == unique(current_condition_mode_set[[site_ind]])[mode_ind])
+        current_simulated_feature[[site_ind]][current_element_set] = simulate_site_feature_elements(feature_params$site_sample_type, 
+                                                                                                    unique(current_condition_mode_set[[site_ind]])[mode_ind],
+                                                                                                    current_condition_class_set,
+                                                                                                    element_num = length(current_element_set),
+                                                                                                    feature_params$initial_site_sd, 
+                                                                                                    feature_params$initial_site_mean_sd,
+                                                                                                    feature_params$unique_site_vals)
+      }
+    }
+
+#     current_simulated_feature = lapply(seq_along(site_characteristics$land_parcels), 
+#                                        function(i) lapply(seq_along(unique(current_condition_mode_set[[i]])), 
+#                                                           function(j) simulate_site_feature_elements(feature_params$site_sample_type, 
+#                                                                                                      unique(current_condition_mode_set[[i]])[j],
+#                                                                                                      current_condition_class_set,
+#                                                                                                      element_num = length(which(current_condition_mode_set[[i]] == unique(current_condition_mode_set[[i]])[j])),
+#                                                                                                      feature_params$initial_site_sd, 
+#                                                                                                      feature_params$initial_site_mean_sd,
+#                                                                                                      feature_params$unique_site_vals)))
+
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
     if (current_occupation_ratio > 0){
@@ -51,8 +73,8 @@ simulate_feature_layers <- function(feature_params, parcel_characteristics, simu
 
     }
     
-    current_feature_layer = matrix(data = 0, nrow = parcel_characteristics$landscape_dims[1], ncol = parcel_characteristics$landscape_dims[2])
-    current_feature_layer[unlist(parcel_characteristics$land_parcels)] = unlist(current_simulated_feature)
+    current_feature_layer = matrix(data = 0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
+    current_feature_layer[unlist(site_characteristics$land_parcels)] = unlist(current_simulated_feature)
     current_feature_raster = raster(current_feature_layer)
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
@@ -117,7 +139,7 @@ log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, ti
 }
 
 
-# simulate_ecological_dynamics(parcel_num = length(objects_to_save$parcel_characteristics$land_parcels), 
+# simulate_ecological_dynamics(parcel_num = length(objects_to_save$site_characteristics$land_parcels), 
 #                              sample_decline_rate = TRUE, 
 #                              mean_decline_rates = feature_params$mean_decline_rates, 
 #                              decline_rate_std = feature_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
@@ -150,15 +172,17 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
 
   objects_to_save$planning_units_array <- simulate_planning_units(feature_params)
   objects_to_save$site_characteristics <- define_planning_units(objects_to_save$planning_units_array)
-  objects_to_save$dev_probability_list = rep(list(1/objects_to_save$parcel_characteristics$land_parcel_num), objects_to_save$parcel_characteristics$land_parcel_num)
+  objects_to_save$dev_probability_list = rep(list(1/objects_to_save$site_characteristics$land_parcel_num), objects_to_save$site_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
 
-  objects_to_save$condition_class_modes = lapply(seq(objects_to_save$parcel_characteristics$land_parcel_num), 
-                                                 function(i) lapply(seq_along(feature_params$initial_condition_class_bounds), 
-                                                                    function(j) sample(seq_along(feature_params$initial_condition_class_bounds[[j]]), 1)))
-    
+  objects_to_save$condition_class_modes = lapply(seq_along(objects_to_save$site_characteristics$land_parcels), 
+                                                 function(i) lapply(seq(feature_params$simulated_feature_num), 
+                                                                    function(j) sample(seq_along(feature_params$initial_condition_class_bounds[[j]]),
+                                                                                       length(objects_to_save$site_characteristics$land_parcels[[i]]),
+                                                                                       replace = TRUE)))
+
   save_simulation_inputs(objects_to_save, simulation_inputs_folder)
   
-  simulate_feature_layers(feature_params, objects_to_save$parcel_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) 
+  simulate_feature_layers(feature_params, objects_to_save$site_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) 
   
 }
