@@ -643,24 +643,53 @@ combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_
 
 
 
-make_movie <- function(){
-  if (show_movie == TRUE){ #combine outputs in list cell format to list of 3D arrays for each eco dimension "net_traj"
-    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = current_simulation_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = current_simulation_params$feature_num)
-    graphics.off()
-    for (yr in seq_len(current_simulation_params$time_steps)){
-      image(net_traj[[1]][, , yr], zlim = c(current_simulation_params$min_eco_val, current_simulation_params$max_eco_val)) #output to series of image slices to build into movie using something like ImageJ
-      Sys.sleep(0.1)
-      print(paste0('year = ', yr))
-    }
+#     if ((realisation_ind == 1) && (feature_ind == 1)){
+#       mov_folder = paste0(global_params$collated_folder, '/mov_', 
+#                           formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
+#       if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
+#         if(!(file.exists(mov_folder))){
+#           dir.create(mov_folder)
+#         }
+#       }
+#       if ( global_params$write_movie == TRUE){
+#         write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$site_characteristics_object, global_params, current_simulation_params, 
+#                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
+#                      offset_yrs = unlist(output_object$offsets$offset_yrs))
+#       }
+#     }
+
+
+
+write_frames <- function(output_filetype, mov_folder, site_characteristics_object, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
+  # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
+  graphics.off()
+  rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
+  
+  if (!dir.exists(mov_folder)){
+    dir.create(mov_folder)
+  }
+  filename = paste0(mov_folder, "tmp%03d.", output_filetype, sep = '')
+  
+  if (output_filetype == 'png'){
+    png(filename, height = site_characteristics_object$landscape_dims[1], width = site_characteristics_object$landscape_dims[2])
+  } else if (output_filetype == 'jpg'){
+    jpeg(filename, height = site_characteristics_object$landscape_dims[1], width = site_characteristics_object$landscape_dims[2])
   }
   
-  
-  if (write_movie == TRUE){
-    net_traj <- form_net_trajectory(trajectories_list = realisations[[1]]$trajectories, land_parcels= parcels$land_parcels, 
-                                    time_steps = current_simulation_params$time_steps, landscape_dims = parcels$landscape_dims, feature_num = current_simulation_params$feature_num)
-    make_mov(img_stack = net_traj[[1]], filetype = 'png', mov_name = 'long_offsets', mov_folder = paste0(output_folder, 'offset_time_slice/'))
+  for (yr in seq(current_simulation_params$time_steps)){
+
+    landscape = array(0, site_characteristics_object$landscape_dims)
+   
+    if (global_params$write_offset_layer == TRUE){
+      offset_sites_to_use = which(offset_yrs <= yr)
+      landscape[unlist(site_characteristics_object$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
+    } 
+    image(landscape, zlim = c(0, current_simulation_params$max_eco_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+    
+    cat('\n image ', yr, ' of ', current_simulation_params$time_steps, 'done\n')
   }
   
+  dev.off()
   
 }
+
