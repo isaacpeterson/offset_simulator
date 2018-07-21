@@ -29,7 +29,7 @@ shp_to_raster <- function(shp, raster_dims){
 }
 
 #' @export
-load_rasters <- function(current_data_path, current_filenames, features_to_use){
+load_rasters <- function(current_filenames, features_to_use){
   if (class(features_to_use) == "character"){
     if (features_to_use == 'all'){
       features_to_use = seq_along(current_filenames)
@@ -39,8 +39,8 @@ load_rasters <- function(current_data_path, current_filenames, features_to_use){
     
   }
   for (feature_ind in seq_along(features_to_use)){
-    current_species_filename = paste0(current_data_path, current_filenames[features_to_use[feature_ind]])
-    current_raster = raster(current_species_filename)
+
+    current_raster = raster(current_filenames[features_to_use[feature_ind]])
     if (feature_ind == 1){
       raster_stack = current_raster
     } else{
