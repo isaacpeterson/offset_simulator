@@ -185,6 +185,9 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
   }
   
   if (dynamics_sample_type == 'by_initial_value'){
+    if (factor_to_use[1] == 0){
+      flog.error('dynamics bounds are poorly defined - redefine or set dynamics_sample_type to "by_distribution"')
+    }
     current_discriminator = current_discriminator/(factor_to_use[1])
   }
   
@@ -284,29 +287,29 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 
   
 build_modes <- function(dynamics_type, feature_layers_to_use, condition_class_bounds, unique_site_vals){
-
-  if (dynamics_type == 'element_scale'){
-    feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-                                    function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                       function(j) sapply(feature_layers_to_use[[i]][[j]], 
-                                                                          find_current_mode, 
-                                                                          condition_class_bounds[[j]])))
-  } else if (dynamics_type == 'site_scale' ){
-    if (unique_site_vals == TRUE){
-      feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-                                      function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                         function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
-                                                                                       condition_class_bounds[[j]])))
-    } else {
-      feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-                                      function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                         function(j) find_current_mode(unique(feature_layers_to_use[[i]][[j]]), 
-                                                                                       condition_class_bounds[[j]])))
-    }
-    
-  } 
-
-  
+  feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+                                  function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+                                                     function(j) sapply(feature_layers_to_use[[i]][[j]], 
+                                                                        find_current_mode, 
+                                                                        condition_class_bounds[[j]])))
+#   if (dynamics_type == 'element_scale'){
+#     
+#   } else if (dynamics_type == 'site_scale' ){
+#     if (unique_site_vals == TRUE){
+#       feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+#                                       function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+#                                                          function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
+#                                                                                        condition_class_bounds[[j]])))
+#     } else {
+#       feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
+#                                       function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
+#                                                          function(j) find_current_mode(unique(feature_layers_to_use[[i]][[j]]), 
+#                                                                                        condition_class_bounds[[j]])))
+#     }
+#     
+#   } 
+# 
+#   
   return(feature_dynamics_modes)
 }
 
@@ -319,7 +322,7 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
 
   input_object$offset_pool_object <- list()
   input_object$site_feature_layers <- site_feature_layers_initial
-  current_credit = array(0, length(current_simulation_params$features_to_use_in_offset_calc))
+  current_credit = matrix(rep(0, length(current_simulation_params$features_to_use_in_offset_calc)), ncol = length(current_simulation_params$features_to_use_in_offset_calc))
 
   if (current_simulation_params$use_offset_metric == TRUE){
     current_credit = user_transform_function(current_credit, current_simulation_params$transform_params)
