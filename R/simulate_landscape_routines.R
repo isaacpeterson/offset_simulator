@@ -126,46 +126,6 @@ simulate_planning_units <- function(feature_params){
 }
 
 
-
-
-log_proj <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, time_vec){
-  
-  t_sh = -1/current_dec_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
-  
-  eco_projected = min_eco_val + (max_eco_val - min_eco_val)/(1 + exp(-current_dec_rate*(time_vec - t_sh)))
-  
-  return(eco_projected)
-  
-}
-
-
-# simulate_ecological_dynamics(parcel_num = length(objects_to_save$site_characteristics$land_parcels), 
-#                              sample_decline_rate = TRUE, 
-#                              mean_decline_rates = feature_params$mean_decline_rates, 
-#                              decline_rate_std = feature_params$decline_rate_std)       # set up array of decline rates that are eassociated with each cell
-
-# simulate_dynamics <- function(sample_decline_rate, parcel_num, initial_val, mean_decline_rates, decline_rate_std, min_eco_val, max_eco_val, time_vec){
-#   
-#   feature_num = length(mean_decline_rates)
-#   if (sample_decline_rate == TRUE){
-#     # sample change rate from normal distribution
-#     decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
-#                                                                function(j) rnorm(1, mean_decline_rates[[j]], decline_rate_std[[j]])))
-#   } else {
-#     # copy same rate to all sites
-#     decline_rates = lapply(seq(parcel_num), function(i) lapply(seq(feature_num),
-#                                                                function(j) mean_decline_rates[[j]]))
-#   }
-#   
-#   feature_dynamics = lapply(seq_along(decline_rates), 
-#                             function(i) lapply(seq_along(decline_rates[[i]]), function(j) log_proj(parcel_vals = initial_val,
-#                                                                                            min_eco_val, 
-#                                                                                            max_eco_val,  
-#                                                                                            current_dec_rate = decline_rates[[i]][[j]], 
-#                                                                                            time_vec)))
-#   return(feature_dynamics)
-# }
-
 construct_simulated_data <- function(feature_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
 
   objects_to_save = list()
