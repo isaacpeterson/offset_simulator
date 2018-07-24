@@ -433,6 +433,7 @@ unregulated_loss_routine <- function(output_object, data_object, current_simulat
   unregulated_loss_object <- record_site_characteristics(output_object$site_feature_layers[inds_to_clear],
                                                          inds_to_clear,
                                                          parcel_num_remaining = length(available_site_indexes),
+                                                         current_simulation_params$feature_num,
                                                          yr)
   
   current_pool = unlist(unregulated_loss_object$site_indexes)
@@ -943,6 +944,7 @@ build_offset_pool <- function(output_object, current_simulation_params, feature_
     offset_pool_object <- record_site_characteristics(output_object$site_feature_layers[current_pool],
                                                       current_pool,
                                                       parcel_num_remaining = length(current_pool),
+                                                      current_simulation_params$feature_num,
                                                       yr)   #arrange available parcel pool into form to use in parcel set determination
     offset_pool_type = 'offsets'
   }
@@ -996,6 +998,7 @@ banking_routine <- function(output_object, current_simulation_params, yr){
   current_banked_object <- record_site_characteristics(output_object$site_feature_layers[current_banked_offset_pool],
                                                        current_pool = current_banked_offset_pool,
                                                        parcel_num_remaining,
+                                                       current_simulation_params$feature_num,
                                                        yr)   # arrange current parcel data
   
   output_object$interventions$offset_bank_object = append_current_group(object_to_append = output_object$interventions$offset_bank_object,
@@ -1100,7 +1103,7 @@ assess_current_gain_pool <- function(site_feature_layers, pool_object, calc_type
                                                              include_unregulated_loss,
                                                              adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                                                              time_fill,
-                                                             yr))), recursive = FALSE)
+                                                             yr), current_simulation_params$feature_num)), recursive = FALSE)
       
     } else {
       cfacs = lapply(seq_along(site_feature_layers_to_use), 
@@ -1175,19 +1178,6 @@ mcell <- function(x, vx, vy){
   parcel$elements = B
   return(parcel)
   
-}
-
-
-# define feature_layers dynamics by logistic curve
-#' @export 
-logistic_projection <- function(parcel_vals, min_eco_val, max_eco_val, current_dec_rate, time_vec){
-  
-  t_sh = -1/current_dec_rate * log( ((parcel_vals - min_eco_val)/(max_eco_val - parcel_vals)))
-  
-  # define logistic curve given logistic parameter set.
-  eco_projected = min_eco_val + (max_eco_val - min_eco_val)/(1 + exp(-current_dec_rate*(time_vec - t_sh)))
-  
-  return(eco_projected)
 }
 
 
@@ -1510,6 +1500,7 @@ match_sites <- function(data_object, output_object, match_type, current_simulati
   dev_pool_object <- record_site_characteristics(output_object$site_feature_layers[current_match_pool],
                                                  current_match_pool,
                                                  parcel_num_remaining,
+                                                 current_simulation_params$feature_num,
                                                  yr) 
   current_pool = unlist(dev_pool_object$site_indexes)
   dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
@@ -1611,6 +1602,7 @@ develop_from_credit <- function(data_object, output_object, current_simulation_p
   dev_pool_object <- record_site_characteristics(output_object$site_feature_layers[dev_indexes_to_use],  
                                                  dev_indexes_to_use,  
                                                  parcel_num_remaining,  
+                                                 current_simulation_params$feature_num,
                                                  yr)
   current_pool = unlist(dev_pool_object$site_indexes)
   
@@ -1739,11 +1731,11 @@ sum_lists <- function(list_a, list_b){
 
 
 # store group of site characteristics in parcel_set_object
-record_site_characteristics <- function(site_feature_layers, current_pool, parcel_num_remaining, yr){
+record_site_characteristics <- function(site_feature_layers, current_pool, parcel_num_remaining, feature_num, yr){
   
   parcel_set_object = list()
   parcel_set_object$offset_yrs = rep(list(yr), length(current_pool))
-  parcel_set_object$parcel_sums_at_offset = sum_sites(site_feature_layers)
+  parcel_set_object$parcel_sums_at_offset = sum_sites(site_feature_layers, feature_num)
   parcel_set_object$site_indexes = as.list(current_pool)
   parcel_set_object$parcel_num_remaining = rep(list(parcel_num_remaining), length(current_pool))
   
@@ -2047,10 +2039,10 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
 
 # determine cumulative value of all sites within parcel feature_layers for multiple features
 
-sum_sites <- function(site_feature_layers){
+sum_sites <- function(site_feature_layers, feature_num){
   parcel_sums = lapply(seq_along(site_feature_layers), 
-                       function(i) unlist(lapply(seq_along(site_feature_layers[[i]]),
-                                                 function(j) sum(site_feature_layers[[i]][[j]]) )))
+                       function(i) matrix(unlist(lapply(seq_along(site_feature_layers[[i]]),
+                                                 function(j) sum(site_feature_layers[[i]][[j]]) )), ncol = feature_num))
   return(parcel_sums)
 }
 
@@ -2205,7 +2197,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                include_unregulated_loss,
                                                                adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                                                                time_fill,
-                                                               yr))), recursive = FALSE)
+                                                               yr), current_simulation_params$feature_num)), recursive = FALSE)
         
       } else {
         cfacs = lapply(seq_along(site_feature_layers_to_use), 
@@ -2223,11 +2215,13 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                       adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag,
                                                                                       time_fill,
                                                                                       yr), recursive = FALSE), current_simulation_params$transform_params)))
-        if (time_fill == TRUE){
-          cfac_vals = lapply(seq_along(cfacs), function(i) matrix(cfacs[[i]][nrow(cfacs[[i]]), ], ncol = ncol(cfacs[[i]])))
-        } else{
-          cfac_vals = cfacs
-        }
+        
+      }
+      
+      if (time_fill == TRUE){
+        cfac_vals = lapply(seq_along(cfacs), function(i) matrix(cfacs[[i]][nrow(cfacs[[i]]), ], ncol = ncol(cfacs[[i]])))
+      } else{
+        cfac_vals = cfacs
       }
       
     } else if (calc_type == 'restoration_gains'){
@@ -2301,7 +2295,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                           function(i) list(user_transform_function(projected_feature_layers[[i]], current_simulation_params$transform_params)))
       }
       
-      projected_vals = sum_sites(projected_feature_layers)
+      projected_vals = sum_sites(projected_feature_layers, current_simulation_params$feature_num)
       
     } else if (pool_type == 'developments') {
       projected_vals = lapply(seq_along(cfac_vals), function(i) matrix(0, ncol = ncol(cfac_vals[[i]]), nrow = nrow(cfac_vals[[i]])))
