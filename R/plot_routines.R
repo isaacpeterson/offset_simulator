@@ -159,7 +159,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale_NNL$NNL_mean, 
                                            collated_realisations$landscape_scale$landscape_scale_impact)
     
-    overlay_realisations(plot_list = collated_realisations$landscape_scale$landscape_scale_impact,
+    overlay_realisations(plot_list = list(unlist(collated_realisations$landscape_scale$landscape_scale_impact, recursive = FALSE)),
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
