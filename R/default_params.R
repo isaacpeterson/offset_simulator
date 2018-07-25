@@ -1,9 +1,7 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
+
   
-  #setting this parameter to TRUE effectively evenly weights all features, setting to FALSE
-  #gives an implicit weighting depending on the values of the features layers
-  default_global_params$scale_features = TRUE
   # Set the random number seed
   default_global_params$set_seed = FALSE
   
@@ -249,7 +247,10 @@ initialise_default_feature_params <- function(){
   
   default_feature_params = list()
   
-
+  #setting this parameter to TRUE effectively evenly weights all features, setting to FALSE
+  #gives an implicit weighting depending on the values of the features layers
+  default_feature_params$scale_features = TRUE
+  
   #how many feature layers to generate
   default_feature_params$simulated_feature_num = 1
   
