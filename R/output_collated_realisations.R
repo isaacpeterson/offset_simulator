@@ -117,7 +117,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
         features_to_plot = output_params$features_to_plot
       }
       
-      if ((output_params$plot_offset_metric == TRUE) & (current_simulation_params$use_offset_metric == TRUE)){
+      if ((output_params$plot_offset_metric == TRUE)){
         features_to_use = append(features_to_plot, (max(features_to_plot) + 1))
       } else{
         features_to_use = features_to_plot
@@ -172,6 +172,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
           }
           
           if (output_params$plot_type == 'impacts'){
+            
             plot_impact_set(collated_realisations,
                             current_simulation_params,
                             output_params,
@@ -181,6 +182,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
                             landscape_plot_lims,
                             feature_ind,
                             output_params$sets_to_plot)
+            
           } else if (output_params$plot_type == 'outcomes'){
 
             plot_outcome_set(collated_realisations,
