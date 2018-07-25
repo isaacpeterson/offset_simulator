@@ -117,6 +117,7 @@ run_collate_routines <- function(simulation_outputs, data_object, simulation_inp
                                                                  function(i) sum_cols(user_transform_function(site_features_at_intervention_set[[i]], current_simulation_params$transform_params)))
     
   }
+  
   collate_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                             function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
                                                                                 current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 

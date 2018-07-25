@@ -6,19 +6,7 @@ write_folder <- function(current_folder){
   return(current_folder)
 }
 
-#' @export
-scale_ecology <- function(landscape_ecology, landscape_dims){
-  
-  scaled_landscape_ecology <- list_of_zeros(length(landscape_ecology), landscape_dims) 
-  
-  for (feature_ind in seq_along(landscape_ecology)){
-    if (max(landscape_ecology[[feature_ind]]) > 0){
-      scaled_landscape_ecology[[feature_ind]] = landscape_ecology[[feature_ind]]/max(landscape_ecology[[feature_ind]])
-    }
-  }
-  
-  return(scaled_landscape_ecology)
-}
+
 
 #' @export
 shp_to_raster <- function(shp, raster_dims){
@@ -74,26 +62,6 @@ save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
   }
 }
 
-
-split_ecology <- function(landscape_ecology, land_parcels){
-  current_ecology = lapply(seq_along(land_parcels), 
-                           function(i) lapply(seq_along(landscape_ecology), 
-                                              function(j) matrix(landscape_ecology[[j]][land_parcels[[i]]], nrow = 1)))
-  return(current_ecology)
-}
-
-# #' @export
-# generate_nested_list <- function(outer_dim, inner_dim){
-#   if (outer_dim > 0){
-#     nested_list <- vector('list', outer_dim)
-#   } else {
-#     nested_list = list()
-#   }
-#   for (outer_ind in seq_len(outer_dim)){
-#     nested_list[[outer_ind]] <- vector('list', inner_dim)
-#   }
-#   return(nested_list)
-# }
 
 #' @export
 define_planning_units <- function(planning_units_array){

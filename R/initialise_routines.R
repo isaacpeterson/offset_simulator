@@ -86,7 +86,7 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
 
 build_input_data <- function(params_object, current_simulation_params){
   
-  # generate simulated ecology
+  # generate simulated feature
   if (params_object$global_params$use_simulated_data == TRUE) {
     current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
@@ -110,6 +110,9 @@ build_input_data <- function(params_object, current_simulation_params){
   
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
+  if (params_object$feature_params$scale_features == TRUE){
+    feature_layers = scale_features(feature_layers)
+  }
   site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   
 
@@ -122,7 +125,7 @@ build_input_data <- function(params_object, current_simulation_params){
   # feature for the parcel are a vector of length given by the number of
   # pixels in the parcel.
   
-  site_feature_layers_initial <- split_ecology(feature_layers, site_characteristics_object$land_parcels)
+  site_feature_layers_initial <- split_feature(feature_layers, site_characteristics_object$land_parcels)
 
   # This is a list of single values of length number of sites where the values
   # representing the probabilities of sites being developed. Default is that
@@ -433,7 +436,7 @@ check_feature_value_conflicts <- function(site_feature_layers_initial, feature_d
 #   
 #   feature_test = match(global_params$features_to_use_in_simulation, seq(global_params$feature_num))
 #   if (any(is.na(feature_test))){
-#     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated ecology feature parameters'))
+#     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated feature feature parameters'))
 #     stop()
 #   } 
 #   
@@ -792,17 +795,17 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-initialise_shape_parcels <- function(ecology_params){
+initialise_shape_parcels <- function(feature_params){
   parcels = list()
-  parcels$landscape_dims = c(ecology_params$ecology_size, ecology_params$ecology_size)
-  parcel_num_x = ecology_params$parcel_num_x   #length in parcels of array in x
-  parcel_num_y = ecology_params$parcel_num_y #length in parcels of array in y
-  parcel_vx = split_vector(parcel_num_x, ecology_params$ecology_size, sd = 5, min_width = 3) # make normally distributed vector that sums to ecology size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, ecology_params$ecology_size, sd = 5, min_width = 3) # as above for y
+  parcels$landscape_dims = c(feature_params$feature_size, feature_params$feature_size)
+  parcel_num_x = feature_params$parcel_num_x   #length in parcels of array in x
+  parcel_num_y = feature_params$parcel_num_y #length in parcels of array in y
+  parcel_vx = split_vector(parcel_num_x, feature_params$feature_size, sd = 5, min_width = 3) # make normally distributed vector that sums to feature size, composed of n elements where n is the parcel dimension in x
+  parcel_vy = split_vector(parcel_num_y, feature_params$feature_size, sd = 5, min_width = 3) # as above for y
   
-  pixel_indexes = 1:(ecology_params$ecology_size*ecology_params$ecology_size)     #index all elements of ecology array
-  dim(pixel_indexes) = c(ecology_params$ecology_size, ecology_params$ecology_size)  # arrange ecology array index vector into array of landscape dimensions
-  land_parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #split the ecology array into a series of subarrays with dimensions sz_x by sz_y
+  pixel_indexes = 1:(feature_params$feature_size*feature_params$feature_size)     #index all elements of feature array
+  dim(pixel_indexes) = c(feature_params$feature_size, feature_params$feature_size)  # arrange feature array index vector into array of landscape dimensions
+  land_parcels = mcell(pixel_indexes, parcel_vx, parcel_vy) #split the feature array into a series of subarrays with dimensions sz_x by sz_y
   land_parcel_num = length(land_parcels$elements) #total number of parcels
   site_indexes = 1:land_parcel_num #index all parcels
   dim(site_indexes) = c(parcel_num_y, parcel_num_x) #arrange indicies into array with dimensions of land parcels
@@ -903,12 +906,25 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
   return(available_indexes)
 }
 
+#' @export
+scale_features <- function(feature_layers){
+  flog.info('scaling features')
+  scaled_feature_layers <- list_of_zeros(length(feature_layers), dim(feature_layers[[1]])) 
+  
+  for (feature_ind in seq_along(feature_layers)){
+    if (max(feature_layers[[feature_ind]]) > 0){
+      scaled_feature_layers[[feature_ind]] = feature_layers[[feature_ind]]/max(feature_layers[[feature_ind]])
+    }
+  }
+  
+  return(scaled_feature_layers)
+}
 
-split_ecology <- function(landscape_ecology, land_parcels){
-  current_ecology = lapply(seq_along(land_parcels), 
-                           function(i) lapply(seq_along(landscape_ecology), 
-                                              function(j) matrix(landscape_ecology[[j]][land_parcels[[i]]], nrow = 1)))
-  return(current_ecology)
+split_feature <- function(feature, land_parcels){
+  current_feature = lapply(seq_along(land_parcels), 
+                           function(i) lapply(seq_along(feature), 
+                                              function(j) matrix(feature[[j]][land_parcels[[i]]], nrow = 1)))
+  return(current_feature)
 }
 
 
