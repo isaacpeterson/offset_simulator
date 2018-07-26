@@ -64,19 +64,19 @@ save_simulation_inputs <- function(objects_to_save, simulation_inputs_folder){
 
 
 #' @export
-define_planning_units <- function(planning_units_array){
+build_site_characteristics <- function(planning_units_array){
 
   site_ID_vals = unique(as.vector(planning_units_array))
   land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
   
-  parcels = list()
-  parcels$landscape_dims = dim(planning_units_array)
-  parcels$site_indexes = seq_along(land_parcels)
-  parcels$land_parcel_num = length(land_parcels)
-  parcels$land_parcels = land_parcels
-  parcels$parcel_array = planning_units_array
-  parcels$site_ID_vals = site_ID_vals
-  return(parcels)
+  site_characteristics = list()
+  site_characteristics$landscape_dims = dim(planning_units_array)
+  site_characteristics$site_indexes = seq_along(land_parcels)
+  site_characteristics$land_parcel_num = length(land_parcels)
+  site_characteristics$land_parcels = land_parcels
+  site_characteristics$parcel_array = planning_units_array
+  site_characteristics$site_ID_vals = site_ID_vals
+  return(site_characteristics)
 }
 
 

@@ -2293,9 +2293,10 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       if (current_simulation_params$use_offset_metric == TRUE){
         projected_feature_layers = lapply(seq_along(projected_feature_layers), 
                                           function(i) list(user_transform_function(projected_feature_layers[[i]], current_simulation_params$transform_params)))
+        projected_vals = sum_sites(projected_feature_layers, 1)
+      } else {
+        projected_vals = sum_sites(projected_feature_layers, current_simulation_params$feature_num)
       }
-      
-      projected_vals = sum_sites(projected_feature_layers, current_simulation_params$feature_num)
       
     } else if (pool_type == 'developments') {
       projected_vals = lapply(seq_along(cfac_vals), function(i) matrix(0, ncol = ncol(cfac_vals[[i]]), nrow = nrow(cfac_vals[[i]])))

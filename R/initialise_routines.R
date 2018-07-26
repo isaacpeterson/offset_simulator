@@ -113,6 +113,7 @@ build_input_data <- function(params_object, current_simulation_params){
   if (params_object$feature_params$scale_features == TRUE){
     feature_layers = scale_features(feature_layers)
   }
+  
   site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   
 
@@ -347,8 +348,7 @@ build_simulation_inputs <- function(current_simulation_params, index_object, glo
     background_dynamics_modes = select_feature_subset(background_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
   }
 
-  
-  
+
   management_dynamics_modes = background_dynamics_modes
 #   management_dynamics_modes = build_modes(dynamics_type = feature_params$management_dynamics_type, 
 #                                          feature_layers_to_use = site_feature_layers_initial, 
