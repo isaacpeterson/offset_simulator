@@ -54,14 +54,14 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               current_simulation_params$offset_calc_type, 
               current_simulation_params$offset_action_type)
     
-    flog.info('developing (and offsetting) %s sites', sum(current_simulation_params$intervention_vec)) 
-    flog.info('%s available development sites, %s available offset_sites in a system with %s sites and %s x %s elements',  
-              length(index_object$available_indexes$devs), 
-              length(index_object$available_indexes$devs), 
-              length(input_data_object$site_characteristics_object$land_parcels), # total number of parcles
+    flog.info('system composed of %s x %s elements and %s sites, %s (%s) available sites for development (offsets)',  
               input_data_object$site_characteristics_object$landscape_dims[1], 
-              input_data_object$site_characteristics_object$landscape_dims[2]) 
+              input_data_object$site_characteristics_object$landscape_dims[2],
+              length(input_data_object$site_characteristics_object$land_parcels),
+              length(index_object$available_indexes$devs), 
+              length(index_object$available_indexes$offsets)) 
     
+    flog.info('developing (and offsetting) %s sites', sum(current_simulation_params$intervention_vec)) 
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
 
