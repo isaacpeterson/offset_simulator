@@ -42,26 +42,26 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     #load objects from files etc
     input_data_object <- build_input_data(params_object, current_simulation_params)
 
+    index_object <- initialise_index_object(input_data_object$site_characteristics_object, 
+                                            input_data_object$site_feature_layers_initial, 
+                                            current_simulation_params,
+                                            offset_indexes_to_exclude = which(unlist(input_data_object$offset_probability_list) == 0), 
+                                            dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
+    
     flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime',  
               scenario_ind, 
               length(params_object$simulation_params_group),
               current_simulation_params$offset_calc_type, 
               current_simulation_params$offset_action_type)
     
+    flog.info('developing (and offsetting) %s sites', sum(current_simulation_params$intervention_vec)) 
     flog.info('%s available development sites, %s available offset_sites in a system with %s sites and %s x %s elements',  
-              length(which(unlist(input_data_object$dev_probability_list) >0)), 
-              length(which(unlist(input_data_object$offset_probability_list) > 0)), 
+              length(index_object$available_indexes$devs), 
+              length(index_object$available_indexes$devs), 
               length(input_data_object$site_characteristics_object$land_parcels), # total number of parcles
               input_data_object$site_characteristics_object$landscape_dims[1], 
               input_data_object$site_characteristics_object$landscape_dims[2]) 
     
-    flog.info('developing (and offsetting) %s sites', sum(current_simulation_params$intervention_vec)) 
-              
-    index_object <- initialise_index_object(input_data_object$site_characteristics_object, 
-                                            input_data_object$site_feature_layers_initial, 
-                                            current_simulation_params,
-                                            offset_indexes_to_exclude = which(unlist(input_data_object$offset_probability_list) == 0), 
-                                            dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
 
