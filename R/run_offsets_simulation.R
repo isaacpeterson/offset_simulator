@@ -62,6 +62,13 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               length(index_object$available_indexes$offsets)) 
     
     flog.info('developing (and offsetting) %s sites', sum(current_simulation_params$intervention_vec)) 
+    
+    flog.info('estimated %s sites lost to unregulated clearing', 
+              round(length(input_data_object$site_characteristics_object$land_parcels) -
+                length(input_data_object$site_characteristics_object$land_parcels)*(1 - current_simulation_params$unregulated_loss_prob)^current_simulation_params$time_steps))
+    
+    
+    
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
 

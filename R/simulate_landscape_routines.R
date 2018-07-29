@@ -131,7 +131,7 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
   objects_to_save = list()
 
   objects_to_save$planning_units_array <- simulate_planning_units(feature_params)
-  objects_to_save$site_characteristics <- define_planning_units(objects_to_save$planning_units_array)
+  objects_to_save$site_characteristics <- build_site_characteristics(objects_to_save$planning_units_array)
   objects_to_save$dev_probability_list = rep(list(1/objects_to_save$site_characteristics$land_parcel_num), objects_to_save$site_characteristics$land_parcel_num)
   objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
 
