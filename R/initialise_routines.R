@@ -272,18 +272,24 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
     if (mode_discriminator == 0){
       current_mode = 0
     } else{
+      
       current_modes = lapply(seq_along(current_condition_class_bounds), 
-                             function(i) (mode_discriminator <= max(current_condition_class_bounds[[i]])) && (mode_discriminator > min(current_condition_class_bounds[[i]]) ))
+                             function(i) ( (mode_discriminator >= min(current_condition_class_bounds[[i]]) && mode_discriminator <= max(current_condition_class_bounds[[i]])) ))
+      
       mode_ind_to_use = which(unlist(current_modes) > 0)
-      if (length(mode_ind_to_use) > 1){
-        current_mode = sample(mode_ind_to_use, 1)
-      } else {
+      
+      if (length(mode_ind_to_use) == 0){
+        flog.error('condition class bounds do not match site values')
+        stop()
+      } else if (length(mode_ind_to_use) == 1){
         current_mode = mode_ind_to_use
+      } else {
+        current_mode = sample(mode_ind_to_use, 1)
       }
     } 
     
   } else {
-    current_mode = vector()
+    current_mode = 0
   }
   return(current_mode)
 }
