@@ -933,6 +933,22 @@ split_feature <- function(feature, land_parcels){
   return(current_feature)
 }
 
+#' @export
+build_site_characteristics <- function(planning_units_array){
+  
+  site_ID_vals = unique(as.vector(planning_units_array))
+  land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
+  
+  site_characteristics = list()
+  site_characteristics$landscape_dims = dim(planning_units_array)
+  site_characteristics$site_indexes = seq_along(land_parcels)
+  site_characteristics$land_parcel_num = length(land_parcels)
+  site_characteristics$land_parcels = land_parcels
+  site_characteristics$parcel_array = planning_units_array
+  site_characteristics$site_ID_vals = site_ID_vals
+  return(site_characteristics)
+}
+
 
 generate_nested_list <- function(outer_dim, inner_dim){
   if (outer_dim > 0){
