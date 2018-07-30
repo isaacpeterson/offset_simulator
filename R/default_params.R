@@ -263,15 +263,12 @@ initialise_default_feature_params <- function(){
   default_feature_params$simulated_time_vec = 1:100
   
   # Number of pixels in (y, x) for the feature layes 
-  default_feature_params$landscape_size = c(300, 300)
+  default_feature_params$feature_layer_size = c(300, 300)
   
   # Numnber of parcels in x (but total size varies)
-  default_feature_params$parcel_num_x = 30 
+  default_feature_params$site_num_characteristics = c(30 , 30, 5)
 
-  # Numnber of parcels in y (but total size varies)
-  default_feature_params$parcel_num_y = 30 
-  
-  default_feature_params$site_width_variation_param = 1
+  default_feature_params$feature_num_characteristics = c(20 , 10, 5)
   # Minimum allowable initial ecological value of smallest ecological element
   # (pixel) ie min value to sample from
   default_feature_params$min_initial_eco_val = 20
