@@ -114,8 +114,16 @@ build_input_data <- function(params_object, current_simulation_params){
     feature_layers = scale_features(feature_layers)
   }
   
-  site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-  
+  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))){
+    site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+  } else {
+    planning_units <- load_rasters(params_object$global_params$planning_units_raster, 'all')
+    planning_units_array <- raster_to_array(planning_units)
+    flog.info('building site characteristics object, this may take a while..')
+    site_characteristics <- build_site_characteristics(planning_units_array)
+    flog.info('saving site characteristics object')
+    saveRDS(object = site_characteristics, file = paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+  }
 
   # build list object containing feature values by feature layer for all
   # sites.  This is 3-level nested list, the top level is parcel index, for each
