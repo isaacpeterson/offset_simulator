@@ -10,6 +10,8 @@ initialise_default_global_params <- function(){
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
+  
+  default_global_params$planning_units_raster = 'planning_units.tif'
   default_global_params$scenario_subset = 'all'
   
   default_global_params$raster_file_type = '.tif'
