@@ -1,33 +1,17 @@
 #generic set of initialisation routines that are called for every simulation
-build_simulation_params <- function(user_global_params = NULL, user_simulation_params = NULL, 
-                                    user_feature_params = NULL){
+build_global_params <- function(user_global_params = NULL){
   #' @import foreach
   #' @import doParallel
   #' @import abind
   #' @import pixmap
   
   default_global_params = initialise_default_global_params()
-  default_simulation_params = initialise_default_simulation_params()
-  default_feature_params = initialise_default_feature_params()
   
   if (!is.null(user_global_params) == TRUE){
     global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
     #check_global_params(global_params)
   } else {
     global_params = default_global_params
-  }
-  
-  if (!is.null(user_simulation_params) == TRUE){  
-    simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
-    check_simulation_params(simulation_params, global_params)
-  } else{
-    simulation_params = default_simulation_params
-  }
-  
-  if (!is.null(user_feature_params) == TRUE){  
-    feature_params <- overwrite_current_params(user_params = user_feature_params, default_params = default_feature_params)
-  } else {
-    feature_params = default_feature_params
   }
   
   # run simulation with identical realisation instantiation
@@ -37,94 +21,95 @@ build_simulation_params <- function(user_global_params = NULL, user_simulation_p
     set.seed(seed)
   }
   
-  #params_object <- check_param_conflicts(global_params, simulation_params, feature_params)
-  
-  simulation_params_object = build_simulation_variants(simulation_params)
-  global_params <- write_simulation_folders(global_params, length(simulation_params_object$param_variants))
-  
 
-  simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
-  
-  simulation_params_file = paste0(global_params$simulation_params_folder, 'simulation_params.R')
-  
-  for (scenario_ind in seq_along(simulation_params_group)){
-    current_simulation_params = simulation_params_group[[scenario_ind]]
-    file_prefix = paste0(global_params$simulation_params_folder, 'scenario_',
-                         formatC( scenario_ind, width = 3, format = "d", flag = "0"),
-                         '_simulation_params')
-    saveRDS(current_simulation_params, paste0(file_prefix, '.rds'))
-    dump('current_simulation_params', simulation_params_file, append = TRUE)
-  }
-  
-  dump('global_params', paste0(global_params$simulation_params_folder, 'global_params.R'))
-  
-  if (class(global_params$scenario_subset) == 'character'){
-    if (global_params$scenario_subset == 'all'){
-      global_params$scenario_subset = seq_along(simulation_params_group)
-    } else {
-      flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
-    }
-  }
   
   global_params <- initialise_cores(global_params)
   global_params$strt = Sys.time()
   
-
-  saveRDS(global_params, paste0(global_params$simulation_params_folder, 'global_params.rds'))
-  saveRDS(simulation_params_object$param_variants, paste0(global_params$simulation_params_folder, 'param_variants.rds'))
-  
-  
-  params_object = list()
-  params_object$global_params = global_params
-  params_object$simulation_params_group = simulation_params_group
-  params_object$feature_params = feature_params
-  return(params_object)
-  
+  return(global_params)
 }
 
 
-build_input_data <- function(params_object, current_simulation_params){
+build_simulation_params_group <- function(user_simulation_params = NULL){
   
+  default_simulation_params = initialise_default_simulation_params()
+  if (!is.null(user_simulation_params) == TRUE){  
+    simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
+    check_simulation_params(simulation_params)
+  } else{
+    simulation_params = default_simulation_params
+  }
+  
+  simulation_params_object = build_simulation_variants(simulation_params)
+  simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
+                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
+  
+  return(simulation_params_group)
+}
+
+
+build_feature_params <- function(user_feature_params = NULL){
+  default_feature_params = initialise_default_feature_params()
+  
+  if (!is.null(user_feature_params) == TRUE){  
+    feature_params <- overwrite_current_params(user_params = user_feature_params, default_params = default_feature_params)
+  } else {
+    feature_params = default_feature_params
+  }
+}
+
+build_input_data <- function(global_params, feature_params, current_simulation_params){
+  
+  input_data_object = list()
   # generate simulated feature
-  if (params_object$global_params$use_simulated_data == TRUE) {
-    current_filenames <- list.files(path = params_object$global_params$simulation_inputs_folder, all.files = FALSE,
+  if (global_params$use_simulated_data == TRUE) {
+    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (params_object$global_params$run_from_saved_simulated_data == FALSE)){
-      construct_simulated_data(params_object$feature_params, 
-                               params_object$global_params$simulation_inputs_folder, 
-                               params_object$global_params$simulation_params_folder, 
-                               params_object$global_params$backup_simulation_inputs)
+    if ( (length(current_filenames) == 0) | (global_params$run_from_saved_simulated_data == FALSE)){
+      construct_simulated_data(feature_params, 
+                               global_params$simulation_inputs_folder, 
+                               global_params$simulation_params_folder, 
+                               global_params$backup_simulation_inputs)
     }
   }
   
-  
-  
-  if (!all(file.exists(params_object$global_params$feature_raster_files))){
+  if (!all(file.exists(global_params$feature_raster_files))){
     flog.error(paste('one or more feature raster files missing'))
   }
   
-  feature_raster_layers = load_rasters(params_object$global_params$feature_raster_files, 
+  feature_raster_layers = load_rasters(global_params$feature_raster_files, 
                                        features_to_use = current_simulation_params$features_to_use_in_simulation)
   
   feature_layers = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
-  if (params_object$feature_params$scale_features == TRUE){
+  if (feature_params$scale_features == TRUE){
     feature_layers = scale_features(feature_layers)
   }
   
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))){
-    site_characteristics_object <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))){
+    background_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
   } else {
-    planning_units <- load_rasters(params_object$global_params$planning_units_raster, 'all')
+
+    background_dynamics_modes = build_modes(dynamics_type = feature_params$background_dynamics_type, 
+                                            feature_layers_to_use = feature_layers, 
+                                            condition_class_bounds = feature_params$initial_condition_class_bounds, 
+                                            unique_site_vals = feature_params$unique_site_vals)
+    
+    #saveRDS(background_dynamics_modes, paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
+  }
+  
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds'))){
+    input_data_object$site_characteristics_object <- readRDS(paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+  } else {
+    planning_units <- load_rasters(global_params$planning_units_raster, 'all')
     planning_units_array <- raster_to_array(planning_units)
     flog.info('building site characteristics object, this may take a while..')
-    site_characteristics <- build_site_characteristics(planning_units_array)
+    input_data_object$site_characteristics_object <- build_site_characteristics(planning_units_array)
     flog.info('saving site characteristics object')
-    saveRDS(object = site_characteristics, file = paste0(params_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+    #saveRDS(object = site_characteristics, file = paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   }
-
+  
   # build list object containing feature values by feature layer for all
   # sites.  This is 3-level nested list, the top level is parcel index, for each
   # parcel there is sublist containing the value of each feature for each cell
@@ -134,17 +119,17 @@ build_input_data <- function(params_object, current_simulation_params){
   # feature for the parcel are a vector of length given by the number of
   # pixels in the parcel.
   
-  site_feature_layers_initial <- split_feature(feature_layers, site_characteristics_object$land_parcels)
-
+  input_data_object$site_feature_layers <- split_features(feature_layers, input_data_object$site_characteristics_object$land_parcels, background_dynamics_modes)
+  
   # This is a list of single values of length number of sites where the values
   # representing the probabilities of sites being developed. Default is that
   # all sites have equal probability simulated data, with user data this must
   # be specified.
   
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))){
-    dev_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'dev_probability_list.rds'))){
+    input_data_object$dev_probability_list <- readRDS(paste0(global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
   } else {
-    dev_probability_list <- rep(list(1/length(site_characteristics_object$land_parcels)), length(site_characteristics_object$land_parcels))
+    input_data_object$dev_probability_list <- rep(list(1/length(input_data_object$site_characteristics_object$land_parcels)), length(input_data_object$site_characteristics_object$land_parcels))
   }
   
   # This is a list of single values of length number of sites, where the values
@@ -152,26 +137,90 @@ build_input_data <- function(params_object, current_simulation_params){
   # sites have equal probability simulated data, with user data this must be
   # specified.
   
-  if (file.exists(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))){
-    offset_probability_list <- readRDS(paste0(params_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'offset_probability_list.rds'))){
+    input_data_object$offset_probability_list <- readRDS(paste0(global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
   } else {
-    offset_probability_list <- rep(list(1/length(site_characteristics_object$land_parcels)), length(site_characteristics_object$land_parcels))
+    input_data_object$offset_probability_list <- rep(list(1/length(input_data_object$site_characteristics_object$land_parcels)), length(input_data_object$site_characteristics_object$land_parcels))
   }
- 
-  input_data_object = list()
-  input_data_object$site_feature_layers_initial = site_feature_layers_initial
-  input_data_object$site_characteristics_object = site_characteristics_object
-  input_data_object$dev_probability_list = dev_probability_list
-  input_data_object$offset_probability_list = offset_probability_list
+  
+  input_data_object$index_object = initialise_index_object(input_data_object$site_characteristics_object, 
+                                                           input_data_object$site_feature_layers, 
+                                                           current_simulation_params,
+                                                           offset_indexes_to_exclude = which(unlist(input_data_object$offset_probability_list) == 0), 
+                                                           dev_indexes_to_exclude = which(unlist(input_data_object$dev_probability_list) == 0))
 
+  interventions = vector('list', 5)
+  names(interventions) = names(input_data_object$index_object$site_indexes_used)
+  input_data_object$interventions = interventions
+  
+  current_credit = matrix(rep(0, length(current_simulation_params$features_to_use_in_offset_calc)), ncol = length(current_simulation_params$features_to_use_in_offset_calc))
+  if (current_simulation_params$use_offset_metric == TRUE){
+    current_credit = user_transform_function(current_credit, current_simulation_params$transform_params)
+  }
+  input_data_object$current_credit = current_credit
+  input_data_object$credit_match_flag = FALSE
+  
+  if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
+    input_data_object$feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+  } else {
+    
+    input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_feature_layers,
+                                                         features_to_use = seq_along(current_simulation_params$features_to_use_in_simulation),
+                                                         feature_params$sample_background_dynamics,
+                                                         feature_params$background_dynamics_type,
+                                                         store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
+                                                         feature_params$unique_site_vals,
+                                                         feature_params$dynamics_sample_type,
+                                                         feature_params$background_dynamics_bounds, 
+                                                         background_dynamics_modes)
+    
+    if (any(is.na(unlist(feature_dynamics)))){
+      print('poorly defined feature_dynamics')
+      browser()
+    }
+    
+    management_dynamics_modes = background_dynamics_modes
+    input_data_object$management_dynamics <- build_dynamics(input_data_object$site_feature_layers,
+                                                            features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
+                                                            feature_params$sample_management_dynamics,
+                                                            feature_params$management_dynamics_type,
+                                                            store_dynamics_as_differential = FALSE,
+                                                            feature_params$unique_site_vals,
+                                                            feature_params$management_dynamics_sample_type,
+                                                            feature_params$management_dynamics_bounds, 
+                                                            management_dynamics_modes)
+    
+    if (any(is.na(unlist(feature_dynamics)))){
+      print('poorly defined management_dynamics')
+      browser()
+    }
+    
+    
+  }
+  
+  input_data_object$feature_dynamics = feature_dynamics
+  
+  input_data_object$feature_dynamics_modes = background_dynamics_modes
+  management_dynamics = management_dynamics
+  
+  input_data_object$offset_pool_object <- list()
+  
   return(input_data_object)
   
 }
 
-
+select_feature_condition_class_bounds <- function(feature_params, current_simulation_params){
+  feature_params_to_use = feature_params
+  feature_params_to_use$management_condition_class_bounds = feature_params$management_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
+  feature_params_to_use$condition_class_bounds = feature_params$condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
+  feature_params_to_use$initial_condition_class_bounds = feature_params$initial_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
+  feature_params_to_use$background_dynamics_bounds = feature_params$background_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
+  feature_params_to_use$management_dynamics_bounds = feature_params$management_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
+  return(feature_params_to_use)
+}
 
 sample_current_dynamics <- function(current_feature_dynamics_group, current_mode, current_feature_val, store_dynamics_as_differential, sample_dynamics, dynamics_sample_type){
-
+  
   if (current_mode == 0){
     current_feature_dynamics = array(0, length(current_feature_dynamics_group[[1]]$best_estimate))
     return(current_feature_dynamics)
@@ -203,12 +252,12 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
     current_discriminator = current_discriminator/(factor_to_use[1])
   }
   
-#   if (current_discriminator >= 1){
-#     browser()
-#     
-#   } else {
-#     current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*factor_to_use   
-#   }
+  #   if (current_discriminator >= 1){
+  #     browser()
+  #     
+  #   } else {
+  #     current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*factor_to_use   
+  #   }
   
   current_feature_dynamics = current_feature_dynamics_set$best_estimate + current_discriminator*factor_to_use  
   
@@ -222,50 +271,50 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
 
 build_dynamics <- function(site_feature_layers_to_use, features_to_use, sample_dynamics, dynamics_type, store_dynamics_as_differential, 
                            unique_site_vals, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
-
-    if (dynamics_type == 'element_scale'){
+  
+  if (dynamics_type == 'element_scale'){
+    dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                          function(i) lapply(features_to_use,
+                                             function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                                                                function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
+                                                                                                    feature_dynamics_modes[[i]][[j]][k],
+                                                                                                    site_feature_layers_to_use[[i]][[j]][k],
+                                                                                                    store_dynamics_as_differential, 
+                                                                                                    sample_dynamics,
+                                                                                                    dynamics_sample_type)  )))
+  } else if (dynamics_type == 'site_scale'){
+    
+    if (unique_site_vals == TRUE){
+      
       dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
-                            function(i) lapply(features_to_use,
-                                               function(j) lapply(seq_along(site_feature_layers_to_use[[i]][[j]]), 
+                            function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+                                               function(j) lapply(seq_along(unique(feature_dynamics_modes[[i]][[j]])), 
                                                                   function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
-                                                                                                      feature_dynamics_modes[[i]][[j]][k],
-                                                                                                      site_feature_layers_to_use[[i]][[j]][k],
+                                                                                                      unique(feature_dynamics_modes[[i]][[j]])[k],
+                                                                                                      mean(site_feature_layers_to_use[[i]][[j]][which(feature_dynamics_modes[[i]][[j]] 
+                                                                                                                                                      == unique(feature_dynamics_modes[[i]][[j]])[k])]),
                                                                                                       store_dynamics_as_differential, 
                                                                                                       sample_dynamics,
-                                                                                                      dynamics_sample_type)  )))
-    } else if (dynamics_type == 'site_scale'){
-
-      if (unique_site_vals == TRUE){
-
-        dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
-                              function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
-                                                 function(j) lapply(seq_along(unique(feature_dynamics_modes[[i]][[j]])), 
-                                                                    function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
-                                                                                                        unique(feature_dynamics_modes[[i]][[j]])[k],
-                                                                                                        mean(site_feature_layers_to_use[[i]][[j]][which(feature_dynamics_modes[[i]][[j]] 
-                                                                                                                                                        == unique(feature_dynamics_modes[[i]][[j]])[k])]),
-                                                                                                        store_dynamics_as_differential, 
-                                                                                                        sample_dynamics,
-                                                                                                        dynamics_sample_type) )))
-        
-#         dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
-#                               function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
-#                                                  function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
-#                                                                                      feature_dynamics_modes[[i]][[j]],
-#                                                                                      mean(site_feature_layers_to_use[[i]][[j]]),
-#                                                                                      store_dynamics_as_differential, 
-#                                                                                      sample_dynamics,
-#                                                                                      dynamics_sample_type)))
-        
-      } else {
-        dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
-                              function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
-                                                 function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
-                                                                                     feature_dynamics_modes[[i]][[j]],
-                                                                                     unique(site_feature_layers_to_use[[i]][[j]]),
-                                                                                     store_dynamics_as_differential, 
-                                                                                     sample_dynamics,
-                                                                                     dynamics_sample_type)))
+                                                                                                      dynamics_sample_type) )))
+      
+      #         dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+      #                               function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+      #                                                  function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
+      #                                                                                      feature_dynamics_modes[[i]][[j]],
+      #                                                                                      mean(site_feature_layers_to_use[[i]][[j]]),
+      #                                                                                      store_dynamics_as_differential, 
+      #                                                                                      sample_dynamics,
+      #                                                                                      dynamics_sample_type)))
+      
+    } else {
+      dynamics_set = lapply(seq_along(site_feature_layers_to_use), 
+                            function(i) lapply(seq_along(site_feature_layers_to_use[[i]]),
+                                               function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
+                                                                                   feature_dynamics_modes[[i]][[j]],
+                                                                                   unique(site_feature_layers_to_use[[i]][[j]]),
+                                                                                   store_dynamics_as_differential, 
+                                                                                   sample_dynamics,
+                                                                                   dynamics_sample_type)))
     }
   }
   return(dynamics_set)
@@ -303,116 +352,81 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 }
 
 
-  
+
 build_modes <- function(dynamics_type, feature_layers_to_use, condition_class_bounds, unique_site_vals){
-  feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-                                  function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                     function(j) sapply(feature_layers_to_use[[i]][[j]], 
-                                                                        find_current_mode, 
-                                                                        condition_class_bounds[[j]])))
-#   if (dynamics_type == 'element_scale'){
-#     
-#   } else if (dynamics_type == 'site_scale' ){
-#     if (unique_site_vals == TRUE){
-#       feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-#                                       function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-#                                                          function(j) find_current_mode(mean(feature_layers_to_use[[i]][[j]]), 
-#                                                                                        condition_class_bounds[[j]])))
-#     } else {
-#       feature_dynamics_modes = lapply(seq_along(feature_layers_to_use), 
-#                                       function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-#                                                          function(j) find_current_mode(unique(feature_layers_to_use[[i]][[j]]), 
-#                                                                                        condition_class_bounds[[j]])))
-#     }
-#     
-#   } 
-# 
-#   
+  
+  feature_dynamics_modes = lapply(seq_along(feature_layers_to_use),  
+                                  function(i) sapply(feature_layers_to_use[[i]], find_current_mode, condition_class_bounds[[i]]))
+  
   return(feature_dynamics_modes)
 }
 
-build_simulation_inputs <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, site_characteristics_object, 
-                                     offset_probability_list, dev_probability_list, feature_params){
-  input_object = list()
-  
-  input_object$interventions = vector('list', 5)
-  names(input_object$interventions) = names(index_object$site_indexes_used)
-
-  input_object$offset_pool_object <- list()
-  input_object$site_feature_layers <- site_feature_layers_initial
-  current_credit = matrix(rep(0, length(current_simulation_params$features_to_use_in_offset_calc)), ncol = length(current_simulation_params$features_to_use_in_offset_calc))
-
-  if (current_simulation_params$use_offset_metric == TRUE){
-    current_credit = user_transform_function(current_credit, current_simulation_params$transform_params)
-  }
-  
-  input_object$current_credit = current_credit
-  input_object$credit_match_flag = FALSE
-  input_object$index_object = index_object
-
-  if (file.exists(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))){
-    background_dynamics_modes <- readRDS(paste0(global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
-  } else {
-
-    background_dynamics_modes = build_modes(dynamics_type = feature_params$background_dynamics_type, 
-                                            feature_layers_to_use = site_feature_layers_initial, 
-                                            condition_class_bounds = feature_params$initial_condition_class_bounds, 
-                                            unique_site_vals = feature_params$unique_site_vals)
-    
-    background_dynamics_modes = select_feature_subset(background_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
-  }
-
-
-  management_dynamics_modes = background_dynamics_modes
-#   management_dynamics_modes = build_modes(dynamics_type = feature_params$management_dynamics_type, 
-#                                          feature_layers_to_use = site_feature_layers_initial, 
-#                                          condition_class_bounds = feature_params$initial_condition_class_bounds, 
-#                                          unique_site_vals = feature_params$unique_site_vals)
-
-  if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
-    feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
-  } else {
-
-    feature_dynamics <- build_dynamics(site_feature_layers_initial,
-                                       features_to_use = seq_along(current_simulation_params$features_to_use_in_simulation),
-                                       feature_params$sample_background_dynamics,
-                                       feature_params$background_dynamics_type,
-                                       store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
-                                       feature_params$unique_site_vals,
-                                       feature_params$dynamics_sample_type,
-                                       feature_params$background_dynamics_bounds, 
-                                       background_dynamics_modes)
-
-    if (any(is.na(unlist(feature_dynamics)))){
-      print('poorly defined feature_dynamics')
-      browser()
-    }
-  
-    management_dynamics <- build_dynamics(site_feature_layers_initial,
-                                          features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
-                                          feature_params$sample_management_dynamics,
-                                          feature_params$management_dynamics_type,
-                                          store_dynamics_as_differential = FALSE,
-                                          feature_params$unique_site_vals,
-                                          feature_params$management_dynamics_sample_type,
-                                          feature_params$management_dynamics_bounds, 
-                                          management_dynamics_modes)
-    
-    if (any(is.na(unlist(feature_dynamics)))){
-      print('poorly defined management_dynamics')
-      browser()
-    }
-    
-
-  }
-
-  input_object$feature_dynamics = feature_dynamics
-  #input_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
-  input_object$feature_dynamics_modes = background_dynamics_modes
-  input_object$management_dynamics = management_dynamics
-
-  return(input_object)
-}
+# build_simulation_inputs <- function(current_simulation_params, index_object, global_params, site_feature_layers_initial, 
+#                                      offset_probability_list, dev_probability_list, feature_params){
+#   input_object = list()
+#   
+#   input_object$interventions = vector('list', 5)
+#   names(input_object$interventions) = names(index_object$site_indexes_used)
+# 
+#   input_object$offset_pool_object <- list()
+#   input_object$site_feature_layers <- site_feature_layers_initial
+#   current_credit = matrix(rep(0, length(current_simulation_params$features_to_use_in_offset_calc)), ncol = length(current_simulation_params$features_to_use_in_offset_calc))
+# 
+#   if (current_simulation_params$use_offset_metric == TRUE){
+#     current_credit = user_transform_function(current_credit, current_simulation_params$transform_params)
+#   }
+#   
+#   input_object$current_credit = current_credit
+#   input_object$credit_match_flag = FALSE
+#   input_object$index_object = index_object
+# 
+#   background_dynamics_modes = select_feature_subset(background_dynamics_modes, current_simulation_params$features_to_use_in_simulation)
+#   management_dynamics_modes = background_dynamics_modes
+# 
+#   if (file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))){
+#     feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+#   } else {
+# 
+#     feature_dynamics <- build_dynamics(site_feature_layers_initial,
+#                                        features_to_use = seq_along(current_simulation_params$features_to_use_in_simulation),
+#                                        feature_params$sample_background_dynamics,
+#                                        feature_params$background_dynamics_type,
+#                                        store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
+#                                        feature_params$unique_site_vals,
+#                                        feature_params$dynamics_sample_type,
+#                                        feature_params$background_dynamics_bounds, 
+#                                        background_dynamics_modes)
+# 
+#     if (any(is.na(unlist(feature_dynamics)))){
+#       print('poorly defined feature_dynamics')
+#       browser()
+#     }
+#   
+#     management_dynamics <- build_dynamics(site_feature_layers_initial,
+#                                           features_to_use = current_simulation_params$features_to_use_in_offset_intervention,
+#                                           feature_params$sample_management_dynamics,
+#                                           feature_params$management_dynamics_type,
+#                                           store_dynamics_as_differential = FALSE,
+#                                           feature_params$unique_site_vals,
+#                                           feature_params$management_dynamics_sample_type,
+#                                           feature_params$management_dynamics_bounds, 
+#                                           management_dynamics_modes)
+#     
+#     if (any(is.na(unlist(feature_dynamics)))){
+#       print('poorly defined management_dynamics')
+#       browser()
+#     }
+#     
+# 
+#   }
+# 
+#   input_object$feature_dynamics = feature_dynamics
+#   #input_object$feature_value_conflicts = check_feature_value_conflicts(site_feature_layers_initial, feature_dynamics)
+#   input_object$feature_dynamics_modes = background_dynamics_modes
+#   input_object$management_dynamics = management_dynamics
+# 
+#   return(input_object)
+# }
 
 
 
@@ -424,15 +438,15 @@ build_splines <- function(feature_dynamics){
   spline_set = lapply(seq_along(feature_dynamics), 
                       function(i) lapply(seq_along(feature_dynamics[[i]]),
                                          function(j) smooth.spline(1:length(feature_dynamics[[i]][[j]]), feature_dynamics[[i]][[j]])))
-
+  
   #   spline_object$inv_spline_set = lapply(seq_along(spline_set), 
   #                       function(i) lapply(seq_along(spline_set[[i]]),
   #                                          function(j) splinefun(spline_set[[i]][[j]]$y, spline_set[[i]][[j]]$x)))
   
-#   spline_object = lapply(seq_along(feature_dynamics), 
-#                          function(i) lapply(seq_along(feature_dynamics[[i]]),
-#                                          function(j) splinefun(spline_set[[i]][[j]]$x, spline_set[[i]][[j]]$y)))
-#                                          
+  #   spline_object = lapply(seq_along(feature_dynamics), 
+  #                          function(i) lapply(seq_along(feature_dynamics[[i]]),
+  #                                          function(j) splinefun(spline_set[[i]][[j]]$x, spline_set[[i]][[j]]$y)))
+  #                                          
   #inv_spline = splinefun(current_spline_fit$y, current_spline_fit$x)
   return(spline_set)
 }
@@ -446,30 +460,11 @@ check_feature_value_conflicts <- function(site_feature_layers_initial, feature_d
 }
 
 
-# check_param_conflicts <- function(simulation_params, feature_params, global_params){
-#   
-#   feature_test = match(global_params$features_to_use_in_simulation, seq(global_params$feature_num))
-#   if (any(is.na(feature_test))){
-#     flog.error(paste('\n ERROR: global_params$features_to_use_in_simulation does not match simulated feature feature parameters'))
-#     stop()
-#   } 
-#   
-# 
-#     if (any(is.na(offset_calc_test))){
-#       flog.error(paste('\n ERROR: simulation_params$features_to_use_in_offset_calc does not match global_params$features_to_use_in_simulation'))
-#       stop()
-#     } 
-#   params_object = list()
-#   params_object$global_params = global_params
-#   params_object$simulation_params = simulation_params
-#   params_object$feature_params = feature_params
-#   return(params_object)
-# }
 
 
 initialise_cores <- function(global_params){
   max_crs = parallel::detectCores(all.tests = FALSE, logical = TRUE)
-
+  
   if (is.character(global_params$number_of_cores)){
     if (global_params$number_of_cores == 'all'){
       current_crs = max_crs
@@ -492,7 +487,7 @@ initialise_cores <- function(global_params){
       } 
     }
   }
-
+  
   global_params$number_of_cores = current_crs
   
   clstr<-parallel::makeCluster(current_crs, output = "")  # allow parallel workers on n = global_params$number_of_cores processors
@@ -520,7 +515,7 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-check_simulation_params <- function(simulation_params, global_params){
+check_simulation_params <- function(simulation_params){
   
   offset_action_set = simulation_params$offset_action_params
   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
@@ -606,7 +601,7 @@ find_current_run <- function(base_run_folder){
   return(current_run)
 }
 
-write_simulation_folders <- function(global_params, scenario_num){
+write_params_to_disk <- function(global_params, simulation_params_group){
   
   if (global_params$simulation_folder != 'default'){
     simulation_folder = write_folder(global_params$simulation_folder)
@@ -629,11 +624,32 @@ write_simulation_folders <- function(global_params, scenario_num){
   global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
   flog.info('writing simulation outputs into %s', global_params$run_folder)
   
-  for (scenario_ind in (seq(scenario_num))){
+  if (class(global_params$scenario_subset) == 'character'){
+    if (global_params$scenario_subset == 'all'){
+      global_params$scenario_subset = seq_along(simulation_params_group)
+    } else {
+      flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
+    }
+  }
+  
+  for (scenario_ind in global_params$scenario_subset){
     write_folder(paste0(global_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
   }
   
   global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
+  global_params_file = paste0(global_params$simulation_params_folder,  'global_params')
+  saveRDS(global_params, paste0(global_params_file,'.rds'))
+  dump('global_params', paste0(global_params_file, '.R'), control = NULL)
+  
+  for (scenario_ind in global_params$scenario_subset){
+    current_simulation_params = simulation_params_group[[scenario_ind]]
+    simulation_params_file = paste0(global_params$simulation_params_folder,  
+                                    'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '_simulation_params')
+    
+    saveRDS(current_simulation_params, paste0(simulation_params_file, '.rds'))
+    dump('current_simulation_params', paste0(simulation_params_file, '.R'), control = NULL)
+  }
+  
   global_params$simulation_inputs_folder = simulation_inputs_folder
   global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
   
@@ -679,7 +695,7 @@ process_current_simulation_params <- function(current_simulation_params, common_
   } else {
     current_simulation_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
-
+  
   current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
   current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
@@ -735,7 +751,7 @@ process_current_simulation_params <- function(current_simulation_params, common_
   current_simulation_params$adjust_dev_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_dev_calc,
                                                           current_simulation_params$include_potential_offsets_in_dev_calc,
                                                           current_simulation_params$include_unregulated_loss_in_dev_calc) == TRUE)
-
+  
   
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
@@ -762,11 +778,11 @@ build_simulation_variants <- function(simulation_params){
   
   param_variants = lapply(seq(simulation_num), function(i)  
     build_current_variant(current_variant_indexes = unlist(simulation_combs[i, ]), variants))
-  params_object = list()
-  params_object$param_variants = param_variants
-  params_object$common_params = common_params
+  simulation_params_object = list()
+  simulation_params_object$param_variants = param_variants
+  simulation_params_object$common_params = common_params
   
-  return(params_object)
+  return(simulation_params_object)
   
 }
 
@@ -867,7 +883,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 initialise_index_object <- function(site_characteristics_object, site_feature_layers_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
   
   index_object = list()
-  index_object$banked_offset_pool = vector()
+  index_object$banked_offset_pool = list()
   index_object$site_indexes_used = vector('list', 5)
   names(index_object$site_indexes_used) = c('offsets_object', 'dev_object', 'unregulated_loss_object', 'credit_object', 'offset_bank_object')
   
@@ -898,7 +914,7 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
     
     initial_parcel_sums = lapply(seq_along(site_feature_layers_initial), 
                                  function(i) lapply(seq_along(site_feature_layers_initial[[i]]), 
-                                                    function(j) sum(site_feature_layers_initial[[i]][[j]]) ) )
+                                                    function(j) sum(unlist(site_feature_layers_initial[[i]][[j]])) ) )
     
     zeros_to_exclude = which(unlist(lapply(seq_along(initial_parcel_sums), 
                                            function(i) all(unlist(initial_parcel_sums[[i]][features_to_use_in_offset_calc]) == 0))))
@@ -934,11 +950,17 @@ scale_features <- function(feature_layers){
   return(scaled_feature_layers)
 }
 
-split_feature <- function(feature, land_parcels){
-  current_feature = lapply(seq_along(land_parcels), 
-                           function(i) lapply(seq_along(feature), 
-                                              function(j) matrix(feature[[j]][land_parcels[[i]]], nrow = 1)))
-  return(current_feature)
+split_features <- function(feature_layers, land_parcels, condition_class_modes){
+  
+  current_split_features = lapply(seq_along(land_parcels), 
+                                  function(i) lapply(seq_along(feature_layers), 
+                                                     function(j) lapply(unique(condition_class_modes[[j]][ land_parcels[[i]] ]), 
+                                                                        function(k) feature_layers[[j]][ land_parcels[[i]] ][which(condition_class_modes[[j]][ land_parcels[[i]] ] == k)])))
+  
+  #   current_feature = lapply(seq_along(land_parcels), 
+  #                            function(i) lapply(seq_along(feature), 
+  #                                               function(j) matrix(feature[[j]][land_parcels[[i]]], nrow = 1)))
+  return(current_split_features)
 }
 
 #' @export
