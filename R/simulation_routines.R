@@ -1,4 +1,4 @@
-run_offset_simulation_routines <- function(data_object, current_simulation_params, global_params, feature_params, index_object, scenario_ind, realisation_ind){  
+run_offset_simulation_routines <- function(data_object, current_simulation_params, global_params, feature_params, scenario_ind, realisation_ind){  
   
   # run simulation with identical realisation instantiation
   # list used to govern feature_layers rate changes
@@ -7,23 +7,7 @@ run_offset_simulation_routines <- function(data_object, current_simulation_param
                                          '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
   
   flog.info('current data dir is %s', current_data_dir)
-  
-  feature_params$management_condition_class_bounds = feature_params$management_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params$condition_class_bounds = feature_params$condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params$initial_condition_class_bounds = feature_params$initial_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params$background_dynamics_bounds = feature_params$background_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params$management_dynamics_bounds = feature_params$management_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
-  
-  # run the model and return outputs
-  simulation_input_object = build_simulation_inputs(current_simulation_params, 
-                                                    index_object, 
-                                                    global_params,
-                                                    data_object$site_feature_layers_initial,
-                                                    data_object$site_characteristics_object, 
-                                                    data_object$offset_probability_list, 
-                                                    data_object$dev_probability_list, 
-                                                    feature_params)
-  
+    
   output_object <- run_simulation(data_object,
                                   simulation_input_object,
                                   global_params,
@@ -211,7 +195,6 @@ match_sites_routine <- function(output_object, data_object, current_simulation_p
                               current_simulation_params,
                               feature_params, 
                               intervention_vec = current_simulation_params$intervention_vec,
-                              data_object$site_characteristics_object$land_parcels,
                               yr,
                               current_simulation_params$offset_time_horizon)  
   # if a match was found record current development and associated offsets and update site parameters.
@@ -257,7 +240,6 @@ credit_match_routine <- function(output_object, data_object, current_simulation_
                                               feature_params,
                                               intervention_vec = current_simulation_params$intervention_vec,
                                               dev_indexes_to_use = output_object$index_object$available_indexes$devs,
-                                              data_object$site_characteristics_object$land_parcels,
                                               yr,
                                               current_simulation_params$offset_time_horizon)
   } else{
@@ -360,26 +342,6 @@ select_current_policy <- function(current_simulation_params_set, region_num){
   }
   return(current_simulation_params)
 }
-
-
-
-# used after simulation has completed. Takes time series layer files for each feature and stacks
-# form_data_stack <- function(current_data_dir, file_pattern, land_parcels, time_steps){
-#   
-#   current_filenames <- list.files(path = current_data_dir,
-#                                   pattern = file_pattern, all.files = FALSE,
-#                                   include.dirs = FALSE, no.. = FALSE)
-#   
-#   data_stack = rep(list(matrix(0, nrow = 1, ncol = time_steps)), length(land_parcels))
-# 
-#   for (yr in seq(time_steps)){
-#     site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
-#     site_feature_layers = lapply(seq_along(site_feature_layers), function(i) sum(site_feature_layers[[i]]))
-#     data_stack <- lapply(seq_along(land_parcels), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
-#   }
-# 
-#   return(data_stack)
-# }
 
 
 
@@ -1474,7 +1436,7 @@ recalculate_probabilities <- function(current_probability_list){
 
 
 match_sites <- function(data_object, output_object, match_type, current_simulation_params, feature_params, 
-                        intervention_vec, land_parcels, yr, time_horizon){
+                        intervention_vec, yr, time_horizon){
   ###### TODO check zero development routines the code below may not be the most efficient method for this ###
   
   match_object = false_match()
@@ -1594,7 +1556,7 @@ match_sites <- function(data_object, output_object, match_type, current_simulati
 
 
 develop_from_credit <- function(data_object, output_object, current_simulation_params, feature_params,
-                                intervention_vec, dev_indexes_to_use, land_parcels, yr, time_horizon){
+                                intervention_vec, dev_indexes_to_use, yr, time_horizon){
   
   parcel_num_remaining = length(dev_indexes_to_use)
   
