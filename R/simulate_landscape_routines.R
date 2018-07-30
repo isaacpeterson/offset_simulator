@@ -33,20 +33,24 @@ simulate_site_feature_elements <- function(site_sample_type, current_condition_c
   return(site_elements)
 }
 
-simulate_feature_layers <- function(feature_params, site_characteristics, simulation_inputs_folder, condition_class_modes){ 
-  
+simulate_feature_layers <- function(feature_params, simulation_inputs_folder){ 
   
   for (feature_ind in 1:feature_params$simulated_feature_num){
-
+    
+    feature_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$feature_num_characteristics)
+    feature_characteristics <- build_site_characteristics(feature_array)
+    condition_class_modes = lapply(seq_along(feature_characteristics$land_parcels), 
+                                   function(i) rep(sample(seq_along(feature_params$initial_condition_class_bounds[[feature_ind]]), 1), length(feature_characteristics$land_parcels[[i]])))
+    
     current_condition_class_set = feature_params$initial_condition_class_bounds[[feature_ind]]
-    current_condition_mode_set = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][[feature_ind]])
-    current_simulated_feature = lapply(seq_along(site_characteristics$land_parcels), function(i) matrix(array(0, length(site_characteristics$land_parcels[[i]])), nrow = 1))
-    for (site_ind in seq_along(site_characteristics$land_parcels)){
+   
+    current_simulated_feature = lapply(seq_along(feature_characteristics$land_parcels), function(i) matrix(array(0, length(feature_characteristics$land_parcels[[i]])), nrow = 1))
+    for (site_ind in seq_along(feature_characteristics$land_parcels)){
       
-      for (mode_ind in seq_along(unique(current_condition_mode_set[[site_ind]]))){
-        current_element_set = which(current_condition_mode_set[[site_ind]] == unique(current_condition_mode_set[[site_ind]])[mode_ind])
+      for (mode_ind in seq_along(unique(condition_class_modes[[site_ind]]))){
+        current_element_set = which(condition_class_modes[[site_ind]] == unique(condition_class_modes[[site_ind]])[mode_ind])
         current_simulated_feature[[site_ind]][current_element_set] = simulate_site_feature_elements(feature_params$site_sample_type, 
-                                                                                                    unique(current_condition_mode_set[[site_ind]])[mode_ind],
+                                                                                                    unique(condition_class_modes[[site_ind]])[mode_ind],
                                                                                                     current_condition_class_set,
                                                                                                     element_num = length(current_element_set),
                                                                                                     feature_params$initial_site_sd, 
@@ -55,7 +59,7 @@ simulate_feature_layers <- function(feature_params, site_characteristics, simula
       }
     }
 
-#     current_simulated_feature = lapply(seq_along(site_characteristics$land_parcels), 
+#     current_simulated_feature = lapply(seq_along(feature_characteristics$land_parcels), 
 #                                        function(i) lapply(seq_along(unique(current_condition_mode_set[[i]])), 
 #                                                           function(j) simulate_site_feature_elements(feature_params$site_sample_type, 
 #                                                                                                      unique(current_condition_mode_set[[i]])[j],
@@ -73,8 +77,8 @@ simulate_feature_layers <- function(feature_params, site_characteristics, simula
 
     }
     
-    current_feature_layer = matrix(data = 0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
-    current_feature_layer[unlist(site_characteristics$land_parcels)] = unlist(current_simulated_feature)
+    current_feature_layer = matrix(data = 0, nrow = feature_characteristics$landscape_dims[1], ncol = feature_characteristics$landscape_dims[2])
+    current_feature_layer[unlist(feature_characteristics$land_parcels)] = unlist(current_simulated_feature)
     current_feature_raster = raster(current_feature_layer)
     current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
@@ -107,22 +111,20 @@ mcell2 <- function(Arr_in, vx, vy){       #used to break up array into samller s
   
 }  
 
-simulate_planning_units <- function(feature_params){
+simulate_feature_characteristics <- function(feature_layer_size, feature_num_characteristics){
+
+  parcel_vy = split_vector(feature_num_characteristics[1], feature_layer_size[1], feature_num_characteristics[3], min_width = 1) # as above for y
+  parcel_vx = split_vector(feature_num_characteristics[2], feature_layer_size[2], feature_num_characteristics[3], min_width = 1) # make normally distributed vector that sums to landscape size, composed of n elements where n is the parcel dimension in x
   
-  parcel_num_x = feature_params$parcel_num_x   #length in parcels of array in x 
-  parcel_num_y = feature_params$parcel_num_y #length in parcels of array in y 
-  parcel_vx = split_vector(parcel_num_x, feature_params$landscape_size[2], sd = feature_params$site_width_variation_param, min_width = 1) # make normally distributed vector that sums to landscape size, composed of n elements where n is the parcel dimension in x
-  parcel_vy = split_vector(parcel_num_y, feature_params$landscape_size[1], sd = feature_params$site_width_variation_param, min_width = 1) # as above for y
-  
-  pixel_indexes = 1:(feature_params$landscape_size[1]*feature_params$landscape_size[2])     #index all elements of landscape array
-  dim(pixel_indexes) = c(feature_params$landscape_size[1], feature_params$landscape_size[2])  # arrange landscape array index vector into array of landscape dimensions 
-  parcels = mcell2(pixel_indexes, parcel_vx, parcel_vy) #split the landscape array into a series of subarrays with dimensions sz_x by sz_y
+  element_inds = seq(feature_layer_size[1]*feature_layer_size[2])     #index all elements of landscape array
+  dim(element_inds) = c(feature_layer_size[1], feature_layer_size[2])  # arrange landscape array index vector into array of landscape dimensions 
+  parcels = mcell2(element_inds, parcel_vx, parcel_vy) #split the landscape array into a series of subarrays with dimensions sz_x by sz_y
   
   parcel_list = lapply(seq_along(parcels), function(i) array(i, dim(parcels[[i]])))
-  parcel_array = array(0, dim(pixel_indexes))
-  parcel_array[unlist(parcels)] = unlist(parcel_list)
+  feature_characteristics_array = array(0, dim(element_inds))
+  feature_characteristics_array[unlist(parcels)] = unlist(parcel_list)
   
-  return(parcel_array)
+  return(feature_characteristics_array)
 }
 
 
@@ -130,19 +132,9 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
 
   objects_to_save = list()
 
-  objects_to_save$planning_units_array <- simulate_planning_units(feature_params)
-  objects_to_save$site_characteristics <- build_site_characteristics(objects_to_save$planning_units_array)
-  objects_to_save$dev_probability_list = rep(list(1/objects_to_save$site_characteristics$land_parcel_num), objects_to_save$site_characteristics$land_parcel_num)
-  objects_to_save$offset_probability_list = objects_to_save$dev_probability_list
-
-  objects_to_save$condition_class_modes = lapply(seq_along(objects_to_save$site_characteristics$land_parcels), 
-                                                 function(i) lapply(seq(feature_params$simulated_feature_num), 
-                                                                    function(j) sample(seq_along(feature_params$initial_condition_class_bounds[[j]]),
-                                                                                       length(objects_to_save$site_characteristics$land_parcels[[i]]),
-                                                                                       replace = TRUE)))
-
-  save_simulation_inputs(objects_to_save, simulation_inputs_folder)
-  
-  simulate_feature_layers(feature_params, objects_to_save$site_characteristics, simulation_inputs_folder, objects_to_save$condition_class_modes) 
+  planning_units_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$site_num_characteristics)
+  planning_units_raster = raster(planning_units_array)
+  writeRaster(planning_units_raster, paste0(simulation_inputs_folder, 'planning_units.tif'), overwrite = TRUE)
+  simulate_feature_layers(feature_params, simulation_inputs_folder) 
   
 }
