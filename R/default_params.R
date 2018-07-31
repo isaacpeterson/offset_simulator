@@ -319,7 +319,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$project_by_mean = FALSE
   default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   default_feature_params$initial_site_mean_sd = 1
-  
+  default_feature_params$mode_classification = 'same'
   return(default_feature_params)
 }
 
