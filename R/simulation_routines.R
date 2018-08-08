@@ -75,7 +75,10 @@ run_simulation <- function(simulation_data_object, current_data_dir){
     }
     
     # determine current set of available offset sites and calculate gains structure as detailed in current policy params
-    simulation_data_object$output_data$offset_pool_object <- build_offset_pool(simulation_data_object,  yr)
+    simulation_data_object$output_data$offset_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                                     pool_type = 'offsets',
+                                                                                     current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
+                                                                                     yr)
     
     for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_vec[yr])){
       
@@ -567,13 +570,16 @@ shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use,
     
     if (update_dynamics_by_differential == TRUE){
       current_shifted_dynamics = diff(current_shifted_dynamics)
+      #current_shifted_dynamics = cumsum(diff(current_shifted_dynamics))
     }
   } else {
     
     if (update_dynamics_by_differential == TRUE){
-      current_shifted_dynamics = diff(current_feature_dynamics_to_use) 
+      current_shifted_dynamics = diff(current_feature_dynamics_to_use)
+      #current_shifted_dynamics = cumsum(diff(current_feature_dynamics_to_use))
     } else {
       current_shifted_dynamics = current_feature_val + diff(current_feature_dynamics_to_use)
+      #current_shifted_dynamics = current_feature_val + cumsum(diff(current_feature_dynamics_to_use))
     }
     
   }
@@ -677,16 +683,16 @@ run_offset_routines <- function(simulation_data_object, current_offset_object, y
 }
 
 # remove site characteristics from current pool of available sites
-remove_site_from_current_pool <- function(offset_pool_object, current_site_indexes){
+remove_site_from_current_pool <- function(pool_object, current_site_indexes){
   # work out indexes of current sites in pool
-  sites_to_remove <- list_intersect(offset_pool_object$site_indexes, current_site_indexes)
+  sites_to_remove <- list_intersect(pool_object$site_indexes, current_site_indexes)
   if (length(sites_to_remove$match_ind) > 0){
     # remove site index from available pool
-    subset_pool_to_use <- seq_along(offset_pool_object$site_indexes)[-sites_to_remove$match_ind]
+    subset_pool_to_use <- seq_along(pool_object$site_indexes)[-sites_to_remove$match_ind]
     # redefine pool with current used sites removed
-    offset_pool_object <- find_pool_characteristics(offset_pool_object, subset_pool_to_use)
+    pool_object <- find_pool_characteristics(pool_object, subset_pool_to_use)
   }
-  return(offset_pool_object)
+  return(pool_object)
 }
 
 
@@ -767,77 +773,68 @@ assess_banking_credit <- function(output_data, simulation_params){
 }
 
 # determine characteristics of potential offset sites
-build_offset_pool <- function(simulation_data_object, yr){
+build_intervention_pool <- function(simulation_data_object, pool_type, current_pool, yr){
   
   # if no developments or banked offsets for the current year return null object
   if (simulation_data_object$simulation_params$intervention_vec[yr] ==  0){
-    offset_pool_object = list()
-    return(offset_pool_object)
+    pool_object = list()
+    return(pool_object)
   }
-  
-  # select current set of available offset sites
-  current_pool <- simulation_data_object$output_data$index_object$available_indexes$offsets
   
   # if pool is empty return null object and print error
+  
   if (length(current_pool) == 0){
     flog.error('empty offset pool flag')
-    offset_pool_object = list()
-    return(offset_pool_object)
+    pool_object = list()
+    return(pool_object)
   }
   
-  if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
-    # if running in offset bank mode select sites from current region
+  if (pool_type == 'offset_bank'){
+
     flog.error('offset bank in development')
     stop()
-    subset_pool = simulation_data_object$output_data$interventions$offset_bank_object$site_indexes
+#     subset_pool = simulation_data_object$output_data$interventions$offset_bank_object$site_indexes
+#     
+#     pool_object <- find_pool_characteristics(simulation_data_object$output_data$interventions$offset_bank_object, subset_pool)
+# 
+#     current_pool = unlist(simulation_data_object$output_data$interventions$offset_bank_object$site_indexes[subset_pool])
+#     pool_object$projected_vals <- find_current_parcel_sums(simulation_data_object$site_features[current_pool])
     
-    # find set of offset characteristics that apply to current set of available sites
-    offset_pool_object <- find_pool_characteristics(simulation_data_object$output_data$interventions$offset_bank_object, subset_pool)
-    
-    # find set of current cumulative site vals, record as projected val as calculation is from time
-    # of original offset to current time for banking
-    current_pool = unlist(simulation_data_object$output_data$interventions$offset_bank_object$site_indexes[subset_pool])
-    offset_pool_object$projected_vals <- find_current_parcel_sums(simulation_data_object$site_features[current_pool])
-    
-    offset_pool_type = 'offset_bank'
   } else {
-    # when running in standard mode record current offsite site characteristics
-    offset_pool_object <- record_site_characteristics(simulation_data_object$site_features[current_pool],
-                                                      current_pool,
-                                                      parcel_num_remaining = length(current_pool),
-                                                      simulation_data_object$simulation_params$feature_num,
-                                                      yr)   #arrange available parcel pool into form to use in parcel set determination
-    offset_pool_type = 'offsets'
+    
+    pool_object <- record_site_characteristics(simulation_data_object$site_features[current_pool],
+                                               current_pool,
+                                               parcel_num_remaining = length(current_pool),
+                                               simulation_data_object$simulation_params$feature_num,
+                                               yr)   #arrange available parcel pool into form to use in parcel set determination
   }
   
-  # determine current gains characteristics
-  current_pool = unlist(current_pool)
-  offset_pool_object <- assess_current_pool(pool_object = offset_pool_object,
-                                            pool_type = offset_pool_type,
-                                            features_to_use = simulation_data_object$simulation_params$features_to_use_in_offset_calc,
-                                            site_features = simulation_data_object$site_features[current_pool],
-                                            feature_dynamics = simulation_data_object$feature_dynamics[current_pool],
-                                            management_dynamics = simulation_data_object$management_dynamics[current_pool],
-                                            feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
-                                            calc_type = simulation_data_object$simulation_params$offset_calc_type,
-                                            cfacs_flag = simulation_data_object$simulation_params$offset_cfacs_flag,
-                                            adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_offset_cfacs_flag,
-                                            action_type = simulation_data_object$simulation_params$offset_action_type,
-                                            include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_offset_calc,
-                                            include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_offset_calc,
-                                            include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_offset_calc,
-                                            recalculate_probabilities(simulation_data_object$dev_probability_list[current_pool]), 
-                                            recalculate_probabilities(simulation_data_object$offset_probability_list[current_pool]), 
-                                            time_horizon_type = simulation_data_object$simulation_params$offset_time_horizon_type,
-                                            simulation_data_object$simulation_params,
-                                            simulation_data_object$feature_params,
-                                            time_horizon = simulation_data_object$simulation_params$offset_time_horizon,
-                                            yr)      #determine available parcel values, depending on what particular offset policy is in use using counterfactuals etc.
+  pool_object <- assess_current_pool(pool_object = pool_object,
+                                     pool_type,
+                                     features_to_use = simulation_data_object$simulation_params$features_to_use_in_offset_calc,
+                                     site_features = simulation_data_object$site_features[current_pool],
+                                     feature_dynamics = simulation_data_object$feature_dynamics[current_pool],
+                                     management_dynamics = simulation_data_object$management_dynamics[current_pool],
+                                     feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
+                                     calc_type = simulation_data_object$simulation_params$offset_calc_type,
+                                     cfacs_flag = simulation_data_object$simulation_params$offset_cfacs_flag,
+                                     adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_offset_cfacs_flag,
+                                     action_type = simulation_data_object$simulation_params$offset_action_type,
+                                     include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_offset_calc,
+                                     include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_offset_calc,
+                                     include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_offset_calc,
+                                     recalculate_probabilities(simulation_data_object$dev_probability_list[current_pool]), 
+                                     recalculate_probabilities(simulation_data_object$offset_probability_list[current_pool]), 
+                                     time_horizon_type = simulation_data_object$simulation_params$offset_time_horizon_type,
+                                     simulation_data_object$simulation_params,
+                                     simulation_data_object$feature_params,
+                                     time_horizon = simulation_data_object$simulation_params$offset_time_horizon,
+                                     yr)      
   
-  if(any(is.na(unlist(offset_pool_object$parcel_vals_used)))){
+  if(any(is.na(unlist(pool_object$parcel_vals_used)))){
     browser()
   }
-  return(offset_pool_object)
+  return(pool_object)
 }
 
 
@@ -1046,41 +1043,6 @@ mcell <- function(x, vx, vy){
 }
 
 
-
-user_projection <- function(current_feature_val, current_feature_dynamics, update_dynamics_by_differential, 
-                            perform_dynamics_time_shift, time_vec, projection_yr){
-  
-  ####### TODO NOTE NEED TO CHECK WHETEHR RETURNS ARE CORRECT TO YR
-  
-  #   if (perform_dynamics_time_shift == TRUE){
-  #     
-  #     current_feature_dynamics <- shift_dynamics(current_feature_val, 
-  #                                                current_feature_dynamics, 
-  #                                                current_time_shift = projection_yr, 
-  #                                                time_fill = TRUE, 
-  #                                                update_dynamics_by_differential)
-  #   } else {
-  #     current_feature_dynamics = current_feature_dynamics[projection_yr:length(current_feature_dynamics)]
-  #   }
-  #   
-  
-  current_feature_dynamics = current_feature_dynamics[projection_yr:length(current_feature_dynamics)]
-  
-  if (update_dynamics_by_differential == TRUE){
-    projected_feature_vals = current_feature_val + cumsum(current_feature_dynamics)[time_vec]
-    
-    if (time_vec[1] == 0){
-      projected_feature_vals = append(current_feature_val, projected_feature_vals)
-    }
-    
-  } else {
-    projected_feature_vals = current_feature_dynamics[time_vec + 1]
-  }
-  
-  return(projected_feature_vals)
-}
-
-
 project_feature_layer <- function(dynamics_type, update_dynamics_by_differential, current_site_feature_layer, feature_dynamics_to_use, 
                                   feature_dynamics_modes_to_use, current_condition_class_bounds, time_horizon, perform_dynamics_time_shift, time_fill, unique_site_vals,
                                   unique_site_modes, projection_yrs){
@@ -1103,7 +1065,7 @@ project_feature_layer <- function(dynamics_type, update_dynamics_by_differential
                                                                                                       time_vec,
                                                                                                       projection_yr = projection_yrs[[i]], 
                                                                                                       feature_dynamics_to_use[[i]], 
-                                                                                                      current_condition_class_bounds))
+                                                                                                       current_condition_class_bounds))
   }
 
   return(projected_feature)
@@ -1131,8 +1093,9 @@ project_elements <- function(current_mode, current_vals_set, time_horizon, time_
       
     }
     
-    current_feature_dynamics = cumsum(current_feature_dynamics)
-    current_feature_dynamics = current_feature_dynamics[time_vec]
+    current_feature_dynamics = cumsum(current_feature_dynamics)[time_vec]
+    
+    #current_feature_dynamics = current_feature_dynamics[time_vec]
     
     current_feature_dynamics = matrix( rep(current_feature_dynamics, length(current_vals_set)), byrow = FALSE, nrow = length(time_vec))
     

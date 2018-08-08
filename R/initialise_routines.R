@@ -351,6 +351,7 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
   
   if (store_dynamics_as_differential == TRUE){
     current_feature_dynamics = diff(current_feature_dynamics)
+    #current_feature_dynamics = cumsum(diff(current_feature_dynamics))
   } 
   
   return(current_feature_dynamics)

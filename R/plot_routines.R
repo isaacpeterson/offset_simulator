@@ -143,6 +143,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
                      function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
     dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
+    
     if (last_dev_yr < dev_end){
       line_to_use = last_dev_yr
       plot_col = 'red'
