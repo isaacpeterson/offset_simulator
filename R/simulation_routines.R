@@ -736,7 +736,11 @@ run_clearing_routines <- function(simulation_data_object, current_dev_object, cl
                                                                                 simulation_data_object$simulation_params$features_to_use_in_offset_intervention, 
                                                                                 action_type = 'development', 
                                                                                 current_intervention_object = current_dev_object)
+  browser()
   
+  simulation_data_object$site_features[current_pool] = kill_site_features(simulation_data_object$site_features[current_pool])
+  
+
   return(simulation_data_object)
 }
 
@@ -2125,7 +2129,7 @@ kill_site_features <- function(site_features_to_develop){
   
   developed_feature_layers = lapply(seq_along(site_features_to_develop), 
                                     function(i) lapply(seq_along(site_features_to_develop[[i]]),  
-                                                       function(j) array(0, length(site_features_to_develop[[i]][[j]]))))
+                                                       function(j) matrix(0, length(unlist(site_features_to_develop[[i]][[j]])), nrow = 1)))
   
   return(developed_feature_layers)
 }
