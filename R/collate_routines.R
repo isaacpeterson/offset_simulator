@@ -135,7 +135,6 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
     }
     saveRDS(collated_object, collated_filename)
     
-    browser()
   }
   
 }
@@ -564,9 +563,7 @@ assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_s
   
   names(collated_object) = c('nets', 'avoided_loss', 'rest_gains')
   
-  if (collate_type == 'dev_object'){
-    browser()
-  }
+
   if ((collate_type == 'offsets_object') | (collate_type == 'offset_bank_object')){
     if (simulation_params$offset_calc_type == 'restoration_gains'){
       collated_object$nets = collated_object$rest_gains

@@ -141,7 +141,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
     }
     
     last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
-                     function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$offset_yrs), 1))))
+                     function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
     dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
     if (last_dev_yr < dev_end){
       line_to_use = last_dev_yr
@@ -374,11 +374,11 @@ overlay_impact <- function(collated_object, offset_bank, visualisation_type, rea
     site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
     inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)
     if (plot_from_impact_yr){
-      offset_yrs = collated_object[[realisation_ind]]$offset_yrs[inds_to_plot]
+      intervention_yrs = collated_object[[realisation_ind]]$intervention_yrs[inds_to_plot]
     } else {
-      offset_yrs = rep(list(1), length(inds_to_plot))
+      intervention_yrs = rep(list(1), length(inds_to_plot))
     }
-    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]][offset_yrs[[i]]:time_steps])
+    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]][intervention_yrs[[i]]:time_steps])
     if (visualisation_type == 'stacked'){
       plot_list = lapply(seq_along(plot_list), function(i) Reduce('+', plot_list[1:i]))
     }
@@ -654,13 +654,13 @@ combine_sites_to_landscape <- function(current_ecology, land_parcels, landscape_
 #       if ( global_params$write_movie == TRUE){
 #         write_frames(current_data_stack, filetype = 'png', mov_folder, data_object$site_characteristics_object, global_params, current_simulation_params, 
 #                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
-#                      offset_yrs = unlist(output_object$offsets$offset_yrs))
+#                      intervention_yrs = unlist(output_object$offsets$intervention_yrs))
 #       }
 #     }
 
 
 
-write_frames <- function(output_filetype, mov_folder, site_characteristics_object, global_params, current_simulation_params, offset_site_indexes, offset_yrs){
+write_frames <- function(output_filetype, mov_folder, site_characteristics_object, global_params, current_simulation_params, offset_site_indexes, intervention_yrs){
   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
   graphics.off()
   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
@@ -681,7 +681,7 @@ write_frames <- function(output_filetype, mov_folder, site_characteristics_objec
     landscape = array(0, site_characteristics_object$landscape_dims)
    
     if (global_params$write_offset_layer == TRUE){
-      offset_sites_to_use = which(offset_yrs <= yr)
+      offset_sites_to_use = which(intervention_yrs <= yr)
       landscape[unlist(site_characteristics_object$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = current_simulation_params$max_eco_val
     } 
     image(landscape, zlim = c(0, current_simulation_params$max_eco_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
