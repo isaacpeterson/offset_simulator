@@ -1,181 +1,175 @@
-#use_cfac_type_in_sim = TRUE
-run_collate_routines <- function(simulation_outputs, data_object, simulation_input_object, current_data_dir, current_simulation_params, 
-                                 feature_params, feature_ind, use_offset_metric){
-
-  collate_object = list()
+run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_dynamics_modes, initial_feature_layer, simulation_params, feature_params, current_data_dir, file_prefix, use_offset_metric){
+  
+  
+  intervention_pool = lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes)
+  object_name_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) rep(names(simulation_outputs$interventions)[i], length(intervention_pool[[i]]))))
+  intervention_pool = unlist(intervention_pool)
+  offset_yrs_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$offset_yrs))
+  site_num_remaining_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_num_remaining))
+  
+  projection_yrs_pool = lapply(seq(length(unlist(intervention_pool))), 
+                               function(i) lapply(seq(simulation_params$feature_num), 
+                                                  function(j) rep(list(offset_yrs_pool[i]), 
+                                                                  length(feature_dynamics_modes[[intervention_pool[i] ]][[j]])) ))
+  
+  background_projection_yrs_pool = lapply(seq_along(initial_feature_layer), 
+                                          function(i) lapply(seq(simulation_params$feature_num), 
+                                                             function(j) rep(list(1), length(feature_dynamics_modes[[i]][[j]])) ))  
+  
+  site_features_at_intervention_set = vector('list', length(initial_feature_layer))
+  
+  for (current_feature_ind in seq(simulation_params$feature_num)){
+    site_features_at_intervention = build_site_features_at_intervention(length(initial_feature_layer), current_data_dir, intervention_pool, offset_yrs_pool, simulation_params, current_feature_ind)
+    site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
+  }
+  
+  summed_site_features_at_intervention <- sum_site_features(site_features_at_intervention_set, use_offset_metric, simulation_params$transform_params)
+  
+  site_scale_cfacs = vector('list', length(initial_feature_layer))
+  
+  site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
+                                                      summed_site_features_at_intervention,
+                                                      simulation_params, 
+                                                      feature_params,
+                                                      feature_dynamics[intervention_pool],
+                                                      feature_dynamics_modes[intervention_pool],
+                                                      projection_yrs_pool,
+                                                      offset_yrs_pool,
+                                                      site_num_remaining_pool,
+                                                      cfac_type = 'site_scale',
+                                                      object_type = object_name_pool, 
+                                                      use_cfac_type_in_sim = TRUE, 
+                                                      condition_class_bounds = feature_params$condition_class_bounds, 
+                                                      use_offset_metric)
+  
+  summed_initial_site_features = sum_site_features(initial_feature_layer, use_offset_metric, simulation_params$transform_params)
+  
+  background_cfacs = collate_cfacs(initial_feature_layer,
+                                   summed_initial_site_features,
+                                   simulation_params, 
+                                   feature_params,
+                                   feature_dynamics,
+                                   feature_dynamics_modes,
+                                   background_projection_yrs_pool,
+                                   offset_yrs = rep(1, length(initial_feature_layer)),
+                                   vector(),
+                                   cfac_type = 'background',
+                                   object_type = vector(), 
+                                   use_cfac_type_in_sim = FALSE, 
+                                   condition_class_bounds = feature_params$condition_class_bounds, 
+                                   use_offset_metric)
+  
   
   if (use_offset_metric == FALSE){
-    collate_object$site_scale_outcomes = sum_data_stack(current_data_dir, 
-                                                        file_pattern = paste0('feature_', formatC(current_simulation_params$features_to_use_in_offset_calc[feature_ind], width = 3, format = "d", flag = "0")), 
-                                                        current_simulation_params$time_steps)
+    features_to_collate = seq(simulation_params$feature_num)
   } else {
-
-    collate_object$site_scale_outcomes = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), current_simulation_params$time_steps)
+    features_to_collate = 1
   }
-    
-  intervention_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes), 
-                               names(simulation_outputs$interventions))
-  offset_yrs_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$offset_yrs), 
-                             names(simulation_outputs$interventions))
-  parcel_num_remaining_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$parcel_num_remaining), 
-                                  names(simulation_outputs$interventions))
-  object_name_pool = unlist(lapply(seq_along(intervention_pool), function(i) rep(names(intervention_pool)[i], length(intervention_pool[[i]]))))
   
-  if (use_offset_metric == FALSE) {
-    site_features_at_intervention = build_site_features_at_intervention(data_object$site_characteristics_object$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
-    
-    current_feature_dynamics_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics, feature_ind, output_type = 'nested')
-    current_feature_dynamics_modes_initial = select_nested_subset(nested_object = simulation_input_object$feature_dynamics_modes, feature_ind, output_type = 'nested')
-    
-    collate_object$site_scale_cfacs = vector('list', data_object$site_characteristics_object$land_parcel_num)
-    collate_object$site_scale_cfacs[unlist(intervention_pool)] = unlist(lapply(seq_along(unlist(intervention_pool)),
-                                                                        function(i) collate_cfacs(current_simulation_params, 
-                                                                                                  feature_params,
-                                                                                                  site_features_at_intervention[unlist(intervention_pool)[i]],
-                                                                                                  simulation_input_object$feature_dynamics[unlist(intervention_pool)[i]],
-                                                                                                  simulation_input_object$feature_dynamics_modes[unlist(intervention_pool)[i]],
-                                                                                                  projection_yrs = list(as.vector(unlist(offset_yrs_pool)[i])),
-                                                                                                  current_parcel_num_remaining = unlist(parcel_num_remaining_pool)[i],
-                                                                                                  cfac_type = 'site_scale',
-                                                                                                  object_type = object_name_pool[i], 
-                                                                                                  use_cfac_type_in_sim = TRUE, 
-                                                                                                  condition_class_bounds = feature_params$condition_class_bounds, 
-                                                                                                  use_offset_metric)), recursive = FALSE)
-    
-    current_initial_feature_layer = select_nested_subset(nested_object = simulation_input_object$site_feature_layers, feature_ind, output_type = 'nested')
-    
-#     collate_object$background_cfacs = collate_cfacs(current_simulation_params, feature_params,
-#                                                     current_site_feature_layers = current_initial_feature_layer,
-#                                                     current_feature_dynamics = current_feature_dynamics_initial,
-#                                                     current_feature_dynamics_modes_initial,
-#                                                     projection_yrs = rep(list(1), length(current_initial_feature_layer)),
-#                                                     current_parcel_num_remaining = vector(),
-#                                                     cfac_type = 'background',
-#                                                     object_type = vector(), 
-#                                                     use_cfac_type_in_sim = FALSE, 
-#                                                     condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
-#                                                     use_offset_metric)
-    
-    collate_object$background_cfacs = unlist(lapply(seq_along(simulation_input_object$site_feature_layers),
-                                                                        function(i) collate_cfacs(current_simulation_params, 
-                                                                                                  feature_params,
-                                                                                                  current_initial_feature_layer[i],
-                                                                                                  simulation_input_object$feature_dynamics[i],
-                                                                                                  simulation_input_object$feature_dynamics_modes[i],
-                                                                                                  projection_yrs = rep(list(1), length(current_initial_feature_layer)),
-                                                                                                  current_parcel_num_remaining = vector(),
-                                                                                                  cfac_type = 'background',
-                                                                                                  object_type = vector(), 
-                                                                                                  use_cfac_type_in_sim = FALSE, 
-                                                                                                  condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
-                                                                                                  use_offset_metric)), recursive = FALSE)
-    
-    site_features_at_intervention = unlist(site_features_at_intervention, recursive = FALSE)
-    collate_object$summed_site_features_at_intervention = lapply(seq_along(site_features_at_intervention), function(i) sum_cols(site_features_at_intervention[[i]]))
-    
-  } else {
 
-    site_features_at_intervention_set = vector('list', data_object$site_characteristics_object$land_parcel_num)
-
-    for (feature_ind in current_simulation_params$features_to_use_in_simulation){
-      site_features_at_intervention = build_site_features_at_intervention(data_object$site_characteristics_object$land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind)
-      site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
+  for (feature_ind in features_to_collate){
+    
+    collated_object = list()
+    if (use_offset_metric == FALSE){
+      collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, 
+                                                           file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0")), 
+                                                           simulation_params$time_steps)
+      collated_object$summed_site_features_at_intervention = select_subset(nested_object = summed_site_features_at_intervention, feature_ind, 'non-nested')
+      collated_object$site_scale_cfacs = select_subset(nested_object = site_scale_cfacs, feature_ind, 'non-nested')
+      collated_object$background_cfacs = select_subset(nested_object = background_cfacs, feature_ind, 'non-nested')
+    } else {
+      collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
+      collated_object$summed_site_features_at_intervention = summed_site_features_at_intervention
+      collated_object$site_scale_cfacs = site_scale_cfacs
+      collated_object$background_cfacs = background_cfacs
     }
     
-    collate_object$background_cfacs = lapply(seq_along(simulation_input_object$site_feature_layers), 
-                                             function(i) sum_cols(user_transform_function(collate_cfacs(current_simulation_params, 
-                                                                                                               feature_params,
-                                                                                                               simulation_input_object$site_feature_layers[i],
-                                                                                                               simulation_input_object$feature_dynamics[i],
-                                                                                                               simulation_input_object$feature_dynamics_modes[i],
-                                                                                                               projection_yrs = list(1),
-                                                                                                               current_parcel_num_remaining = vector(),
-                                                                                                               cfac_type = 'background',
-                                                                                                               object_type = vector(), 
-                                                                                                               use_cfac_type_in_sim = FALSE, 
-                                                                                                               condition_class_bounds = feature_params$condition_class_bounds, 
-                                                                                                               use_offset_metric), current_simulation_params$transform_params)))
+    collated_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
+                                                         function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
+                                                                                             current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 
+                                                                                             site_scale_cfacs = collated_object$site_scale_cfacs, 
+                                                                                             collated_object$summed_site_features_at_intervention, 
+                                                                                             site_scale_outcomes = collated_object$site_scale_outcomes,  
+                                                                                             collate_type = names(simulation_outputs$interventions)[[i]], 
+                                                                                             simulation_params, 
+                                                                                             feature_params, 
+                                                                                             use_offset_metric)), names(simulation_outputs$interventions))
     
+    collated_object$site_scale_net_impacts <- collate_site_scale_net_impacts(collated_site_scale_offsets = collated_object$site_scale_impacts$offsets_object$summed_gains_degs$nets,
+                                                                             collated_site_scale_devs = collated_object$site_scale_impacts$dev_object$summed_gains_degs$nets)
     
+    collated_object$landscape_scale <- calc_landscape_characteristics(collated_object$site_scale_outcomes, collated_object$background_cfacs, use_offset_metric)
     
-    collate_object$site_scale_cfacs = vector('list', data_object$site_characteristics_object$land_parcel_num)
-    collate_object$site_scale_cfacs[unlist(intervention_pool)] = lapply(seq_along(unlist(intervention_pool)),
-                                                                        function(i) sum_cols(user_transform_function(collate_cfacs(current_simulation_params, 
-                                                                                                                                   feature_params,
-                                                                                                                                   site_features_at_intervention_set[unlist(intervention_pool)[i]],
-                                                                                                                                   simulation_input_object$feature_dynamics[unlist(intervention_pool)[i]],
-                                                                                                                                   simulation_input_object$feature_dynamics_modes[unlist(intervention_pool)[i]],
-                                                                                                                                   projection_yrs = list(as.vector(unlist(offset_yrs_pool)[i])),
-                                                                                                                                   current_parcel_num_remaining = unlist(parcel_num_remaining_pool)[i],
-                                                                                                                                   cfac_type = 'site_scale',
-                                                                                                                                   object_type = object_name_pool[i], 
-                                                                                                                                   use_cfac_type_in_sim = FALSE, 
-                                                                                                                                   condition_class_bounds = feature_params$condition_class_bounds, 
-                                                                                                                                   use_offset_metric), current_simulation_params$transform_params)))
+    collated_object$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collated_object$site_scale_outcomes)
     
-    collate_object$summed_site_features_at_intervention = lapply(seq_along(site_features_at_intervention_set), 
-                                                                 function(i) sum_cols(user_transform_function(site_features_at_intervention_set[[i]], current_simulation_params$transform_params)))
+    collated_object$program_scale_impacts <- collate_program_scale_impacts(collated_object)
+    
+    collated_object$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
+                                                         impacts = collated_object$site_scale_impacts$net_impacts, 
+                                                         offset_yrs_to_use = collated_object$collated_offsets$offset_yrs, 
+                                                         site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
+    
+    collated_object$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
+                                                            impacts = collated_object$program_scale_impacts$program_total, 
+                                                            offset_yrs_to_use = list(1), 
+                                                            site_indexes = vector())
+    
+    collated_object$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
+                                                              impacts = collated_object$landscape_scale$landscape_scale_impact, 
+                                                              offset_yrs_to_use = list(1), 
+                                                              site_indexes = vector())
+    
+    collated_object$net_program_loss = assess_fractional_loss(net_vals = collated_object$program_outcomes$net_outcome, 
+                                                              NNL_yr = collated_object$program_scale_NNL$NNL)
+    
+    collated_object$net_landscape_loss = assess_fractional_loss(net_vals = collated_object$landscape_scale$landscape_outcome, 
+                                                                NNL_yr = collated_object$landscape_scale_NNL$NNL)
+    
+    collated_object$sites_used = find_sites_used(simulation_outputs)
+    
+    if (use_offset_metric == FALSE){
+      collated_filename = paste0(file_prefix, '_feature_',
+                                 formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), '.rds')
+    }  else {
+      collated_filename = paste0(file_prefix, '_metric', '.rds')
+    }
+    saveRDS(collated_object, collated_filename)
     
   }
   
-  collate_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
-                                            function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
-                                                                                current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 
-                                                                                site_scale_cfacs = collate_object$site_scale_cfacs, 
-                                                                                collate_object$summed_site_features_at_intervention, 
-                                                                                site_scale_outcomes = collate_object$site_scale_outcomes,  
-                                                                                collate_type = names(simulation_outputs$interventions)[[i]], 
-                                                                                current_simulation_params, 
-                                                                                feature_params, 
-                                                                                use_offset_metric)), names(simulation_outputs$interventions))
-  
-  collate_object$site_scale_net_impacts <- collate_site_scale_net_impacts(collated_site_scale_offsets = collate_object$site_scale_impacts$offsets_object$summed_gains_degs$nets,
-                                                                     collated_site_scale_devs = collate_object$site_scale_impacts$dev_object$summed_gains_degs$nets)
-  
-  collate_object$landscape_scale <- calc_landscape_characteristics(collate_object$site_scale_outcomes, collate_object$background_cfacs, use_offset_metric)
-  
-  collate_object$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collate_object$site_scale_outcomes)
-  
-  collate_object$program_scale_impacts <- collate_program_scale_impacts(collate_object)
-  
-#   collate_object$program_cfacs = collate_program_cfacs(simulation_outputs, 
-#                                                       collate_object$site_scale_outcomes$landscape_cfacs, 
-#                                                       collate_object$site_scale_outcomes$collated_offsets, 
-#                                                       collate_object$collated_devs, 
-#                                                       collate_object$collated_dev_credit, 
-#                                                       collate_object$collated_offset_bank, 
-#                                                       collate_object$collated_unregulated_loss)
-  
-  collate_object$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
-                                                     impacts = collate_object$site_scale_impacts$net_impacts, 
-                                                     offset_yrs_to_use = collate_object$collated_offsets$offset_yrs, 
-                                                     site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
-  
-  collate_object$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
-                                                        impacts = collate_object$program_scale_impacts$program_total, 
-                                                        offset_yrs_to_use = list(1), 
-                                                        site_indexes = vector())
-  
-  collate_object$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
-                                                          impacts = collate_object$landscape_scale$landscape_scale_impact, 
-                                                          offset_yrs_to_use = list(1), 
-                                                          site_indexes = vector())
-  
-  collate_object$net_program_loss = assess_fractional_loss(net_vals = collate_object$program_outcomes$net_outcome, 
-                                                          NNL_yr = collate_object$program_scale_NNL$NNL)
-  
-  collate_object$net_landscape_loss = assess_fractional_loss(net_vals = collate_object$landscape_scale$landscape_outcome, 
-                                                            NNL_yr = collate_object$landscape_scale_NNL$NNL)
-  
-  collate_object$sites_used = find_sites_used(simulation_outputs)
-  
-#   collated_data = collate_simulation_outputs(collated_data, simulation_outputs, data_object, simulation_input_object, current_data_dir, current_simulation_params, 
-#                                              feature_params, feature_ind, use_offset_metric, use_cfac_type_in_sim = TRUE)
+}
 
 
-  return(collate_object)
+sum_site_features <- function(site_features, use_offset_metric, transform_params){
+  
+  summed_site_features = lapply(seq_along(site_features), 
+                                function(i) lapply(seq_along(site_features[[i]]), 
+                                                   function(j) abind(site_features[[i]][[j]])))
+  
+  if (use_offset_metric == FALSE){
+    summed_site_features = lapply(seq_along(summed_site_features), 
+                                  function(i) lapply(seq_along(summed_site_features[[i]]), 
+                                                     function(j) sum(summed_site_features[[i]][[j]])))
+  } else {
+    summed_site_features = lapply(seq_along(summed_site_features), 
+                                  function(i) sum_cols(user_transform_function(summed_site_features[[i]], transform_params)))
+  }
+  
+  return(summed_site_features)
   
 }
+select_subset <- function(nested_object, nested_ind, output_type){
+  sets_to_use = which(unlist(lapply(seq_along(nested_object), function(i) length(nested_object[[i]]) > 0)))
+  
+  subset_object = vector('list', length(nested_object))
+  if (output_type == 'nested'){
+    subset_object[sets_to_use] <- lapply(sets_to_use, function(i) nested_object[[i]][nested_ind])
+  } else {
+    subset_object[sets_to_use] <- lapply(sets_to_use, function(i) nested_object[[i]][[nested_ind]])
+  }
+  return(subset_object)
+}
+
 
 build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool, current_offset_yrs){
   
@@ -186,51 +180,23 @@ build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool,
   data_stack = vector('list', length(current_pool))
   
   for (yr in unique(current_offset_yrs)){
-    current_yr_set = which(current_offset_yrs == yr)
+    current_yr_set = as.vector(which(current_offset_yrs == yr))
     current_site_feature_layer = readRDS(paste0(current_data_dir, current_filenames[yr]))
-    data_stack[current_yr_set] = lapply(current_yr_set, function(i) list(matrix( current_site_feature_layer[[ current_pool[i] ]], nrow = 1)))
+    data_stack[current_yr_set] = lapply(current_yr_set, function(i) list(current_site_feature_layer[[ current_pool[i] ]]))
   }
   
   return(data_stack)
 }
 
-  
 
-build_site_features_at_intervention <- function(land_parcel_num, current_data_dir, intervention_pool, offset_yrs_pool, current_simulation_params, feature_ind){
-  site_features_at_intervention = vector('list', land_parcel_num)
-  site_features_at_intervention[unlist(intervention_pool)] = build_site_layer_stack(current_data_dir, 
-                                                                                  file_pattern = paste0('feature_', formatC(current_simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0")), 
-                                                                                  unlist(intervention_pool),
-                                                                                  unlist(offset_yrs_pool))
+
+build_site_features_at_intervention <- function(land_site_num, current_data_dir, intervention_pool, offset_yrs_pool, simulation_params, feature_ind){
+  site_features_at_intervention = vector('list', land_site_num)
+  site_features_at_intervention[intervention_pool] = build_site_layer_stack(current_data_dir, 
+                                                                            file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0")), 
+                                                                            intervention_pool,
+                                                                            offset_yrs_pool)
   return(site_features_at_intervention)
-}
-
-
-
-build_site_scale_cfacs <- function(site_features_at_intervention, simulation_outputs, land_parcel_num, current_feature_dynamics_initial, current_feature_dynamics_modes_initial, 
-                                   intervention_pool, parcel_num_remaining, offset_yrs_pool, current_simulation_params, feature_params, use_cfac_type_in_sim, feature_ind, use_offset_metric){
-  
-  site_scale_cfacs = vector('list', land_parcel_num)
-  
-  for (collate_ind in seq_along(simulation_outputs$interventions)){
-
-    current_pool = unlist(intervention_pool[[collate_ind]])
-
-    site_scale_cfacs[current_pool] = collate_cfacs(current_simulation_params, 
-                                                   feature_params, 
-                                                   site_features_at_intervention[current_pool],
-                                                   current_feature_dynamics = current_feature_dynamics_initial[current_pool],
-                                                   current_feature_dynamics_modes = current_feature_dynamics_modes_initial[current_pool],
-                                                   projection_yrs = offset_yrs_pool[[collate_ind]],
-                                                   parcel_num_remaining[[collate_ind]],
-                                                   cfac_type = 'site_scale',
-                                                   object_type = names(simulation_outputs$interventions)[collate_ind], 
-                                                   use_cfac_type_in_sim,
-                                                   condition_class_bounds = feature_params$condition_class_bounds[feature_ind], 
-                                                   use_offset_metric)
-  }
-  
-  return(site_scale_cfacs)
 }
 
 
@@ -241,7 +207,7 @@ calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs
   landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes)
   landscape_scale_object$net_landscape_cfac = sum_list(background_cfacs)
   landscape_scale_object$landscape_scale_impact = mapply('-', landscape_scale_object$landscape_outcome, landscape_scale_object$net_landscape_cfac, SIMPLIFY = FALSE)
-
+  
   return(landscape_scale_object)
 }
 
@@ -307,18 +273,18 @@ nest_list <- function(list_a){
   return(nested_list)
 }
 
-expand_current_collated_realisation <- function(expand_type, collate_object, net_names, realisation_ind){
-  expanded_collate_object = vector('list', length(net_names))
-  common_inds = (match(names(collate_object), net_names))
+expand_current_collated_realisation <- function(expand_type, collated_object, net_names, realisation_ind){
+  expanded_collated_object = vector('list', length(net_names))
+  common_inds = (match(names(collated_object), net_names))
   new_inds = setdiff(seq_along(net_names), common_inds)
-  expanded_collate_object[common_inds] = collate_object
+  expanded_collated_object[common_inds] = collated_object
   if (expand_type == 'set'){
-    expanded_collate_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', realisation_ind - 1))
+    expanded_collated_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', realisation_ind - 1))
   } else {
-    expanded_collate_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', 1))
+    expanded_collated_object[new_inds] = lapply(seq_along(new_inds), function(i) vector('list', 1))
   }
-  names(expanded_collate_object) = net_names
-  return(expanded_collate_object)
+  names(expanded_collated_object) = net_names
+  return(expanded_collated_object)
 }
 
 
@@ -355,11 +321,6 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
   program_cfacs_object$dev_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$dev_object$site_indexes)], collated_devs$cfacs, unlist(simulation_outputs$dev_object$offset_yrs))
   program_cfacs_object$dev_credit_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$credit_object$site_indexes)], collated_dev_credit$cfacs, unlist(simulation_outputs$credit_object$offset_yrs))
   program_cfacs_object$offset_bank_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$offset_bank_object$site_indexes)], collated_offset_bank$cfacs, unlist(simulation_outputs$offset_bank_object$offset_yrs))
-  
-  #cfac_sums = list(program_cfacs_object$offset_cfacs, program_cfacs_object$dev_cfacs, program_cfacs_object$dev_credit_cfacs, program_cfacs_object$offset_bank_cfacs)
-  
-  #cfacs_to_use = unlist(lapply(seq_along(cfac_sums), function(i) length(cfac_sums[[i]]))) > 0
-  #program_cfacs_object$program_cfac_sum <-  list(Reduce('+', unlist(cfac_sums[cfacs_to_use], recursive = FALSE))
   program_cfacs_object$program_cfac_sum <- sum_list(unlist(program_cfacs_object, recursive = FALSE))
   
   return(program_cfacs_object)
@@ -367,79 +328,93 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 }
 
 
-collate_cfacs <- function(current_simulation_params, feature_params, current_site_feature_layers, current_feature_dynamics, current_feature_dynamics_modes, projection_yrs, 
-                          current_parcel_num_remaining, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric){
+
+
+collate_cfacs <- function(current_site_features, summed_site_features, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, projection_yrs, offset_yrs, 
+                          site_num_remaining, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric){
   
-  cfac_params <- select_cfac_type(object_type, use_cfac_type_in_sim, current_simulation_params, feature_params)
+
+  if ((use_cfac_type_in_sim == FALSE) || (cfac_type == 'background')){
+    cfac_params = lapply(seq_along(current_site_features), function(i) setNames(rep(list(FALSE), 4), 
+                                                                                c('include_potential_developments', 
+                                                                                  'include_potential_offsets', 
+                                                                                  'include_unregulated_loss', 
+                                                                                  'adjust_cfacs_flag')))
+  } else {
+    cfac_params = lapply(seq_along(current_site_features), function(i) select_cfac_params(object_type[[i]], simulation_params))
+  }
   
-  parcel_count = length(current_site_feature_layers)
-  
-  if (cfac_type == 'background'){                    
+
+  if (cfac_type == 'background'){ 
+    
     time_horizons <- generate_time_horizons(project_type = 'future', 
                                             yr = 1, 
-                                            offset_yrs = rep(1, parcel_count), 
-                                            time_horizon = (current_simulation_params$time_steps - 1), 
-                                            parcel_count)
+                                            offset_yrs = rep(1, length(current_site_features)), 
+                                            time_horizon = (simulation_params$time_steps - 1), 
+                                            length(current_site_features))
     
-    include_potential_developments = FALSE
-    include_potential_offsets = FALSE
-    #TODO REINSTATE THIS TO TRUE
-    adjust_cfacs_flag = FALSE
-    include_unregulated_loss = FALSE
-
   } else if (cfac_type == 'site_scale'){
-
     time_horizons = generate_time_horizons(project_type = 'current', 
-                                           yr = current_simulation_params$time_steps, 
-                                           offset_yrs = unlist(projection_yrs),
-                                           time_horizon = (current_simulation_params$time_steps - 1), 
-                                           parcel_count)
-    
-    adjust_cfacs_flag = cfac_params$adjust_cfacs_flag
-    include_potential_developments = cfac_params$include_potential_developments
-    include_potential_offsets = cfac_params$include_potential_offsets
-    include_unregulated_loss = cfac_params$include_unregulated_loss
+                                           yr = simulation_params$time_steps, 
+                                           unlist(offset_yrs),
+                                           time_horizon = (simulation_params$time_steps - 1), 
+                                           length(current_site_features))
   }
   
-  projection_yrs = lapply(seq_along(current_feature_dynamics_modes), 
-                          function(i) lapply(seq_along(current_feature_dynamics_modes[[i]]), 
-                                             function(j) rep(list(projection_yrs[[i]]), length(unique(current_feature_dynamics_modes[[i]][[j]])))))
+  cfac_weights = lapply(seq_along(site_features), function(i) array(1, time_horizons[[i]]))
   
-#   projection_yrs = lapply(seq_along(projection_yrs), 
-#                           function(i) rep(list(projection_yrs[[i]]), current_simulation_params$feature_num))
-#   
-  cfacs = project_features(current_site_feature_layers,
-                           feature_params$background_dynamics_type,
-                           feature_params$background_update_dynamics_by_differential, 
-                           feature_dynamics_to_use = current_feature_dynamics,
-                           feature_dynamics_modes_to_use = current_feature_dynamics_modes,
-                           time_horizons,
-                           current_simulation_params,
-                           perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift,
-                           time_fill = TRUE, 
-                           unique_site_vals = feature_params$unique_site_vals,
-                           unique_site_modes = feature_params$unique_site_modes,
-                           projection_yrs, 
-                           condition_class_bounds)
-    
-  if (adjust_cfacs_flag == TRUE){
-    cfacs = adjust_cfacs(cfacs,
-                         include_potential_developments,
-                         include_potential_offsets,
-                         include_unregulated_loss,
-                         current_simulation_params,
-                         current_parcel_num_remaining,
-                         time_horizons,
-                         projection_yrs)
-  } 
+  time_horizons = lapply(seq_along(time_horizons), function(i) 0:time_horizons[i])
   
-  
-  cfacs = unlist(cfacs, recursive = FALSE)
+#   if (adjust_cfacs_flag == FALSE){
+#     time_fill = FALSE
+#     cfac_weights = lapply(seq_along(site_features), function(i) array(1, time_horizons[[i]]))
+#   } else {
+#     cfac_weights = calc_cfac_weights(site_num = length(site_features), include_potential_developments, include_potential_offsets, include_unregulated_loss,
+#                                      dev_probability_list, offset_probability_list, simulation_params, feature_params, parcel_num_remaining, time_horizons, unlist(offset_yrs))
+#     time_fill = TRUE
+#   }
   
   if (use_offset_metric == FALSE){
-    cfacs = lapply(seq_along(cfacs), function(i) sum_cols(cfacs[[i]]))
-  }
 
+    cfacs = lapply(seq_along(current_site_features),
+                   function(i) lapply(seq(simulation_params$feature_num), 
+                                      function(j) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
+                                                               function(k) sum_cols(calc_cfacs(current_site_features[[i]],
+                                                                                                                  projection_yrs[[i]],
+                                                                                                                  cfac_weights[[i]],
+                                                                                                                  simulation_params,
+                                                                                                                  feature_params,
+                                                                                                                  feature_dynamics[[i]],
+                                                                                                                  feature_dynamics_modes[[i]],
+                                                                                                                  time_horizons[[i]][k],
+                                                                                                                  cfac_params[[i]]$include_potential_developments,
+                                                                                                                  cfac_params[[i]]$include_potential_offsets,
+                                                                                                                  cfac_params[[i]]$include_unregulated_loss,
+                                                                                                                  cfac_params[[i]]$adjust_cfacs_flag,
+                                                                                                                  time_fill = FALSE,
+                                                                                                                  bind_condition_classes = TRUE) [[j]] ))) ))
+    
+    
+  } else {
+    
+    cfacs = lapply(seq_along(current_site_features),
+                   function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
+                                            function(j) sum_cols(user_transform_function( calc_cfacs(current_site_features[[i]],
+                                                                                                     projection_yrs[[i]],
+                                                                                                     cfac_weights[[i]],
+                                                                                                     simulation_params,
+                                                                                                     feature_params,
+                                                                                                     feature_dynamics[[i]],
+                                                                                                     feature_dynamics_modes[[i]],
+                                                                                                     time_horizons[[i]][j],
+                                                                                                     cfac_params[[i]]$include_potential_developments,
+                                                                                                     cfac_params[[i]]$include_potential_offsets,
+                                                                                                     cfac_params[[i]]$include_unregulated_loss,
+                                                                                                     cfac_params[[i]]$adjust_cfacs_flag,
+                                                                                                     time_fill = FALSE,
+                                                                                                     bind_condition_classes = TRUE), simulation_params$transform_params ))) ))
+  }
+  
   return(cfacs)
 }
 
@@ -447,8 +422,8 @@ collate_cfacs <- function(current_simulation_params, feature_params, current_sit
 
 
 collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcomes){
-
-
+  
+  
   program_scale_outcomes = lapply(seq_along(simulation_outputs$interventions), 
                                   function(i) sum_list(site_scale_outcomes[unlist(simulation_outputs$interventions[[i]]$site_indexes)]))
   names(program_scale_outcomes) = names(simulation_outputs$interventions)
@@ -456,50 +431,50 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
   program_scale_outcomes$net_offsets <- sum_list(append(program_scale_outcomes$offsets_object, program_scale_outcomes$offset_bank_object))
   program_scale_outcomes$net_devs <- sum_list(append(program_scale_outcomes$dev_object, program_scale_outcomes$credit_object))
   program_scale_outcomes$net_outcome <- sum_list(append(program_scale_outcomes$net_offsets, program_scale_outcomes$net_devs))
-
+  
   return(program_scale_outcomes)
 }
 
 
 collate_program_scale_impacts <- function(collated_data){
-
+  
   program_scale_impacts = lapply(seq_along(collated_data$site_scale_impacts), function(i) collated_data$site_scale_impacts[[i]]$summed_gains_degs$nets)
   names(program_scale_impacts) = names(collated_data$site_scale_impacts)
   
   program_scale_impacts$net_offset_gains = sum_list(append(program_scale_impacts$offsets_object, program_scale_impacts$offset_bank_object))
   program_scale_impacts$net_dev_losses = sum_list(append(program_scale_impacts$dev_object, program_scale_impacts$credit_object))
   program_scale_impacts$program_total = sum_list(append(program_scale_impacts$net_offset_gains, program_scale_impacts$net_dev_losses))
-
+  
   return(program_scale_impacts)
 }
 
 
 
 calc_site_scale_impacts <- function(current_simulation_outputs, current_site_sets, site_scale_cfacs, summed_site_features_at_intervention, site_scale_outcomes,  
-                                           collate_type, current_simulation_params, feature_params, use_offset_metric){
+                                    collate_type, simulation_params, feature_params, use_offset_metric){
   
   current_pool = unlist(current_simulation_outputs$site_indexes)
   if (length(current_pool) == 0){
     return(NULL)
   }
   
-  collate_object <- assess_gains_degs(site_scale_outcomes_to_use = site_scale_outcomes[current_pool],
-                                         cfacs_to_use = site_scale_cfacs[current_pool],
-                                         summed_site_features_at_intervention,
-                                         current_offset_yrs = unlist(current_simulation_outputs$offset_yrs),
-                                         collate_type, 
-                                         current_simulation_params, feature_params,
-                                         time_steps = current_simulation_params$time_steps, 
-                                          use_offset_metric)
-    
-  collate_object$grouped_gains_degs = group_gains_degs(collate_object, current_site_sets)
-  collate_object$summed_gains_degs = sum_gains_degs(collate_object$grouped_gains_degs)
-    
+  collated_object <- assess_gains_degs(site_scale_outcomes_to_use = site_scale_outcomes[current_pool],
+                                       cfacs_to_use = site_scale_cfacs[current_pool],
+                                       summed_site_features_at_intervention[current_pool],
+                                       current_offset_yrs = unlist(current_simulation_outputs$offset_yrs),
+                                       collate_type, 
+                                       simulation_params, feature_params,
+                                       time_steps = simulation_params$time_steps, 
+                                       use_offset_metric)
   
-  collate_object$site_indexes = current_site_sets
-  collate_object$offset_yrs = current_simulation_outputs$offset_yrs
-  collate_object$cfacs = site_scale_cfacs$cfacs
-  return(collate_object)
+  collated_object$grouped_gains_degs = group_gains_degs(collated_object, current_site_sets)
+  collated_object$summed_gains_degs = sum_gains_degs(collated_object$grouped_gains_degs)
+  
+  
+  collated_object$site_indexes = current_site_sets
+  collated_object$offset_yrs = current_simulation_outputs$offset_yrs
+  collated_object$cfacs = site_scale_cfacs$cfacs
+  return(collated_object)
 }
 
 
@@ -512,12 +487,12 @@ sum_gains_degs <- function(grouped_gains_degs){
 }
 
 
-group_gains_degs <- function(collate_object, site_indexes){ 
-
-  grouped_gains_degs <- lapply(seq_along(collate_object), 
+group_gains_degs <- function(collated_object, site_indexes){ 
+  
+  grouped_gains_degs <- lapply(seq_along(collated_object), 
                                function(i) (lapply(seq_along(site_indexes), 
-                                                   function(j) collate_object[[i]][which(unlist(site_indexes) %in% site_indexes[[j]])])))
-  names(grouped_gains_degs) = names(collate_object)
+                                                   function(j) collated_object[[i]][which(unlist(site_indexes) %in% site_indexes[[j]])])))
+  names(grouped_gains_degs) = names(collated_object)
   
   return(grouped_gains_degs)
   
@@ -531,15 +506,15 @@ sum_data_stack <- function(current_data_dir, file_pattern, time_steps){
                                   pattern = file_pattern, all.files = FALSE,
                                   include.dirs = FALSE, no.. = FALSE)
   for (yr in seq(time_steps)){
-    site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
+    site_features = readRDS(paste0(current_data_dir, current_filenames[yr]))
     if (yr == 1){
-        data_stack = rep(list(matrix(0, nrow = time_steps, ncol = 1)), length(site_feature_layers))
+      data_stack = rep(list(matrix(0, nrow = time_steps, ncol = 1)), length(site_features))
     }
-
-    site_feature_layers = lapply(seq_along(site_feature_layers), function(i) sum(site_feature_layers[[i]]))
-    data_stack <- lapply(seq_along(site_feature_layers), function(i) stack_yr(data_stack[[i]], site_feature_layers[[i]], yr))
+    
+    site_features = lapply(seq_along(site_features), function(i) sum(unlist(site_features[[i]])))
+    data_stack <- lapply(seq_along(site_features), function(i) stack_yr(data_stack[[i]], site_features[[i]], yr))
   }
-
+  
   return(data_stack)
 }
 
@@ -549,128 +524,49 @@ stack_yr <- function(current_site, current_val, yr){
 }
 
 
-form_old_data_stack <- function(current_data_dir, file_pattern, projection_yrs, land_parcels, time_steps){
-  
-  current_filenames <- list.files(path = current_data_dir,
-                                  pattern = file_pattern, all.files = FALSE,
-                                  include.dirs = FALSE, no.. = FALSE)
-  
-  data_stack = lapply(seq_along(land_parcels), function(i) array(0, c(time_steps, length(land_parcels[[i]]))))
-  
-  for (yr in seq(time_steps)){
-    site_feature_layers = readRDS(paste0(current_data_dir, current_filenames[yr]))
-    data_stack <- lapply(seq_along(data_stack), function(i) stack_current_yr(data_stack[[i]], site_feature_layers[[i]], yr))
-  }
-  
-  return(data_stack)
-  
-}
-
-
-stack_current_yr <- function(current_site, current_vals, yr){
-  current_site[yr, ] = current_vals
-  return(current_site)
-}
-
-
-
-
-
 
 merge_vectors <- function(vec_a, vec_b, start_ind){
-
-#   if (length(vec_a) == 0){
-#     browser()
-#   }
-#   
-#   if (length(vec_b) == 0){
-#     browser()
-#   }
-#   
-#   if (length(start_ind) == 0){
-#     browser()
-#   }
-#   if (any(is.na(vec_b))){
-#     browser()
-#   }
-#   
-#   if (any(is.na(vec_a))){
-#     browser()
-#   }
-#   
-#   if (length(vec_a) < (start_ind + length(vec_b) - 1)){
-#     browser()
-#   }
-
-  
-  
   vec_a[start_ind:(start_ind + length(vec_b) - 1)] = vec_b
   return(vec_a)
 }
 
 
 assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_site_features_at_intervention, 
-                              current_offset_yrs, collate_type, current_simulation_params, feature_params, time_steps, use_offset_metric){
-  collate_object = list()
+                              current_offset_yrs, collate_type, simulation_params, feature_params, time_steps, use_offset_metric){
+  collated_object = list()
   
-  parcel_num = length(site_scale_outcomes_to_use)
-  impact_trajectories = lapply(seq(parcel_num), function(i) site_scale_outcomes_to_use[[i]][current_offset_yrs[i]:time_steps])
-  
-  avoided_loss = lapply(seq(parcel_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
-  rest_gains = lapply(seq(parcel_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
+  site_num = length(site_scale_outcomes_to_use)
+  impact_trajectories = lapply(seq(site_num), function(i) site_scale_outcomes_to_use[[i]][current_offset_yrs[i]:time_steps])
+  avoided_loss = lapply(seq(site_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
+  rest_gains = lapply(seq(site_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
   net_gains = mapply('-', impact_trajectories, cfacs_to_use, SIMPLIFY = FALSE)
   
-  collate_object = list(net_gains, avoided_loss, rest_gains)
-
-#   if (any(is.na(unlist(collate_object)))){
-#     browser()
-#   }
+  collated_object = list(net_gains, avoided_loss, rest_gains)
+  collated_object <- lapply(seq_along(collated_object),
+                            function(i) lapply(seq_along(collated_object[[i]]), 
+                                               function(j) merge_vectors(array(0, time_steps), collated_object[[i]][[j]], current_offset_yrs[j])))
   
-  collate_object <- lapply(seq_along(collate_object),
-                            function(i) lapply(seq_along(collate_object[[i]]), 
-                                               function(j) merge_vectors(array(0, time_steps), collate_object[[i]][[j]], current_offset_yrs[j])))
-  
-  names(collate_object) = c('nets', 'avoided_loss', 'rest_gains')
+  names(collated_object) = c('nets', 'avoided_loss', 'rest_gains')
   
   if ((collate_type == 'offsets_object') | (collate_type == 'offset_bank_object')){
-    if (current_simulation_params$offset_calc_type == 'restoration_gains'){
-      collate_object$nets = collate_object$rest_gains
-    } else if (current_simulation_params$offset_calc_type == 'avoided_loss'){
-      collate_object$nets = collate_object$avoided_loss
-    } else if (current_simulation_params$offset_calc_type == 'net_gains'){
-      collate_object$nets = collate_object$nets
+    if (simulation_params$offset_calc_type == 'restoration_gains'){
+      collated_object$nets = collated_object$rest_gains
+    } else if (simulation_params$offset_calc_type == 'avoided_loss'){
+      collated_object$nets = collated_object$avoided_loss
+    } else if (simulation_params$offset_calc_type == 'net_gains'){
+      collated_object$nets = collated_object$nets
     }
   } else {
-    if (current_simulation_params$dev_calc_type == 'future_condition'){
-      collate_object$nets = collate_object$nets
-    } else if (current_simulation_params$dev_calc_type == 'current_condition'){
-      collate_object$nets = collate_object$rest_gains
+    if (simulation_params$dev_calc_type == 'future_condition'){
+      collated_object$nets = collated_object$nets
+    } else if (simulation_params$dev_calc_type == 'current_condition'){
+      collated_object$nets = collated_object$rest_gains
     }
     
   }
   
-  return(collate_object)
+  return(collated_object)
 }
-
-
-
-select_nested_subset <- function(nested_object, nested_ind, output_type){
-  
-  if (output_type == 'nested'){
-    nested_subset_object <- lapply(seq_along(nested_object), function(i) nested_object[[i]][nested_ind])
-  } else {
-    nested_subset_object <- lapply(seq_along(nested_object), function(i) nested_object[[i]][[nested_ind]])
-  }
-  return(nested_subset_object)
-}
-
-
-
-# offset_yrs = collated_realisations$collated_offsets$offset_yrs
-# offset_sites_used = lapply(seq_along(offset_yrs), function(i) length(offset_yrs[[i]]))
-# dev_sites_used = lapply(seq_along(dev_yrs), function(i) length(dev_yrs[[i]]))
-# net_sites_used = sum_lists(offset_sites_used, dev_sites_used)
-# lapply(seq_along(net_sites_used), function(i) net_sites_used[[i]] > length(parcels$land_parcels))
 
 
 find_sites_used <- function(simulation_outputs){
@@ -701,55 +597,12 @@ collate_site_scale_net_impacts <- function(collated_site_scale_offsets, collated
   return(site_scale_impacts)
 }
 
-get_current_sim_characteristics <- function(current_current_simulation_params, feature_params, realisation_num){
-  
-  sim_characteristics = vector()
-  sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$offset_calc_type, '_')
-  sim_characteristics = paste0(sim_characteristics, 'offset_bank_', current_current_simulation_params$use_offset_bank, '_')
-  if ((current_current_simulation_params$use_offset_time_horizon == TRUE) & (current_current_simulation_params$use_offset_bank == FALSE)){                                   
-    sim_characteristics = paste0(sim_characteristics, 'time_horizon_', current_current_simulation_params$offset_time_horizon)
-  }
-  sim_characteristics = paste0(sim_characteristics, '_include_unregulated_loss_', current_current_simulation_params$include_unregulated_loss_in_offset_calc)
-  
-  sim_characteristics = paste0(sim_characteristics, '_reals_', realisation_num, '_')
-  #   sim_characteristics = paste0(current_current_simulation_params$offset_calc_type, '_', current_current_simulation_params$dev_calc_type, '_', current_current_simulation_params$cfac_type_in_offset_calc,  '_cfac_offset_bank_', 
-  #                                current_current_simulation_params$use_offset_bank, '_')
-  #   
-  #   if (current_current_simulation_params$use_offset_bank == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$offset_bank_start, '_', current_current_simulation_params$offset_bank_end, '_', 
-  #                                  current_current_simulation_params$offset_bank_num, '_', current_current_simulation_params$match_type)
-  #   }
-  #   
-  #   sim_characteristics = paste0(sim_characteristics, '_', current_current_simulation_params$offset_action_type, '_')
-  #   if (current_current_simulation_params$offset_action_type == 'restore'){
-  #     sim_characteristics = paste0(sim_characteristics, current_current_simulation_params$restoration_rate, '_')
-  #   }
-  #   
-  #   if (current_current_simulation_params$use_offset_time_horizon == TRUE){                                   
-  #     sim_characteristics = paste0(sim_characteristics, '_time_horizon_', current_current_simulation_params$offset_time_horizon)
-  #   }
-  
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_developments_', current_current_simulation_params$include_potential_developments_in_offset_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_offsets_potential_offsets_', current_current_simulation_params$include_potential_offsets_in_offset_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_unregulated_loss_', current_current_simulation_params$include_unregulated_loss_in_dev_calc)
-  
-  # sim_characteristics = paste0(sim_characteristics, '_devs_potential_developments_', current_current_simulation_params$include_potential_developments_in_dev_calc)
-  
-  #  sim_characteristics = paste0(sim_characteristics, '_devs_potential_offsets_', current_current_simulation_params$include_potential_offsets_in_dev_calc)
-  
-  
-  return(sim_characteristics)
-}
 
 sum_list <- function(list_to_sum){
   if (length(list_to_sum) == 0){
     summed_list = list()
   } else {
-    empties = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) == 0)))
-    sets_to_use = setdiff(seq_along(list_to_sum), empties)
+    sets_to_use = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) > 0)))
     if (length(sets_to_use) == 0){
       summed_list = list()
     } else {
@@ -760,28 +613,20 @@ sum_list <- function(list_to_sum){
 }
 
 
-find_list_mean <- function(list_to_sum){
-  empties = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) == 0)))
-  sets_to_use = setdiff(seq_along(list_to_sum), empties)
-  if (length(sets_to_use) == 0){
-    list_mean = list()
-  } else {
-    list_mean <-  list(Reduce('+', list_to_sum[sets_to_use])/length(sets_to_use))
-  }
-  return(list_mean)
-}
-
-prepare_realisations <- function(realisations){   #remove unsuccessful offset programs
-  offset_success_flag = unlist(lapply(seq_along(realisations), function(i) realisations[[i]]$offset_success_flag))
-  success_inds = which(offset_success_flag == TRUE)
-  realisations <- lapply(success_inds, function(i) realisations[[i]])
-  return(realisations)
-}
-
+# find_list_mean <- function(list_to_sum){
+# 
+#   sets_to_use = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) > 0)))
+#   if (length(sets_to_use) == 0){
+#     list_mean = list()
+#   } else {
+#     list_mean <-  list(Reduce('+', list_to_sum[sets_to_use])/length(sets_to_use))
+#   }
+#   return(list_mean)
+# }
 
 
 assess_NNL <- function(current_impacts){
-
+  
   NNL_flag = FALSE
   
   for (NNL_yr in seq_along(current_impacts)){
@@ -806,18 +651,18 @@ assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_in
     return(NNL_object)
   }
   
-
+  
   if (assess_type == 'site_scale'){
-
+    
     site_indexes_to_use = match(unlist(lapply(seq_along(site_indexes), function(i) site_indexes[[i]][[1]])), unlist(site_indexes))
     offset_yrs_to_use = offset_yrs_to_use[site_indexes_to_use]
   } 
   
-
+  
   NNL_absolute = lapply(seq_along(impacts), function(i) assess_NNL(impacts[[i]]) )
   
   NNL_object$NNL = lapply(seq_along(NNL_absolute), function(i) (NNL_absolute[[i]] - offset_yrs_to_use[[i]]))
-
+  
   if (length(unlist(NNL_object$NNL)) >0){
     NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
     NNL_object$NNL_mean = mean(unlist(NNL_object$NNL))
@@ -831,7 +676,7 @@ assess_collated_NNL <- function(assess_type, impacts, offset_yrs_to_use, site_in
 
 assess_fractional_loss <- function(net_vals, NNL_yr){
   fractional_loss = list()
-
+  
   net_vals = unlist(net_vals)
   NNL_yr = unlist(NNL_yr)
   
@@ -854,29 +699,21 @@ assess_fractional_loss <- function(net_vals, NNL_yr){
 }
 
 
-select_cfac_type <- function(object_type, use_cfac_type_in_sim, current_simulation_params, feature_params){
-  cfac_params = list()
+select_cfac_params <- function(object_type, simulation_params){
   
-  if (use_cfac_type_in_sim == FALSE){
-    cfac_params$include_unregulated_loss = FALSE
-    cfac_params$include_potential_developments = FALSE
-    cfac_params$include_potential_offsets = FALSE
-    cfac_params$adjust_cfacs_flag = FALSE
+  if ((object_type == "dev_object") | (object_type == "credit_object") | (object_type == "unregulated_loss_object")){
+    cfac_params = list(simulation_params$include_potential_developments_in_dev_calc,
+                       simulation_params$include_potential_offsets_in_dev_calc,
+                       simulation_params$include_unregulated_loss_in_dev_calc,
+                       simulation_params$adjust_dev_cfacs_flag)
   } else {
-
-    if ((object_type == "dev_object") | (object_type == "credit_object") | (object_type == "unregulated_loss_object")){
-      cfac_params$include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_dev_calc
-      cfac_params$include_potential_developments = current_simulation_params$include_potential_developments_in_dev_calc
-      cfac_params$include_potential_offsets = current_simulation_params$include_potential_offsets_in_dev_calc
-      cfac_params$adjust_cfacs_flag = current_simulation_params$adjust_dev_cfacs_flag
-    } else {
-      cfac_params$include_unregulated_loss = current_simulation_params$include_unregulated_loss_in_offset_calc
-      cfac_params$include_potential_developments = current_simulation_params$include_potential_developments_in_offset_calc
-      cfac_params$include_potential_offsets = current_simulation_params$include_potential_offsets_in_offset_calc
-      cfac_params$adjust_cfacs_flag = current_simulation_params$adjust_offset_cfacs_flag
-    }
+    cfac_params = list(simulation_params$include_potential_developments_in_offset_calc,
+                       simulation_params$include_potential_offsets_in_offset_calc,
+                       simulation_params$include_unregulated_loss_in_offset_calc,
+                       simulation_params$adjust_offset_cfacs_flag)
   }
-
+  names(cfac_params) = c('include_potential_developments', 'include_potential_offsets', 'include_unregulated_loss', 'adjust_cfacs_flag')
+  
   return(cfac_params)
 }
 
@@ -884,15 +721,18 @@ select_cfac_type <- function(object_type, use_cfac_type_in_sim, current_simulati
 
 
 sum_cols <- function(array_to_sum){
-  
-  if (length(dim(array_to_sum)) <= 1){
-    summed_array = sum(array_to_sum)
-  } else if (length(dim(array_to_sum)) == 2){
-    summed_array = apply(array_to_sum, MARGIN = 1, sum)
-  } else if (length(dim(array_to_sum)) == 3){
-    summed_array = apply(array_to_sum, MARGIN = c(1, 3), sum)
-    dim(summed_array) = c(dim(summed_array), 1)
-    summed_array = aperm(summed_array, c(1, 3, 2))
+  if (is.null(array_to_sum)){
+    return(NULL)
+  } else {
+    if (length(dim(array_to_sum)) <= 1){
+      summed_array = sum(array_to_sum)
+    } else if (length(dim(array_to_sum)) == 2){
+      summed_array = apply(array_to_sum, MARGIN = 1, sum)
+    } else if (length(dim(array_to_sum)) == 3){
+      summed_array = apply(array_to_sum, MARGIN = c(1, 3), sum)
+      dim(summed_array) = c(dim(summed_array), 1)
+      summed_array = aperm(summed_array, c(1, 3, 2))
+    }
   }
   return(summed_array)
 }
