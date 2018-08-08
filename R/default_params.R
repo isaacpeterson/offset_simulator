@@ -7,6 +7,7 @@ initialise_default_global_params <- function(){
   
   default_global_params$save_output_raster = FALSE
   default_global_params$feature_raster_files = '/simulation_inputs/feature_1.tif'
+  default_global_params$condition_class_raster_files = vector()
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
@@ -31,7 +32,7 @@ initialise_default_global_params <- function(){
   # FALSE then the it will look in the
   # default_global_params$unique_simulation_folder to get the required
   # infromation
-  default_global_params$use_simulated_data = TRUE
+  default_global_params$build_simulated_data = TRUE
   
   # Fix the output directory (will overwrite existing files) instead of creating unique 
   default_global_params$unique_simulation_folder = TRUE
@@ -58,6 +59,19 @@ initialise_default_global_params <- function(){
 
   # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
   default_global_params$write_offset_layer = FALSE
+  
+  default_global_params$overwrite_site_characteristics = FALSE
+  
+  default_global_params$overwrite_site_features = FALSE
+  default_global_params$overwrite_condition_class_layers = FALSE
+  
+  default_global_params$save_feature_dynamics = FALSE
+  default_global_params$save_management_dynamics = FALSE
+  default_global_params$overwrite_dev_probability_list = FALSE
+  default_global_params$overwrite_offset_probability_list = FALSE
+  default_global_params$overwrite_management_dynamics = FALSE
+  default_global_params$overwrite_feature_dynamics = FALSE
+  default_global_params$overwrite_feature_dynamics_modes = FALSE
   
   return(default_global_params)
 }
@@ -239,7 +253,7 @@ initialise_default_simulation_params <- function(){
   # multiplied development impact
   
   default_simulation_params$offset_multiplier = 1
-
+  default_simulation_params$project_by_group = FALSE
   return(default_simulation_params)
 }
 
@@ -319,7 +333,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$project_by_mean = FALSE
   default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   default_feature_params$initial_site_mean_sd = 1
-  default_feature_params$mode_classification = 'same'
+  default_feature_params$management_condition_class = 'background'
   return(default_feature_params)
 }
 
