@@ -1892,7 +1892,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
     if (cfacs_flag == TRUE){
 
       if (adjust_cfacs_flag == FALSE){
-        cfac_weights = lapply(seq_along(site_features), function(i) array(1, time_horizons[[i]]))
+        cfac_weights = lapply(seq_along(site_features), function(i) lapply(seq_along(site_features[[i]]), function(j) array(1, time_horizons[[i]])))
       } else {
         cfac_weights = calc_cfac_weights(site_num = length(site_features), include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                          dev_probability_list, offset_probability_list, simulation_params, feature_params, pool_object$parcel_num_remaining, time_horizons, unlist(pool_object$offset_yrs))
@@ -2221,7 +2221,7 @@ adjust_cfacs <- function(current_cfac, current_cfac_weights, current_mode, time_
     
   } else {
   
-    if (length(current_cfac) > 0){
+    if (length(current_cfac_weights) > 0){
       
       if (time_fill == TRUE){
         current_cfac = current_cfac * matrix(rep(current_cfac_weights, dim(current_cfac)[2]), nrow = dim(current_cfac)[1], byrow = FALSE)
@@ -2232,7 +2232,7 @@ adjust_cfacs <- function(current_cfac, current_cfac_weights, current_mode, time_
       return(current_cfac)
       
     } else {
-      return(NULL)
+      return(current_cfac)
     }
     
   }
@@ -2247,9 +2247,9 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
   cfac_weights = lapply(seq(site_num), function(i) lapply(seq(simulation_params$feature_num), function(j) rep(1, time_horizons[[i]])))
 
   if (include_unregulated_loss == TRUE){
-    
     cfac_weights <- lapply(seq_along(cfac_weights), 
-                           function(i) lapply(seq_along(cfac_weights[[i]]), function(j) cfac_weights[[i]][[j]]*(1 - simulation_params$unregulated_loss_prob)^(seq(time_horizons[[i]]))))
+                           function(i) lapply(seq_along(cfac_weights[[i]]), 
+                                              function(j) cfac_weights[[i]][[j]]*(1 - simulation_params$unregulated_loss_prob)^(seq(time_horizons[[i]]))))
   }
   
   if (include_potential_developments == TRUE){
@@ -2264,7 +2264,8 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
                                              simulation_params$time_steps)
     
     cfac_weights <- lapply(seq_along(cfac_weights), 
-                           function(i) lapply(seq_along(cfac_weights[[i]]), function(j) cfac_weights[[i]][[j]] - cumsum(dev_probability_weights[[i]])))
+                           function(i) lapply(seq_along(cfac_weights[[i]]), 
+                                              function(j) cfac_weights[[i]][[j]] - cumsum(dev_probability_weights[[i]])))
   }
   
   if (include_potential_offsets == TRUE){
@@ -2281,12 +2282,14 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
                                                    simulation_params$time_steps)
     
     cfac_weights <- lapply(seq_along(cfac_weights), 
-                           function(i) lapply(seq_along(cfac_weights[[i]]), function(j) cfac_weights[[i]][[j]] - cumsum(unregulated_loss_weights[[i]])))
+                           function(i) lapply(seq_along(cfac_weights[[i]]), 
+                                              function(j) cfac_weights[[i]][[j]] - cumsum(unregulated_loss_weights[[i]])))
   }
   
   
   cfac_weights <- lapply(seq_along(cfac_weights), 
-                         function(i) lapply(seq_along(cfac_weights[[i]]), function(j) cfac_weights[[i]][[j]]*(cfac_weights[[i]][[j]] >= 0)))
+                         function(i) lapply(seq_along(cfac_weights[[i]]), 
+                                            function(j) cfac_weights[[i]][[j]]*(cfac_weights[[i]][[j]] >= 0)))
   
   if (include_potential_offsets == TRUE){
     flog.error('offset projections still in development')
@@ -2312,10 +2315,6 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
 
   inds = lapply(seq_along(cfac_weights), 
                 function(i) lapply(seq_along(cfac_weights[[i]]), function(j) length(cfac_weights[[i]][[j]]) == 0))
-  
-  if (any(unlist(inds))){
-    browser()
-  }
   
   return(cfac_weights)
 }
