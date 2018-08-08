@@ -50,11 +50,9 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
   }
   
   # get the names of all parameter files, separated into run scenarios
-  scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_simulation_params', all.files = FALSE,
+  scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
-  
-  
   
   if (!file.exists(output_plot_folder)){
     flog.info('creating output plot folder %s', output_plot_folder)
@@ -74,7 +72,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
   for (scenario_ind in scenario_vec){
     
     flog.info('_________________________________')
-    
+
     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
     flog.trace('reading %s', file_to_Read)
     current_simulation_params = readRDS(file_to_Read)
