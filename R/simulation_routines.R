@@ -60,13 +60,17 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
 run_simulation <- function(simulation_data_object, current_data_dir){
-  
+  flog.info('Working with %s year projected time horizon', 
+            simulation_data_object$simulation_params$offset_time_horizon)
   #run through main time loop
   for (yr in seq_len(simulation_data_object$simulation_params$time_steps)){
 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    
     flog.info('t = %s', yr) 
+    flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    
+    flog.info('Calculating potential development losses and offset gains')
+    
     
     #when running in offset banking select out current set of sites to add to bank
     
@@ -80,13 +84,14 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                                                      current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
                                                                                      yr)
     
-    # determine current set of available offset sites and calculate gains structure as detailed in current policy params
+    # determine current set of available development sites and calculate gains structure as detailed in current policy params
 
     simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                       pool_type = 'developments',
                                                                       current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
                                                                       yr)
     
+    flog.info('Matching development and Offset sites')
     for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_vec[yr])){
       
       ###### TODO REINSTATE OFFSETBANK ROUTINES ####
@@ -120,6 +125,8 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                             unique_site_modes = simulation_data_object$feature_params$unique_site_modes))
 
     # update sites in landscape (both inside and outside development/offset program)
+    flog.info('Evolving landscape')
+    
     simulation_data_object$site_features = project_features(simulation_data_object$site_features,
                                                             simulation_data_object$feature_params$background_dynamics_type,
                                                             simulation_data_object$feature_params$background_update_dynamics_by_differential, 
@@ -1220,7 +1227,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
     current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used
     
     if (sum(unlist(current_match_vals_pool))== 0){
-      browser()
+
       flog.info('all projected developments are zero - blocking all developments')
       
       match_object$offset_object = list()

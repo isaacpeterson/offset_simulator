@@ -99,7 +99,7 @@ build_input_data <- function(params_object, scenario_ind){
                                        features_to_use = simulation_data_object$simulation_params$features_to_use_in_simulation)
   
   initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
-  
+  browser()
   if (simulation_data_object$feature_params$scale_features == TRUE){
     initial_features = scale_features(initial_features)
   }
