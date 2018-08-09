@@ -75,10 +75,17 @@ run_simulation <- function(simulation_data_object, current_data_dir){
     }
     
     # determine current set of available offset sites and calculate gains structure as detailed in current policy params
-    simulation_data_object$output_data$offset_pool_object <- build_intervention_pool(simulation_data_object, 
+    simulation_data_object$offset_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                                      pool_type = 'offsets',
                                                                                      current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
                                                                                      yr)
+    
+    # determine current set of available offset sites and calculate gains structure as detailed in current policy params
+
+    simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                      pool_type = 'developments',
+                                                                      current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
+                                                                      yr)
     
     for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_vec[yr])){
       
@@ -88,6 +95,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       #           }
       
       # attempt to develop from current available credit
+      
       if (simulation_data_object$simulation_params$allow_developments_from_credit == TRUE){
         simulation_data_object <- credit_match_routine(simulation_data_object, yr)
       } 
@@ -98,9 +106,8 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       }
     }
     
-    simulation_data_object <- unregulated_loss_routine(simulation_data_object, yr)
+    simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, yr)
     
-    # update sites in landscape (both inside and outside development/offset program)
     
     projection_yrs = lapply(seq_along(simulation_data_object$site_features), 
                             function(i) find_projection_yrs(perform_dynamics_time_shift = simulation_data_object$feature_params$perform_background_dynamics_time_shift, 
@@ -113,7 +120,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                             unique_site_vals = simulation_data_object$feature_params$unique_site_vals,
                                                             unique_site_modes = simulation_data_object$feature_params$unique_site_modes))
 
-    
+    # update sites in landscape (both inside and outside development/offset program)
     simulation_data_object$site_features = project_features(simulation_data_object$site_features,
                                                             simulation_data_object$feature_params$background_dynamics_type,
                                                             simulation_data_object$feature_params$background_update_dynamics_by_differential, 
@@ -214,31 +221,40 @@ match_sites_routine <- function(simulation_data_object, yr){
 
 credit_match_routine <- function(simulation_data_object, yr){
   
-  if (any(simulation_data_object$output_data$current_credit > 0) & (length(simulation_data_object$output_data$index_object$available_indexes$devs)>0)){
-    credit_match_object = develop_from_credit(simulation_data_object, 
-                                              intervention_vec = simulation_data_object$simulation_params$intervention_vec,
-                                              dev_indexes_to_use = simulation_data_object$output_data$index_object$available_indexes$devs,
-                                              yr,
-                                              simulation_data_object$simulation_params$offset_time_horizon)
-  } else{
-    simulation_data_object$output_data$credit_match_flag = FALSE
-    return(simulation_data_object)
-  }
+  if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$site_indexes) == 0)){
+    match_object = setNames(list(FALSE), 'match_flag')
+
+  } else {
+      pool_vals_to_use = simulation_data_object$dev_pool_object$parcel_vals_used
+      match_object <- match_from_pool(match_type = 'development', 
+                                      current_pool = simulation_data_object$dev_pool_object$site_indexes, 
+                                      pool_vals_to_use, 
+                                      simulation_data_object$output_data$current_credit,
+                                      simulation_data_object$dev_probability_list,
+                                      vals_to_match_initial = simulation_data_object$output_data$current_credit,
+                                      simulation_data_object$simulation_params,
+                                      yr)
+      if (match_object$match_flag == TRUE){
+
+        simulation_data_object$output_data$current_credit = match_object$current_credit
+        
+        subset_pool = list_intersect(simulation_data_object$dev_pool_object$site_indexes, match_object$match_indexes)
+        development_object = find_pool_characteristics(simulation_data_object$dev_pool_object, subset_pool = subset_pool$match_ind)
+        simulation_data_object <- run_clearing_routines(simulation_data_object,
+                                                        development_object,
+                                                        clearing_type = 'develop_from_credit',
+                                                        yr)
+        
+        flog.info(cat('developed site with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
+                      'from credit, remaining = ', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+        
+      }
+  } 
   
-  simulation_data_object$output_data$credit_match_flag = credit_match_object$match_flag
-  # if development was permitted add current site to current group of developments, set all feature_layers of development site to zero
-  if (credit_match_object$match_flag == TRUE){
-    
-    simulation_data_object$output_data$current_credit = credit_match_object$current_credit
-    
-    flog.info(cat('developed site with value', paste(lapply(credit_match_object$development_object$parcel_vals_used, round, 2)), 
-                  'from credit, remaining =', paste(lapply(credit_match_object$current_credit, round, 2)), '\n'))
-    
-    simulation_data_object <- run_clearing_routines(simulation_data_object,
-                                                    current_dev_object = credit_match_object$development_object,
-                                                    clearing_type = 'develop_from_credit',
-                                                    yr)
-  }
+  
+  
+  simulation_data_object$output_data$credit_match_flag = match_object$match_flag
+  
   return(simulation_data_object)
 }
 
@@ -272,7 +288,7 @@ select_sites_to_clear <- function(available_site_indexes, simulation_params){
 
 
 
-unregulated_loss_routine <- function(simulation_data_object, yr){
+run_unregulated_loss_routine <- function(simulation_data_object, yr){
   
   if (simulation_data_object$simulation_params$unregulated_loss_prob == 0){
     # return null object when clearing is inactive
@@ -280,13 +296,12 @@ unregulated_loss_routine <- function(simulation_data_object, yr){
   }
   
   available_site_indexes = setdiff(simulation_data_object$site_characteristics$site_indexes, unlist(simulation_data_object$output_data$index_object$site_indexes_used))
-  
   inds_to_clear <- select_sites_to_clear(available_site_indexes, simulation_data_object$simulation_params)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return(simulation_data_object)
   } else {
-    flog.info('unregulated losses %s' , as.vector(inds_to_clear))
+    flog.info(cat('unregulated losses ' , paste(inds_to_clear)))
   }
   
   # store group of site characteristics in site characteristics object
@@ -659,9 +674,10 @@ run_offset_routines <- function(simulation_data_object, current_offset_object, y
   simulation_data_object$output_data$interventions$offsets_object <- append_current_group(simulation_data_object$output_data$interventions$offsets_object, current_offset_object, append_routine = 'standard')
   
   #remove offset sites from available pool
-  simulation_data_object$output_data$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$output_data$offset_pool_object,
-                                                                                         current_site_indexes = current_offset_object$site_indexes)
-  
+  if (length(current_offset_object$site_indexes) > 0){
+    simulation_data_object$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$offset_pool_object, current_site_indexes = current_offset_object$site_indexes)
+    simulation_data_object$dev_pool_object <- remove_site_from_current_pool(simulation_data_object$dev_pool_object, current_site_indexes = current_offset_object$site_indexes)
+  }
   current_pool = unlist(current_offset_object$site_indexes)
   
   simulation_data_object$feature_dynamics[current_pool] = update_feature_dynamics(simulation_data_object$site_features[current_pool], 
@@ -720,8 +736,8 @@ run_clearing_routines <- function(simulation_data_object, current_dev_object, cl
   }
   
   if (length(current_dev_object$site_indexes) > 0){
-    # if any development was allowed remove developed site from available offset pool
-    simulation_data_object$output_data$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$output_data$offset_pool_object, current_site_indexes = current_dev_object$site_indexes)
+    simulation_data_object$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$offset_pool_object, current_site_indexes = current_dev_object$site_indexes)
+    simulation_data_object$dev_pool_object <- remove_site_from_current_pool(simulation_data_object$dev_pool_object, current_site_indexes = current_dev_object$site_indexes)
   }
   
   current_pool = unlist(current_dev_object$site_indexes)
@@ -756,7 +772,7 @@ assess_banking_credit <- function(output_data, simulation_params){
   features_to_use_in_offset_calc = simulation_params$features_to_use_in_offset_calc
   # determine total offset gains
   
-  offset_credit = nested_list_sum(output_data$offset_pool_object$parcel_vals_used)
+  offset_credit = nested_list_sum(offset_pool_object$parcel_vals_used)
   
   dev_list = append(output_data$interventions$credit_object$parcel_vals_used, output_data$interventions$dev_object$parcel_vals_used)
   
@@ -784,7 +800,7 @@ build_intervention_pool <- function(simulation_data_object, pool_type, current_p
   # if pool is empty return null object and print error
   
   if (length(current_pool) == 0){
-    flog.error('empty offset pool flag')
+    flog.error(paste0('empty ', pool_type, ' pool flag'))
     pool_object = list()
     return(pool_object)
   }
@@ -1197,12 +1213,12 @@ recalculate_probabilities <- function(current_probability_list){
 match_sites <- function(simulation_data_object, match_type, yr){
   ###### TODO check zero development routines the code below may not be the most efficient method for this ###
   
-  match_object = false_match()
+  match_object = setNames(list(FALSE), 'match_flag')
   
   if (match_type == 'develop_using_offset_pool'){
     current_match_pool = simulation_data_object$output_data$index_object$available_indexes$devs
-    group_pool_vals = simulation_data_object$output_data$offset_pool_object$parcel_vals_used
-    group_pool_indexes = simulation_data_object$output_data$offset_pool_object$site_indexes
+    group_pool_vals = simulation_data_object$offset_pool_object$parcel_vals_used
+    group_pool_indexes = simulation_data_object$offset_pool_object$site_indexes
     parcel_num_remaining = length(current_match_pool)
     
   }
@@ -1250,7 +1266,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
   
   if (sum(unlist(current_match_vals_pool))== 0){
     flog.info('all projected developments are zero - blocking all developments')
-    match_object = false_match()
+    match_object = setNames(list(FALSE), 'match_flag')
     match_object$offset_object = list()
     match_object$current_credit = simulation_data_object$output_data$current_credit
     return(match_object)
@@ -1302,8 +1318,8 @@ match_sites <- function(simulation_data_object, match_type, yr){
   if (match_object$match_flag == TRUE){
     dev_match_index = which(unlist(dev_pool_object$site_indexes) == current_test_index)
     match_object$development_object = find_pool_characteristics(dev_pool_object, unlist(dev_match_index))
-    subset_pool =  list_intersect(simulation_data_object$output_data$offset_pool_object$site_indexes, match_object$match_indexes)
-    offset_object <- find_pool_characteristics(pool_object = simulation_data_object$output_data$offset_pool_object, subset_pool = subset_pool$match_ind)
+    subset_pool =  list_intersect(simulation_data_object$offset_pool_object$site_indexes, match_object$match_indexes)
+    offset_object <- find_pool_characteristics(pool_object = simulation_data_object$offset_pool_object, subset_pool = subset_pool$match_ind)
     match_object$offset_object = offset_object
   } else if (match_object$match_flag == FALSE){
     match_object$offset_object = list()
@@ -1368,7 +1384,7 @@ develop_from_credit <- function(simulation_data_object, intervention_vec, dev_in
                                     yr)
     
   } else{
-    match_object = false_match()
+    match_object = setNames(list(FALSE), 'match_flag')
   }
   
   if (match_object$match_flag == TRUE){
@@ -1547,14 +1563,6 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
 }
 
 
-#return false match object
-false_match <- function(){
-  match_object = list()
-  match_object$match_flag = FALSE
-  return(match_object)
-}
-
-
 select_cols <- function(arr_to_use, col_inds){
   arr_to_use <- arr_to_use[, col_inds]
   arr_to_use <- t(t(arr_to_use))
@@ -1631,7 +1639,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
                             vals_to_match_initial, simulation_params, yr){
   
   if (length(unlist(current_pool)) == 0){
-    match_object = false_match()
+    match_object = setNames(list(FALSE), 'match_flag')
     return(match_object)
   } 
   
@@ -1670,7 +1678,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   
   
   if (pool_object$break_flag == TRUE){
-    match_object = false_match()
+    match_object = setNames(list(FALSE), 'match_flag')
     return(match_object)
   }
   
