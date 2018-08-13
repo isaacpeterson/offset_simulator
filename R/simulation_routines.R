@@ -89,7 +89,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                                       yr)
     
     if (simulation_data_object$simulation_params$intervention_vec[yr] > 0){
-      flog.info('Matching projected losses and gains')
+      flog.info('Matching projected losses and gains...')
     }
     
     for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_vec[yr])){
@@ -959,7 +959,7 @@ assess_parcel_sets <- function(simulation_data_object, offsets_object, offset_pa
 #     
 #     if (simulation_data_object$simulation_params$use_offset_metric == FALSE){
 #       cfacs = unlist(lapply(seq_along(site_features_to_use), 
-#                             function(i) sum_sites(calc_cfacs(site_features_to_use[i],
+#                             function(i) sum_site_features(calc_cfacs(site_features_to_use[i],
 #                                                              parcel_num_remaining = pool_object$parcel_num_remaining[i],
 #                                                              simulation_data_object$simulation_params,
 #                                                              feature_params,
@@ -1436,7 +1436,7 @@ record_site_characteristics <- function(site_features, current_pool, parcel_num_
 
   parcel_set_object = list()
   parcel_set_object$intervention_yrs = rep(list(yr), length(current_pool))
-  parcel_set_object$parcel_sums_at_offset = lapply(seq_along(site_features), function(i) abind(sum_sites(site_features[[i]])))
+  parcel_set_object$parcel_sums_at_offset = lapply(seq_along(site_features), function(i) abind(sum_site_features(site_features[[i]])))
   parcel_set_object$site_indexes = as.list(current_pool)
   parcel_set_object$parcel_num_remaining = rep(list(parcel_num_remaining), length(current_pool))
   
@@ -1721,28 +1721,10 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
 
 
 
-# determine cumulative value of all sites within parcel feature_layers for multiple features
-sum_site_features <- function(site_features, use_offset_metric, transform_params){
-  browser()
-  summed_site_features = lapply(seq_along(site_features), 
-                                function(i) lapply(seq_along(site_features[[i]]), 
-                                                   function(j) abind(site_features[[i]][[j]])))
-  
-  if (use_offset_metric == FALSE){
-    summed_site_features = lapply(seq_along(summed_site_features), 
-                                  function(i) lapply(seq_along(summed_site_features[[i]]), 
-                                                     function(j) sum(summed_site_features[[i]][[j]])))
-  } else {
-    summed_site_features = lapply(seq_along(summed_site_features), 
-                                  function(i) sum_cols(user_transform_function(summed_site_features[[i]], transform_params)))
-  }
-  
-  return(summed_site_features)
-  
-}
 
 
-sum_sites <- function(site_features){
+
+sum_site_features <- function(site_features){
   parcel_sums = lapply(seq_along(site_features), function(i) apply(abind(site_features[[i]]), 1, 'sum'))
   return(parcel_sums)
 }
@@ -1864,7 +1846,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       
       if (simulation_params$use_offset_metric == FALSE){
         cfac_vals = lapply(seq_along(site_features), 
-                           function(i) matrix(abind(sum_sites(calc_cfacs(site_features[[i]],
+                           function(i) matrix(abind(sum_site_features(calc_cfacs(site_features[[i]],
                                                                          projection_yrs[[i]],
                                                                          cfac_weights[[i]],
                                                                          simulation_params,
@@ -1962,7 +1944,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
         projected_vals = lapply(seq_along(projected_feature_layers), function(i) sum(user_transform_function(projected_feature_layers[[i]], simulation_params$transform_params)))
         
       } else {
-        projected_vals = lapply(seq_along(projected_feature_layers), function(i) matrix(abind(sum_sites(projected_feature_layers[[i]])), nrow = 1))
+        projected_vals = lapply(seq_along(projected_feature_layers), function(i) matrix(abind(sum_site_features(projected_feature_layers[[i]])), nrow = 1))
       }
       
     } else if (pool_type == 'developments') {
