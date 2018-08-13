@@ -25,7 +25,11 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
   
   site_scale_cfacs = vector('list', length(initial_feature_layer))
   
-  flog.info('building counterfactuals over time series (this may take a while)')
+  if (use_offset_metric == FALSE){
+    flog.info('building counterfactuals over all features over time series (this may take a while)')
+  } else {
+    flog.info('building user metric counterfactuals over time series (this may take a while)')
+  }
   site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
                                                       simulation_params, 
                                                       feature_params,
@@ -587,9 +591,7 @@ sum_sites <- function(site_features, use_offset_metric, transform_params){
   
   summed_site_features = vector('list', length(site_features))
   if (use_offset_metric == TRUE){
-    
-    summed_site_features[sets_to_use] <- lapply(sets_to_use, 
-                                                   function(i) lapply(seq_along(site_features[[i]]), function(j) abind(site_features[[i]][[j]])))
+    site_features[sets_to_use] <- lapply(sets_to_use,  function(i) lapply(seq_along(site_features[[i]]), function(j) abind(site_features[[i]][[j]])))
     
     summed_site_features[sets_to_use] = lapply(sets_to_use, function(i) sum(user_transform_function(site_features[[i]], transform_params)))
     

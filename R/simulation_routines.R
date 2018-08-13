@@ -60,7 +60,7 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
 run_simulation <- function(simulation_data_object, current_data_dir){
-  flog.info('Working with %s year projected time horizon', 
+  flog.info('Projecting sites with a %s year time horizon', 
             simulation_data_object$simulation_params$offset_time_horizon)
   #run through main time loop
   for (yr in seq_len(simulation_data_object$simulation_params$time_steps)){
