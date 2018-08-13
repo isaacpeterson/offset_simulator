@@ -79,11 +79,11 @@ build_input_data <- function(params_object, scenario_ind){
   
   
   # generate simulated feature
-  if (simulation_data_object$global_params$build_simulated_data == TRUE) {
+  if (simulation_data_object$global_params$run_from_simulated_data == TRUE) {
     current_filenames <- list.files(path = simulation_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
-    if ( (length(current_filenames) == 0) | (simulation_data_object$global_params$run_from_saved_simulated_data == FALSE)){
+    if ((simulation_data_object$global_params$build_simulated_data == TRUE) | (length(current_filenames) == 0)){
       construct_simulated_data(simulation_data_object$feature_params, 
                                simulation_data_object$global_params$simulation_inputs_folder, 
                                simulation_data_object$global_params$simulation_params_folder, 
@@ -99,7 +99,7 @@ build_input_data <- function(params_object, scenario_ind){
                                        features_to_use = simulation_data_object$simulation_params$features_to_use_in_simulation)
   
   initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
-  browser()
+
   if (simulation_data_object$feature_params$scale_features == TRUE){
     initial_features = scale_features(initial_features)
   }
@@ -128,8 +128,8 @@ build_input_data <- function(params_object, scenario_ind){
   }
   
   if (!file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
-    | (simulation_data_object$global_params$overwrite_feature_dynamics_modes == TRUE)){
-    background_condition_class_layers = build_feature_mode_layers_routine(initial_features, 
+    | (simulation_data_object$global_params$overwrite_condition_classes == TRUE)){
+    background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                           simulation_data_object$global_params, 
                                                                           simulation_data_object$feature_params, 
                                                                           simulation_data_object$simulation_params)
@@ -146,7 +146,7 @@ build_input_data <- function(params_object, scenario_ind){
       | (simulation_data_object$global_params$overwrite_site_features == TRUE)){
     
     if (!exists('background_condition_class_layers')){
-      background_condition_class_layers = build_feature_mode_layers_routine(initial_features, 
+      background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                             simulation_data_object$global_params, 
                                                                             simulation_data_object$feature_params, 
                                                                             simulation_data_object$simulation_params)
@@ -194,7 +194,7 @@ build_input_data <- function(params_object, scenario_ind){
                                                               simulation_data_object$feature_params$dynamics_sample_type,
                                                               simulation_data_object$feature_params$background_dynamics_bounds, 
                                                               simulation_data_object$feature_dynamics_modes)
-    
+
     if (any(is.na(unlist(simulation_data_object$feature_dynamics)))){
       flog.error('poorly defined feature_dynamics')
       stop()
@@ -252,35 +252,31 @@ build_input_data <- function(params_object, scenario_ind){
 
 
   
-build_feature_mode_layers_routine <- function(initial_features, global_params, feature_params, simulation_params){
+build_condition_class_layers <- function(initial_features, global_params, feature_params, simulation_params){
   
-  if ( (length(global_params$condition_class_raster_files) > 0) ){
-    
-    if (!all(file.exists(global_params$condition_class_raster_files))){
-      flog.error('condition class rasters do not exist')
-      stop() 
-    } else {
-      background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
+ if (all(file.exists(global_params$condition_class_raster_files)) & length(global_params$condition_class_raster_files) == simulation_params$feature_num){
+      
+    background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
                                                         features_to_use = simulation_params$features_to_use_in_simulation)
-      background_condition_class_layers = lapply(seq(dim(background_condition_class_layers)[3]), function(i) raster_to_array(subset(background_condition_class_layers, i)))
-    }
-    
+    background_condition_class_layers = lapply(seq(dim(background_condition_class_layers)[3]), function(i) raster_to_array(subset(background_condition_class_layers, i)))
+      
   } else {
-    flog.info('sorting condition classes ..')
+    flog.info('building condition classes ..')
     background_condition_class_layers = build_modes(features_to_use = initial_features, 
                                                     condition_class_bounds = feature_params$initial_condition_class_bounds, 
                                                     unique_site_vals = feature_params$unique_site_vals)
     
     flog.info('writing condition classes ..')
-    flog.info('writing condition class rasters')
+
     background_condition_class_rasters = lapply(seq_along(background_condition_class_layers), function(i) raster(background_condition_class_layers[[i]]))
     
     lapply(seq_along(background_condition_class_layers), function(i) writeRaster(background_condition_class_rasters[[i]], 
-                                                                                 paste0(paste0(global_params$simulation_inputs_folder, 'condition_class_raster_', 
-                                                                                               simulation_params$features_to_use_in_simulation[i], '.tif')),
+                                                                                 paste0(global_params$simulation_inputs_folder, 'condition_class_raster_', 
+                                                                                               formatC(simulation_params$features_to_use_in_simulation[i], width = 3, format = "d", flag = "0"), '.tif'),
                                                                                  overwrite = TRUE))
     
   }
+  
   return(background_condition_class_layers)
 }
 
@@ -739,7 +735,7 @@ process_current_simulation_params <- function(current_simulation_params, common_
   }
   
   if (current_simulation_params$use_offset_bank == TRUE){
-    current_simulation_params$banked_offset_vec = generate_stochastic_intervention_vec(time_steps = simulation_params$time_steps,
+    current_simulation_params$banked_offset_vec = build_stochastic_intervention(time_steps = simulation_params$time_steps,
                                                                                        current_simulation_params$offset_bank_start,
                                                                                        current_simulation_params$offset_bank_end,
                                                                                        current_simulation_params$offset_bank_num,
@@ -811,7 +807,7 @@ parcel_set_list_names <- function(){
 }
 
 #' @export
-generate_stochastic_intervention_vec <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
+build_stochastic_intervention <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
   intervention_vec = array(0, time_steps)
   intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
   return(intervention_vec)
