@@ -80,7 +80,8 @@ simulate_feature_layers <- function(feature_params, simulation_inputs_folder){
     current_feature_layer = matrix(data = 0, nrow = feature_characteristics$landscape_dims[1], ncol = feature_characteristics$landscape_dims[2])
     current_feature_layer[unlist(feature_characteristics$land_parcels)] = unlist(current_simulated_feature)
     current_feature_raster = raster(current_feature_layer)
-    current_file_name = paste0(simulation_inputs_folder, 'feature_', feature_ind, '.tif')
+    current_file_name = paste0(simulation_inputs_folder, 'feature_', 
+                               formatC(feature_ind, width = 3, format = "d", flag = "0"), '.tif')
     writeRaster(current_feature_raster, current_file_name, overwrite = TRUE)
     
   }
