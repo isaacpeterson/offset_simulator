@@ -6,8 +6,9 @@ initialise_default_global_params <- function(){
   default_global_params$set_seed = FALSE
   
   default_global_params$save_output_raster = FALSE
-  default_global_params$feature_raster_files = '/simulation_inputs/feature_1.tif'
-  default_global_params$condition_class_raster_files = vector()
+  default_global_params$feature_raster_files = '/simulation_inputs/feature_layer_001.tif'
+  default_global_params$condition_class_raster_files = '/simulation_inputs/condition_class_001.tif'
+  
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
@@ -32,6 +33,9 @@ initialise_default_global_params <- function(){
   # FALSE then the it will look in the
   # default_global_params$unique_simulation_folder to get the required
   # infromation
+  default_global_params$run_from_simulated_data = TRUE
+  
+  # build simulated data on the fly (or not)
   default_global_params$build_simulated_data = TRUE
   
   # Fix the output directory (will overwrite existing files) instead of creating unique 
@@ -47,9 +51,6 @@ initialise_default_global_params <- function(){
   # finished. If false only data required to generate the plots is kept.
   # Setting to FALSE saves a lot of disk space
   default_global_params$save_simulation_outputs = FALSE
-
-  # Use inputs previously saved in landscape inputs folder to run current simulation
-  default_global_params$run_from_saved_simulated_data = FALSE
 
   # Saves all the initialization data use by simulation into the run specific simulation params folder
   default_global_params$backup_simulation_inputs = TRUE
@@ -71,7 +72,7 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_offset_probability_list = FALSE
   default_global_params$overwrite_management_dynamics = FALSE
   default_global_params$overwrite_feature_dynamics = FALSE
-  default_global_params$overwrite_feature_dynamics_modes = FALSE
+  default_global_params$overwrite_condition_classes = FALSE
   
   return(default_global_params)
 }
