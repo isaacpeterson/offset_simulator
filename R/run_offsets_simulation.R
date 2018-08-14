@@ -9,6 +9,7 @@
 #' @import futile.logger
 #' @import raster
 #' @import truncnorm
+#' @import Matrix
 #' @export 
 #' 
 osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, loglevel = WARN){
