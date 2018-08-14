@@ -193,7 +193,7 @@ build_input_data <- function(params_object, scenario_ind){
                                                               simulation_data_object$feature_params$dynamics_sample_type,
                                                               simulation_data_object$feature_params$background_dynamics_bounds, 
                                                               simulation_data_object$feature_dynamics_modes)
-    browser()
+
     if (any(is.na(unlist(simulation_data_object$feature_dynamics)))){
       flog.error('poorly defined feature_dynamics')
       stop()
