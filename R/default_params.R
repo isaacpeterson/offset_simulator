@@ -47,6 +47,8 @@ initialise_default_global_params <- function(){
   # Specify how many cores to run on. Default setting here it to use single core
   default_global_params$number_of_cores = 1
   
+  default_global_params$store_zeros_as_sparse = FALSE
+  
   # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
   # Setting to FALSE saves a lot of disk space
