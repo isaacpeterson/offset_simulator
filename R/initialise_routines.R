@@ -97,7 +97,7 @@ build_input_data <- function(params_object, scenario_ind){
   
   feature_raster_layers = load_rasters(simulation_data_object$global_params$feature_raster_files, 
                                        features_to_use = simulation_data_object$simulation_params$features_to_use_in_simulation)
-  
+
   initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
   
   if (simulation_data_object$feature_params$scale_features == TRUE){
@@ -152,12 +152,23 @@ build_input_data <- function(params_object, scenario_ind){
                                                                        simulation_data_object$simulation_params)
     } 
     
-    simulation_data_object$site_features <- split_features(initial_features, 
+
+    simulation_data_object$site_features <- separate_features_by_condition_class(initial_features, 
+                                                           split_type = 'feature_vals',
+                                                           store_zeros_as_sparse = simulation_data_object$global_params$store_zeros_as_sparse,
                                                            simulation_data_object$site_characteristics$land_parcels, 
                                                            background_condition_class_layers, 
                                                            simulation_data_object$feature_dynamics_modes)
     
+    element_index_grouped_by_condition_class <- separate_features_by_condition_class(initial_features, 
+                                                         split_type = 'element_index',
+                                                         store_zeros_as_sparse = simulation_data_object$global_params$store_zeros_as_sparse,
+                                                         simulation_data_object$site_characteristics$land_parcels, 
+                                                         background_condition_class_layers, 
+                                                         simulation_data_object$feature_dynamics_modes)
+    
     saveRDS(object = simulation_data_object$site_features, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
+    saveRDS(object = element_index_grouped_by_condition_class, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'element_index_grouped_by_condition_class.rds'))
     
   } else {
     simulation_data_object$site_features = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
@@ -253,7 +264,14 @@ build_input_data <- function(params_object, scenario_ind){
 
 build_condition_class_layers <- function(initial_features, global_params, feature_params, simulation_params){
   
-  if (all(file.exists(global_params$condition_class_raster_files)) & length(global_params$condition_class_raster_files) == simulation_params$feature_num){
+  load_condition_classes = FALSE
+  if (length(global_params$condition_class_raster_files) == simulation_params$feature_num){
+    if (all(file.exists(global_params$condition_class_raster_files))){
+      load_condition_classes = TRUE
+    }
+  }
+  
+  if (load_condition_classes == TRUE){
     
     background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
                                                       features_to_use = simulation_params$features_to_use_in_simulation)
@@ -962,26 +980,43 @@ split_modes <- function(land_parcels, feature_modes_layer){
   return(feature_condition_class_modes)
 }
 
-split_features <- function(features, land_parcels, feature_modes_layer, condition_class_modes){
-
-  split_feature_group = lapply(seq_along(land_parcels), 
+separate_features_by_condition_class <- function(features, split_type, store_zeros_as_sparse, land_parcels, feature_modes_layer, condition_class_modes){
+  
+  if (split_type == 'feature_vals'){
+    group_to_split = lapply(seq_along(land_parcels), 
                                function(i) lapply(seq_along(features), 
                                                   function(j) features[[j]][ land_parcels[[i]] ] ))
   
-  split_feature_group = lapply(seq_along(split_feature_group), 
-                                  function(i) lapply(seq_along(split_feature_group[[i]]), 
+    split_feature_group = lapply(seq_along(land_parcels), 
+                                  function(i) lapply(seq_along(condition_class_modes[[i]]), 
                                                      function(j) lapply(condition_class_modes[[i]][[j]], 
-                                                                        function(k) split_site_feature(split_feature_group[[i]][[j]], 
+                                                                        function(k) split_site_feature(group_to_split[[i]][[j]], 
                                                                                                        site_feature_modes_layer = feature_modes_layer[[j]][ land_parcels[[i]] ], 
-                                                                                                       k))))
+                                                                                                       k, 
+                                                                                                       store_zeros_as_sparse))))
+  } else {
+    
+    split_feature_group = lapply(seq_along(land_parcels), 
+                               function(i) lapply(seq_along(condition_class_modes[[i]]), 
+                                                  function(j) lapply(condition_class_modes[[i]][[j]], 
+                                                                     function(k) as.matrix(split_site_feature(land_parcels[[i]], 
+                                                                                                    site_feature_modes_layer = feature_modes_layer[[j]][ land_parcels[[i]] ], 
+                                                                                                    k, 
+                                                                                                    store_zeros_as_sparse)))))
+  }
   
   return(split_feature_group)
 }
 
-split_site_feature <- function(current_site_feature, site_feature_modes_layer, current_condition_class_mode){
+split_site_feature <- function(current_site_feature, site_feature_modes_layer, current_condition_class_mode, store_zeros_as_sparse){
+
   if (current_condition_class_mode == 0){
-    #current_feature_condition_class = Matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1, sparse = TRUE)
-    current_feature_condition_class = matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1)
+
+    if (store_zeros_as_sparse == TRUE){
+      current_feature_condition_class = Matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1, sparse = TRUE)
+    } else {
+      current_feature_condition_class = matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1)
+    }
   } else{
     current_feature_condition_class = matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1)
   }
