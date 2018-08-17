@@ -1,5 +1,7 @@
-run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_dynamics_modes, initial_feature_layer, simulation_params, feature_params, current_data_dir, file_prefix, use_offset_metric){
+run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_dynamics_modes, initial_feature_layer, simulation_params, feature_params, 
+                                 global_params, landscape_dims, current_data_dir, file_prefix, use_offset_metric){
   
+
   
   intervention_pool = lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes)
   object_name_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) rep(names(simulation_outputs$interventions)[i], length(intervention_pool[[i]]))))
@@ -26,10 +28,11 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
   site_scale_cfacs = vector('list', length(initial_feature_layer))
   
   if (use_offset_metric == FALSE){
-    flog.info('building counterfactuals over all features over time series (this may take a while)')
+    flog.info('building counterfactuals over time series (this may take a while)')
   } else {
     flog.info('building user metric counterfactuals over time series (this may take a while)')
   }
+  
   site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
                                                       simulation_params, 
                                                       feature_params,
@@ -67,6 +70,48 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
   }
   
   summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, simulation_params$transform_params)
+  
+  if (global_params$save_output_raster == TRUE){
+    
+    
+    for (feature_ind in features_to_collate){
+      
+      if (feature_ind == 1){
+        element_index_grouped_by_condition_class = readRDS(paste0(global_params$simulation_inputs_folder, 'element_index_grouped_by_condition_class.rds'))
+        current_raster_folder = paste0(current_data_dir, '/output_rasters/')
+        
+        if (!file.exists(current_raster_folder)){
+          dir.create(current_raster_folder, recursive = TRUE)
+        }
+      }
+    
+      current_element_index_grouped_by_condition_class = lapply(seq_along(element_index_grouped_by_condition_class), function(i) element_index_grouped_by_condition_class[[i]][[feature_ind]])
+      
+      for (yr in 0:simulation_params$time_steps){
+        
+        if (use_offset_metric == FALSE){
+
+          feature_layer_to_use = readRDS(paste0(current_data_dir, 'feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
+                                                                           '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+        } else {
+
+          feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '_yr_', 
+                                                formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+        }
+        
+        feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
+                                      function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
+        current_feature_layer = matrix(0, nrow = landscape_dims[1], ncol = landscape_dims[2])
+        current_feature_layer[unlist(current_element_index_grouped_by_condition_class)] = unlist(feature_layer_to_use)
+        current_feature_raster = raster(current_feature_layer)
+        
+        raster_filename = paste0(current_raster_folder, 'feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
+                                 '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
+        
+        writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
+      }
+    }
+  }
   
   for (feature_ind in features_to_collate){
     flog.info('collating feature %s', feature_ind)
@@ -317,18 +362,18 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 
 
 
-collate_cfacs <- function(current_site_features, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, projection_yrs, intervention_yrs, 
+collate_cfacs <- function(site_features_group, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, projection_yrs, intervention_yrs, 
                           site_num_remaining_pool, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric){
   
   
   if ((use_cfac_type_in_sim == FALSE) || (cfac_type == 'background')){
-    cfac_params = lapply(seq_along(current_site_features), function(i) setNames(rep(list(FALSE), 4), 
+    cfac_params = lapply(seq_along(site_features_group), function(i) setNames(rep(list(FALSE), 4), 
                                                                                 c('include_potential_developments', 
                                                                                   'include_potential_offsets', 
                                                                                   'include_unregulated_loss', 
                                                                                   'adjust_cfacs_flag')))
   } else {
-    cfac_params = lapply(seq_along(current_site_features), function(i) select_cfac_params(object_type[[i]], simulation_params))
+    cfac_params = lapply(seq_along(site_features_group), function(i) select_cfac_params(object_type[[i]], simulation_params))
   }
   
   
@@ -336,9 +381,9 @@ collate_cfacs <- function(current_site_features, simulation_params, feature_para
     
     time_horizons <- generate_time_horizons(project_type = 'future', 
                                             yr = 1, 
-                                            intervention_yrs = rep(1, length(current_site_features)), 
+                                            intervention_yrs = rep(1, length(site_features_group)), 
                                             time_horizon = (simulation_params$time_steps - 1), 
-                                            length(current_site_features))
+                                            length(site_features_group))
     
     
   } else if (cfac_type == 'site_scale'){
@@ -346,7 +391,7 @@ collate_cfacs <- function(current_site_features, simulation_params, feature_para
                                            yr = simulation_params$time_steps, 
                                            unlist(intervention_yrs),
                                            time_horizon = (simulation_params$time_steps - 1), 
-                                           length(current_site_features))
+                                           length(site_features_group))
   }
   
   cfac_weights_group = lapply(seq_along(cfac_params), function(i) unlist(calc_cfac_weights(site_num = 1, 
@@ -373,10 +418,10 @@ collate_cfacs <- function(current_site_features, simulation_params, feature_para
   #   }
   
   if (use_offset_metric == FALSE){
-    
-    cfacs = lapply(seq_along(current_site_features),
+
+    cfacs = lapply(seq_along(site_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
-                                                     function(j) matrix(abind(sum_site_features( calc_site_cfacs(current_site_features[[i]],
+                                                     function(j) matrix(do.call(cbind, sum_site_features( calc_site_cfacs(site_features_group[[i]],
                                                                                                                  projection_yrs[[i]],
                                                                                                                  cfac_weights_group[[i]],
                                                                                                                  simulation_params,
@@ -394,9 +439,9 @@ collate_cfacs <- function(current_site_features, simulation_params, feature_para
     
   } else {
     
-    cfacs = lapply(seq_along(current_site_features),
+    cfacs = lapply(seq_along(site_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
-                                                     function(j) matrix(apply(user_transform_function( calc_site_cfacs(current_site_features[[i]],
+                                                     function(j) matrix(apply(user_transform_function( calc_site_cfacs(site_features_group[[i]],
                                                                                                                        projection_yrs[[i]],
                                                                                                                        cfac_weights_group[[i]],
                                                                                                                        simulation_params,
@@ -509,9 +554,10 @@ sum_data_stack <- function(current_data_dir, file_pattern, time_steps){
     if (yr == 1){
       data_stack = rep(list(matrix(0, nrow = time_steps, ncol = 1)), length(site_features))
     }
-    
-    site_features = lapply(seq_along(site_features), function(i) sum(unlist(site_features[[i]])))
-    data_stack <- lapply(seq_along(site_features), function(i) stack_yr(data_stack[[i]], site_features[[i]], yr))
+
+    summed_site_features = sum_site_features(site_features)
+
+    data_stack <- lapply(seq_along(summed_site_features), function(i) stack_yr(data_stack[[i]], summed_site_features[[i]], yr))
   }
   
   return(data_stack)
@@ -592,12 +638,12 @@ sum_sites <- function(site_features, use_offset_metric, transform_params){
   
   summed_site_features = vector('list', length(site_features))
   if (use_offset_metric == TRUE){
-    site_features[sets_to_use] <- lapply(sets_to_use,  function(i) lapply(seq_along(site_features[[i]]), function(j) abind(site_features[[i]][[j]])))
+    site_features[sets_to_use] <- lapply(sets_to_use,  function(i) lapply(seq_along(site_features[[i]]), function(j) do.call(cbind, site_features[[i]][[j]])))
     
     summed_site_features[sets_to_use] = lapply(sets_to_use, function(i) sum(user_transform_function(site_features[[i]], transform_params)))
     
   } else {
-    summed_site_features[sets_to_use] <- lapply(sets_to_use, function(i) matrix(abind(sum_site_features(site_features[[i]])), nrow = 1))
+    summed_site_features[sets_to_use] <- lapply(sets_to_use, function(i) matrix(do.call(cbind, sum_site_features(site_features[[i]])), nrow = 1))
   }
   
   return(summed_site_features)
