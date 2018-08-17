@@ -41,11 +41,12 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     simulation_data_object <- build_input_data(params_object, scenario_ind)
 
     simulation_data_object$output_data = build_output_data(simulation_data_object)
-    flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime',  
+    flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime and %s time horizon for projected gains',  
               scenario_ind, 
               length(params_object$simulation_params_group),
               simulation_data_object$simulation_params$offset_calc_type, 
-              simulation_data_object$simulation_params$offset_action_type)
+              simulation_data_object$simulation_params$offset_action_type, 
+              simulation_data_object$simulation_params$offset_time_horizon)
     
     flog.info('system composed of %s x %s elements and %s sites',
               simulation_data_object$site_characteristics$landscape_dims[1], 
