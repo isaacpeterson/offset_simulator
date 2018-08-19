@@ -77,7 +77,7 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
     for (feature_ind in features_to_collate){
       
       if (feature_ind == 1){
-        element_index_grouped_by_condition_class = readRDS(paste0(global_params$simulation_inputs_folder, 'element_index_grouped_by_condition_class.rds'))
+        site_element_indexes_grouped_by_condition_classes = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
         current_raster_folder = paste0(current_data_dir, '/output_rasters/')
         
         if (!file.exists(current_raster_folder)){
@@ -85,7 +85,7 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
         }
       }
     
-      current_element_index_grouped_by_condition_class = lapply(seq_along(element_index_grouped_by_condition_class), function(i) element_index_grouped_by_condition_class[[i]][[feature_ind]])
+      element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), function(i) site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
       
       for (yr in 0:simulation_params$time_steps){
         
@@ -93,20 +93,23 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
 
           feature_layer_to_use = readRDS(paste0(current_data_dir, 'feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
                                                                            '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+          
+          feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
+                                        function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
+          
+          raster_filename = paste0(current_raster_folder, 'feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
+                                   '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
+          
         } else {
 
-          feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_', formatC(feature_ind, width = 3, format = "d", flag = "0"), '_yr_', 
-                                                formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+          feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+          feature_layer_to_use = lapply(seq_along(feature_layer_to_use), function(i) as.matrix(feature_layer_to_use[[i]]))
+          raster_filename = paste0(current_raster_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
         }
         
-        feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
-                                      function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
         current_feature_layer = matrix(0, nrow = landscape_dims[1], ncol = landscape_dims[2])
-        current_feature_layer[unlist(current_element_index_grouped_by_condition_class)] = unlist(feature_layer_to_use)
+        current_feature_layer[unlist(element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
         current_feature_raster = raster(current_feature_layer)
-        
-        raster_filename = paste0(current_raster_folder, 'feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
-                                 '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
         
         writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       }
