@@ -173,7 +173,7 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     current_metric_layers = lapply(seq_along(current_metric_layers), 
                                    function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
     
-    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer.rds'))
+    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     
 #     if(simulation_data_object$global_params$save_output_raster == TRUE){
 #       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
