@@ -15,7 +15,7 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   
   # save raw simulation data
   if (simulation_data_object$global_params$save_simulation_outputs == TRUE){
-    saveRDS(simulation_data_object, paste0(current_data_dir, 'realisation_',
+    saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
                                            formatC(realisation_ind, width = 3, format = "d", flag = "0"),
                                            '_outputs.rds'))
   }
@@ -32,7 +32,6 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
                        simulation_data_object$simulation_params,
                        simulation_data_object$feature_params,
                        simulation_data_object$global_params, 
-                       simulation_data_object$site_characteristics$landscape_dims,
                        current_data_dir, 
                        file_prefix,
                        use_offset_metric = FALSE)
@@ -45,7 +44,6 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
                          simulation_data_object$simulation_params,
                          simulation_data_object$feature_params,
                          simulation_data_object$global_params, 
-                         simulation_data_object$site_characteristics$landscape_dims,
                          current_data_dir, 
                          file_prefix,
                          use_offset_metric = TRUE)

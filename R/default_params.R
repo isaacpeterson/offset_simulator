@@ -4,11 +4,10 @@ initialise_default_global_params <- function(){
   
   # Set the random number seed
   default_global_params$set_seed = FALSE
-  
-  default_global_params$save_output_raster = FALSE
+
   default_global_params$feature_raster_files = '/simulation_inputs/feature_layer_001.tif'
   default_global_params$condition_class_raster_files = '/simulation_inputs/condition_class_001.tif'
-  
+  default_global_params$string_width = 3 # how many digits are used to store scenario index and realisation index
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
@@ -56,12 +55,6 @@ initialise_default_global_params <- function(){
 
   # Saves all the initialization data use by simulation into the run specific simulation params folder
   default_global_params$backup_simulation_inputs = TRUE
-
-  # Create an animation of the outputs
-  default_global_params$write_movie = FALSE
-
-  # Makes a single pdf at the end of the simulation showing the locatons of all offsets and developments
-  default_global_params$write_offset_layer = FALSE
   
   default_global_params$overwrite_site_characteristics = FALSE
   
@@ -343,7 +336,10 @@ initialise_default_feature_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
+  default_output_params$save_output_raster = TRUE
+  default_output_params$mov_file_type = 'png'
   default_output_params$output_plot = TRUE 
+  default_output_params$output_movie = TRUE
   default_output_params$output_csv_file = TRUE
   default_output_params$output_plot_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
@@ -373,7 +369,7 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$landscape_lwd_vec  = c(3)
   default_output_params$landscape_outcome_lwd_vec = c(3)
   default_output_params$print_dev_offset_sites = TRUE
-  default_output_params$string_width = 3 # how many digits are used to store scenario index and realisation index
+  default_output_params$example_realisation_to_output = 1
   default_output_params$nx = 3 
   default_output_params$ny = 4
   

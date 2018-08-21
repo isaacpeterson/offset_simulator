@@ -7,7 +7,7 @@
 #' @export
 
 osim.output <- function(user_output_params = NULL, simulation_folder = NULL, loglevel = INFO){
-  
+  flog.threshold(loglevel)
   if (is.null(user_output_params)) {
     flog.error('provide plot params file')
     stop()
@@ -18,46 +18,18 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
   collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
   simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   
+  global_params = readRDS(paste0(simulation_params_folder, 'global_params.rds'))
+  
   # read in file with stored param settings to identify plots easier
   param_variants_filename = paste0(simulation_params_folder, 'param_variants.rds')
   if (file.exists(param_variants_filename)){
     param_variants = readRDS(paste0(simulation_params_folder, 'param_variants.rds'))
   }
   
-  if (length(output_params$output_plot_folder) == 0){
-    output_plot_folder = collated_folder
-  } else {
-    output_plot_folder = output_params$output_plot_folder
-  }
-  
-  if (output_params$plot_type == 'impacts'){
-    output_pdf_filename = paste0(output_plot_folder, '/impacts.pdf')
-  } else if (output_params$plot_type == 'outcomes'){
-    output_pdf_filename = paste0(output_plot_folder, '/outcomes.pdf')
-  }
-  
-  flog.threshold(loglevel)
-  
-  # Set the output filename, and open the pdf file for reading
-  if (output_params$write_pdf == TRUE){
-    flog.info('writing to PDF %s', output_pdf_filename)
-    pdf(output_pdf_filename, width = 8.3, height = 11.7)
-  }
-  
-  if (output_params$output_plot == TRUE){
-    # write plots to nx * ny subplots
-    setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
-  }
-  
   # get the names of all parameter files, separated into run scenarios
   scenario_filenames <- list.files(path = simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                    include.dirs = FALSE, no.. = FALSE)
-  
-  if (!file.exists(output_plot_folder)){
-    flog.info('creating output plot folder %s', output_plot_folder)
-    dir.create(output_plot_folder)
-  }
   
   if ( (class(output_params$scenario_vec) == 'character')){
     if (output_params$scenario_vec == 'all'){
@@ -67,159 +39,290 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     scenario_vec = output_params$scenario_vec
   }
   
-  plot.ctr <- 1
+  if (length(output_params$output_plot_folder) == 0){
+    output_plot_folder = collated_folder
+  } else {
+    output_plot_folder = output_params$output_plot_folder
+  }
   
-  for (scenario_ind in scenario_vec){
+  if (!file.exists(output_plot_folder)){
+    flog.info('creating output plot folder %s', output_plot_folder)
+    dir.create(output_plot_folder)
+  }
+  
+  if (output_params$save_output_raster == TRUE){
     
-    flog.info('_________________________________')
-
-    file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
-    flog.trace('reading %s', file_to_Read)
-    current_simulation_params = readRDS(file_to_Read)
-    
-    # check_plot_options(output_params, current_simulation_params, scenario_filenames)
-    
-    param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
-    
-    if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
-      plot_flag = TRUE 
-    } else {
-      if (length(output_params$plot_subset_type) > 1){
-        plot_flag = FALSE
-      } else {
-        if (output_params$plot_subset_type == 'all'){
-          plot_flag = TRUE
-        } else {
-          plot_flag = FALSE
-        }
-      }
-    } 
-    
-    
-    if (plot_flag == FALSE){
-      flog.trace(' skipping scenario %d', scenario_ind )
-    } else {
-      
-      flog.info(' generating plot %d (scen %d of type: %s)', plot.ctr, scenario_ind, output_params$plot_type)  
-      if (file.exists(param_variants_filename)){
-        flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
-      }
-      
-      if (class(output_params$features_to_plot) == 'character'){
-        if (output_params$features_to_plot == 'all'){
-          features_to_plot = current_simulation_params$features_to_use_in_simulation
-        } else {
-          flog.error("features to plot parameter is poorly defined assign vector of integers or 'all'")
-        }
-      }  else {
-        features_to_plot = output_params$features_to_plot
-      }
-      
-      if ((output_params$plot_offset_metric == TRUE)){
-        features_to_use = append(features_to_plot, (max(features_to_plot) + 1))
-      } else{
-        features_to_use = features_to_plot
-      }
-      
+    simulation_output_folder = paste0(simulation_folder, '/simulation_outputs/')
+    feature_params = readRDS(paste0(simulation_params_folder, 'feature_params.rds'))
+    site_characteristics = readRDS(paste0(global_params$simulation_folder, 'simulation_inputs/', 'site_characteristics.rds'))
+    site_element_indexes_grouped_by_condition_classes = readRDS(paste0(global_params$simulation_folder, 'simulation_inputs/', 'site_element_indexes_grouped_by_condition_classes.rds'))
+    raster_output_folder = paste0(collated_folder, '/output_rasters/')
+    if (!dir.exists(raster_output_folder)){
+      dir.create(raster_output_folder)
+    }
+  }
+  
+  setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
+  
+  
+  if (output_params$output_plot == TRUE){
+    # Set the output filename, and open the pdf file for reading
+    if (output_params$write_pdf == TRUE){
       if (output_params$plot_type == 'impacts'){
-      
-        site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
-        program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
-        landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
-      } else {
-        site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
-        program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
-        landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
+        output_pdf_filename = paste0(output_plot_folder, '/impacts.pdf')
+      } else if (output_params$plot_type == 'outcomes'){
+        output_pdf_filename = paste0(output_plot_folder, '/outcomes.pdf')
       }
-      
-      for (feature_ind in features_to_use){
-        
-        if (feature_ind > max(features_to_plot)){
-
-          collated_filenames = list.files(path = collated_folder, all.files = FALSE,
-                                          full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                          include.dirs = FALSE, no.. = FALSE, pattern = '_metric')
-          collated_filenames = lapply(seq_along(collated_filenames), function(i) paste0(collated_folder, '/', collated_filenames[i]))
-        } else {
-          collated_filenames = find_collated_files(file_path = collated_folder,
-                                                 scenario_string = formatC(scenario_ind, width = output_params$string_width, format = "d", flag = "0"),
-                                                 feature_string = formatC(feature_ind, width = output_params$string_width, format = "d", flag = "0"),
-                                                 output_params$realisation_num)
-        }
-        collated_realisations = bind_collated_realisations(collated_filenames)
-        
-        if (output_params$print_dev_offset_sites == TRUE){
-          sites_used = collated_realisations$sites_used
-          stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
-          mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
-          flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
-        }
-        
-        if (output_params$output_plot == TRUE){
-          
-          if (length(output_params$site_impact_plot_lims_set) == length(features_to_use)){
-            if (output_params$plot_type == 'impacts'){
-              site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]]
-              program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]]
-              landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]]
-            } else {
-              site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
-              program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
-              landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
-            }
-          }
-          
-          if (output_params$plot_type == 'impacts'){
-            
-            plot_impact_set(collated_realisations,
-                            current_simulation_params,
-                            output_params,
-                            realisation_num = collated_realisations$realisation_num,
-                            site_plot_lims,
-                            program_plot_lims,
-                            landscape_plot_lims,
-                            feature_ind,
-                            output_params$sets_to_plot)
-            
-          } else if (output_params$plot_type == 'outcomes'){
-
-            plot_outcome_set(collated_realisations,
-                             current_simulation_params,
-                             output_params,
-                             realisation_num = collated_realisations$realisation_num,
-                             site_plot_lims,
-                             program_plot_lims,
-                             landscape_plot_lims,
-                             current_feature,
-                             output_params$sets_to_plot)
-          }
-          
-          plot.ctr <- plot.ctr + 1
-          #flog.info(' finished writing plot %d', scenario_ind)
-        } 
-        
-        if (output_params$output_csv_file == TRUE){
-          flog.info('writing outputs to csv')
-          write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
-                       paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
-          write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
-                       paste0(collated_folder, 'program_impacts.csv'), sep=',' )
-          write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
-                       paste0(collated_folder, 'landscape_outcomes.csv'), sep=',' )
-          write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
-                       paste0(collated_folder, 'landscape_impacts.csv'), sep=',' )
-        }
-      } 
+      flog.info('writing to PDF %s', output_pdf_filename)
+      pdf(output_pdf_filename, width = 8.3, height = 11.7)
       
     }
     
+    plot_ctr <- 1
+    
+    for (scenario_ind in scenario_vec){
+      output_scenario(output_type = 'plot', 
+                      simulation_params_folder, 
+                      simulation_output_folder, 
+                      raster_output_folder = vector(),
+                      scenario_filenames, 
+                      scenario_ind, 
+                      output_params, 
+                      param_variants_filename,
+                      global_params, 
+                      collated_folder, 
+                      plot_ctr, 
+                      site_element_indexes_grouped_by_condition_classes = vector(), 
+                      site_characteristics = vector(), 
+                      feature_params = vector())
+      plot_ctr <- plot_ctr + 1
+    }
+    if (output_params$write_pdf == TRUE) {
+      graphics.off()
+      flog.info('closing PDF %s', output_pdf_filename)
+    }
   }
   
-  # Close the pdf file for reading
-  if (output_params$write_pdf == TRUE) {
-    graphics.off()
-    flog.info('closing PDF %s', output_pdf_filename)
-  }
+  if (output_params$output_movie == TRUE){
+
+    for (scenario_ind in scenario_vec){
+      output_scenario(output_type = 'feature_layer', 
+                      simulation_params_folder, 
+                      simulation_output_folder, 
+                      raster_output_folder,
+                      scenario_filenames, 
+                      scenario_ind, 
+                      output_params, 
+                      param_variants_filename,
+                      global_params, 
+                      collated_folder, 
+                      plot_ctr = vector(), 
+                      site_element_indexes_grouped_by_condition_classes, 
+                      site_characteristics, 
+                      feature_params)
+
+    }
+
+  } 
+  
+  
+  
+  #   for (scenario_ind in scenario_vec){
+  #     
+  #     flog.info('_________________________________')
+  #     
+  #     file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
+  #     flog.trace('reading %s', file_to_Read)
+  #     current_simulation_params = readRDS(file_to_Read)
+  #     
+  #     param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
+  #     
+  #     if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
+  #       plot_flag = TRUE 
+  #     } else {
+  #       if (length(output_params$plot_subset_type) > 1){
+  #         plot_flag = FALSE
+  #       } else {
+  #         if (output_params$plot_subset_type == 'all'){
+  #           plot_flag = TRUE
+  #         } else {
+  #           plot_flag = FALSE
+  #         }
+  #       }
+  #     } 
+  #     
+  #     
+  #     if (plot_flag == FALSE){
+  #       flog.trace(' skipping scenario %d', scenario_ind )
+  #     } else {
+  #       
+  #       flog.info(' generating plot %d (scen %d of type: %s)', plot_ctr, scenario_ind, output_params$plot_type)  
+  #       if (file.exists(param_variants_filename)){
+  #         flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
+  #       }
+  #       
+  #       if (class(output_params$features_to_plot) == 'character'){
+  #         if (output_params$features_to_plot == 'all'){
+  #           features_to_plot = current_simulation_params$features_to_use_in_simulation
+  #         } else {
+  #           flog.error("features to plot parameter is poorly defined assign vector of integers or 'all'")
+  #         }
+  #       }  else {
+  #         features_to_plot = output_params$features_to_plot
+  #       }
+  #       
+  #       if ((output_params$plot_offset_metric == TRUE)){
+  #         features_to_use = append(features_to_plot, (max(features_to_plot) + 1))
+  #       } else{
+  #         features_to_use = features_to_plot
+  #       }
+  #       
+  #       if (output_params$plot_type == 'impacts'){
+  #         
+  #         site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
+  #         program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
+  #         landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
+  #       } else {
+  #         site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
+  #         program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
+  #         landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
+  #       }
+  #       
+  #       if (output_params$save_output_raster == TRUE){
+  #         
+  #         current_data_dir = paste0(simulation_output_folder, '/scenario_', 
+  #                                   formatC(scenario_ind, width = global_params$string_width, format = "d", flag = "0"),
+  #                                   '/realisation_', formatC(output_params$example_realisation_to_output, width = global_params$string_width, format = "d", flag = "0"), '/') 
+  #         
+  #         current_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
+  #                                                     formatC(output_params$example_realisation_to_output, width = global_params$string_width, format = "d", flag = "0"), 
+  #                                                     '_outputs.rds'))
+  #         
+  #       }
+  #       
+  #       for (feature_ind in features_to_use){
+  #         
+  #         if (feature_ind > max(features_to_plot)){
+  #           
+  #           collated_filenames = list.files(path = collated_folder, all.files = FALSE,
+  #                                           full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+  #                                           include.dirs = FALSE, no.. = FALSE, pattern = '_metric')
+  #           collated_filenames = lapply(seq_along(collated_filenames), function(i) paste0(collated_folder, '/', collated_filenames[i]))
+  #         } else {
+  #           collated_filenames = find_collated_files(file_path = collated_folder,
+  #                                                    scenario_string = formatC(scenario_ind, width = global_params$string_width, format = "d", flag = "0"),
+  #                                                    feature_string = formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"),
+  #                                                    output_params$realisation_num)
+  #         }
+  #         
+  #         collated_realisations = bind_collated_realisations(collated_filenames)
+  #         
+  #         if (output_params$print_dev_offset_sites == TRUE){
+  #           sites_used = collated_realisations$sites_used
+  #           stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
+  #           mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
+  #           flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+  #         }
+  #         
+  #         if (output_params$output_plot == TRUE){
+  #           
+  #           if (length(output_params$site_impact_plot_lims_set) == length(features_to_use)){
+  #             if (output_params$plot_type == 'impacts'){
+  #               site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]]
+  #               program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]]
+  #               landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]]
+  #             } else {
+  #               site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
+  #               program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
+  #               landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
+  #             }
+  #           }
+  #           
+  #           if (output_params$plot_type == 'impacts'){
+  #             
+  #             plot_impact_set(collated_realisations,
+  #                             current_simulation_params,
+  #                             output_params,
+  #                             realisation_num = collated_realisations$realisation_num,
+  #                             site_plot_lims,
+  #                             program_plot_lims,
+  #                             landscape_plot_lims,
+  #                             feature_ind,
+  #                             output_params$sets_to_plot)
+  #             
+  #           } else if (output_params$plot_type == 'outcomes'){
+  #             
+  #             plot_outcome_set(collated_realisations,
+  #                              current_simulation_params,
+  #                              output_params,
+  #                              realisation_num = collated_realisations$realisation_num,
+  #                              site_plot_lims,
+  #                              program_plot_lims,
+  #                              landscape_plot_lims,
+  #                              current_feature,
+  #                              output_params$sets_to_plot)
+  #           }
+  #           
+  #           plot_ctr <- plot_ctr + 1
+  #           #flog.info(' finished writing plot %d', scenario_ind)
+  #         }
+  #         
+  #         if (output_params$save_output_raster == TRUE){
+  #           
+  #           
+  #           current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), 
+  #                                                                               function(i) site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
+  #           
+  #           output_feature_layers(feature_ind, 
+  #                                 current_data_dir, 
+  #                                 current_simulation_outputs,
+  #                                 raster_output_folder, 
+  #                                 use_offset_metric = FALSE, 
+  #                                 save_output_raster = output_params$save_output_raster, 
+  #                                 output_params$mov_file_type, 
+  #                                 current_element_indexes_grouped_by_feature_condition_class, 
+  #                                 current_simulation_params$time_steps, 
+  #                                 site_characteristics$landscape_dims, 
+  #                                 feature_params$condition_class_bounds)
+  #           
+  #           if (output_params$plot_offset_metric == TRUE){
+  #             output_feature_layers(feature_ind, 
+  #                                   current_data_dir, 
+  #                                   current_simulation_outputs,
+  #                                   raster_output_folder, 
+  #                                   use_offset_metric = TRUE, 
+  #                                   save_output_raster = output_params$save_output_raster, 
+  #                                   output_params$mov_file_type, 
+  #                                   current_element_indexes_grouped_by_feature_condition_class, 
+  #                                   current_simulation_params$time_steps, 
+  #                                   site_characteristics$landscape_dims, 
+  #                                   feature_params$condition_class_bounds)
+  #           }
+  #           
+  #         }
+  #         
+  #         if (output_params$output_csv_file == TRUE){
+  #           flog.info('writing outputs to csv')
+  #           write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
+  #                        paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
+  #           write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
+  #                        paste0(collated_folder, 'program_impacts.csv'), sep=',' )
+  #           write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
+  #                        paste0(collated_folder, 'landscape_outcomes.csv'), sep=',' )
+  #           write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
+  #                        paste0(collated_folder, 'landscape_impacts.csv'), sep=',' )
+  #         }
+  #       } 
+  #       
+  #     }
+  #     
+  #   }
+  #   
+  #   # Close the pdf file for reading
+  #   if (output_params$write_pdf == TRUE) {
+  #     graphics.off()
+  #     flog.info('closing PDF %s', output_pdf_filename)
+  #   }
   flog.info('all done')
 }
 
@@ -259,5 +362,317 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
   } else{
     return(simulation_folder)
   }
+}
+
+
+
+
+output_scenario <- function(output_type, simulation_params_folder, simulation_output_folder, raster_output_folder, 
+                            scenario_filenames, scenario_ind, output_params, param_variants_filename,
+                            global_params, collated_folder, plot_ctr, site_element_indexes_grouped_by_condition_classes, site_characteristics, feature_params){
+  
+  flog.info('_________________________________')
+  
+  file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
+  flog.trace('reading %s', file_to_Read)
+  current_simulation_params = readRDS(file_to_Read)
+  if (class(output_params$features_to_plot) == 'character'){
+    if (output_params$features_to_plot == 'all'){
+      features_to_plot = current_simulation_params$features_to_use_in_simulation
+    } else {
+      flog.error("features to plot parameter is poorly defined assign vector of integers or 'all'")
+    }
+  }  else {
+    features_to_plot = output_params$features_to_plot
+  }
+  
+  if ( (output_params$plot_offset_metric == TRUE) ){
+    features_to_use = append(features_to_plot, (max(features_to_plot) + 1))
+  } else{
+    features_to_use = features_to_plot
+  }
+  
+  if (output_type == 'plot'){
+    
+    param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
+    
+    if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
+      plot_flag = TRUE 
+    } else {
+      if (length(output_params$plot_subset_type) > 1){
+        plot_flag = FALSE
+      } else {
+        if (output_params$plot_subset_type == 'all'){
+          plot_flag = TRUE
+        } else {
+          plot_flag = FALSE
+        }
+      }
+    } 
+    
+    
+    if (plot_flag == FALSE){
+      flog.trace(' skipping scenario %d', scenario_ind )
+    } else {
+      
+      flog.info(' generating plot %d (scen %d of type: %s)', plot_ctr, scenario_ind, output_params$plot_type)  
+      if (file.exists(param_variants_filename)){
+        flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
+      }
+      
+      
+      
+      if (output_params$plot_type == 'impacts'){
+        
+        site_plot_lims = output_params$site_impact_plot_lims_set[[1]]
+        program_plot_lims = output_params$program_impact_plot_lims_set[[1]]
+        landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[1]]
+      } else {
+        site_plot_lims = output_params$site_outcome_plot_lims_set[[1]]
+        program_plot_lims = output_params$program_outcome_plot_lims_set[[1]]
+        landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[1]]
+      }
+    } 
+  } else if (output_type == 'feature_layer'){
+    
+    current_data_dir = paste0(simulation_output_folder, '/scenario_', 
+                              formatC(scenario_ind, width = global_params$string_width, format = "d", flag = "0"),
+                              '/realisation_', formatC(output_params$example_realisation_to_output, width = global_params$string_width, format = "d", flag = "0"), '/') 
+    
+    current_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
+                                                formatC(output_params$example_realisation_to_output, width = global_params$string_width, format = "d", flag = "0"), 
+                                                '_outputs.rds'))
+    
+  }
+  
+  for (feature_ind in features_to_use){
+    
+    if (feature_ind <= max(features_to_plot)){
+      collated_filenames = find_collated_files(file_path = collated_folder,
+                                               scenario_string = formatC(scenario_ind, width = global_params$string_width, format = "d", flag = "0"),
+                                               feature_string = formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"),
+                                               output_params$realisation_num)
+    } else {
+      collated_filenames = list.files(path = collated_folder, all.files = FALSE,
+                                      full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                      include.dirs = FALSE, no.. = FALSE, pattern = '_metric')
+      collated_filenames = lapply(seq_along(collated_filenames), function(i) paste0(collated_folder, '/', collated_filenames[i]))
+      
+    }
+    
+    collated_realisations = bind_collated_realisations(collated_filenames)
+    
+    if (output_params$print_dev_offset_sites == TRUE){
+      sites_used = collated_realisations$sites_used
+      stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
+      mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
+      flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+    }
+    
+    if (output_type == 'plot'){
+      
+      if (length(output_params$site_impact_plot_lims_set) == length(features_to_use)){
+        if (output_params$plot_type == 'impacts'){
+          site_plot_lims = output_params$site_impact_plot_lims_set[[feature_ind]]
+          program_plot_lims = output_params$program_impact_plot_lims_set[[feature_ind]]
+          landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[feature_ind]]
+        } else {
+          site_plot_lims = output_params$site_outcome_plot_lims_set[[feature_ind]]
+          program_plot_lims = output_params$program_outcome_plot_lims_set[[feature_ind]]
+          landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[feature_ind]]
+        }
+      }
+      
+      if (output_params$plot_type == 'impacts'){
+        
+        plot_impact_set(collated_realisations,
+                        current_simulation_params,
+                        output_params,
+                        realisation_num = collated_realisations$realisation_num,
+                        site_plot_lims,
+                        program_plot_lims,
+                        landscape_plot_lims,
+                        feature_ind,
+                        output_params$sets_to_plot)
+        
+      } else if (output_params$plot_type == 'outcomes'){
+        
+        plot_outcome_set(collated_realisations,
+                         current_simulation_params,
+                         output_params,
+                         realisation_num = collated_realisations$realisation_num,
+                         site_plot_lims,
+                         program_plot_lims,
+                         landscape_plot_lims,
+                         current_feature,
+                         output_params$sets_to_plot)
+      }
+      
+    }  else if (output_type == 'feature_layer'){
+      
+      current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), 
+                                                                          function(i) site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
+      
+      output_feature_layers(feature_ind, 
+                            current_data_dir, 
+                            current_simulation_outputs,
+                            raster_output_folder, 
+                            use_offset_metric = FALSE, 
+                            save_output_raster = output_params$save_output_raster, 
+                            output_params$mov_file_type, 
+                            current_element_indexes_grouped_by_feature_condition_class, 
+                            current_simulation_params$time_steps, 
+                            site_characteristics$landscape_dims, 
+                            feature_params$condition_class_bounds[[feature_ind]], 
+                            mov_file_prefix = paste0(raster_output_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_'))
+      
+      if (output_params$plot_offset_metric == TRUE){
+        browser()
+        condition_class_bounds = user_transform_function(feature_params$condition_class_bounds, transform_params = current_simulation_params$transform_params)
+        output_feature_layers(feature_ind, 
+                              current_data_dir, 
+                              current_simulation_outputs,
+                              raster_output_folder, 
+                              use_offset_metric = TRUE, 
+                              save_output_raster = output_params$save_output_raster, 
+                              output_params$mov_file_type, 
+                              current_element_indexes_grouped_by_feature_condition_class, 
+                              current_simulation_params$time_steps, 
+                              site_characteristics$landscape_dims, 
+                              condition_class_bounds, 
+                              mov_file_prefix = paste0(raster_output_folder, 'metric_'))
+      }
+      
+    } else if (output_type == 'csv'){
+      flog.info('writing outputs to csv')
+      write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
+                   paste0(collated_folder, 'program_outcomes.csv'), sep=',' )
+      write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
+                   paste0(collated_folder, 'program_impacts.csv'), sep=',' )
+      write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
+                   paste0(collated_folder, 'landscape_outcomes.csv'), sep=',' )
+      write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
+                   paste0(collated_folder, 'landscape_impacts.csv'), sep=',' )
+    }
+  } 
+  
+}
+
+
+
+output_feature_layers <- function(feature_ind, current_data_dir, current_simulation_outputs, output_folder, use_offset_metric, save_output_raster, mov_file_type, current_element_indexes_grouped_by_feature_condition_class, 
+                                  time_steps, landscape_dims, condition_class_bounds, mov_file_prefix){
+  
+  
+  intervention_pool = lapply(seq_along(current_simulation_outputs$interventions), function(i) current_simulation_outputs$interventions[[i]]$site_indexes)
+  
+  if (mov_file_type != 'none'){
+    graphics.off()
+    rgb.palette <- colorRampPalette(c("black", "green", "black", "blue", "red"), space = "rgb")
+    mov_filename = paste0(mov_file_prefix, "%03d.", mov_file_type, sep = '')
+    col_map_vector = c(255, 511, 511, 383, 255)
+    if (mov_file_type == 'png'){
+      png(mov_filename, height = landscape_dims[1], width = landscape_dims[2])
+    } else if (mov_file_type == 'jpg'){
+      jpeg(mov_filename, height = landscape_dims[1], width = landscape_dims[2])
+    }
+  }
+  
+  for (yr in 0:time_steps){
+    
+    if (use_offset_metric == FALSE){
+      
+      feature_layer_to_use = readRDS(paste0(current_data_dir, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
+                                            '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+      feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
+                                    function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
+    } else {
+      
+      feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+      feature_layer_to_use = lapply(seq_along(feature_layer_to_use), function(i) as.matrix(feature_layer_to_use[[i]]))
+      
+    }
+    
+    current_feature_layer = matrix(0, nrow = landscape_dims[1], ncol = landscape_dims[2])
+    current_feature_layer[unlist(current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
+    
+    if (save_output_raster == TRUE){
+      
+      if (use_offset_metric == FALSE){
+        raster_filename = paste0(output_folder, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
+                                 '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
+      } else{
+        raster_filename = paste0(output_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
+      }
+      
+      current_feature_raster = raster(current_feature_layer)
+      writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
+      
+    }
+    
+    if (mov_file_type != 'none'){
+      
+      
+      current_feature_layer = current_feature_layer * 128/max(unlist(condition_class_bounds))
+      
+      sets_to_use = lapply(seq_along(current_simulation_outputs$interventions), function(i) which(unlist(current_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
+      interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
+      
+      if (length(interventions_to_use) > 0){
+        
+        sites_to_use = lapply(interventions_to_use, function(i) current_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])
+        
+        inds_to_update = lapply(interventions_to_use, function(i) unlist(current_element_indexes_grouped_by_feature_condition_class[unlist(sites_to_use[[i]])]))
+        new_vals = lapply(interventions_to_use, function(i) current_feature_layer[inds_to_update[[i]]] + col_map_vector[i])
+        
+        current_feature_layer[unlist(inds_to_update)] = unlist(new_vals)
+      }
+      
+      image(current_feature_layer, zlim = c(0, 511), col = rgb.palette(512))
+    }
+    
+  }
+  if (mov_file_type != 'none'){
+    dev.off()
+  }
+  
+}
+
+
+
+write_frames <- function(output_filetype, output_folder, site_characteristics, global_params, time_steps, max_feature_val, feature_ind,  
+                         intervention_indexes, intervention_yrs){
+  # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
+  graphics.off()
+  rgb.palette <- colorRampPalette(c("red", "black", "green", "black" ,"blue"), space = "rgb")
+  
+  if (!dir.exists(output_folder)){
+    dir.create(output_folder)
+  }
+  
+  filename = paste0(output_folder, "tmp%03d.", output_filetype, sep = '')
+  
+  if (output_filetype == 'png'){
+    png(filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
+  } else if (output_filetype == 'jpg'){
+    jpeg(filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
+  }
+  
+  
+  for (yr in seq(current_simulation_params$time_steps)){
+    
+    landscape = array(0, site_characteristics$landscape_dims)
+    
+    if (global_params$write_offset_layer == TRUE){
+      offset_sites_to_use = which(intervention_yrs <= yr)
+      landscape[unlist(site_characteristics$land_parcels[offset_site_indexes[offset_sites_to_use] ])] = max_feature_val
+    } 
+    image(landscape, zlim = c(0, max_feature_val), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
+    
+    cat('\n image ', yr, ' of ', current_simulation_params$time_steps, 'done\n')
+  }
+  
+  dev.off()
+  
 }
 

@@ -5,7 +5,7 @@ build_params <- function(user_global_params = NULL, user_feature_params = NULL, 
   global_params <- build_global_params(user_global_params)
   params_object$simulation_params_group = build_simulation_params_group(user_simulation_params)
   params_object$feature_params <- build_feature_params(user_feature_params)
-  params_object$global_params <- write_params_to_disk(global_params, params_object$simulation_params_group)
+  params_object$global_params <- save_params(global_params, params_object$simulation_params_group, params_object$feature_params)
   return(params_object)
 }
 
@@ -625,7 +625,7 @@ find_current_run <- function(base_run_folder){
   return(current_run)
 }
 
-write_params_to_disk <- function(global_params, simulation_params_group){
+save_params <- function(global_params, simulation_params_group, feature_params){
   
   if (global_params$simulation_folder != 'default'){
     simulation_folder = write_folder(global_params$simulation_folder)
@@ -662,10 +662,13 @@ write_params_to_disk <- function(global_params, simulation_params_group){
   
   global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
   global_params_file = paste0(global_params$simulation_params_folder,  'global_params')
-  saveRDS(global_params, paste0(global_params_file,'.rds'))
+  saveRDS(global_params, paste0(global_params$simulation_params_folder,  'global_params.rds'))
   
-  dump('global_params', paste0(global_params_file, '.R'), control = NULL)
+  dump('global_params', paste0(global_params$simulation_params_folder,  'global_params.R'), control = NULL)
   
+  saveRDS(feature_params, paste0(global_params$simulation_params_folder,  'feature_params.rds'))
+  dump('feature_params', paste0(global_params$simulation_params_folder,  'feature_params.R'), control = NULL)
+
   for (scenario_ind in global_params$scenario_subset){
     current_simulation_params = simulation_params_group[[scenario_ind]]
     simulation_params_file = paste0(global_params$simulation_params_folder,  
