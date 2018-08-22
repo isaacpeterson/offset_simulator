@@ -911,7 +911,7 @@ initialise_index_object <- function(site_characteristics, site_features_initial,
   index_object = list()
   index_object$banked_offset_pool = list()
   index_object$site_indexes_used = vector('list', 5)
-  names(index_object$site_indexes_used) = c('offsets_object', 'dev_object', 'unregulated_loss_object', 'credit_object', 'offset_bank_object')
+  names(index_object$site_indexes_used) = c('offsets_object', 'offset_bank_object', 'dev_object', 'credit_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
   

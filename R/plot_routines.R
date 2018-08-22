@@ -601,51 +601,6 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
   }
 }
 
-# 
-# 
-# make_mov <- function(img_stack, filetype, mov_name, output_folder){
-#   # gray.colors(n = 1024, start = 0, end = 1, gamma = 2.2, alpha = NULL)
-#   graphics.off()
-#   rgb.palette <- colorRampPalette(c("black", "green"), space = "rgb")
-#   
-#   
-#   if (!dir.exists(output_folder)){
-#     dir.create(output_folder)
-#   }
-#   filename = paste0(output_folder, "tmp%03d.", filetype, sep = '')
-#   mov_name_to_use = paste0(output_folder, mov_name, '.mpg', sep = '')
-#   if (filetype == 'png'){
-#     png(filename, height = dim(img_stack)[1], width = dim(img_stack)[2])
-#   } else if (filetype == 'jpg'){
-#     jpeg(filename, height = dim(img_stack)[1], width = dim(img_stack)[2])
-#   }
-#   
-#   im_num = dim(img_stack)[3]
-#   for (i in seq(im_num)){
-#     
-#     image(img_stack[, , i], zlim = c(0, 100), col = rgb.palette(512)) #, col = grey(seq(0, 1, length = 256))
-#     
-#     print(paste0(i, ' of ', im_num))
-#   }
-#   dev.off()
-#   
-# }
-
-
-#     if ((realisation_ind == 1) && (feature_ind == 1)){
-#       output_folder = paste0(global_params$collated_folder, '/mov_', 
-#                           formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/')
-#       if( (global_params$write_movie == TRUE) || (global_params$write_offset_layer == TRUE) ){
-#         if(!(file.exists(output_folder))){
-#           dir.create(output_folder)
-#         }
-#       }
-#       if ( global_params$write_movie == TRUE){
-#         write_frames(current_data_stack, filetype = 'png', output_folder, data_object$site_characteristics, global_params, current_simulation_params, 
-#                      offset_site_indexes = unlist(output_object$offsets$site_indexes), 
-#                      intervention_yrs = unlist(output_object$offsets$intervention_yrs))
-#       }
-#     }
 
 
 
