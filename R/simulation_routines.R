@@ -291,7 +291,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
     # return null object when clearing is inactive
     return(simulation_data_object)
   }
-  browser()
+
   available_site_indexes = setdiff(unlist(simulation_data_object$output_data$index_object$available_indexes$unregulated_loss), 
                                    unlist(simulation_data_object$output_data$index_object$site_indexes_used))
   inds_to_clear <- select_sites_to_clear(available_site_indexes, simulation_data_object$simulation_params)
