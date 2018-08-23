@@ -976,7 +976,6 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
   } 
   
   if (max_site_screen_size_quantile < 1){
-    browser()
     bigs_to_exclude = which(site_element_num > quantile(site_element_num, probs = max_site_screen_size_quantile))
     indexes_to_exclude = unique(c(indexes_to_exclude, bigs_to_exclude))
   }
