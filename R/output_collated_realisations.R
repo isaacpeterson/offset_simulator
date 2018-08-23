@@ -62,7 +62,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     }
   }
   
-  setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
+  
   
   
   if (output_params$output_plot == TRUE){
@@ -77,7 +77,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       pdf(output_pdf_filename, width = 8.3, height = 11.7)
       
     }
-    
+    setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
     plot_ctr <- 1
     
     for (scenario_ind in scenario_vec){
