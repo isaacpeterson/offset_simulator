@@ -254,7 +254,15 @@ build_input_data <- function(params_object, scenario_ind){
     simulation_data_object$offset_probability_list <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
     
   }
-  
+  if (!(file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))) |
+      (simulation_data_object$global_params$overwrite_unregulated_probability_list == TRUE)){
+    flog.info('assigning equal unregulated loss probability to all sites')
+    simulation_data_object$unregulated_probability_list <- rep(list(1/length(simulation_data_object$site_characteristics$land_parcels)), length(simulation_data_object$site_characteristics$land_parcels))
+    
+  } else {
+    simulation_data_object$unregulated_probability_list <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))
+    
+  }
   return(simulation_data_object)
   
 }
@@ -303,7 +311,8 @@ build_output_data <- function(simulation_data_object){
                                                      simulation_data_object$site_features, 
                                                      simulation_data_object$simulation_params,
                                                      offset_indexes_to_exclude = which(unlist(simulation_data_object$offset_probability_list) == 0), 
-                                                     dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0))
+                                                     dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0), 
+                                                     unregulated_indexes_to_exclude = which(unlist(simulation_data_object$unregulated_probability_list) == 0))
   interventions = vector('list', 5)
   names(interventions) = names(output_data$index_object$site_indexes_used)
   output_data$interventions = interventions
@@ -906,7 +915,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(site_characteristics, site_features_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude){
+initialise_index_object <- function(site_characteristics, site_features_initial, simulation_params, offset_indexes_to_exclude, dev_indexes_to_exclude, unregulated_indexes_to_exclude){
   
   index_object = list()
   index_object$banked_offset_pool = list()
@@ -920,7 +929,8 @@ initialise_index_object <- function(site_characteristics, site_features_initial,
                                                                  site_characteristics$land_parcels, 
                                                                  site_features_initial, 
                                                                  screen_site_zeros = simulation_params$screen_offset_zeros,
-                                                                 site_screen_size = simulation_params$site_screen_size,
+                                                                 min_site_screen_size = simulation_params$min_site_screen_size,
+                                                                 max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                                  simulation_params$features_to_use_in_offset_calc)
   
   index_object$available_indexes$devs = set_available_indexes(global_indexes = site_characteristics$site_indexes, 
@@ -928,13 +938,24 @@ initialise_index_object <- function(site_characteristics, site_features_initial,
                                                               site_characteristics$land_parcels, 
                                                               site_features_initial, 
                                                               screen_site_zeros = simulation_params$screen_dev_zeros,
-                                                              site_screen_size = simulation_params$site_screen_size,
+                                                              min_site_screen_size = simulation_params$min_site_screen_size,
+                                                              max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
+                                                              simulation_params$features_to_use_in_offset_calc)
+  
+  index_object$available_indexes$unregulated_loss = set_available_indexes(global_indexes = site_characteristics$site_indexes, 
+                                                              indexes_to_exclude = unregulated_indexes_to_exclude,
+                                                              site_characteristics$land_parcels, 
+                                                              site_features_initial, 
+                                                              screen_site_zeros = TRUE,
+                                                              min_site_screen_size = simulation_params$min_site_screen_size,
+                                                              max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                               simulation_params$features_to_use_in_offset_calc)
   return(index_object)
 }
 
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_features, screen_site_zeros, site_screen_size, features_to_use_in_offset_calc){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_features, screen_site_zeros, min_site_screen_size, max_site_screen_size_quantile, 
+                                  features_to_use_in_offset_calc){
   
   if (screen_site_zeros == TRUE){
 
@@ -947,14 +968,22 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
     indexes_to_exclude = unique(c(indexes_to_exclude, zeros_to_exclude))
   }
   
-  if (site_screen_size > 0){
-    parcel_lengths <- unlist(lapply(seq_along(land_parcels), function(i) length(land_parcels[[i]])))
-    smalls_to_exclude = which(parcel_lengths < site_screen_size)
+  parcel_lengths <- unlist(lapply(seq_along(land_parcels), function(i) length(land_parcels[[i]])))
+  
+  if (min_site_screen_size > 0){
+    smalls_to_exclude = which(parcel_lengths < min_site_screen_size)
     indexes_to_exclude = unique(c(indexes_to_exclude, smalls_to_exclude))
   } 
   
+  if (max_site_screen_size_quantile < 1){
+    browser()
+    bigs_to_exclude = which(parcel_lengths > quantile(parcel_lengths, probs = max_site_screen_size_quantile))
+    indexes_to_exclude = unique(c(indexes_to_exclude, bigs_to_exclude))
+  }
+  
   inds_to_remove = which(global_indexes %in% indexes_to_exclude)
   available_indexes = global_indexes
+  
   if (length(inds_to_remove) > 0){
     available_indexes = available_indexes[-inds_to_remove]
   }

@@ -426,9 +426,9 @@ output_feature_layers <- function(feature_ind, current_data_dir, current_simulat
       
       if (length(interventions_to_use) > 0){
 
-        sites_to_use = lapply(interventions_to_use, function(i) current_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])
-        
-        inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(current_element_indexes_grouped_by_feature_condition_class[unlist(sites_to_use[[i]])]))
+        sites_to_use = lapply(interventions_to_use, function(i) unlist(current_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
+
+        inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(current_element_indexes_grouped_by_feature_condition_class[sites_to_use[[i]]]))
         new_vals = lapply(seq_along(interventions_to_use), function(i) current_feature_layer[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
         
         current_feature_layer[unlist(inds_to_update)] = unlist(new_vals)

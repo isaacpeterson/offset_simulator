@@ -65,6 +65,7 @@ initialise_default_global_params <- function(){
   default_global_params$save_management_dynamics = FALSE
   default_global_params$overwrite_dev_probability_list = FALSE
   default_global_params$overwrite_offset_probability_list = FALSE
+  default_global_params$overwrite_unregulated_probability_list = FALSE
   default_global_params$overwrite_management_dynamics = FALSE
   default_global_params$overwrite_feature_dynamics = FALSE
   default_global_params$overwrite_condition_classes = FALSE
@@ -126,7 +127,10 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$screen_dev_zeros = TRUE
     
     # ignore parcels with size below this number of elements 
-    default_simulation_params$site_screen_size = 0 
+    default_simulation_params$min_site_screen_size = 0 
+    
+    # ignore parcels with size below this number of elements 
+    default_simulation_params$max_site_screen_size_quantile = 1
     
     default_simulation_params$match_threshold_ratio = 0.01 
     
