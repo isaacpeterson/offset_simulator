@@ -166,9 +166,15 @@ build_input_data <- function(params_object, scenario_ind){
                                                          simulation_data_object$site_characteristics$land_parcels, 
                                                          background_condition_class_layers, 
                                                          simulation_data_object$feature_dynamics_modes)
+
+    simulation_data_object$site_element_index_key = lapply(seq_along(simulation_data_object$site_features), 
+                                                           function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+                                                                              function(j) match(simulation_data_object$site_characteristics$land_parcels[[i]], 
+                                                                                                do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
     
     saveRDS(object = simulation_data_object$site_features, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
     saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
+    saveRDS(object = simulation_data_object$site_element_index_key, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
     
   } else {
     simulation_data_object$site_features = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
