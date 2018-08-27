@@ -422,7 +422,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
 
   for (yr in 0:time_steps){
     
-    current_feature_layer = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
+    feature_layer_to_output = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
 
     if (use_offset_metric == FALSE){
       
@@ -431,13 +431,13 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
                                     function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
       
-      current_feature_layer[unlist(current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
+      feature_layer_to_output[unlist(current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
       
     } else {
 
       feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), function(i) as.matrix(feature_layer_to_use[[i]]))
-      current_feature_layer[unlist(site_characteristics$land_parcels)] = unlist(feature_layer_to_use)
+      feature_layer_to_output[unlist(site_characteristics$land_parcels)] = unlist(feature_layer_to_use)
       
     }
     
@@ -450,7 +450,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
         raster_filename = paste0(output_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
       }
       
-      current_feature_raster = raster(current_feature_layer)
+      current_feature_raster = raster(feature_layer_to_output)
 
       writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       
@@ -458,7 +458,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     
     if (output_mov == TRUE){
 
-      current_feature_layer = current_feature_layer * 127/scale_factor #map to color vector 0:127
+      feature_layer_to_output = feature_layer_to_output * 127/scale_factor #map to color vector 0:127
       
       sets_to_use = lapply(seq_along(example_simulation_outputs$interventions), function(i) which(unlist(example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
@@ -473,14 +473,14 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
 
-        new_vals = lapply(seq_along(interventions_to_use), function(i) current_feature_layer[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
+        new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
 
-        current_feature_layer[unlist(inds_to_update)] = unlist(new_vals)
+        feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
       }
       
       # rotate image with t(...) to align with tiff output
-
-      image(t(apply(current_feature_layer, 2, rev)), zlim = c(0, 257), col = col_vec)
+      feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev)
+      image(feature_layer_to_output), zlim = c(0, 257), col = col_vec)
     }
     
   }
