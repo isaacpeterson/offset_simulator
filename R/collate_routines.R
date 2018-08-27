@@ -31,11 +31,14 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
     flog.info('building user metric counterfactuals over time series (this may take a while)')
   }
   
+  site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
+  
   site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
                                                       simulation_params, 
                                                       feature_params,
                                                       feature_dynamics[intervention_pool],
                                                       feature_dynamics_modes[intervention_pool],
+                                                      site_element_index_key[intervention_pool],
                                                       projection_yrs_pool,
                                                       intervention_yrs_pool,
                                                       site_num_remaining_pool,
@@ -50,6 +53,7 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
                                    feature_params,
                                    feature_dynamics,
                                    feature_dynamics_modes,
+                                   site_element_index_key,
                                    background_projection_yrs_pool,
                                    intervention_yrs = rep(1, length(initial_feature_layer)),
                                    vector(),
@@ -320,7 +324,7 @@ collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated
 
 
 
-collate_cfacs <- function(site_features_group, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, projection_yrs, intervention_yrs, 
+collate_cfacs <- function(site_features_group, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, site_element_index_key, projection_yrs, intervention_yrs, 
                           site_num_remaining_pool, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric){
   
   
@@ -392,11 +396,13 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
                                                                                                                  cfac_params[[i]]$include_unregulated_loss,
                                                                                                                  cfac_params[[i]]$adjust_cfacs_flag,
                                                                                                                  time_fill = FALSE,
-                                                                                                                 bind_condition_classes = TRUE))), nrow = 1))) )
+                                                                                                                 bind_condition_classes = TRUE, 
+                                                                                                                 sort_condition_classes = FALSE, 
+                                                                                                                 site_element_index_key = vector()))), nrow = 1))) )
     
     
   } else {
-    
+
     cfacs = lapply(seq_along(site_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) matrix(apply(user_transform_function( calc_site_cfacs(site_features_group[[i]],
@@ -412,14 +418,16 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
                                                                                                                        cfac_params[[i]]$include_unregulated_loss,
                                                                                                                        cfac_params[[i]]$adjust_cfacs_flag,
                                                                                                                        time_fill = FALSE,
-                                                                                                                       bind_condition_classes = TRUE), simulation_params$transform_params ), 1, 'sum'), nrow = 1) )))
+                                                                                                                       bind_condition_classes = TRUE, 
+                                                                                                                       sort_condition_classes = FALSE, 
+                                                                                                                       site_element_index_key[[i]]), 
+                                                                                                       simulation_params$transform_params ), 1, 'sum'), nrow = 1) )))
     
   }
   
   return(cfacs)
   
 }
-
 
 
 
