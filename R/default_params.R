@@ -359,13 +359,14 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$plot_subset_type = 'all'
   default_output_params$plot_subset_param = 'all'
   default_output_params$plot_offset_metric = FALSE
+  default_output_params$output_mov = FALSE
   default_output_params$plot_site_offset = TRUE 
   default_output_params$plot_site_dev = TRUE
   default_output_params$plot_site_net = TRUE
   default_output_params$plot_site = TRUE
   default_output_params$plot_program = TRUE
   default_output_params$plot_landscape = TRUE
-  default_output_params$features_to_plot = 'all'
+  default_output_params$features_to_output = 'all'
   default_output_params$site_impact_lwd = 0.5
   default_output_params$site_outcome_lwd_vec = c(0.5)
   default_output_params$program_lwd_vec = c(3, 0.5)
