@@ -4,8 +4,8 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   # run simulation with identical realisation instantiation
   
   current_data_dir = write_folder(paste0(simulation_data_object$global_params$output_folder, 
-                                         'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), 
-                                         '/realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"), '/'))
+                                         'scenario_', formatC(scenario_ind, simulation_data_object$global_params$string_width, format = "d", flag = "0"), 
+                                         '/realisation_', formatC(realisation_ind, simulation_data_object$global_params$string_width, format = "d", flag = "0"), '/'))
   
   save_landscape_routine(simulation_data_object, current_data_dir, yr = 0)
   
@@ -16,14 +16,14 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   # save raw simulation data
   if (simulation_data_object$global_params$save_simulation_outputs == TRUE){
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
-                                           formatC(realisation_ind, width = 3, format = "d", flag = "0"),
+                                           formatC(realisation_ind, simulation_data_object$global_params$string_width, format = "d", flag = "0"),
                                            '_outputs.rds'))
   }
   
   
   file_prefix = paste0(simulation_data_object$global_params$collated_folder,
-                       'collated_scenario_',  formatC(scenario_ind, width = 3, format = "d", flag = "0"),
-                       '_realisation_', formatC(realisation_ind, width = 3, format = "d", flag = "0"))
+                       'collated_scenario_',  formatC(scenario_ind, simulation_data_object$global_params$string_width, format = "d", flag = "0"),
+                       '_realisation_', formatC(realisation_ind, simulation_data_object$global_params$string_width, format = "d", flag = "0"))
   
   run_collate_routines(simulation_outputs,
                        simulation_data_object$feature_dynamics, 
@@ -154,8 +154,8 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
   for (feature_ind in seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation)){
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
-    file_prefix = paste0('feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = 3, format = "d", flag = "0"), 
-                         '_yr_', formatC(yr, width = 3, format = "d", flag = "0"))
+    file_prefix = paste0('feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], simulation_data_object$global_params$string_width, format = "d", flag = "0"), 
+                         '_yr_', formatC(yr, simulation_data_object$global_params$string_width, format = "d", flag = "0"))
     
     saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
 
@@ -175,7 +175,7 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     current_metric_layers = lapply(seq_along(current_metric_layers), 
                                    function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
     
-    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, simulation_data_object$global_params$string_width, format = "d", flag = "0"), '.rds'))
     
 #     if(simulation_data_object$global_params$save_output_raster == TRUE){
 #       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
