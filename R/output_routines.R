@@ -90,7 +90,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     
   }
   
-  if ((output_paramsoutput_image_layers == TRUE) || (output_params$output_raster_layers == TRUE)){
+  if ((output_params$output_image_layers == TRUE) || (output_params$output_raster_layers == TRUE)){
     
 
     for (scenario_ind in scenario_vec){
@@ -232,7 +232,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
       
       
       output_collated_features(features_to_use = features_to_output, 
-                               plot_offset_metric = FALSE, 
+                               use_offset_metric = FALSE, 
                                scenario_ind, 
                                output_params,
                                global_params, 
@@ -247,7 +247,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
       
       if (output_params$plot_offset_metric == TRUE){
         output_collated_features(features_to_use = 1, 
-                                 plot_offset_metric = TRUE, 
+                                 use_offset_metric = TRUE, 
                                  scenario_ind, 
                                  output_params, 
                                  global_params, 
@@ -267,11 +267,9 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
 } 
 
 
-output_collated_features <- function(features_to_use, plot_offset_metric, scenario_ind, output_params, global_params, feature_params, collated_realisations, current_simulation_params, 
+output_collated_features <- function(features_to_use, use_offset_metric, scenario_ind, output_params, global_params, feature_params, collated_realisations, current_simulation_params, 
                                      site_element_indexes_grouped_by_condition_classes, example_simulation_outputs, site_characteristics, current_data_dir, collated_folder){
   
-  
-
   if (output_params$output_raster_layers == TRUE){
     output_raster_folder = paste0(collated_folder, '/output_rasters/')
     if (!dir.exists(output_raster_folder)){
@@ -280,6 +278,7 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
   } else {
     output_raster_folder = vector()
   }
+  
   if (output_params$output_image_layers == TRUE){
     output_image_folder = paste0(collated_folder, '/output_image_layers/')
     if (!dir.exists(output_image_folder)){
@@ -289,11 +288,9 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
     output_image_folder = vector()
   }
 
-  
-  
   for (feature_ind in features_to_use){
     
-    if (plot_offset_metric == TRUE){
+    if (use_offset_metric == TRUE){
       collated_filenames = paste0(collated_folder, list.files(path = collated_folder, all.files = FALSE,
                                       full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                       include.dirs = FALSE, no.. = FALSE, pattern = '_metric'))
@@ -303,41 +300,39 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
                                                scenario_string = formatC(scenario_ind, width = global_params$string_width, format = "d", flag = "0"),
                                                feature_string = formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"),
                                                output_params$realisation_num)
-      
-      
     }
     
     collated_realisations = bind_collated_realisations(collated_filenames)
     
     if (output_params$output_plot == TRUE){
       flog.info('writing plot outputs')
-      
-      
       plot_outputs(output_params, feature_ind, collated_realisations, current_simulation_params)
     }
     
     if ((output_params$output_image_layers == TRUE) | (output_params$output_raster_layers == TRUE)){
+      
+      if (use_offset_metric == FALSE){
+        
       flog.info('writing feature layer outputs for feature %s', feature_ind)
-      if (plot_offset_metric == FALSE){
       current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), 
                                                                           function(i) site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
-      
       output_feature_layers(feature_ind, 
                             current_data_dir, 
                             example_simulation_outputs,
-                            output_raster_folder, 
-                            output_image_folder,
-                            plot_offset_metric, 
+                            raster_file_prefix = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_yr_'), 
+                            image_file_prefix = paste0(output_image_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_yr_'),
+                            use_offset_metric, 
                             output_raster_layers = output_params$output_raster_layers, 
                             output_params$output_image_layers,
                             output_params$output_image_file_type, 
-                            image_file_prefix = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_'),
                             current_element_indexes_grouped_by_feature_condition_class, 
                             current_simulation_params$time_steps, 
                             site_characteristics, 
                             scale_factor = max(unlist(feature_params$condition_class_bounds[[feature_ind]])))
       
       } else {
+        flog.info('writing metric layer outputs')
+
         # get the largest value for each condition class
         vals_to_transform = lapply(seq_along(feature_params$condition_class_bounds), function(i) max(unlist(feature_params$condition_class_bounds[[i]])))
         #transform this set to user metric and use this to scale the colors
@@ -346,13 +341,12 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
         output_feature_layers(feature_ind, 
                               current_data_dir, 
                               example_simulation_outputs,
-                              output_raster_folder, 
-                              output_image_folder,
+                              raster_file_prefix = paste0(raster_image_folder, 'metric_yr_'), 
+                              image_file_prefix = paste0(output_image_folder, 'metric_yr_'),
                               use_offset_metric = TRUE, 
                               output_raster_layers = output_params$output_raster_layers, 
                               output_params$output_image_layers,
                               output_params$output_image_file_type, 
-                              image_file_prefix = paste0(output_raster_folder, 'metric_'),
                               current_element_indexes_grouped_by_feature_condition_class = vector(), 
                               current_simulation_params$time_steps, 
                               site_characteristics, 
@@ -406,14 +400,14 @@ plot_outputs <- function(output_params, feature_ind, collated_realisations, curr
   
 }
 
-output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, output_raster_folder,  output_image_folder, use_offset_metric, output_raster_layers, 
-                                  output_image_layers, image_file_prefix, output_image_file_type, 
-                                  current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
+output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, raster_file_prefix, image_file_prefix, use_offset_metric, output_raster_layers, 
+                                  output_image_layers, output_image_file_type, current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
   
   
   intervention_pool = lapply(seq_along(example_simulation_outputs$interventions), function(i) example_simulation_outputs$interventions[[i]]$site_indexes)
   
   if (output_image_layers == TRUE){
+
     graphics.off()
     # standard feature representation: 0-127 :black-green - 
     # offset representation: 128-255 :black-blue - 
@@ -422,6 +416,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     black_green.palette <- colorRampPalette(c("black", "green"), space = "rgb")  
     black_blue.palette <- colorRampPalette(c("black", "blue"), space = "rgb")
     col_vec = c(black_green.palette(128), black_blue.palette(128), 'red', 'orange')
+    
     image_filename = paste0(image_file_prefix, "%03d.", output_image_file_type, sep = '')
     
     col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
@@ -433,6 +428,10 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     }
   }
 
+  if (output_raster_layers == TRUE){
+    raster_filename = paste0(raster_file_prefix, "%03d", '.tif', sep = '')
+  }
+  
   for (yr in 0:time_steps){
     
     feature_layer_to_output = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
@@ -456,15 +455,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     
     if (output_raster_layers == TRUE){
       
-      if (use_offset_metric == FALSE){
-        raster_filename = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
-                                 '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
-      } else{
-        raster_filename = paste0(output_raster_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
-      }
-      
       current_feature_raster = raster(feature_layer_to_output)
-
       writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       
     }
