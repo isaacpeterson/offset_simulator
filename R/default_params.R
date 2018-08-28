@@ -340,12 +340,12 @@ initialise_default_feature_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
-  default_output_params$save_output_raster = TRUE
-  default_output_params$mov_file_type = 'png'
+  default_output_params$output_raster_layers = TRUE
+  default_output_params$output_image_file_type = 'png'
   default_output_params$output_plot = TRUE 
-  default_output_params$output_movie = TRUE
+  default_output_params$output_image_layers = TRUE
   default_output_params$output_csv_file = TRUE
-  default_output_params$output_plot_folder = vector()
+  default_output_params$output_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot
   default_output_params$write_pdf = TRUE
@@ -359,7 +359,6 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$plot_subset_type = 'all'
   default_output_params$plot_subset_param = 'all'
   default_output_params$plot_offset_metric = FALSE
-  default_output_params$output_mov = FALSE
   default_output_params$plot_site_offset = TRUE 
   default_output_params$plot_site_dev = TRUE
   default_output_params$plot_site_net = TRUE
