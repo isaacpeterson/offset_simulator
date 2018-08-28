@@ -62,7 +62,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
       } else if (output_params$plot_type == 'outcomes'){
         output_pdf_filename = paste0(output_folder, '/outcomes.pdf')
       }
-      flog.info('writing to PDF %s', output_pdf_filename)
+      flog.info('writing PDF to %s', output_pdf_filename)
       pdf(output_pdf_filename, width = 8.3, height = 11.7)
       
     }
@@ -122,7 +122,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
 # current run number the function looks for thaht specified folder and looks for the latest run otherwise.
 
 #' @export
-find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
+find_current_run_folder <- function(base_folder = NULL, run_number = NULL, integer_placeholder_width){
   
   #if (!is.null(base_folder) & (length(base_folder) > 0) & (base_folder != 'default')){
   if (!is.null(base_folder)){
@@ -144,7 +144,8 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
     current_run = as.numeric(filenames[length(filenames)])
   }
   
-  simulation_folder = paste0(simulation_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/')
+  simulation_folder = paste0(simulation_folder, formatC(current_run, width = integer_placeholder_width, format = "d", flag = "0"), '/')
+  
   if (!dir.exists(simulation_folder)){
     flog.error('simulation_folder %s does not exist.', simulation_folder)
     stop()
@@ -152,9 +153,6 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
     return(simulation_folder)
   }
 }
-
-
-
 
 output_scenario <- function(output_type, simulation_params_folder, simulation_output_folder, collated_folder, 
                             scenario_filenames, scenario_ind, output_params, param_variants_filename,
@@ -166,6 +164,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
   file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
   flog.trace('reading %s', file_to_Read)
   current_simulation_params = readRDS(file_to_Read)
+
   current_data_dir = paste0(simulation_output_folder, '/scenario_', 
                             formatC(scenario_ind, width = integer_placeholder_width, format = "d", flag = "0"),
                             '/realisation_', formatC(output_params$example_realisation_to_output, width = integer_placeholder_width, format = "d", flag = "0"), '/') 
@@ -475,8 +474,8 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
         }
 
         new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
-
         feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
+        
       }
       
       # rotate image with t(...) to align with tiff output

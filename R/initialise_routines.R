@@ -659,7 +659,7 @@ save_params <- function(global_params, simulation_params_group, feature_params){
     current_run = 1
   } 
   
-  global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = 5, format = "d", flag = "0"), '/'))
+  global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = global_params$integer_placeholder_width, format = "d", flag = "0"), '/'))
   global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
   flog.info('writing simulation outputs into %s', global_params$run_folder)
   
@@ -677,6 +677,7 @@ save_params <- function(global_params, simulation_params_group, feature_params){
   
   global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
   global_params_file = paste0(global_params$simulation_params_folder,  'global_params')
+  browser()
   saveRDS(global_params, paste0(global_params$simulation_params_folder,  'global_params.rds'))
   
   dump('global_params', paste0(global_params$simulation_params_folder,  'global_params.R'), control = NULL)
