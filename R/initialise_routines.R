@@ -303,7 +303,7 @@ build_condition_class_layers <- function(initial_features, global_params, featur
     
     lapply(seq_along(background_condition_class_layers), function(i) writeRaster(background_condition_class_rasters[[i]], 
                                                                                  paste0(global_params$simulation_inputs_folder, 'condition_class_raster_', 
-                                                                                        formatC(simulation_params$features_to_use_in_simulation[i], width = 3, format = "d", flag = "0"), '.tif'),
+                                                                                        formatC(simulation_params$features_to_use_in_simulation[i], global_params$string_width, format = "d", flag = "0"), '.tif'),
                                                                                  overwrite = TRUE))
     
   }
@@ -672,7 +672,7 @@ save_params <- function(global_params, simulation_params_group, feature_params){
   }
   
   for (scenario_ind in global_params$scenario_subset){
-    write_folder(paste0(global_params$output_folder, '/scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '/'))
+    write_folder(paste0(global_params$output_folder, '/scenario_', formatC(scenario_ind, global_params$string_width, format = "d", flag = "0"), '/'))
   }
   
   global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
@@ -687,7 +687,7 @@ save_params <- function(global_params, simulation_params_group, feature_params){
   for (scenario_ind in global_params$scenario_subset){
     current_simulation_params = simulation_params_group[[scenario_ind]]
     simulation_params_file = paste0(global_params$simulation_params_folder,  
-                                    'scenario_', formatC(scenario_ind, width = 3, format = "d", flag = "0"), '_simulation_params')
+                                    'scenario_', formatC(scenario_ind, global_params$string_width, format = "d", flag = "0"), '_simulation_params')
     
     saveRDS(current_simulation_params, paste0(simulation_params_file, '.rds'))
     dump('current_simulation_params', paste0(simulation_params_file, '.R'), control = NULL)
