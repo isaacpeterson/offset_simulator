@@ -317,7 +317,7 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
     }
     
     if ((output_params$output_image_layers == TRUE) | (output_params$output_raster_layers == TRUE)){
-      flog.info('writing feature_layer outputs')
+      flog.info('writing feature layer outputs for feature %s', feature_ind)
       if (plot_offset_metric == FALSE){
       current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), 
                                                                           function(i) site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
@@ -406,7 +406,8 @@ plot_outputs <- function(output_params, feature_ind, collated_realisations, curr
   
 }
 
-output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, output_raster_folder,  output_image_folder, use_offset_metric, output_raster_layers, output_image_layers, image_file_prefix, output_image_file_type, 
+output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, output_raster_folder,  output_image_folder, use_offset_metric, output_raster_layers, 
+                                  output_image_layers, image_file_prefix, output_image_file_type, 
                                   current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
   
   
@@ -454,7 +455,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     }
     
     if (output_raster_layers == TRUE){
-      flog.info('writing raster series')
+      
       if (use_offset_metric == FALSE){
         raster_filename = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
                                  '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
@@ -469,7 +470,6 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     }
     
     if (output_image_layers == TRUE){
-      flog.info('writing image series')
 
       feature_layer_to_output = feature_layer_to_output * 127/scale_factor #map to color vector 0:127
       
