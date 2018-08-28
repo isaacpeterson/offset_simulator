@@ -43,76 +43,67 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, log
     scenario_vec = output_params$scenario_vec
   }
   
-  if (length(output_params$output_plot_folder) == 0){
-    output_plot_folder = collated_folder
+  if (length(output_params$output_folder) == 0){
+    output_folder = collated_folder
   } else {
-    output_plot_folder = output_params$output_plot_folder
+    output_folder = output_params$output_folder
   }
   
-  if (!file.exists(output_plot_folder)){
-    flog.info('creating output plot folder %s', output_plot_folder)
-    dir.create(output_plot_folder)
+  if (!file.exists(output_folder)){
+    flog.info('creating output plot folder %s', output_folder)
+    dir.create(output_folder)
   }
-  
-  
-  raster_output_folder = paste0(collated_folder, '/output_rasters/')
-  if (!dir.exists(raster_output_folder)){
-    dir.create(raster_output_folder)
-  }
-  
   
   if (output_params$output_plot == TRUE){
     # Set the output filename, and open the pdf file for reading
     if (output_params$write_pdf == TRUE){
       if (output_params$plot_type == 'impacts'){
-        output_pdf_filename = paste0(output_plot_folder, '/impacts.pdf')
+        output_pdf_filename = paste0(output_folder, '/impacts.pdf')
       } else if (output_params$plot_type == 'outcomes'){
-        output_pdf_filename = paste0(output_plot_folder, '/outcomes.pdf')
+        output_pdf_filename = paste0(output_folder, '/outcomes.pdf')
       }
       flog.info('writing to PDF %s', output_pdf_filename)
       pdf(output_pdf_filename, width = 8.3, height = 11.7)
       
     }
     setup_sub_plots(output_params$nx, output_params$ny, x_space = 5, y_space = 5)
-    plot_ctr <- 1
-    
+
     for (scenario_ind in scenario_vec){
       output_scenario(output_type = 'plot', 
                       simulation_params_folder, 
                       simulation_output_folder, 
-                      raster_output_folder,
+                      collated_folder,
                       scenario_filenames, 
                       scenario_ind, 
                       output_params, 
                       param_variants_filename,
                       global_params, 
-                      collated_folder, 
-                      plot_ctr, 
                       site_element_indexes_grouped_by_condition_classes, 
                       site_characteristics, 
                       feature_params)
-      plot_ctr <- plot_ctr + 1
     }
+    
     if (output_params$write_pdf == TRUE) {
       graphics.off()
       flog.info('closing PDF %s', output_pdf_filename)
     }
+    
   }
   
-  if (output_params$output_movie == TRUE){
+  if ((output_paramsoutput_image_layers == TRUE) || (output_params$output_raster_layers == TRUE)){
     
+
     for (scenario_ind in scenario_vec){
+      
       output_scenario(output_type = 'feature_layer', 
                       simulation_params_folder, 
                       simulation_output_folder, 
-                      raster_output_folder,
+                      collated_folder,
                       scenario_filenames, 
                       scenario_ind, 
                       output_params, 
                       param_variants_filename,
                       global_params, 
-                      collated_folder, 
-                      plot_ctr = vector(), 
                       site_element_indexes_grouped_by_condition_classes, 
                       site_characteristics, 
                       feature_params)
@@ -165,10 +156,11 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL){
 
 
 
-output_scenario <- function(output_type, simulation_params_folder, simulation_output_folder, raster_output_folder, 
+output_scenario <- function(output_type, simulation_params_folder, simulation_output_folder, collated_folder, 
                             scenario_filenames, scenario_ind, output_params, param_variants_filename,
-                            global_params, collated_folder, plot_ctr, site_element_indexes_grouped_by_condition_classes, site_characteristics, feature_params){
+                            global_params, site_element_indexes_grouped_by_condition_classes, site_characteristics, feature_params){
   
+
   flog.info('_________________________________')
   
   file_to_Read = paste0(simulation_params_folder, '/', scenario_filenames[scenario_ind])
@@ -223,7 +215,6 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
       flog.trace(' skipping scenario %d', scenario_ind )
     } else {
       
-      flog.info(' generating plot %d (scen %d of type: %s)', plot_ctr, scenario_ind, output_params$plot_type)  
       if (file.exists(param_variants_filename)){
         flog.info(rbind(names(param_variants[[scenario_ind]]), as.vector(param_variants[[scenario_ind]]))) 
       }
@@ -252,8 +243,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
                                example_simulation_outputs,
                                site_characteristics,
                                current_data_dir, 
-                               collated_folder, 
-                               raster_output_folder)
+                               collated_folder)
       
       if (output_params$plot_offset_metric == TRUE){
         output_collated_features(features_to_use = 1, 
@@ -268,8 +258,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
                                  example_simulation_outputs,
                                  site_characteristics,
                                  current_data_dir, 
-                                 collated_folder,
-                                 raster_output_folder)
+                                 collated_folder)
       }
       
     } 
@@ -279,7 +268,28 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
 
 
 output_collated_features <- function(features_to_use, plot_offset_metric, scenario_ind, output_params, global_params, feature_params, collated_realisations, current_simulation_params, 
-                                     site_element_indexes_grouped_by_condition_classes, example_simulation_outputs, site_characteristics, current_data_dir, collated_folder, raster_output_folder){
+                                     site_element_indexes_grouped_by_condition_classes, example_simulation_outputs, site_characteristics, current_data_dir, collated_folder){
+  
+  
+
+  if (output_params$output_raster_layers == TRUE){
+    output_raster_folder = paste0(collated_folder, '/output_rasters/')
+    if (!dir.exists(output_raster_folder)){
+      dir.create(output_raster_folder)
+    }
+  } else {
+    output_raster_folder = vector()
+  }
+  if (output_params$output_image_layers == TRUE){
+    output_image_folder = paste0(collated_folder, '/output_image_layers/')
+    if (!dir.exists(output_image_folder)){
+      dir.create(output_image_folder)
+    }
+  } else {
+    output_image_folder = vector()
+  }
+
+  
   
   for (feature_ind in features_to_use){
     
@@ -306,7 +316,7 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
       plot_outputs(output_params, feature_ind, collated_realisations, current_simulation_params)
     }
     
-    if ((output_params$output_mov == TRUE) | (output_params$save_output_raster == TRUE)){
+    if ((output_params$output_image_layers == TRUE) | (output_params$output_raster_layers == TRUE)){
       flog.info('writing feature_layer outputs')
       if (plot_offset_metric == FALSE){
       current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(site_element_indexes_grouped_by_condition_classes), 
@@ -315,16 +325,17 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
       output_feature_layers(feature_ind, 
                             current_data_dir, 
                             example_simulation_outputs,
-                            raster_output_folder, 
+                            output_raster_folder, 
+                            output_image_folder,
                             plot_offset_metric, 
-                            save_output_raster = output_params$save_output_raster, 
-                            output_params$output_mov,
-                            output_params$mov_file_type, 
+                            output_raster_layers = output_params$output_raster_layers, 
+                            output_params$output_image_layers,
+                            output_params$output_image_file_type, 
+                            image_file_prefix = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_'),
                             current_element_indexes_grouped_by_feature_condition_class, 
                             current_simulation_params$time_steps, 
                             site_characteristics, 
-                            scale_factor = max(unlist(feature_params$condition_class_bounds[[feature_ind]])), 
-                            mov_file_prefix = paste0(raster_output_folder, 'feature_', formatC(feature_ind, width = global_params$string_width, format = "d", flag = "0"), '_'))
+                            scale_factor = max(unlist(feature_params$condition_class_bounds[[feature_ind]])))
       
       } else {
         # get the largest value for each condition class
@@ -335,16 +346,17 @@ output_collated_features <- function(features_to_use, plot_offset_metric, scenar
         output_feature_layers(feature_ind, 
                               current_data_dir, 
                               example_simulation_outputs,
-                              raster_output_folder, 
+                              output_raster_folder, 
+                              output_image_folder,
                               use_offset_metric = TRUE, 
-                              save_output_raster = output_params$save_output_raster, 
-                              output_params$output_mov,
-                              output_params$mov_file_type, 
+                              output_raster_layers = output_params$output_raster_layers, 
+                              output_params$output_image_layers,
+                              output_params$output_image_file_type, 
+                              image_file_prefix = paste0(output_raster_folder, 'metric_'),
                               current_element_indexes_grouped_by_feature_condition_class = vector(), 
                               current_simulation_params$time_steps, 
                               site_characteristics, 
-                              scale_factor, 
-                              mov_file_prefix = paste0(raster_output_folder, 'metric_'))
+                              scale_factor)
       } 
     } 
     
@@ -394,13 +406,13 @@ plot_outputs <- function(output_params, feature_ind, collated_realisations, curr
   
 }
 
-output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, output_folder, use_offset_metric, save_output_raster, output_mov, mov_file_type, 
-                                  current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor, mov_file_prefix){
+output_feature_layers <- function(feature_ind, current_data_dir, example_simulation_outputs, output_raster_folder,  output_image_folder, use_offset_metric, output_raster_layers, output_image_layers, image_file_prefix, output_image_file_type, 
+                                  current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
   
   
   intervention_pool = lapply(seq_along(example_simulation_outputs$interventions), function(i) example_simulation_outputs$interventions[[i]]$site_indexes)
   
-  if (output_mov == TRUE){
+  if (output_image_layers == TRUE){
     graphics.off()
     # standard feature representation: 0-127 :black-green - 
     # offset representation: 128-255 :black-blue - 
@@ -409,14 +421,14 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
     black_green.palette <- colorRampPalette(c("black", "green"), space = "rgb")  
     black_blue.palette <- colorRampPalette(c("black", "blue"), space = "rgb")
     col_vec = c(black_green.palette(128), black_blue.palette(128), 'red', 'orange')
-    mov_filename = paste0(mov_file_prefix, "%03d.", mov_file_type, sep = '')
+    image_filename = paste0(image_file_prefix, "%03d.", output_image_file_type, sep = '')
     
     col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
     
-    if (mov_file_type == 'png'){
-      png(mov_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
-    } else if (mov_file_type == 'jpg'){
-      jpeg(mov_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
+    if (output_image_file_type == 'png'){
+      png(image_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
+    } else if (output_image_file_type == 'jpg'){
+      jpeg(image_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
     }
   }
 
@@ -441,13 +453,13 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
       
     }
     
-    if (save_output_raster == TRUE){
-      
+    if (output_raster_layers == TRUE){
+      flog.info('writing raster series')
       if (use_offset_metric == FALSE){
-        raster_filename = paste0(output_folder, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
+        raster_filename = paste0(output_raster_folder, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
                                  '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
       } else{
-        raster_filename = paste0(output_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
+        raster_filename = paste0(output_raster_folder, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.tif')
       }
       
       current_feature_raster = raster(feature_layer_to_output)
@@ -456,7 +468,8 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
       
     }
     
-    if (output_mov == TRUE){
+    if (output_image_layers == TRUE){
+      flog.info('writing image series')
 
       feature_layer_to_output = feature_layer_to_output * 127/scale_factor #map to color vector 0:127
       
@@ -479,12 +492,12 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
       }
       
       # rotate image with t(...) to align with tiff output
-      feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev)
-      image(feature_layer_to_output), zlim = c(0, 257), col = col_vec)
+      feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev))
+      image(feature_layer_to_output, zlim = c(0, 257), col = col_vec)
     }
     
   }
-  if (output_mov == TRUE){
+  if (output_image_layers == TRUE){
     dev.off()
   }
   
