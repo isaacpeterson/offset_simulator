@@ -340,7 +340,7 @@ output_collated_features <- function(features_to_use, use_offset_metric, scenari
         output_feature_layers(feature_ind, 
                               current_data_dir, 
                               example_simulation_outputs,
-                              raster_file_prefix = paste0(raster_image_folder, 'metric_yr_'), 
+                              raster_file_prefix = paste0(output_raster_folder, 'metric_yr_'), 
                               image_file_prefix = paste0(output_image_folder, 'metric_yr_'),
                               integer_placeholder_width,
                               use_offset_metric = TRUE, 

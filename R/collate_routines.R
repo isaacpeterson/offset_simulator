@@ -33,8 +33,7 @@ run_collate_routines <- function(simulation_outputs, feature_dynamics, feature_d
   }
   
   site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
-  
-  browser()
+
   site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
                                                       simulation_params, 
                                                       feature_params,
