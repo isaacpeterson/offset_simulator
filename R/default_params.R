@@ -16,7 +16,7 @@ initialise_default_global_params <- function(){
   default_global_params$scenario_subset = 'all'
   
   default_global_params$raster_file_type = '.tif'
-  
+  default_global_params$output_raster_tiff = TRUE
   # If set to 'defaul', the values in set in
   # initialise_default_feature_params() are used. Otherwise this can
   # be set to point to a file, that contains the initialise_default_feature_params() 

@@ -436,6 +436,7 @@ output_feature_layers <- function(feature_ind, current_data_dir, example_simulat
       
       feature_layer_to_use = readRDS(paste0(current_data_dir, 'feature_', formatC(feature_ind, width = 3, format = "d", flag = "0"), 
                                             '_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
+      
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
                                     function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
       

@@ -398,8 +398,7 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
                                                                                                                  cfac_params[[i]]$include_unregulated_loss,
                                                                                                                  cfac_params[[i]]$adjust_cfacs_flag,
                                                                                                                  time_fill = FALSE,
-                                                                                                                 bind_condition_classes = TRUE, 
-                                                                                                                 sort_condition_classes = FALSE, 
+                                                                                                                 unlist_condition_classes = FALSE, 
                                                                                                                  site_element_index_key = vector()))), nrow = 1))) )
     
     
@@ -420,8 +419,7 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
                                                                                                                        cfac_params[[i]]$include_unregulated_loss,
                                                                                                                        cfac_params[[i]]$adjust_cfacs_flag,
                                                                                                                        time_fill = FALSE,
-                                                                                                                       bind_condition_classes = TRUE, 
-                                                                                                                       sort_condition_classes = FALSE, 
+                                                                                                                       unlist_condition_classes = TRUE, 
                                                                                                                        site_element_index_key[[i]]), 
                                                                                                        simulation_params$transform_params ), 1, 'sum'), nrow = 1) )))
     

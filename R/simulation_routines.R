@@ -272,28 +272,49 @@ run_simulation <- function(simulation_data_object, current_data_dir){
   return(simulation_data_object$output_data)
 }
 
+
+unwrap_condition_classes <- function(current_site_feature, current_site_element_index_key){
+  current_site_feature <- do.call(cbind, current_site_feature)
+  current_site_feature <- current_site_feature[current_site_element_index_key]
+  return(current_site_feature)
+}
+
 save_landscape_routine <- function(simulation_data_object, current_data_dir, yr){
 
   for (feature_ind in seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation)){
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
-    file_prefix = paste0('feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), 
+    
+    file_prefix = paste0(current_data_dir, 'feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), 
                          '_yr_', formatC(yr, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"))
     
-    saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
+    saveRDS(feature_layer_to_save, paste0(file_prefix, '.rds'))
 
+    if (simulation_data_object$global_params$output_raster_tiff == TRUE){
+      feature_layer_to_save = lapply(seq_along(feature_layer_to_save), 
+                                     function(i) as.matrix(unwrap_condition_classes(feature_layer_to_save[[i]], 
+                                                                          simulation_data_object$site_element_index_key[[i]][[feature_ind]])))
+      feature_layer_to_output = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
+      feature_layer_to_output[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(feature_layer_to_save)
+      feature_layer_to_output = raster(feature_layer_to_output)
+      writeRaster(feature_layer_to_output, paste0(file_prefix, simulation_data_object$global_params$raster_file_type))
+    }
   }
-  
   
   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
     
-    current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
-                                   function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-                                                      function(j) do.call(cbind, simulation_data_object$site_features[[i]][[j]])))
+#     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
+#                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+#                                                       function(j) do.call(cbind, simulation_data_object$site_features[[i]][[j]])))
+#     
+#     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
+#                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+#                                                       function(j) current_metric_layers[[i]][[j]][simulation_data_object$site_element_index_key[[i]][[j]]]))
     
     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-                                                      function(j) current_metric_layers[[i]][[j]][simulation_data_object$site_element_index_key[[i]][[j]]]))
+                                                      function(j) unwrap_condition_classes(simulation_data_object$site_features[[i]][[j]], 
+                                                                                           simulation_data_object$site_element_index_key[[i]][[j]])))
     
     current_metric_layers = lapply(seq_along(current_metric_layers), 
                                    function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
@@ -1924,12 +1945,11 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                             include_unregulated_loss,
                                                                                             adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
                                                                                             time_fill = FALSE,
-                                                                                            bind_condition_classes = TRUE, 
-                                                                                            sort_condition_classes = FALSE, 
+                                                                                            unlist_condition_classes = FALSE, 
                                                                                             site_element_index_key = vector()))), nrow = 1))
         
       } else {
-        
+        browser()
         cfac_vals = lapply(seq_along(site_features_group), 
                            function(i) matrix(sum(user_transform_function(calc_site_cfacs(site_features_group[[i]],
                                                                                           projection_yrs[[i]],
@@ -1944,8 +1964,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                           include_unregulated_loss,
                                                                                           adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
                                                                                           time_fill = FALSE,
-                                                                                          bind_condition_classes = TRUE, 
-                                                                                          sort_condition_classes = TRUE, 
+                                                                                          unlist_condition_classes = TRUE, 
                                                                                           site_element_index_key[[i]]), simulation_params$transform_params)), ncol = 1))
         
       }
@@ -2009,13 +2028,17 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       
       if (simulation_params$use_offset_metric == TRUE){
 
-        projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
-                                           function(i) lapply(seq_along(projected_feature_layers[[i]]), function(j) do.call(cbind, projected_feature_layers[[i]][[j]])))
-        
-        projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
-                                           function(i) lapply(seq_along(projected_feature_layers[[i]]), 
-                                                              function(j) projected_feature_layers[[i]][[j]][ site_element_index_key [[i]][[j]]]))
-        
+#         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
+#                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), function(j) do.call(cbind, projected_feature_layers[[i]][[j]])))
+#         
+#         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
+#                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), 
+#                                                               function(j) projected_feature_layers[[i]][[j]][ site_element_index_key [[i]][[j]]]))
+        projected_feature_layers = lapply(seq_along(projected_feature_layers), 
+                                          function(i) lapply(seq_along(projected_feature_layers[[i]]),
+                                                             function(j) unwrap_condition_classes(projected_feature_layers[[i]][[j]], 
+                                                                                                  site_element_index_key[[i]][[j]])))
+
         projected_vals = lapply(seq_along(projected_feature_layers), function(i) sum(user_transform_function(projected_feature_layers[[i]], simulation_params$transform_params)))
         
       } else {
@@ -2158,7 +2181,7 @@ find_projection_yrs <- function(perform_dynamics_time_shift, current_site_featur
 
 calc_site_cfacs <- function(site_features, projection_yrs, cfac_weights, simulation_params, feature_params, feature_dynamics_to_use, feature_dynamics_modes_to_use,
                             time_horizons, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                            adjust_cfacs_flag, time_fill, bind_condition_classes, sort_condition_classes, site_element_index_key){
+                            adjust_cfacs_flag, time_fill, unlist_condition_classes, site_element_index_key){
   
   if (include_potential_offsets == TRUE){
     internal_time_fill = TRUE 
@@ -2185,12 +2208,8 @@ calc_site_cfacs <- function(site_features, projection_yrs, cfac_weights, simulat
                                                         function(j) adjust_cfacs(cfacs[[i]][[j]], cfac_weights[[i]], feature_dynamics_modes_to_use[[ i ]][[j]], time_fill)))
   } 
   
-  if (bind_condition_classes == TRUE){
-    cfacs = lapply(seq_along(cfacs), function(i) do.call(cbind, cfacs[[i]]))
-  }
-  
-  if (sort_condition_classes == TRUE){
-    cfacs = lapply(seq_along(cfacs), function(i) cfacs[[i]][site_element_index_key[[i]]])
+  if (unlist_condition_classes == TRUE){
+    cfacs = lapply(seq_along(cfacs), function(i) unwrap_condition_classes(cfacs[[i]], site_element_index_key[[i]]))
   }
   
   return(cfacs)
