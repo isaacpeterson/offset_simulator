@@ -1949,7 +1949,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                             site_element_index_key = vector()))), nrow = 1))
         
       } else {
-        browser()
+
         cfac_vals = lapply(seq_along(site_features_group), 
                            function(i) matrix(sum(user_transform_function(calc_site_cfacs(site_features_group[[i]],
                                                                                           projection_yrs[[i]],
