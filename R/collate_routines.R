@@ -172,7 +172,7 @@ build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool,
   
   for (yr in unique(current_intervention_yrs)){
     current_yr_set = as.vector(which(current_intervention_yrs == yr))
-    browser()
+
     current_site_feature_layer_filename = list.files(path = current_data_dir,
                                                      pattern = paste0(file_pattern, '_yr_', formatC((yr - 1), width = file_placeholder_width, format = "d", flag = "0")), 
                                                      all.files = FALSE,
