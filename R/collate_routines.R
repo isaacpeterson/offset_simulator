@@ -407,7 +407,7 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
 
     cfacs = lapply(seq_along(site_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
-                                                     function(j) matrix(apply(user_transform_function( calc_site_cfacs(site_features_group[[i]],
+                                                     function(j) matrix(sum(user_transform_function( calc_site_cfacs(site_features_group[[i]],
                                                                                                                        projection_yrs[[i]],
                                                                                                                        cfac_weights_group[[i]],
                                                                                                                        simulation_params,
@@ -422,7 +422,7 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
                                                                                                                        time_fill = FALSE,
                                                                                                                        unlist_condition_classes = TRUE, 
                                                                                                                        site_element_index_key[[i]]), 
-                                                                                                       simulation_params$transform_params ), 1, 'sum'), nrow = 1) )))
+                                                                                                       simulation_params$transform_params )), nrow = 1) )))
     
   }
   
