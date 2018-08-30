@@ -127,8 +127,8 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   # run simulation with identical realisation instantiation
   
   current_data_dir = write_folder(paste0(simulation_data_object$global_params$output_folder, 
-                                         'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), 
-                                         '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), '/'))
+                                         'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), 
+                                         '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), '/'))
   
   save_landscape_routine(simulation_data_object, current_data_dir, yr = 0)
   
@@ -139,14 +139,14 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   # save raw simulation data
   if (simulation_data_object$global_params$save_simulation_outputs == TRUE){
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
-                                           formatC(realisation_ind, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"),
+                                           formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
                                            '_outputs.rds'))
   }
   
   
   file_prefix = paste0(simulation_data_object$global_params$collated_folder,
-                       'collated_scenario_',  formatC(scenario_ind, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"),
-                       '_realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"))
+                       'collated_scenario_',  formatC(scenario_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
+                       '_realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"))
   
   run_collate_routines(simulation_outputs,
                        simulation_data_object$feature_dynamics, 
@@ -285,19 +285,24 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
     
-    file_prefix = paste0(current_data_dir, 'feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), 
-                         '_yr_', formatC(yr, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"))
+    file_prefix = paste0('feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), 
+                         '_yr_', formatC(yr, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"))
     
-    saveRDS(feature_layer_to_save, paste0(file_prefix, '.rds'))
+    saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
 
     if (simulation_data_object$global_params$output_raster_tiff == TRUE){
+
+      if (!file.exists(paste0(current_data_dir, 'raster_folder/'))){
+        dir.create(paste0(current_data_dir, 'raster_folder/'))
+      }
+      
       feature_layer_to_save = lapply(seq_along(feature_layer_to_save), 
                                      function(i) as.matrix(unwrap_condition_classes(feature_layer_to_save[[i]], 
                                                                           simulation_data_object$site_element_index_key[[i]][[feature_ind]])))
       feature_layer_to_output = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
       feature_layer_to_output[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(feature_layer_to_save)
       feature_layer_to_output = raster(feature_layer_to_output)
-      writeRaster(feature_layer_to_output, paste0(file_prefix, simulation_data_object$global_params$raster_file_type))
+      writeRaster(feature_layer_to_output, paste0(current_data_dir, 'raster_folder/', file_prefix, simulation_data_object$global_params$raster_file_type))
     }
   }
   
@@ -319,7 +324,7 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     current_metric_layers = lapply(seq_along(current_metric_layers), 
                                    function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
     
-    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$integer_placeholder_width, format = "d", flag = "0"), '.rds'))
+    saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), '.rds'))
     
 #     if(simulation_data_object$global_params$save_output_raster == TRUE){
 #       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
