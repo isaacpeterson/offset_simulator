@@ -651,7 +651,6 @@ save_params <- function(global_params, simulation_params_group, feature_params){
     base_run_folder = ('simulation_runs/')
   }
   
-  browser()
   current_run = find_current_run(base_run_folder)
   
   if ((global_params$unique_simulation_folder) & (length(current_run) > 0)){
