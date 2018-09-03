@@ -184,12 +184,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
   }
   
   
-  if (output_params$print_dev_offset_sites == TRUE){
-    sites_used = collated_realisations$sites_used
-    stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
-    mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
-    flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
-  }
+
   
   
   if (output_type == 'plot'){
@@ -235,7 +230,6 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
                                output_params,
                                file_placeholder_width, 
                                feature_params,
-                               collated_realisations, 
                                current_simulation_params, 
                                site_element_indexes_grouped_by_condition_classes,
                                example_simulation_outputs,
@@ -265,7 +259,7 @@ output_scenario <- function(output_type, simulation_params_folder, simulation_ou
 } 
 
 
-output_collated_features <- function(features_to_use, use_offset_metric, scenario_ind, output_params, file_placeholder_width, feature_params, collated_realisations, current_simulation_params, 
+output_collated_features <- function(features_to_use, use_offset_metric, scenario_ind, output_params, file_placeholder_width, feature_params, current_simulation_params, 
                                      site_element_indexes_grouped_by_condition_classes, example_simulation_outputs, site_characteristics, current_data_dir, collated_folder){
   
   if (output_params$output_raster_layers == TRUE){
@@ -301,6 +295,13 @@ output_collated_features <- function(features_to_use, use_offset_metric, scenari
     }
     
     collated_realisations = bind_collated_realisations(collated_filenames)
+    
+      if (output_params$print_dev_offset_sites == TRUE){
+        sites_used = collated_realisations$sites_used
+        stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
+        mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
+        flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+      }
     
     if (output_params$output_plot == TRUE){
       flog.info('writing plot outputs')

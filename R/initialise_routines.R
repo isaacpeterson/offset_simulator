@@ -2,6 +2,7 @@
 build_params <- function(user_global_params = NULL, user_feature_params = NULL, user_simulation_params = NULL){
   
   params_object = list()
+
   global_params <- build_global_params(user_global_params)
   params_object$simulation_params_group = build_simulation_params_group(user_simulation_params)
   params_object$feature_params <- build_feature_params(user_feature_params)
@@ -18,7 +19,7 @@ build_global_params <- function(user_global_params){
   #' @import pixmap
   
   default_global_params = initialise_default_global_params()
-  
+
   if (!is.null(user_global_params) == TRUE){
     global_params <- overwrite_current_params(user_params = user_global_params, default_params = default_global_params)
     #check_global_params(global_params)
@@ -80,9 +81,11 @@ build_input_data <- function(params_object, scenario_ind){
   
   # generate simulated feature
   if (simulation_data_object$global_params$run_from_simulated_data == TRUE) {
+    
     current_filenames <- list.files(path = simulation_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                     include.dirs = FALSE, no.. = FALSE)
+    
     if ((simulation_data_object$global_params$build_simulated_data == TRUE) | (length(current_filenames) == 0)){
       construct_simulated_data(simulation_data_object$feature_params, 
                                simulation_data_object$global_params$simulation_inputs_folder, 
@@ -641,7 +644,7 @@ find_current_run <- function(base_run_folder){
 }
 
 save_params <- function(global_params, simulation_params_group, feature_params){
-  
+
   if (global_params$simulation_folder != 'default'){
     simulation_folder = write_folder(global_params$simulation_folder)
     simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))

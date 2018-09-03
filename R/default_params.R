@@ -32,6 +32,7 @@ initialise_default_global_params <- function(){
   # FALSE then the it will look in the
   # default_global_params$unique_simulation_folder to get the required
   # infromation
+  
   default_global_params$run_from_simulated_data = TRUE
   
   # build simulated data on the fly (or not)
@@ -51,7 +52,7 @@ initialise_default_global_params <- function(){
   # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
   # Setting to FALSE saves a lot of disk space
-  default_global_params$save_simulation_outputs = FALSE
+  default_global_params$save_simulation_outputs = TRUE
 
   # Saves all the initialization data use by simulation into the run specific simulation params folder
   default_global_params$backup_simulation_inputs = TRUE
