@@ -341,7 +341,7 @@ initialise_default_feature_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
-  default_output_params$output_type = 'raster' # choose from 'raster', 'png', 'plot', 'csv'
+  default_output_params$output_type = 'plot' # choose from 'raster', 'png', 'plot', 'csv'
   default_output_params$output_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot

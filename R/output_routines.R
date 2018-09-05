@@ -61,12 +61,12 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     if (object_to_output$output_params$write_pdf == TRUE){
       
       if (object_to_output$output_params$plot_type == 'impacts'){
-        output_pdf_filename = paste0(output_folder, '/impacts.pdf')
+        pdf_to_output = paste0(object_to_output$output_folder, '/impacts.pdf')
       } else if (object_to_output$output_params$plot_type == 'outcomes'){
-        output_pdf_filename = paste0(output_folder, '/outcomes.pdf')
+        pdf_to_output = paste0(object_to_output$output_folder, '/outcomes.pdf')
       }
-      flog.info('writing PDF to %s', output_pdf_filename)
-      pdf(output_pdf_filename, width = 8.3, height = 11.7)
+      flog.info('writing PDF to %s', pdf_to_output)
+      pdf(pdf_to_output, width = 8.3, height = 11.7)
       
     }
     
@@ -90,7 +90,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   }
   
   for (scenario_ind in scenario_vec){
-    
+
     output_flag = check_output_flag(object_to_output$output_params, object_to_output$current_simulation_params)
     
     if (output_flag == FALSE){
@@ -102,9 +102,9 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     
   }
   
-  if (object_to_output$output_params$output_type == 'pdf') {
+  if (object_to_output$output_params$output_type == 'plot') {
     graphics.off()
-    flog.info('closing PDF %s', output_pdf_filename)
+    flog.info('closing PDF %s', pdf_to_output)
   }
   
   flog.info('all done')
@@ -258,7 +258,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       
       if (use_offset_metric == FALSE){
         
-        flog.info(paste0('writing ', object_to_output$output_params$output_type, 'layer outputs for feature %s'), feature_ind)
+        flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
         current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(object_to_output$site_element_indexes_grouped_by_condition_classes), 
                                                                             function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
         
@@ -281,6 +281,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                               scale_factor = max(unlist(object_to_output$feature_params$condition_class_bounds[[feature_ind]])))
         
       } else {
+        
         flog.info('writing metric layer outputs')
         
         # get the largest value for each condition class
@@ -312,7 +313,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
 }
 
 plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_realisations, current_simulation_params){
-  
+
   if (output_params$plot_type == 'impacts'){
     
     plot_impact_set(collated_realisations,
