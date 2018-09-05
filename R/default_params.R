@@ -341,11 +341,7 @@ initialise_default_feature_params <- function(){
 
 initialise_default_output_params <- function(base_folder){
   default_output_params = list()
-  default_output_params$output_raster_layers = TRUE
-  default_output_params$output_image_file_type = 'png'
-  default_output_params$output_plot = TRUE 
-  default_output_params$output_image_layers = TRUE
-  default_output_params$output_csv_file = TRUE
+  default_output_params$output_type = 'raster' # choose from 'raster', 'png', 'plot', 'csv'
   default_output_params$output_folder = vector()
   default_output_params$plot_type = 'impacts' # can be 'outcomes'  or 'impacts',
   default_output_params$realisation_num = 'all' # 'all' or number to plot
