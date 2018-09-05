@@ -371,7 +371,7 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
   
   for (yr in 0:time_steps){
     
-    flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for year %s'), yr)
+    flog.info(paste0('writing ', output_type, ' layer outputs for year %s'), yr)
     feature_layer_to_output = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
     
     if (use_offset_metric == FALSE){

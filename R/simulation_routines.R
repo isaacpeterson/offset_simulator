@@ -65,6 +65,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     # Work out if more than one core is specified, and if so, run the
     # simulation in parallel using the doParallel, foreach and doRNG packages
     
+    
+    
     # TODO(Isaac) test whether can set check and set seed if necessary much
     # earlier in the code before run_initialise_routines() is called
     if (simulation_data_object$global_params$number_of_cores > 1 && simulation_data_object$global_params$set_seed == TRUE){
@@ -79,6 +81,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         run_offset_simulation_routines(simulation_data_object, 
                                        scenario_ind,
                                        realisation_ind)
+        
       }
     } else if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
       # case when running NON-DETERMINISTIC realisations in parallel
@@ -87,6 +90,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         run_offset_simulation_routines(simulation_data_object, 
                                        scenario_ind,
                                        realisation_ind)
+        collate_offset_simulation_routines(background_cfacs, 
+                                           use_offset_metric)
+        
       }
     } else {
       # Case when running single realisation
@@ -97,6 +103,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
                                        scenario_ind,
                                        realisation_ind)
       }
+      
     }
     
     flog.info('scenario %s done in %s %s', 
@@ -104,6 +111,28 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               round(difftime(Sys.time(), loop_strt), 1), 
               units(difftime(Sys.time(), loop_strt)))
   }
+  
+  flog.info('building background counterfactuals - this may take a while')
+  background_cfacs_object = build_background_cfacs(simulation_data_object)
+    
+  if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
+    # case when running NON-DETERMINISTIC realisations in parallel
+    foreach(realisation_ind = seq_len(simulation_data_object$global_params$realisation_num)) %dopar%{
+      collate_simulation_outputs(simulation_data_object, background_cfacs_object, scenario_ind, realisation_ind)
+    }
+  } else {
+    # Case when running single realisation
+    # TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
+    for (realisation_ind in 1:simulation_data_object$global_params$realisation_num){
+      collate_simulation_outputs(simulation_data_object, background_cfacs_object, scenario_ind, realisation_ind)
+    }
+    
+  }
+  
+  flog.info('scenario %s done in %s %s', 
+            scenario_ind,
+            round(difftime(Sys.time(), loop_strt), 1), 
+            units(difftime(Sys.time(), loop_strt)))
   
   if (simulation_data_object$global_params$save_simulation_outputs == FALSE){
     # This deletes all folders and subfolders that were created in the run
@@ -137,41 +166,11 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   simulation_outputs <- run_simulation(simulation_data_object, current_data_dir)
   
   # save raw simulation data
-  if (simulation_data_object$global_params$save_simulation_outputs == TRUE){
+
     saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
-                                           formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
-                                           '_outputs.rds'))
-  }
-  
-  
-  file_prefix = paste0(simulation_data_object$global_params$collated_folder,
-                       'collated_scenario_',  formatC(scenario_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
-                       '_realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"))
-  
-  run_collate_routines(simulation_outputs,
-                       simulation_data_object$feature_dynamics, 
-                       simulation_data_object$feature_dynamics_modes,
-                       simulation_data_object$site_features,
-                       simulation_data_object$simulation_params,
-                       simulation_data_object$feature_params,
-                       simulation_data_object$global_params, 
-                       current_data_dir, 
-                       file_prefix,
-                       use_offset_metric = FALSE)
-  
-  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
-    run_collate_routines(simulation_outputs,
-                         simulation_data_object$feature_dynamics, 
-                         simulation_data_object$feature_dynamics_modes,
-                         simulation_data_object$site_features,
-                         simulation_data_object$simulation_params,
-                         simulation_data_object$feature_params,
-                         simulation_data_object$global_params, 
-                         current_data_dir, 
-                         file_prefix,
-                         use_offset_metric = TRUE)
-  }
-  
+                                       formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
+                                       '_outputs.rds'))
+
   
   # delete current temporary files and folder
   if (simulation_data_object$global_params$save_simulation_outputs == FALSE){
@@ -180,12 +179,57 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   
 }
 
-
+build_background_cfacs <- function(simulation_data_object){
+  
+  background_cfacs_object = list()
+  background_projection_yrs_pool = lapply(seq_along(simulation_data_object$site_features), 
+                                          function(i) lapply(seq(simulation_data_object$simulation_params$feature_num), 
+                                                             function(j) rep(list(1), length(simulation_data_object$feature_dynamics_modes[[i]][[j]])) ))  
+  
+  background_cfacs_object$background_cfacs = collate_cfacs(simulation_data_object$site_features,
+                                                           simulation_data_object$simulation_params, 
+                                                           simulation_data_object$feature_params,
+                                                           simulation_data_object$eature_dynamics,
+                                                           simulation_data_object$feature_dynamics_modes,
+                                                           simulation_data_object$site_element_index_key,
+                                                           background_projection_yrs_pool,
+                                                           intervention_yrs = rep(1, length(initial_feature_layer)),
+                                                           vector(),
+                                                           cfac_type = 'background',
+                                                           object_type = vector(), 
+                                                           use_cfac_type_in_sim = FALSE, 
+                                                           condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
+                                                           use_offset_metric = FALSE)
+  
+  saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  
+  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
+    
+    background_cfacs_object$user_metric_background_cfacs = collate_cfacs(simulation_data_object$site_features,
+                                                                         simulation_data_object$simulation_params, 
+                                                                         simulation_data_object$feature_params,
+                                                                         fsimulation_data_object$eature_dynamics,
+                                                                         simulation_data_object$feature_dynamics_modes,
+                                                                         simulation_data_object$site_element_index_key,
+                                                                         background_projection_yrs_pool,
+                                                                         intervention_yrs = rep(1, length(initial_feature_layer)),
+                                                                         vector(),
+                                                                         cfac_type = 'background',
+                                                                         object_type = vector(), 
+                                                                         use_cfac_type_in_sim = FALSE, 
+                                                                         condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
+                                                                         use_offset_metric = TRUE)
+    saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'user_metric_background_cfacs.rds'))
+    
+  }
+  
+  return(background_cfacs_object)
+}
 
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
 run_simulation <- function(simulation_data_object, current_data_dir){
-
+  
   #run through main time loop
   for (yr in seq_len(simulation_data_object$simulation_params$time_steps)){
     
@@ -280,7 +324,7 @@ unwrap_condition_classes <- function(current_site_feature, current_site_element_
 }
 
 save_landscape_routine <- function(simulation_data_object, current_data_dir, yr){
-
+  
   for (feature_ind in seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation)){
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
@@ -289,16 +333,16 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
                          '_yr_', formatC(yr, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"))
     
     saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
-
+    
     if (simulation_data_object$global_params$output_raster_tiff == TRUE){
-
+      
       if (!file.exists(paste0(current_data_dir, 'raster_folder/'))){
         dir.create(paste0(current_data_dir, 'raster_folder/'))
       }
       
       feature_layer_to_save = lapply(seq_along(feature_layer_to_save), 
                                      function(i) as.matrix(unwrap_condition_classes(feature_layer_to_save[[i]], 
-                                                                          simulation_data_object$site_element_index_key[[i]][[feature_ind]])))
+                                                                                    simulation_data_object$site_element_index_key[[i]][[feature_ind]])))
       feature_layer_to_output = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
       feature_layer_to_output[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(feature_layer_to_save)
       feature_layer_to_output = raster(feature_layer_to_output)
@@ -308,13 +352,13 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
   
   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
     
-#     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
-#                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-#                                                       function(j) do.call(cbind, simulation_data_object$site_features[[i]][[j]])))
-#     
-#     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
-#                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-#                                                       function(j) current_metric_layers[[i]][[j]][simulation_data_object$site_element_index_key[[i]][[j]]]))
+    #     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
+    #                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+    #                                                       function(j) do.call(cbind, simulation_data_object$site_features[[i]][[j]])))
+    #     
+    #     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
+    #                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+    #                                                       function(j) current_metric_layers[[i]][[j]][simulation_data_object$site_element_index_key[[i]][[j]]]))
     
     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
@@ -326,12 +370,12 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     
     saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), '.rds'))
     
-#     if(simulation_data_object$global_params$save_output_raster == TRUE){
-#       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
-#       current_feature_layer[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(current_metric_layers)
-#       writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
-#       
-#     }
+    #     if(simulation_data_object$global_params$save_output_raster == TRUE){
+    #       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
+    #       current_feature_layer[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(current_metric_layers)
+    #       writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
+    #       
+    #     }
     
   }
   
@@ -444,7 +488,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
     # return null object when clearing is inactive
     return(simulation_data_object)
   }
-
+  
   available_site_indexes = setdiff(unlist(simulation_data_object$output_data$index_object$available_indexes$unregulated_loss), 
                                    unlist(simulation_data_object$output_data$index_object$site_indexes_used))
   inds_to_clear <- select_sites_to_clear(available_site_indexes, simulation_data_object$simulation_params)
@@ -635,7 +679,7 @@ shift_dynamics_set <- function(site_features_to_use, current_feature_dynamics_se
                                                                                 update_dynamics_by_differential) ))
     
   } else if (dynamics_type == 'site_scale'){
-
+    
     shifted_dynamics_set = lapply(seq_along(site_features_to_use), 
                                   function(i) lapply(seq_along(site_features_to_use[[i]]),
                                                      function(j) shift_dynamics(mean(site_features_to_use[[i]][[j]]),
@@ -1938,23 +1982,23 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
         
         cfac_vals = lapply(seq_along(site_features_group), 
                            function(i) matrix(do.call(cbind, sum_site_features(calc_site_cfacs(site_features_group[[i]],
-                                                                                            projection_yrs[[i]],
-                                                                                            cfac_weights[[i]],
-                                                                                            simulation_params,
-                                                                                            feature_params,
-                                                                                            feature_dynamics[[i]],
-                                                                                            feature_dynamics_modes[[i]],
-                                                                                            time_horizons[[i]],
-                                                                                            include_potential_developments,
-                                                                                            include_potential_offsets,
-                                                                                            include_unregulated_loss,
-                                                                                            adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
-                                                                                            time_fill = FALSE,
-                                                                                            unlist_condition_classes = FALSE, 
-                                                                                            site_element_index_key = vector()))), nrow = 1))
+                                                                                               projection_yrs[[i]],
+                                                                                               cfac_weights[[i]],
+                                                                                               simulation_params,
+                                                                                               feature_params,
+                                                                                               feature_dynamics[[i]],
+                                                                                               feature_dynamics_modes[[i]],
+                                                                                               time_horizons[[i]],
+                                                                                               include_potential_developments,
+                                                                                               include_potential_offsets,
+                                                                                               include_unregulated_loss,
+                                                                                               adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
+                                                                                               time_fill = FALSE,
+                                                                                               unlist_condition_classes = FALSE, 
+                                                                                               site_element_index_key = vector()))), nrow = 1))
         
       } else {
-
+        
         cfac_vals = lapply(seq_along(site_features_group), 
                            function(i) matrix(sum(user_transform_function(calc_site_cfacs(site_features_group[[i]],
                                                                                           projection_yrs[[i]],
@@ -2032,18 +2076,18 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                   condition_class_bounds = feature_params$condition_class_bounds)
       
       if (simulation_params$use_offset_metric == TRUE){
-
-#         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
-#                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), function(j) do.call(cbind, projected_feature_layers[[i]][[j]])))
-#         
-#         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
-#                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), 
-#                                                               function(j) projected_feature_layers[[i]][[j]][ site_element_index_key [[i]][[j]]]))
+        
+        #         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
+        #                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), function(j) do.call(cbind, projected_feature_layers[[i]][[j]])))
+        #         
+        #         projected_feature_layers <- lapply(seq_along(projected_feature_layers), 
+        #                                            function(i) lapply(seq_along(projected_feature_layers[[i]]), 
+        #                                                               function(j) projected_feature_layers[[i]][[j]][ site_element_index_key [[i]][[j]]]))
         projected_feature_layers = lapply(seq_along(projected_feature_layers), 
                                           function(i) lapply(seq_along(projected_feature_layers[[i]]),
                                                              function(j) unwrap_condition_classes(projected_feature_layers[[i]][[j]], 
                                                                                                   site_element_index_key[[i]][[j]])))
-
+        
         projected_vals = lapply(seq_along(projected_feature_layers), function(i) sum(user_transform_function(projected_feature_layers[[i]], simulation_params$transform_params)))
         
       } else {
@@ -2149,15 +2193,15 @@ append_current_object <- function(parcel_set_object, current_parcel_set_object, 
 
 
 kill_site_features <- function(site_features_to_develop, store_zeros_as_sparse){
-
+  
   if (store_zeros_as_sparse == TRUE){
     developed_feature_layers = lapply(seq_along(site_features_to_develop), 
                                       function(i) lapply(seq_along(site_features_to_develop[[i]]),  
                                                          function(j) list(Matrix(0, do.call(sum, lapply(site_features_to_develop[[i]][[j]], length)), nrow = 1, sparse = TRUE))))
   } else {
     developed_feature_layers = lapply(seq_along(site_features_to_develop), 
-                                    function(i) lapply(seq_along(site_features_to_develop[[i]]),  
-                                                       function(j) list(matrix(0, length(unlist(site_features_to_develop[[i]][[j]])), nrow = 1))))
+                                      function(i) lapply(seq_along(site_features_to_develop[[i]]),  
+                                                         function(j) list(matrix(0, length(unlist(site_features_to_develop[[i]][[j]])), nrow = 1))))
   }
   
   return(developed_feature_layers)
@@ -2168,7 +2212,7 @@ find_projection_yrs <- function(perform_dynamics_time_shift, current_site_featur
                                 feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type, project_by_mean, unique_site_vals, unique_site_modes){
   
   if (perform_dynamics_time_shift == FALSE){
-
+    
     projection_yrs = lapply(seq_along(current_site_features), function(i) rep(list(yr), length(feature_dynamics_modes_to_use[[i]])) )
   } else {
     projection_yrs = find_time_shifts(current_site_features, 
