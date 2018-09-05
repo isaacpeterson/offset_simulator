@@ -358,7 +358,7 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
     black_blue.palette <- colorRampPalette(c("black", "blue"), space = "rgb")
     col_vec = c(black_green.palette(128), black_blue.palette(128), 'red', 'orange')
     
-    image_filename = paste0(image_file_prefix, "%03d.", 'png', sep = '')
+    image_filename = paste0(file_prefix, "%03d.", 'png', sep = '')
     
     col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
     
@@ -371,6 +371,7 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
   
   for (yr in 0:time_steps){
     
+    flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for year %s'), yr)
     feature_layer_to_output = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
     
     if (use_offset_metric == FALSE){
