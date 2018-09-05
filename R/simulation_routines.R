@@ -208,7 +208,7 @@ build_background_cfacs <- function(simulation_data_object){
     background_cfacs_object$user_metric_background_cfacs = collate_cfacs(simulation_data_object$site_features,
                                                                          simulation_data_object$simulation_params, 
                                                                          simulation_data_object$feature_params,
-                                                                         fsimulation_data_object$eature_dynamics,
+                                                                         simulation_data_object$feature_dynamics,
                                                                          simulation_data_object$feature_dynamics_modes,
                                                                          simulation_data_object$site_element_index_key,
                                                                          background_projection_yrs_pool,
