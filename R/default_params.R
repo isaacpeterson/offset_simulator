@@ -7,7 +7,7 @@ initialise_default_global_params <- function(){
 
   default_global_params$feature_raster_files = '/simulation_inputs/feature_layer_001.tif'
   default_global_params$condition_class_raster_files = '/simulation_inputs/condition_class_001.tif'
-  default_global_params$file_placeholder_width = 3 # how many digits are used to store scenario index and realisation index
+  default_global_params$numeric_placeholder_width = 3 # how many digits are used to store scenario index and realisation index
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.

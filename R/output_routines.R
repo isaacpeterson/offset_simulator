@@ -136,7 +136,7 @@ check_output_flag <- function(output_params, current_simulation_params){
 # current run number the function looks for thaht specified folder and looks for the latest run otherwise.
 
 #' @export
-find_current_run_folder <- function(base_folder = NULL, run_number = NULL, file_placeholder_width){
+find_current_run_folder <- function(base_folder = NULL, run_number = NULL, numeric_placeholder_width = NULL){
   
   #if (!is.null(base_folder) & (length(base_folder) > 0) & (base_folder != 'default')){
   if (!is.null(base_folder)){
@@ -158,7 +158,11 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL, file_
     current_run = as.numeric(filenames[length(filenames)])
   }
   
-  simulation_folder = paste0(simulation_folder, formatC(current_run, width = file_placeholder_width, format = "d", flag = "0"), '/')
+  if (!is.null(numeric_placeholder_width)){
+    simulation_folder = paste0(simulation_folder, formatC(current_run, width = numeric_placeholder_width, format = "d", flag = "0"), '/')
+  } else {
+    simulation_folder = paste0(simulation_folder, formatC(current_run, width = 3, format = "d", flag = "0"), '/')
+  }
   
   if (!dir.exists(simulation_folder)){
     flog.error('simulation_folder %s does not exist.', simulation_folder)
@@ -178,12 +182,12 @@ output_scenario <- function(object_to_output, scenario_ind){
   object_to_output$current_simulation_params = readRDS(file_to_Read)
   
   current_data_dir = paste0(object_to_output$simulation_output_folder, '/scenario_', 
-                            formatC(scenario_ind, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"),
-                            '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"), '/') 
+                            formatC(scenario_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                            '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
   
   if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
     object_to_output$example_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
-                                                formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"), 
+                                                formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                                                 '_outputs.rds'))
   } 
   
@@ -225,8 +229,8 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       
     }  else {
       collated_filenames = find_collated_files(file_path = object_to_output$collated_folder,
-                                               scenario_string = formatC(scenario_ind, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"),
-                                               feature_string = formatC(feature_ind, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"),
+                                               scenario_string = formatC(scenario_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                                               feature_string = formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                                object_to_output$output_params$realisation_num)
     }
     
@@ -263,9 +267,9 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                                                                             function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
         
         if (object_to_output$output_params$output_type == 'raster'){
-          file_prefix = paste0(object_to_output$output_raster_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"), '_yr_') 
+          file_prefix = paste0(object_to_output$output_raster_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_') 
         } else if (object_to_output$output_params$output_type == 'png'){
-          file_prefix = paste0(object_to_output$output_image_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$file_placeholder_width, format = "d", flag = "0"), '_yr_')
+          file_prefix = paste0(object_to_output$output_image_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_')
         } 
 
         output_feature_layers(object_to_output$output_params$output_type, 
@@ -273,7 +277,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                               current_data_dir, 
                               object_to_output$example_simulation_outputs,
                               file_prefix,
-                              object_to_output$global_params$file_placeholder_width,
+                              object_to_output$global_params$numeric_placeholder_width,
                               use_offset_metric = FALSE, 
                               current_element_indexes_grouped_by_feature_condition_class, 
                               object_to_output$current_simulation_params$time_steps, 
@@ -300,7 +304,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                               current_data_dir, 
                               object_to_output$example_simulation_outputs,
                               file_prefix,
-                              object_to_output$global_params$file_placeholder_width,
+                              object_to_output$global_params$numeric_placeholder_width,
                               use_offset_metric = TRUE, 
                               current_element_indexes_grouped_by_feature_condition_class = vector(), 
                               object_to_output$current_simulation_params$time_steps, 
@@ -341,7 +345,7 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
   
 }
 
-output_feature_layers <- function(output_type, feature_ind, current_data_dir, example_simulation_outputs, file_prefix, file_placeholder_width, use_offset_metric, 
+output_feature_layers <- function(output_type, feature_ind, current_data_dir, example_simulation_outputs, file_prefix, numeric_placeholder_width, use_offset_metric, 
                                   current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
   
   
@@ -393,7 +397,7 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
     }
     
     if (output_type == 'raster'){
-      raster_filename = paste0(file_prefix, formatC(yr, width = file_placeholder_width, format = "d", flag = "0"), '.tif')
+      raster_filename = paste0(file_prefix, formatC(yr, width = numeric_placeholder_width, format = "d", flag = "0"), '.tif')
       current_feature_raster = raster(feature_layer_to_output)
       writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       

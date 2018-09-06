@@ -1,15 +1,15 @@
 collate_simulation_outputs <- function(simulation_data_object, background_cfacs_object, scenario_ind, realisation_ind){
   
   current_data_dir = write_folder(paste0(simulation_data_object$global_params$output_folder, 
-                                         'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), 
-                                         '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"), '/'))
+                                         'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
+                                         '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
   
   file_prefix = paste0(simulation_data_object$global_params$collated_folder,
-                       'collated_scenario_',  formatC(scenario_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
-                       '_realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"))
+                       'collated_scenario_',  formatC(scenario_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                       '_realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"))
   
   simulation_outputs = readRDS(paste0(current_data_dir, 'realisation_',
-                                     formatC(realisation_ind, width = simulation_data_object$global_params$file_placeholder_width, format = "d", flag = "0"),
+                                     formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                      '_outputs.rds'))
   
   run_collate_routines(simulation_outputs,
@@ -59,7 +59,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
   site_features_at_intervention_set = vector('list', length(initial_feature_layer))
   
   for (current_feature_ind in seq(simulation_params$feature_num)){
-    site_features_at_intervention = build_site_features_at_intervention(length(initial_feature_layer), current_data_dir, intervention_pool, intervention_yrs_pool, simulation_params, current_feature_ind, global_params$file_placeholder_width)
+    site_features_at_intervention = build_site_features_at_intervention(length(initial_feature_layer), current_data_dir, intervention_pool, intervention_yrs_pool, simulation_params, current_feature_ind, global_params$numeric_placeholder_width)
     site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
   }
   
@@ -104,7 +104,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
     if (use_offset_metric == FALSE){
       
       collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, 
-                                                           file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$file_placeholder_width, format = "d", flag = "0")), 
+                                                           file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0")), 
                                                            simulation_params$time_steps)
       
       collated_object$summed_site_features_at_intervention = select_subset(summed_site_features_at_intervention, feature_ind)
@@ -162,7 +162,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
     
     if (use_offset_metric == FALSE){
       collated_filename = paste0(file_prefix, '_feature_',
-                                 formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$file_placeholder_width, format = "d", flag = "0"), '.rds')
+                                 formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds')
     }  else {
       collated_filename = paste0(file_prefix, '_metric', '.rds')
     }
@@ -184,7 +184,7 @@ select_subset <- function(current_object, subset_ind, output_type){
 }
 
 
-build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool, current_intervention_yrs, file_placeholder_width){
+build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool, current_intervention_yrs, numeric_placeholder_width){
   
   current_filenames <- list.files(path = current_data_dir,
                                   pattern = file_pattern, all.files = FALSE,
@@ -196,7 +196,7 @@ build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool,
     current_yr_set = as.vector(which(current_intervention_yrs == yr))
 
     current_site_feature_layer_filename = list.files(path = current_data_dir,
-                                                     pattern = paste0(file_pattern, '_yr_', formatC((yr - 1), width = file_placeholder_width, format = "d", flag = "0")), 
+                                                     pattern = paste0(file_pattern, '_yr_', formatC((yr - 1), width = numeric_placeholder_width, format = "d", flag = "0")), 
                                                      all.files = FALSE,
                                                      include.dirs = FALSE, no.. = FALSE)
     current_site_feature_layer = readRDS(paste0(current_data_dir, current_filenames[yr]))
@@ -208,13 +208,13 @@ build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool,
 
 
 
-build_site_features_at_intervention <- function(land_site_num, current_data_dir, intervention_pool, intervention_yrs_pool, simulation_params, feature_ind, file_placeholder_width){
+build_site_features_at_intervention <- function(land_site_num, current_data_dir, intervention_pool, intervention_yrs_pool, simulation_params, feature_ind, numeric_placeholder_width){
   site_features_at_intervention = vector('list', land_site_num)
   site_features_at_intervention[intervention_pool] = build_site_layer_stack(current_data_dir, 
-                                                                            file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = file_placeholder_width, format = "d", flag = "0")), 
+                                                                            file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = numeric_placeholder_width, format = "d", flag = "0")), 
                                                                             intervention_pool,
                                                                             intervention_yrs_pool, 
-                                                                            file_placeholder_width)
+                                                                            numeric_placeholder_width)
   return(site_features_at_intervention)
 }
 
