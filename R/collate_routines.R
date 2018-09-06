@@ -99,10 +99,10 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
 
   
   for (feature_ind in features_to_collate){
-    flog.info('collating feature %s', feature_ind)
+    
     collated_object = list()
     if (use_offset_metric == FALSE){
-      
+      flog.info('collating feature %s', feature_ind)
       collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, 
                                                            file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0")), 
                                                            simulation_params$time_steps)
@@ -111,6 +111,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
       collated_object$site_scale_cfacs = select_subset(site_scale_cfacs, feature_ind)
       collated_object$background_cfacs = select_subset(background_cfacs, feature_ind)
     } else {
+      flog.info('collating metric')
       collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
       collated_object$summed_site_features_at_intervention = summed_site_features_at_intervention
       collated_object$site_scale_cfacs = site_scale_cfacs

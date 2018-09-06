@@ -386,6 +386,15 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$site_impact_plot_lims_set = rep(list(c(-1e4, 1e4)), length(default_output_params$scenario_vec))
   default_output_params$program_impact_plot_lims_set = rep(list(c(-1e6, 1e6)), length(default_output_params$scenario_vec)) 
   default_output_params$landscape_impact_plot_lims_set = rep(list(c(-1e6, 0)), length(default_output_params$scenario_vec))
+  black_green.palette <- colorRampPalette(c("black", "green"), space = "rgb")  
+  black_blue.palette <- colorRampPalette(c("black", "blue"), space = "rgb")
+  default_output_params$col_vec = c(black_green.palette(128), black_blue.palette(128), 'red', 'orange')
+  default_output_params$col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
+  
+  # standard feature representation: 0-127 :black-green - 
+  # offset representation: 128-255 :black-blue - 
+  # development: 256 : red  
+  # unregulated_loss: 257 :orange 
   
   return(default_output_params)
 }

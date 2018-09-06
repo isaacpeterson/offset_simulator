@@ -341,22 +341,14 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
   
   intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
   
+
+  
   if (object_to_output$output_params$output_type == 'png'){
-    
+
     graphics.off()
-    png(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
-    # standard feature representation: 0-127 :black-green - 
-    # offset representation: 128-255 :black-blue - 
-    # development: 256 : red  
-    # unregulated_loss: 257 :orange 
-    black_green.palette <- colorRampPalette(c("black", "green"), space = "rgb")  
-    black_blue.palette <- colorRampPalette(c("black", "blue"), space = "rgb")
-    col_vec = c(black_green.palette(128), black_blue.palette(128), 'red', 'orange')
-    
+
     image_filename = paste0(file_prefix, "%03d.", 'png', sep = '')
-    
-    col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
-    
+    png(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
   } else if (object_to_output$output_params$output_type == 'jpg'){
     jpeg(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
   }
@@ -386,7 +378,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
     
     if (object_to_output$output_params$map_vals == TRUE){
       
-      feature_layer_to_output = feature_layer_to_output * 127/scale_factor #map to color vector 0:127
+      feature_layer_to_output = feature_layer_to_output * (object_to_output$output_params$col_map_vector[1] - 1)/scale_factor #map to color vector 0:127
       
       sets_to_use = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) which(unlist(object_to_output$example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
@@ -401,7 +393,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
         
-        new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
+        new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + object_to_output$output_params$col_map_vector[interventions_to_use[i]])
         feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
         
       }
@@ -416,7 +408,11 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
     
       # rotate image with t(...) to align with tiff output
       feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev))
-      image(feature_layer_to_output, zlim = c(0, 257), col = col_vec)
+      if (object_to_output$output_params$map_vals == TRUE){
+        image(feature_layer_to_output, zlim = c(0, max(object_to_output$output_params$col_map_vector)), col = object_to_output$output_params$col_vec)
+      } else {
+        image(feature_layer_to_output)
+      }
     }
     
   }
