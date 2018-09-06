@@ -566,18 +566,20 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
       abline(v = NNL_object$mean_NNL, lty = 2)
     }
     
-    last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
-                                     function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
-    dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
-    
-    if (last_dev_yr < dev_end){
-      line_to_use = last_dev_yr
-      plot_col = 'red'
-    } else {
-      line_to_use = dev_end
-      plot_col = 'black'
+    if (length(unlist(collated_realisations$site_scale_impacts$dev_object)) > 0){
+      last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
+                                       function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
+      dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
+      
+      if (last_dev_yr < dev_end){
+        line_to_use = last_dev_yr
+        plot_col = 'red'
+      } else {
+        line_to_use = dev_end
+        plot_col = 'black'
+      }
+      abline(v = line_to_use, lty = 3, col = plot_col)
     }
-    abline(v = line_to_use, lty = 3, col = plot_col)
     
   }
   
@@ -632,15 +634,18 @@ check_plot_options <- function(plot_params, current_simulation_params, scenario_
 
 NNL_test <- function(NNL_set, collated_impacts){
   
-  inds_to_use = which(unlist(lapply(seq_along(NNL_set), function(i) length(NNL_set[[i]]) > 0)))
-  
-  NNL_to_use = NNL_set[inds_to_use]
-  last_vals = lapply(inds_to_use, function(i) collated_impacts[[i]][ length(collated_impacts[[i]]) ])
-  inds_to_reject = which(unlist(last_vals) < 0)
-  if (length(inds_to_reject) > 0){
-    NNL_to_use = NNL_to_use[-inds_to_reject]
+  if (length(NNL_set) == 0){
+    return(NULL)
+  } else {
+    inds_to_use = which(unlist(lapply(seq_along(NNL_set), function(i) length(NNL_set[[i]]) > 0)))
+    
+    NNL_to_use = NNL_set[inds_to_use]
+    last_vals = lapply(inds_to_use, function(i) collated_impacts[[i]][ length(collated_impacts[[i]]) ])
+    inds_to_reject = which(unlist(last_vals) < 0)
+    if (length(inds_to_reject) > 0){
+      NNL_to_use = NNL_to_use[-inds_to_reject]
+    }
   }
-  
   return(NNL_to_use)
 }
 
@@ -1010,20 +1015,24 @@ find_plot_lims <- function(plot_list){
 
 overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab, x_lab, col_vec, lty_vec, lwd_vec, legend_vec, legend_loc){
   
-  if (plot_type == 'non-overlay'){
-    graphics::plot(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
+  if (length(plot_list) == 0){
+    null_plot()
   } else {
-    lines(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
-  }
-  
-  if (length(plot_list) > 1){
-    for (plot_ind in 2:length(plot_list)){
-      lines(plot_list[[plot_ind]],  ylim = ylims, col = col_vec[plot_ind], lwd = lwd_vec[plot_ind], lty = lty_vec[plot_ind])
+    if (plot_type == 'non-overlay'){
+      graphics::plot(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
+    } else {
+      lines(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
     }
-  }
-  abline(h = 0, lty = 2)
-  if (legend_vec[1] != 'NA'){
-    legend(legend_loc, legend_vec, bty="n", lty = lty_vec, cex = 1,  pt.cex = 1, lwd = lwd_vec, col = col_vec)
+    
+    if (length(plot_list) > 1){
+      for (plot_ind in 2:length(plot_list)){
+        lines(plot_list[[plot_ind]],  ylim = ylims, col = col_vec[plot_ind], lwd = lwd_vec[plot_ind], lty = lty_vec[plot_ind])
+      }
+    }
+    abline(h = 0, lty = 2)
+    if (legend_vec[1] != 'NA'){
+      legend(legend_loc, legend_vec, bty="n", lty = lty_vec, cex = 1,  pt.cex = 1, lwd = lwd_vec, col = col_vec)
+    }
   }
 }
 
