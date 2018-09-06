@@ -1014,14 +1014,14 @@ scale_features <- function(features){
   return(scaled_features)
 }
 
-split_modes <- function(land_parcels, feature_modes_layer){
+split_modes <- function(land_parcels, condition_class_layer){
   feature_condition_class_modes = lapply(seq_along(land_parcels), 
-                                         function(i) lapply(seq_along(feature_modes_layer), 
-                                                            function(j) unique(feature_modes_layer[[j]][ land_parcels[[i]]])))
+                                         function(i) lapply(seq_along(condition_class_layer), 
+                                                            function(j) unique(condition_class_layer[[j]][ land_parcels[[i]]])))
   return(feature_condition_class_modes)
 }
 
-separate_features_by_condition_class <- function(features, split_type, store_zeros_as_sparse, land_parcels, feature_modes_layer, condition_class_modes){
+separate_features_by_condition_class <- function(features, split_type, store_zeros_as_sparse, land_parcels, condition_class_layer, condition_class_modes){
   
   if (split_type == 'feature_vals'){
     group_to_split = lapply(seq_along(land_parcels), 
@@ -1032,7 +1032,7 @@ separate_features_by_condition_class <- function(features, split_type, store_zer
                                   function(i) lapply(seq_along(condition_class_modes[[i]]), 
                                                      function(j) lapply(condition_class_modes[[i]][[j]], 
                                                                         function(k) split_site_feature(group_to_split[[i]][[j]], 
-                                                                                                       site_feature_modes_layer = feature_modes_layer[[j]][ land_parcels[[i]] ], 
+                                                                                                       site_condition_class_layer = condition_class_layer[[j]][ land_parcels[[i]] ], 
                                                                                                        k, 
                                                                                                        store_zeros_as_sparse))))
   } else {
@@ -1041,7 +1041,7 @@ separate_features_by_condition_class <- function(features, split_type, store_zer
                                function(i) lapply(seq_along(condition_class_modes[[i]]), 
                                                   function(j) lapply(condition_class_modes[[i]][[j]], 
                                                                      function(k) as.matrix(split_site_feature(land_parcels[[i]], 
-                                                                                                    site_feature_modes_layer = feature_modes_layer[[j]][ land_parcels[[i]] ], 
+                                                                                                    site_condition_class_layer = condition_class_layer[[j]][ land_parcels[[i]] ], 
                                                                                                     k, 
                                                                                                     store_zeros_as_sparse)))))
   }
@@ -1049,17 +1049,17 @@ separate_features_by_condition_class <- function(features, split_type, store_zer
   return(split_feature_group)
 }
 
-split_site_feature <- function(current_site_feature, site_feature_modes_layer, current_condition_class_mode, store_zeros_as_sparse){
+split_site_feature <- function(current_site_feature, site_condition_class_layer, current_condition_class_mode, store_zeros_as_sparse){
 
   if (current_condition_class_mode == 0){
 
     if (store_zeros_as_sparse == TRUE){
-      current_feature_condition_class = Matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1, sparse = TRUE)
+      current_feature_condition_class = Matrix(current_site_feature[which(site_condition_class_layer == current_condition_class_mode)], nrow = 1, sparse = TRUE)
     } else {
-      current_feature_condition_class = matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1)
+      current_feature_condition_class = matrix(current_site_feature[which(site_condition_class_layer == current_condition_class_mode)], nrow = 1)
     }
   } else{
-    current_feature_condition_class = matrix(current_site_feature[which(site_feature_modes_layer == current_condition_class_mode)], nrow = 1)
+    current_feature_condition_class = matrix(current_site_feature[which(site_condition_class_layer == current_condition_class_mode)], nrow = 1)
   }
   return(current_feature_condition_class)
 }
