@@ -255,6 +255,10 @@ initialise_default_simulation_params <- function(){
   
   default_simulation_params$offset_multiplier = 1
   default_simulation_params$project_by_group = FALSE
+  
+  default_simulation_params.unregulated_loss_type = 'default'
+  default_simulation_params$unregulated_intervention_vec = vector()
+  
   return(default_simulation_params)
 }
 

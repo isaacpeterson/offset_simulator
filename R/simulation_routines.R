@@ -115,7 +115,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       flog.info('building background counterfactuals - this may take a while')
       background_cfacs_object = build_background_cfacs(simulation_data_object)
       flog.info('saving background counterfactuals')
-      savRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      saveRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
   } else {
     flog.info('loading background counterfactuals from file')
     background_cfacs_object = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
@@ -249,24 +249,25 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       simulation_data_object <- banking_routine(simulation_data_object, yr)
     }
     
-    flog.info('Projecting sites')
-    
-    # determine current set of available offset sites and calculate gains structure as detailed in current policy params
-    simulation_data_object$offset_pool_object <- build_intervention_pool(simulation_data_object, 
-                                                                         pool_type = 'offsets',
-                                                                         current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
-                                                                         yr)
-    
-    # determine current set of available development sites and calculate gains structure as detailed in current policy params
-    
-    simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
-                                                                      pool_type = 'developments',
-                                                                      current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
-                                                                      yr)
     
     if (simulation_data_object$simulation_params$intervention_vec[yr] > 0){
-      flog.info('matching projected losses and gains...')
+      
+      flog.info('Projecting sites')
+      
+      # determine current set of available offset sites and calculate gains structure as detailed in current policy params
+      simulation_data_object$offset_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                           pool_type = 'offsets',
+                                                                           current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
+                                                                           yr)
+      
+      # determine current set of available development sites and calculate gains structure as detailed in current policy params
+      
+      simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                        pool_type = 'developments',
+                                                                        current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
+                                                                        yr)
     }
+    
     
     for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_vec[yr])){
       
@@ -419,6 +420,10 @@ match_sites_routine <- function(simulation_data_object, yr){
   return(simulation_data_object)
 }
 
+
+
+
+
 credit_match_routine <- function(simulation_data_object, yr){
   
   if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$site_indexes) == 0)){
@@ -477,11 +482,17 @@ write_site_mask <- function(output_filename, landscape_dims, land_parcels, curre
 
 
 #sample over uniform random vector, indicies less than the threshold level are selected for clearing
-select_sites_to_clear <- function(available_site_indexes, simulation_params){
+select_sites_to_clear <- function(available_site_indexes, simulation_params, yr){
   
-  clearing_thresh <- rep(simulation_params$unregulated_loss_prob, length(available_site_indexes))
-  discrim <- runif(length(clearing_thresh)) < clearing_thresh
-  inds_to_clear <- available_site_indexes[discrim]
+  if (simulation_params.unregulated_loss_type == 'default'){
+    clearing_thresh <- rep(simulation_params$unregulated_loss_prob, length(available_site_indexes))
+    discrim <- runif(length(clearing_thresh)) < clearing_thresh
+    inds_to_clear <- available_site_indexes[discrim]
+  } else if (simulation_params.unregulated_loss_type == 'unregulated_stochastic_development'){
+      inds_to_clear = sample(available_site_indexes, simulation_params$unregulated_intervention_vec[yr])
+  } else if (simulation_params.unregulated_loss_type == 'unregulated_directed_development'){
+      inds_to_clear = simulation_params$unregulated_intervention_vec[[yr]]
+  }
   
   return(inds_to_clear)
 }
@@ -497,7 +508,8 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
   
   available_site_indexes = setdiff(unlist(simulation_data_object$output_data$index_object$available_indexes$unregulated_loss), 
                                    unlist(simulation_data_object$output_data$index_object$site_indexes_used))
-  inds_to_clear <- select_sites_to_clear(available_site_indexes, simulation_data_object$simulation_params)
+  
+  inds_to_clear <- select_sites_to_clear(available_site_indexes, simulation_data_object$simulation_params, yr)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return(simulation_data_object)
