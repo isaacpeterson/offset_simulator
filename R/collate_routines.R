@@ -66,9 +66,9 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
   site_scale_cfacs = vector('list', length(initial_feature_layer))
   
   if (use_offset_metric == FALSE){
-    flog.info('building counterfactuals over time series (this may take a while)')
+    flog.info('building counterfactuals over time series - this may take a while')
   } else {
-    flog.info('building user metric counterfactuals over time series (this may take a while)')
+    flog.info('building user metric counterfactuals over time series - this may take a while')
   }
   
   site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))

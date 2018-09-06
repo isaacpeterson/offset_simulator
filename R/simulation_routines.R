@@ -112,8 +112,16 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               units(difftime(Sys.time(), loop_strt)))
   }
   
-  flog.info('building background counterfactuals - this may take a while')
-  background_cfacs_object = build_background_cfacs(simulation_data_object)
+  if ((simulation_data_object$global_params$overwrite_feature_dynamics == TRUE) |
+      !file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+      flog.info('building background counterfactuals - this may take a while')
+      background_cfacs_object = build_background_cfacs(simulation_data_object)
+      flog.info('saving background counterfactuals')
+      savRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  } else {
+    flog.info('loading background counterfactuals from file')
+    background_cfacs_object = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  }
     
   if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
     # case when running NON-DETERMINISTIC realisations in parallel
