@@ -263,7 +263,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       if (use_offset_metric == FALSE){
         
         flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
-        current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(object_to_output$site_element_indexes_grouped_by_condition_classes), 
+        object_to_output$current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(object_to_output$site_element_indexes_grouped_by_condition_classes), 
                                                                             function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
         
         if (object_to_output$output_params$output_type == 'raster'){
@@ -272,16 +272,11 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
           file_prefix = paste0(object_to_output$output_image_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_')
         } 
 
-        output_feature_layers(object_to_output$output_params$output_type, 
+        output_feature_layers(object_to_output, 
                               feature_ind, 
                               current_data_dir, 
-                              object_to_output$example_simulation_outputs,
                               file_prefix,
-                              object_to_output$global_params$numeric_placeholder_width,
                               use_offset_metric = FALSE, 
-                              current_element_indexes_grouped_by_feature_condition_class, 
-                              object_to_output$current_simulation_params$time_steps, 
-                              object_to_output$site_characteristics, 
                               scale_factor = max(unlist(object_to_output$feature_params$condition_class_bounds[[feature_ind]])))
         
       } else {
@@ -299,16 +294,11 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
           file_prefix = paste0(object_to_output$output_image_folder, 'metric_yr_')
         }
             
-        output_feature_layers(object_to_output$output_params$output_type, 
+        output_feature_layers(object_to_output, 
                               feature_ind, 
                               current_data_dir, 
-                              object_to_output$example_simulation_outputs,
                               file_prefix,
-                              object_to_output$global_params$numeric_placeholder_width,
                               use_offset_metric = TRUE, 
-                              current_element_indexes_grouped_by_feature_condition_class = vector(), 
-                              object_to_output$current_simulation_params$time_steps, 
-                              object_to_output$site_characteristics, 
                               scale_factor)
       } 
     } 
@@ -345,15 +335,16 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
   
 }
 
-output_feature_layers <- function(output_type, feature_ind, current_data_dir, example_simulation_outputs, file_prefix, numeric_placeholder_width, use_offset_metric, 
-                                  current_element_indexes_grouped_by_feature_condition_class, time_steps, site_characteristics, scale_factor){
+
+output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
   
   
-  intervention_pool = lapply(seq_along(example_simulation_outputs$interventions), function(i) example_simulation_outputs$interventions[[i]]$site_indexes)
+  intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
   
-  if (output_type == 'png'){
+  if (object_to_output$output_params$output_type == 'png'){
     
     graphics.off()
+    png(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
     # standard feature representation: 0-127 :black-green - 
     # offset representation: 128-255 :black-blue - 
     # development: 256 : red  
@@ -366,17 +357,14 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
     
     col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
     
-    if (output_type == 'png'){
-      png(image_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
-    } else if (output_type == 'jpg'){
-      jpeg(image_filename, height = site_characteristics$landscape_dims[1], width = site_characteristics$landscape_dims[2])
-    }
+  } else if (object_to_output$output_params$output_type == 'jpg'){
+    jpeg(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
   }
   
-  for (yr in 0:time_steps){
+  for (yr in 0:object_to_output$current_simulation_params$time_steps){
     
-    flog.info(paste0('writing ', output_type, ' layer outputs for year %s'), yr)
-    feature_layer_to_output = matrix(0, nrow = site_characteristics$landscape_dims[1], ncol = site_characteristics$landscape_dims[2])
+    flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for year %s'), yr)
+    feature_layer_to_output = matrix(0, nrow = object_to_output$site_characteristics$landscape_dims[1], ncol = object_to_output$site_characteristics$landscape_dims[2])
     
     if (use_offset_metric == FALSE){
       
@@ -386,43 +374,46 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
                                     function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
       
-      feature_layer_to_output[unlist(current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
+      feature_layer_to_output[unlist(object_to_output$current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
       
     } else {
       
       feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), function(i) as.matrix(feature_layer_to_use[[i]]))
-      feature_layer_to_output[unlist(site_characteristics$land_parcels)] = unlist(feature_layer_to_use)
+      feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels)] = unlist(feature_layer_to_use)
       
     }
     
-    if (output_type == 'raster'){
-      raster_filename = paste0(file_prefix, formatC(yr, width = numeric_placeholder_width, format = "d", flag = "0"), '.tif')
-      current_feature_raster = raster(feature_layer_to_output)
-      writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
+    if (object_to_output$output_params$map_vals == TRUE){
       
-    } else if (output_type == 'png'){
-    
       feature_layer_to_output = feature_layer_to_output * 127/scale_factor #map to color vector 0:127
       
-      sets_to_use = lapply(seq_along(example_simulation_outputs$interventions), function(i) which(unlist(example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
+      sets_to_use = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) which(unlist(object_to_output$example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
       
       if (length(interventions_to_use) > 0){
         
-        sites_to_use = lapply(interventions_to_use, function(i) unlist(example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
+        sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(current_element_indexes_grouped_by_feature_condition_class[sites_to_use[[i]]]))
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_element_indexes_grouped_by_feature_condition_class[sites_to_use[[i]]]))
         } else {
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(site_characteristics$land_parcels[sites_to_use[[i]]]))
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
         
         new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + col_map_vector[interventions_to_use[i]])
         feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
         
       }
+    }
+    
+    if (object_to_output$output_params$output_type == 'raster'){
+      raster_filename = paste0(file_prefix, formatC(yr, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif')
+      current_feature_raster = raster(feature_layer_to_output)
+      writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       
+    } else if (object_to_output$output_params$output_type == 'png'){
+    
       # rotate image with t(...) to align with tiff output
       feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev))
       image(feature_layer_to_output, zlim = c(0, 257), col = col_vec)
@@ -430,7 +421,7 @@ output_feature_layers <- function(output_type, feature_ind, current_data_dir, ex
     
   }
   
-  if (output_type == 'png'){
+  if (object_to_output$output_params$output_type == 'png'){
     dev.off()
   }
   

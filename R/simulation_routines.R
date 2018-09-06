@@ -110,6 +110,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               units(difftime(Sys.time(), loop_strt)))
   }
   
+  flog.info('running collate routines')
+  
   if ((simulation_data_object$global_params$overwrite_feature_dynamics == TRUE) |
       !file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
       flog.info('building background counterfactuals - this may take a while')

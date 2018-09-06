@@ -728,22 +728,24 @@ assess_collated_NNL <- function(assess_type, impacts, intervention_yrs_to_use, s
 
 
 assess_fractional_loss <- function(net_vals, NNL_yr){
+  
   fractional_loss = list()
+  if (length(net_vals) == 0){
+    return(fractional_loss)
+  } 
   
   net_vals = unlist(net_vals)
-  NNL_yr = unlist(NNL_yr)
-  
   sc_factor = net_vals[1]
   
-  if (sc_factor == 0){
+  if ((sc_factor == 0)){
     return(fractional_loss)
   } else {
     
     if (length(net_vals) > 0){
       fractional_loss$total_loss = 1 - net_vals[length(net_vals)]/net_vals[1]
     }
-    if (length(NNL_yr) > 0){
-      fractional_loss$NNL_loss = 1 - net_vals[NNL_yr]/net_vals[1]
+    if (length(unlist(NNL_yr)) > 0){
+      fractional_loss$NNL_loss = 1 - net_vals[unlist(NNL_yr)]/net_vals[1]
     }
     
   }
