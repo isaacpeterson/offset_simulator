@@ -90,8 +90,6 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
         run_offset_simulation_routines(simulation_data_object, 
                                        scenario_ind,
                                        realisation_ind)
-        collate_offset_simulation_routines(background_cfacs, 
-                                           use_offset_metric)
         
       }
     } else {
