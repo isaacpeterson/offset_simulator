@@ -288,8 +288,10 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       }
     }
     
-    simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, yr)
-    
+
+    if (!((simulation_data_object$simulation_params$unregulated_loss_type == 'default') & (simulation_data_object$simulation_params$unregulated_loss_prob == 0))){
+      simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, yr)
+    }
     projection_yrs = lapply(seq_along(simulation_data_object$site_features), 
                             function(i) find_projection_yrs(perform_dynamics_time_shift = simulation_data_object$feature_params$perform_background_dynamics_time_shift, 
                                                             simulation_data_object$site_features[[i]], 
@@ -484,13 +486,13 @@ write_site_mask <- function(output_filename, landscape_dims, land_parcels, curre
 #sample over uniform random vector, indicies less than the threshold level are selected for clearing
 select_sites_to_clear <- function(available_site_indexes, simulation_params, yr){
   
-  if (simulation_params.unregulated_loss_type == 'default'){
+  if (simulation_params$unregulated_loss_type == 'default'){
     clearing_thresh <- rep(simulation_params$unregulated_loss_prob, length(available_site_indexes))
     discrim <- runif(length(clearing_thresh)) < clearing_thresh
     inds_to_clear <- available_site_indexes[discrim]
-  } else if (simulation_params.unregulated_loss_type == 'unregulated_stochastic_development'){
+  } else if (simulation_params$unregulated_loss_type == 'unregulated_stochastic_development'){
       inds_to_clear = sample(available_site_indexes, simulation_params$unregulated_intervention_vec[yr])
-  } else if (simulation_params.unregulated_loss_type == 'unregulated_directed_development'){
+  } else if (simulation_params$unregulated_loss_type == 'unregulated_directed_development'){
       inds_to_clear = simulation_params$unregulated_intervention_vec[[yr]]
   }
   
@@ -500,11 +502,6 @@ select_sites_to_clear <- function(available_site_indexes, simulation_params, yr)
 
 
 run_unregulated_loss_routine <- function(simulation_data_object, yr){
-  
-  if (simulation_data_object$simulation_params$unregulated_loss_prob == 0){
-    # return null object when clearing is inactive
-    return(simulation_data_object)
-  }
   
   available_site_indexes = setdiff(unlist(simulation_data_object$output_data$index_object$available_indexes$unregulated_loss), 
                                    unlist(simulation_data_object$output_data$index_object$site_indexes_used))
