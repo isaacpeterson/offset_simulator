@@ -102,7 +102,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     
   }
   
-  if (object_to_output$output_params$output_type == 'plot') {
+  if ((object_to_output$output_params$output_type == 'plot') & (object_to_output$output_params$write_pdf == TRUE)){
     graphics.off()
     flog.info('closing PDF %s', pdf_to_output)
   }

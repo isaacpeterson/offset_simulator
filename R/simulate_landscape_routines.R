@@ -1,3 +1,16 @@
+construct_simulated_data <- function(feature_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
+  
+  objects_to_save = list()
+  if (simulation_inputs_folder == 'default'){
+    simulation_inputs_folder = 'simulation_inputs/'
+  }
+  planning_units_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$site_num_characteristics)
+  planning_units_raster = raster(planning_units_array)
+  writeRaster(planning_units_raster, paste0(simulation_inputs_folder, 'planning_units.tif'), overwrite = TRUE)
+  simulate_feature_layers(feature_params, simulation_inputs_folder) 
+  
+}
+
 #' @export
 simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
 
@@ -39,6 +52,7 @@ simulate_feature_layers <- function(feature_params, simulation_inputs_folder){
     
     feature_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$feature_num_characteristics)
     feature_characteristics <- build_site_characteristics(feature_array)
+    print(feature_ind)
     condition_class_modes = lapply(seq_along(feature_characteristics$land_parcels), 
                                    function(i) rep(sample(seq_along(feature_params$initial_condition_class_bounds[[feature_ind]]), 1), length(feature_characteristics$land_parcels[[i]])))
     
@@ -129,13 +143,4 @@ simulate_feature_characteristics <- function(feature_layer_size, feature_num_cha
 }
 
 
-construct_simulated_data <- function(feature_params, simulation_inputs_folder, simulation_params_folder, backup_simulation_inputs){
 
-  objects_to_save = list()
-
-  planning_units_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$site_num_characteristics)
-  planning_units_raster = raster(planning_units_array)
-  writeRaster(planning_units_raster, paste0(simulation_inputs_folder, 'planning_units.tif'), overwrite = TRUE)
-  simulate_feature_layers(feature_params, simulation_inputs_folder) 
-  
-}

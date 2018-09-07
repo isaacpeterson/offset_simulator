@@ -5,14 +5,14 @@ initialise_default_global_params <- function(){
   # Set the random number seed
   default_global_params$set_seed = FALSE
 
-  default_global_params$feature_raster_files = '/simulation_inputs/feature_layer_001.tif'
-  default_global_params$condition_class_raster_files = '/simulation_inputs/condition_class_001.tif'
+  default_global_params$feature_raster_files = 'default'
+  default_global_params$condition_class_raster_files = 'default'
   default_global_params$numeric_placeholder_width = 3 # how many digits are used to store scenario index and realisation index
   # When specifying multiple scenarios using initialise_default_simulation_params,
   # the param can be used to force a single scenario to be run. Set to 'all' to 
   # run all scenarios.
   
-  default_global_params$planning_units_raster = 'planning_units.tif'
+  default_global_params$planning_units_raster = 'default'
   default_global_params$scenario_subset = 'all'
   
   default_global_params$raster_file_type = '.tif'
@@ -98,7 +98,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$intervention_vec[intervention_locs] = 1
     
 
-    default_simulation_params$features_to_use_in_simulation = 'all'
+    default_simulation_params$features_to_use_in_simulation = 1
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
     default_simulation_params$features_to_use_in_offset_calc = 1

@@ -38,7 +38,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     loop_strt <- Sys.time()
     
     #load objects from files etc
-    simulation_data_object <- build_input_data(params_object, scenario_ind)
+    simulation_data_object <- build_input_data(params_object$global_params, params_object$feature_params, params_object$simulation_params_group[[scenario_ind]])
     
     simulation_data_object$output_data = build_output_data(simulation_data_object)
     flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
