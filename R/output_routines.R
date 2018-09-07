@@ -22,8 +22,10 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   object_to_output$simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   object_to_output$simulation_output_folder = paste0(simulation_folder, '/simulation_outputs/')
   
+  browser()
   object_to_output$global_params = readRDS(paste0(object_to_output$simulation_params_folder, 'global_params.rds'))
   object_to_output$feature_params = readRDS(paste0(object_to_output$simulation_params_folder, 'feature_params.rds'))
+  
   
   # read in file with stored param settings to identify plots easier
   param_variants_filename = paste0(object_to_output$simulation_params_folder, 'param_variants.rds')

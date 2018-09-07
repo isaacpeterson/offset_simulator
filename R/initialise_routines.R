@@ -205,8 +205,7 @@ build_input_data <- function(global_params, feature_params, simulation_params){
     } else {
       flog.info('building management condition class layers, this may take a while..')
       management_condition_class_layers = build_modes(features_to_use = initial_features, 
-                                                      condition_class_bounds = feature_params$management_condition_class_bounds, 
-                                                      unique_site_vals = feature_params$unique_site_vals)
+                                                      condition_class_bounds = feature_params$management_condition_class_bounds)
       
       #saveRDS(management_condition_class_modes_layers, paste0(global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
     }
@@ -223,7 +222,6 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                               feature_params$sample_background_dynamics,
                                                               feature_params$background_dynamics_type,
                                                               store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
-                                                              feature_params$unique_site_vals,
                                                               feature_params$dynamics_sample_type,
                                                               feature_params$background_dynamics_bounds, 
                                                               simulation_data_object$feature_dynamics_modes)
@@ -244,7 +242,6 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                                  feature_params$sample_management_dynamics,
                                                                  feature_params$management_dynamics_type,
                                                                  store_dynamics_as_differential = FALSE,
-                                                                 feature_params$unique_site_vals,
                                                                  feature_params$management_dynamics_sample_type,
                                                                  feature_params$management_dynamics_bounds, 
                                                                  simulation_data_object$management_dynamics_modes)
@@ -315,8 +312,7 @@ build_condition_class_layers <- function(initial_features, global_params, featur
   } else {
     flog.info('building condition classes ..')
     background_condition_class_layers = build_modes(features_to_use = initial_features, 
-                                                    condition_class_bounds = feature_params$initial_condition_class_bounds, 
-                                                    unique_site_vals = feature_params$unique_site_vals)
+                                                    condition_class_bounds = feature_params$initial_condition_class_bounds)
     
     flog.info('writing condition classes ..')
     
@@ -408,7 +404,7 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
 
 
 build_dynamics <- function(site_features_to_use, features_to_use, sample_dynamics, dynamics_type, store_dynamics_as_differential, 
-                           unique_site_vals, dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
+                           dynamics_sample_type, feature_dynamics_bounds, feature_dynamics_modes){
   
   if (dynamics_type == 'element_scale'){
     
@@ -422,8 +418,6 @@ build_dynamics <- function(site_features_to_use, features_to_use, sample_dynamic
                                                                                                     sample_dynamics,
                                                                                                     dynamics_sample_type)  )))
   } else if (dynamics_type == 'site_scale'){
-    
-    if (unique_site_vals == TRUE){
       
       dynamics_set = lapply(seq_along(feature_dynamics_modes), 
                             function(i) lapply(features_to_use,
@@ -434,28 +428,7 @@ build_dynamics <- function(site_features_to_use, features_to_use, sample_dynamic
                                                                                                       store_dynamics_as_differential, 
                                                                                                       sample_dynamics,
                                                                                                       dynamics_sample_type) )))
-      
-      #       dynamics_set = lapply(seq_along(site_features_to_use), 
-      #                             function(i) lapply(seq_along(site_features_to_use[[i]]),
-      #                                                function(j) lapply(seq_along(unique(feature_dynamics_modes[[i]][[j]])), 
-      #                                                                   function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
-      #                                                                                                       unique(feature_dynamics_modes[[i]][[j]])[k],
-      #                                                                                                       mean(site_features_to_use[[i]][[j]][which(feature_dynamics_modes[[i]][[j]] 
-      #                                                                                                                                                       == unique(feature_dynamics_modes[[i]][[j]])[k])]),
-      #                                                                                                       store_dynamics_as_differential, 
-      #                                                                                                       sample_dynamics,
-      #                                                                                                       dynamics_sample_type) )))
-      
-    } else {
-      dynamics_set = lapply(seq_along(feature_dynamics_modes), 
-                            function(i) lapply(features_to_use,
-                                               function(j) sample_current_dynamics(feature_dynamics_bounds[[j]],
-                                                                                   feature_dynamics_modes[[i]][[j]],
-                                                                                   unique(site_features_to_use[[i]][[j]]),
-                                                                                   store_dynamics_as_differential, 
-                                                                                   sample_dynamics,
-                                                                                   dynamics_sample_type)))
-    }
+
   }
   return(dynamics_set)
 }
@@ -493,7 +466,7 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 
 
 
-build_modes <- function(features_to_use, condition_class_bounds, unique_site_vals){
+build_modes <- function(features_to_use, condition_class_bounds){
   
   feature_dynamics_modes = lapply(seq_along(features_to_use),  
                                   function(i) matrix(sapply(features_to_use[[i]], find_current_mode, condition_class_bounds[[i]]), dim(features_to_use[[i]])))
@@ -665,10 +638,10 @@ save_params <- function(global_params, simulation_params_group, feature_params){
   
   if (global_params$simulation_folder != 'default'){
     simulation_folder = write_folder(global_params$simulation_folder)
-    simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
+    global_params$simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
     base_run_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
-    simulation_inputs_folder = write_folder('simulation_inputs/')
+    global_params$simulation_inputs_folder =  write_folder('simulation_inputs/')
     base_run_folder = ('simulation_runs/')
   }
   
@@ -682,6 +655,8 @@ save_params <- function(global_params, simulation_params_group, feature_params){
   
   global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
   global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
+  global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
+  
   flog.info('writing simulation outputs into %s', global_params$run_folder)
   
   if (class(global_params$scenario_subset) == 'character'){
@@ -715,8 +690,7 @@ save_params <- function(global_params, simulation_params_group, feature_params){
     dump('current_simulation_params', paste0(simulation_params_file, '.R'), control = NULL)
   }
   
-  global_params$simulation_inputs_folder = simulation_inputs_folder
-  global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
+
   
   return(global_params)
 }

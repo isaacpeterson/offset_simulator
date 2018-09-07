@@ -12,7 +12,7 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
 }
 
 #' @export
-simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd, unique_site_vals){
+simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd){
 
   if (current_condition_class_modes == 0){
     site_elements = array(0, element_num)
@@ -30,17 +30,13 @@ simulate_site_feature_elements <- function(site_sample_type, current_condition_c
   
   if (site_sample_type == 'trunc_norm'){
     site_mean = rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_mean_sd)
-    if (unique_site_vals == TRUE){
+
       site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=site_mean, sd = initial_site_sd)
-    } else{
-      site_elements = array(site_mean, element_num)
-    }
+
   } else if (site_sample_type == 'uniform'){
-    if (unique_site_vals == TRUE){
+
       site_elements = current_condition_class_bounds[1] + runif(element_num)*array((current_condition_class_bounds[3] - current_condition_class_bounds[1]), element_num)
-    } else {
-      site_elements = array(1, element_num)*runif(1)*(current_condition_class_bounds[3] - current_condition_class_bounds[1])
-    }
+
   }
 
   return(site_elements)
@@ -68,20 +64,9 @@ simulate_feature_layers <- function(feature_params, simulation_inputs_folder){
                                                                                                     current_condition_class_set,
                                                                                                     element_num = length(current_element_set),
                                                                                                     feature_params$initial_site_sd, 
-                                                                                                    feature_params$initial_site_mean_sd,
-                                                                                                    feature_params$unique_site_vals)
+                                                                                                    feature_params$initial_site_mean_sd)
       }
     }
-
-#     current_simulated_feature = lapply(seq_along(feature_characteristics$land_parcels), 
-#                                        function(i) lapply(seq_along(unique(current_condition_mode_set[[i]])), 
-#                                                           function(j) simulate_site_feature_elements(feature_params$site_sample_type, 
-#                                                                                                      unique(current_condition_mode_set[[i]])[j],
-#                                                                                                      current_condition_class_set,
-#                                                                                                      element_num = length(which(current_condition_mode_set[[i]] == unique(current_condition_mode_set[[i]])[j])),
-#                                                                                                      feature_params$initial_site_sd, 
-#                                                                                                      feature_params$initial_site_mean_sd,
-#                                                                                                      feature_params$unique_site_vals)))
 
     current_occupation_ratio = feature_params$occupation_ratio[[feature_ind]]
     
