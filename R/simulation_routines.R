@@ -345,7 +345,6 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
       if (!file.exists(paste0(current_data_dir, 'raster_folder/'))){
         dir.create(paste0(current_data_dir, 'raster_folder/'))
       }
-      browser()
       feature_layer_to_save = lapply(seq_along(feature_layer_to_save), 
                                      function(i) as.matrix(unwrap_condition_classes(feature_layer_to_save[[i]], 
                                                                                     simulation_data_object$site_element_index_key[[i]][[feature_ind]])))

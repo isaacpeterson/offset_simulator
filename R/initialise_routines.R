@@ -199,6 +199,8 @@ build_input_data <- function(global_params, feature_params, simulation_params){
     
     saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
     saveRDS(object = simulation_data_object$site_element_index_key, paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
+  } else {
+    simulation_data_object$site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   }
   
   if (feature_params$management_condition_class == 'background'){
