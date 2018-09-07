@@ -52,7 +52,7 @@ simulate_feature_layers <- function(feature_params, simulation_inputs_folder){
     
     feature_array <- simulate_feature_characteristics(feature_params$feature_layer_size, feature_params$feature_num_characteristics)
     feature_characteristics <- build_site_characteristics(feature_array)
-    print(feature_ind)
+
     condition_class_modes = lapply(seq_along(feature_characteristics$land_parcels), 
                                    function(i) rep(sample(seq_along(feature_params$initial_condition_class_bounds[[feature_ind]]), 1), length(feature_characteristics$land_parcels[[i]])))
     

@@ -300,10 +300,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                             yr, 
                                                             feature_dynamics_to_use = simulation_data_object$feature_dynamics[[i]], 
                                                             simulation_data_object$feature_dynamics_modes[[i]],
-                                                            dynamics_type = simulation_data_object$feature_params$background_dynamics_type, 
-                                                            project_by_mean = simulation_data_object$feature_params$project_by_mean,
-                                                            unique_site_vals = simulation_data_object$feature_params$unique_site_vals,
-                                                            unique_site_modes = simulation_data_object$feature_params$unique_site_modes))
+                                                            dynamics_type = simulation_data_object$feature_params$background_dynamics_type))
     
     # update sites in landscape (both inside and outside development/offset program)
     flog.info('updating sites...')
@@ -559,14 +556,14 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
 }
 
 
-update_feature_dynamics_modes <- function(feature_dynamics_modes, feature_num, features_modes_to_update, action_type, current_pool){
+update_feature_dynamics_modes <- function(feature_dynamics_modes, feature_num, features_to_update, action_type, current_pool){
   
   for (current_site_index in current_pool){
     
     if (action_type == 'development'){
       feature_dynamics_modes[[current_site_index]] <- rep(list(0), feature_num)
     } else if (action_type == 'maintain'){
-      feature_dynamics_modes[[current_site_index]][features_modes_to_update] = lapply(seq_along(features_modes_to_update), 
+      feature_dynamics_modes[[current_site_index]][features_to_update] = lapply(seq_along(features_to_update), 
                                                                                       function(i) rep(0, length(feature_dynamics_modes[[current_site_index]])))
     } 
   }
@@ -576,23 +573,20 @@ update_feature_dynamics_modes <- function(feature_dynamics_modes, feature_num, f
 }
 
 
-update_feature_dynamics <- function(site_features_to_use, feature_dynamics_to_update, management_dynamics_to_use, 
+update_feature_dynamics <- function(site_group_to_use, feature_dynamics_to_update, management_dynamics_to_use, 
                                     feature_dynamics_modes_to_use, feature_params, features_to_update, action_type, yr){
   
   if (action_type == 'develop'){
-    current_feature_dynamics_set = lapply(seq_along(site_features_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_update)))
+    current_feature_dynamics_set = lapply(seq_along(site_group_to_use), function(i) rep(list(array(0, length(feature_params$simulated_time_vec))), length(features_to_update)))
   } else if (action_type == 'offset'){
     
-    time_shifts = lapply(seq_along(site_features_to_use), 
-                         function(i) find_time_shifts(site_features_to_use[[i]], 
+    time_shifts = lapply(seq_along(site_group_to_use), 
+                         function(i) find_time_shifts(site_group_to_use[[i]], 
                                                       management_dynamics_to_use[[i]], 
                                                       feature_dynamics_modes_to_use[[i]], 
-                                                      dynamics_type = feature_params$management_dynamics_type, 
-                                                      project_by_mean, 
-                                                      unique_site_vals, 
-                                                      unique_site_modes))
+                                                      dynamics_type = feature_params$management_dynamics_type))
     
-    current_feature_dynamics_set = lapply(seq_along(site_features_to_use), function(i) shift_dynamics_set(site_features_to_use[[i]], 
+    current_feature_dynamics_set = lapply(seq_along(site_group_to_use), function(i) shift_dynamics_set(site_group_to_use[[i]], 
                                                                                                           management_dynamics_to_use[[i]],
                                                                                                           feature_dynamics_modes_to_use[[i]],
                                                                                                           dynamics_type = feature_params$management_dynamics_type, 
@@ -604,7 +598,7 @@ update_feature_dynamics <- function(site_features_to_use, feature_dynamics_to_up
                                                                                                           time_fill = TRUE))
   } 
   
-  updated_feature_dynamics <- merge_dynamics(feature_dynamics_to_update, features_to_update, current_feature_dynamics_set, site_features_to_use, 
+  updated_feature_dynamics <- merge_dynamics(feature_dynamics_to_update, features_to_update, current_feature_dynamics_set, site_group_to_use, 
                                              feature_params$management_dynamics_type, feature_params$unique_site_vals, feature_params$unique_site_modes, yr, feature_params$project_by_mean)
   
   return(updated_feature_dynamics)
@@ -612,12 +606,12 @@ update_feature_dynamics <- function(site_features_to_use, feature_dynamics_to_up
 }
 
 
-merge_dynamics <- function(feature_dynamics_to_update, features_to_update, current_feature_dynamics, site_features_to_use, management_dynamics_type, 
+merge_dynamics <- function(feature_dynamics_to_update, features_to_update, current_feature_dynamics, site_group_to_use, management_dynamics_type, 
                            unique_site_vals, unique_site_modes, yr, project_by_mean){
   
   updated_feature_dynamics = feature_dynamics_to_update
   
-  for (site_ind in seq_along(site_features_to_use)){
+  for (site_ind in seq_along(site_group_to_use)){
     if (management_dynamics_type == 'element_scale'){
       updated_feature_dynamics[[site_ind]][features_to_update] = lapply(features_to_update, 
                                                                         function(i) lapply(seq_along(feature_dynamics_to_update[[site_ind]][[i]]), 
@@ -656,19 +650,18 @@ merge_dynamics <- function(feature_dynamics_to_update, features_to_update, curre
 }
 
 
-find_time_shifts <- function(site_features_to_use, current_feature_dynamics_set, feature_dynamics_modes_to_use, 
-                             dynamics_type, project_by_mean, unique_site_vals, unique_site_modes){
+find_time_shifts <- function(site_group_to_use, current_feature_dynamics_set, feature_dynamics_modes_to_use, dynamics_type){
   
   if (dynamics_type == 'element_scale'){
-    lapply(seq_along(site_features_to_use), 
-           function(i) lapply(seq_along(site_features_to_use[[i]]),
-                              function(j) find_time_shift(site_features_to_use[[i]][j], 
+    lapply(seq_along(site_group_to_use), 
+           function(i) lapply(seq_along(site_group_to_use[[i]]),
+                              function(j) find_time_shift(site_group_to_use[[i]][j], 
                                                           current_feature_dynamics_set[[i]][[j]], feature_dynamics_modes_to_use[[i]][[j]])))
   } else if (dynamics_type == 'site_scale'){
     
-    time_shifts = lapply(seq_along(site_features_to_use), 
+    time_shifts = lapply(seq_along(site_group_to_use), 
                          function(i) lapply(seq_along(feature_dynamics_modes_to_use[[i]]),
-                                            function(j) find_time_shift(mean(site_features_to_use[[i]][[j]]),
+                                            function(j) find_time_shift(mean(site_group_to_use[[i]][[j]]),
                                                                         current_feature_dynamics_set[[i]][[j]], feature_dynamics_modes_to_use[[i]][[j]])))
   }
   
@@ -681,14 +674,14 @@ find_time_shifts <- function(site_features_to_use, current_feature_dynamics_set,
 
 
 
-shift_dynamics_set <- function(site_features_to_use, current_feature_dynamics_set, feature_dynamics_modes_to_use, dynamics_type, project_by_mean, update_dynamics_by_differential,
+shift_dynamics_set <- function(site_group_to_use, current_feature_dynamics_set, feature_dynamics_modes_to_use, dynamics_type, project_by_mean, update_dynamics_by_differential,
                                time_shifts, unique_site_vals, unique_site_modes, time_fill){
   
   if (dynamics_type == 'element_scale'){
     
-    shifted_dynamics_set = lapply(seq_along(site_features_to_use), 
-                                  function(i) lapply(seq_along(site_features_to_use[[i]]),
-                                                     function(j) shift_dynamics(site_features_to_use[[i]][[j]],
+    shifted_dynamics_set = lapply(seq_along(site_group_to_use), 
+                                  function(i) lapply(seq_along(site_group_to_use[[i]]),
+                                                     function(j) shift_dynamics(site_group_to_use[[i]][[j]],
                                                                                 current_feature_dynamics_to_use = current_feature_dynamics_set[[i]][[j]],
                                                                                 feature_dynamics_modes_to_use[[i]][[j]],
                                                                                 current_time_shift = time_shifts[[i]][[j]], 
@@ -697,9 +690,9 @@ shift_dynamics_set <- function(site_features_to_use, current_feature_dynamics_se
     
   } else if (dynamics_type == 'site_scale'){
     
-    shifted_dynamics_set = lapply(seq_along(site_features_to_use), 
-                                  function(i) lapply(seq_along(site_features_to_use[[i]]),
-                                                     function(j) shift_dynamics(mean(site_features_to_use[[i]][[j]]),
+    shifted_dynamics_set = lapply(seq_along(site_group_to_use), 
+                                  function(i) lapply(seq_along(site_group_to_use[[i]]),
+                                                     function(j) shift_dynamics(mean(site_group_to_use[[i]][[j]]),
                                                                                 current_feature_dynamics_to_use = current_feature_dynamics_set[[i]][[j]],
                                                                                 feature_dynamics_modes_to_use[[i]][[j]],
                                                                                 current_time_shift = time_shifts[[i]][[j]], 
@@ -1111,8 +1104,8 @@ assess_parcel_sets <- function(simulation_data_object, offsets_object, offset_pa
 #     }
 #     
 #     if (simulation_data_object$simulation_params$use_offset_metric == FALSE){
-#       cfacs = unlist(lapply(seq_along(site_features_to_use), 
-#                             function(i) sum_site_features(calc_site_cfacs(site_features_to_use[i],
+#       cfacs = unlist(lapply(seq_along(site_group_to_use), 
+#                             function(i) sum_site_features(calc_site_cfacs(site_group_to_use[i],
 #                                                              parcel_num_remaining = pool_object$parcel_num_remaining[i],
 #                                                              simulation_data_object$simulation_params,
 #                                                              feature_params,
@@ -1129,8 +1122,8 @@ assess_parcel_sets <- function(simulation_data_object, offsets_object, offset_pa
 #       
 #     } else {
 #       
-#       cfacs = lapply(seq_along(site_features_to_use), 
-#                      function(i) sum_cols(user_transform_function(unlist(calc_site_cfacs(site_features_to_use[i],
+#       cfacs = lapply(seq_along(site_group_to_use), 
+#                      function(i) sum_cols(user_transform_function(unlist(calc_site_cfacs(site_group_to_use[i],
 #                                                                                     parcel_num_remaining = pool_object$parcel_num_remaining[i],
 #                                                                                     simulation_data_object$simulation_params,
 #                                                                                     feature_params,
@@ -1986,14 +1979,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       
       projection_yrs = lapply(seq_along(site_features_group), 
                               function(i) find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift, 
-                                                              site_features_group[[i]], 
-                                                              yr, 
-                                                              feature_dynamics[[i]], 
-                                                              feature_dynamics_modes[[i]],
-                                                              dynamics_type, 
-                                                              project_by_mean, 
-                                                              feature_params$unique_site_vals, 
-                                                              feature_params$unique_site_modes))
+                                                              site_features_group[[i]],  yr, feature_dynamics[[i]],  feature_dynamics_modes[[i]], dynamics_type))
       
       if (simulation_params$use_offset_metric == FALSE){
         
@@ -2043,17 +2029,10 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
     if (pool_type == 'offsets') {
       
       if (action_type == 'restore'){
-        
+
         time_shifts = lapply(seq_along(site_features_group), 
                              function(i) find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift, 
-                                                             site_features_group[[i]], 
-                                                             yr, 
-                                                             management_dynamics[[i]], 
-                                                             feature_dynamics_modes[[i]],
-                                                             dynamics_type, 
-                                                             project_by_mean, 
-                                                             feature_params$unique_site_vals, 
-                                                             feature_params$unique_site_modes))
+                                                             site_features_group[[i]], yr, management_dynamics[[i]], feature_dynamics_modes[[i]], dynamics_type))
         
         feature_dynamics = lapply(seq_along(site_features_group), function(i) shift_dynamics_set(site_features_group[[i]], 
                                                                                                  management_dynamics[[i]], 
@@ -2068,14 +2047,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
         
         projection_yrs = lapply(seq_along(site_features_group), 
                                 function(i) find_projection_yrs(perform_dynamics_time_shift = FALSE, 
-                                                                site_features_group[[i]], 
-                                                                yr = 1, 
-                                                                management_dynamics[[i]], 
-                                                                feature_dynamics_modes[[i]],
-                                                                dynamics_type, 
-                                                                project_by_mean, 
-                                                                feature_params$unique_site_vals, 
-                                                                feature_params$unique_site_modes))
+                                                                site_features_group[[i]],  yr = 1,  management_dynamics[[i]],  feature_dynamics_modes[[i]], dynamics_type))
         
       } 
       
@@ -2226,19 +2198,13 @@ kill_site_features <- function(site_features_to_develop, store_zeros_as_sparse){
 
 
 find_projection_yrs <- function(perform_dynamics_time_shift, current_site_features, yr, 
-                                feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type, project_by_mean, unique_site_vals, unique_site_modes){
+                                feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type){
   
   if (perform_dynamics_time_shift == FALSE){
     
     projection_yrs = lapply(seq_along(current_site_features), function(i) rep(list(yr), length(feature_dynamics_modes_to_use[[i]])) )
   } else {
-    projection_yrs = find_time_shifts(current_site_features, 
-                                      feature_dynamics_to_use, 
-                                      feature_dynamics_modes_to_use, 
-                                      dynamics_type, 
-                                      project_by_mean, 
-                                      unique_site_vals, 
-                                      unique_site_modes)
+    projection_yrs = find_time_shifts(current_site_features,  feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type)
   }
   
 }
