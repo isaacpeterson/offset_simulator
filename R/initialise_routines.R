@@ -90,7 +90,7 @@ build_input_data <- function(global_params, feature_params, simulation_params){
     }
   }
   
-  if (global_params$feature_raster_files == 'default'){
+  if (all(global_params$feature_raster_files == 'default')){
     feature_raster_files = list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
                                       full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                       include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')

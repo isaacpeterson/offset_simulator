@@ -22,7 +22,6 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   object_to_output$simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
   object_to_output$simulation_output_folder = paste0(simulation_folder, '/simulation_outputs/')
   
-  browser()
   object_to_output$global_params = readRDS(paste0(object_to_output$simulation_params_folder, 'global_params.rds'))
   object_to_output$feature_params = readRDS(paste0(object_to_output$simulation_params_folder, 'feature_params.rds'))
   
@@ -75,8 +74,8 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     setup_sub_plots(object_to_output$output_params$nx, object_to_output$output_params$ny, x_space = 5, y_space = 5)
 
   } else if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
-    object_to_output$site_characteristics = readRDS(paste0(object_to_output$global_params$simulation_folder, 'simulation_inputs/', 'site_characteristics.rds'))
-    object_to_output$site_element_indexes_grouped_by_condition_classes = readRDS(paste0(object_to_output$global_params$simulation_folder, 'simulation_inputs/', 'site_element_indexes_grouped_by_condition_classes.rds'))
+    object_to_output$site_characteristics = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+    object_to_output$site_element_indexes_grouped_by_condition_classes = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
     
     if (object_to_output$output_params$output_type == 'raster'){
       object_to_output$output_raster_folder = paste0(object_to_output$collated_folder, '/output_rasters/')
