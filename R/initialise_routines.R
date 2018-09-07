@@ -240,7 +240,7 @@ build_input_data <- function(global_params, feature_params, simulation_params){
   if (!(file.exists(paste0(global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (global_params$overwrite_management_dynamics == TRUE)){
     simulation_data_object$management_dynamics <- build_dynamics(simulation_data_object$site_features,
-                                                                 features_to_use = simulation_params$features_to_use_in_offset_intervention,
+                                                                 features_to_use = seq_along(simulation_params$features_to_use_in_simulation),
                                                                  feature_params$sample_management_dynamics,
                                                                  feature_params$management_dynamics_type,
                                                                  store_dynamics_as_differential = FALSE,
