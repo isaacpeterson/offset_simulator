@@ -62,6 +62,7 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_site_features = FALSE
   default_global_params$overwrite_condition_class_layers = FALSE
   
+  default_global_params$overwrite_site_condition_class_key = TRUE
   default_global_params$save_feature_dynamics = FALSE
   default_global_params$save_management_dynamics = FALSE
   default_global_params$overwrite_dev_probability_list = FALSE
@@ -136,9 +137,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$match_threshold_ratio = 0.01 
     
     default_simulation_params$match_threshold_noise = 1e-10
-    
 
-    
   # The Options are 'restoration_gains' - the gains are calculated relative to
   # the site value at the time of the intervention above  - forces offsets to restore sites
   # 'avoided_condition_decline - the gains are calculated relative to the biodiversity
@@ -150,7 +149,6 @@ initialise_default_simulation_params <- function(){
   
   # parameters to control the offset calculation and how the intervention is implemented
   # later internally processed into two additional parameters as (offset_calc_type, offset_action_type)
-    
   
   default_simulation_params$offset_action_params = c('net_gains', 'restore')
   

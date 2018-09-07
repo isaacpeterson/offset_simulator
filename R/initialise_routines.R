@@ -169,14 +169,22 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                                        simulation_params)
     } 
     
-    
     simulation_data_object$site_features <- separate_features_by_condition_class(initial_features, 
                                                                                  split_type = 'feature_vals',
                                                                                  store_zeros_as_sparse = global_params$store_zeros_as_sparse,
                                                                                  simulation_data_object$site_characteristics$land_parcels, 
                                                                                  background_condition_class_layers, 
                                                                                  simulation_data_object$feature_dynamics_modes)
-    
+  
+    saveRDS(object = simulation_data_object$site_features, paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
+
+  } else {
+    simulation_data_object$site_features = readRDS(paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
+  }
+  
+  
+  if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds')))
+      | (global_params$overwrite_site_condition_class_key == TRUE)){
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = global_params$store_zeros_as_sparse,
@@ -189,12 +197,8 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                                               function(j) match(simulation_data_object$site_characteristics$land_parcels[[i]], 
                                                                                                 do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
     
-    saveRDS(object = simulation_data_object$site_features, paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
     saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
     saveRDS(object = simulation_data_object$site_element_index_key, paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
-    
-  } else {
-    simulation_data_object$site_features = readRDS(paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
   }
   
   if (feature_params$management_condition_class == 'background'){
