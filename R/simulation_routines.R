@@ -1773,7 +1773,6 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_offset_metric, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
-  
   if (pool_object$break_flag == TRUE){
     match_object = setNames(list(FALSE), 'match_flag')
     return(match_object)
@@ -1794,13 +1793,15 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
     if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
-    } else if (match_procedure == 'sampled'){
+    } else {
+      
+      if (match_procedure == 'weighted'){
+        probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(current_pool)])
+        
+      } else {
+        probability_list_to_use = rep(1/length(current_pool), length(current_pool))
+      }
       match_params = list()
-      match_params$match_ind = sample(length(current_pool), 1)
-      match_params$match_vals = parcel_vals_pool[match_params$match_ind]
-    } else if (match_procedure == 'weighted'){
-      match_params = list()
-      probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(current_pool)])
       match_params$match_ind = sample(length(current_pool), 1, probability_list_to_use)
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
