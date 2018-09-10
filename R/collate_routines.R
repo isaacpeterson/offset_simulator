@@ -221,7 +221,7 @@ build_site_features_at_intervention <- function(land_site_num, current_data_dir,
 
 
 calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs, use_offset_metric){
-  
+
   landscape_scale_object = list()
   landscape_scale_object$landscape_cfacs = background_cfacs
   landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes)
@@ -571,9 +571,11 @@ assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_s
   collated_object = list()
   
   site_num = length(site_scale_outcomes_to_use)
-  impact_trajectories = lapply(seq(site_num), function(i) site_scale_outcomes_to_use[[i]][current_intervention_yrs[i]:time_steps])
+  impact_trajectories = lapply(seq(site_num), function(i) matrix(site_scale_outcomes_to_use[[i]][current_intervention_yrs[i]:time_steps], ncol = 1))
   avoided_loss = lapply(seq(site_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
   rest_gains = lapply(seq(site_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
+  
+  browser()
   net_gains = mapply('-', impact_trajectories, cfacs_to_use, SIMPLIFY = FALSE)
   
   collated_object = list(net_gains, avoided_loss, rest_gains)
