@@ -166,15 +166,12 @@ initialise_default_simulation_params <- function(){
   #use a specified offset metric in the site match calculation
   default_simulation_params$use_offset_metric = FALSE
   
-  # define the offset metric function
-  default_simulation_params$offset_metric_type = 'euclidean_norm'
-  
   # How the development/offset parcels are selected options are 'random',
   # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
-  default_simulation_params$development_selection_type = 'random'  
+  default_simulation_params$development_selection_type = 'sampled'  
 
   default_simulation_params$offset_selection_type = 'greedy'  
   
@@ -256,7 +253,7 @@ initialise_default_simulation_params <- function(){
   
   default_simulation_params$unregulated_loss_type = 'default'
   default_simulation_params$unregulated_intervention_vec = vector()
-  
+  default_simulation_params$directed_developments = vector()
   return(default_simulation_params)
 }
 

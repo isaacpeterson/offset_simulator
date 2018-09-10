@@ -263,11 +263,19 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                                            yr)
       
       # determine current set of available development sites and calculate gains structure as detailed in current policy params
-      
-      simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+
+      if (simulation_data_object$simulation_params$development_selection_type == 'directed') {
+
+        simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                          pool_type = 'developments',
+                                                                          current_pool = simulation_data_object$simulation_params$directed_developments[[yr]],
+                                                                          yr)
+      } else {
+        simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                         pool_type = 'developments',
                                                                         current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
                                                                         yr)
+      }
     }
     
     
@@ -1339,6 +1347,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
       match_object$current_credit = simulation_data_object$output_data$current_credit
       
       return(match_object)
+      
     } else {
       
       current_match_pool = unlist(simulation_data_object$dev_pool_object$site_indexes)
@@ -1347,6 +1356,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
       group_pool_indexes = simulation_data_object$offset_pool_object$site_indexes
       parcel_num_remaining = length(current_match_pool)
     }
+    
   }
   
   if ((length(group_pool_indexes) == 0) | (parcel_num_remaining == 0)){
@@ -1358,15 +1368,16 @@ match_sites <- function(simulation_data_object, match_type, yr){
   group_pool_vals = remove_index(group_pool_vals, zero_inds)
   group_pool_indexes = remove_index(group_pool_indexes, zero_inds)
   
-  while( (match_object$match_flag == FALSE) & (length(current_match_pool) > 1) ){   
+  while( (match_object$match_flag == FALSE)){   
     
-    if (simulation_data_object$simulation_params$development_selection_type == 'random'){
-      sample_ind = sample(seq_along(current_match_pool), size = 1)
+    if ((simulation_data_object$simulation_params$development_selection_type == 'sampled') 
+        | (simulation_data_object$simulation_params$development_selection_type == 'directed')){
+      current_dev_probability_list = rep(1/length(current_match_pool))
     } else if (simulation_data_object$simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
-      sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_probability_list)
-    }
+    } 
     
+    sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_probability_list)
     current_test_index = current_match_pool[sample_ind]
     vals_to_match = current_match_vals_pool[[sample_ind]]
     
@@ -1374,6 +1385,9 @@ match_sites <- function(simulation_data_object, match_type, yr){
       dev_ind = list_intersect(group_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
       match_pool_to_use = remove_index(group_pool_indexes, dev_ind$match_ind)
       pool_vals_to_use = remove_index(group_pool_vals, dev_ind$match_ind)
+      if (length(match_pool_to_use) == 0){
+        break()
+      } 
     } else {
       match_pool_to_use = group_pool_indexes  #if performing offset banking use any of the available banked offset pool
       pool_vals_to_use = group_pool_vals
@@ -1654,7 +1668,7 @@ select_cols <- function(arr_to_use, col_inds){
 }
 
 
-select_pool_to_match <- function(vals_to_match, use_offset_metric, metric_type, thresh, pool_vals_to_use, 
+select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_vals_to_use, 
                                  max_parcel_num, current_pool, match_type, screen_site_zeros){
   
   pool_object = list()
@@ -1745,7 +1759,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
     if (simulation_params$screen_dev_zeros == FALSE){
       # if zeros are allowed use random selection 
-      match_procedure = 'random'
+      match_procedure = 'sampled'
     } else {
       match_procedure = simulation_params$development_selection_type
     }
@@ -1756,8 +1770,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   #create an array of threshold values defined by user based proportion 
   thresh = simulation_params$match_threshold_ratio * vals_to_match         
   
-  pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_offset_metric, 
-                                      simulation_params$offset_metric_type, thresh, 
+  pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_offset_metric, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
   
@@ -1781,7 +1794,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
     if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
-    } else if (match_procedure == 'random'){
+    } else if (match_procedure == 'sampled'){
       match_params = list()
       match_params$match_ind = sample(length(current_pool), 1)
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]

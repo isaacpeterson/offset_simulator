@@ -236,7 +236,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     }
     
     collated_realisations = bind_collated_realisations(collated_filenames)
-    
+    browser()
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
