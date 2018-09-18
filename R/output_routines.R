@@ -202,7 +202,7 @@ output_scenario <- function(object_to_output, scenario_ind){
     features_to_output = object_to_output$output_params$features_to_output
   }
   
-  if (features_to_output != 0){
+  if (sum(features_to_output) != 0){
     output_collated_features(object_to_output,
                              features_to_output, 
                              use_offset_metric = FALSE, 
