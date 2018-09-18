@@ -12,13 +12,12 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
 }
 
 #' @export
-simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd){
+simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd){
 
   if (current_condition_class_modes == 0){
     site_elements = array(0, element_num)
     return(site_elements)
   }
-  current_condition_class_bounds = current_condition_class_set[[current_condition_class_modes]]
   
   if (length(initial_site_sd) == 0){
     initial_site_sd = (current_condition_class_bounds[2] - current_condition_class_bounds[1]) / 3
@@ -31,7 +30,7 @@ simulate_site_feature_elements <- function(site_sample_type, current_condition_c
   if (site_sample_type == 'trunc_norm'){
     site_mean = rtruncnorm(1, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=current_condition_class_bounds[2], sd = initial_site_mean_sd)
 
-      site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=site_mean, sd = initial_site_sd)
+    site_elements = rtruncnorm(element_num, a=current_condition_class_bounds[1], b=current_condition_class_bounds[3], mean=site_mean, sd = initial_site_sd)
 
   } else if (site_sample_type == 'uniform'){
 
