@@ -202,11 +202,13 @@ output_scenario <- function(object_to_output, scenario_ind){
     features_to_output = object_to_output$output_params$features_to_output
   }
   
-  output_collated_features(object_to_output,
-                           features_to_output, 
-                           use_offset_metric = FALSE, 
-                           scenario_ind, 
-                           current_data_dir)
+  if (features_to_output != 0){
+    output_collated_features(object_to_output,
+                             features_to_output, 
+                             use_offset_metric = FALSE, 
+                             scenario_ind, 
+                             current_data_dir)
+  }
   
   if (object_to_output$output_params$plot_offset_metric == TRUE){
     output_collated_features(object_to_output,
@@ -330,7 +332,7 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
                      site_plot_lims = output_params$site_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
                      program_plot_lims = output_params$program_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
                      landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     current_feature,
+                     feature_ind,
                      output_params$sets_to_plot)
   }
   
@@ -428,6 +430,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
 plot_outcome_set <- function(collated_realisations, current_simulation_params, plot_params,
                              realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
+
   if (plot_params$plot_site == TRUE){
     plot_site_outcomes(collated_realisations, 
                        plot_params$plot_site_offset, 
@@ -480,12 +483,13 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
                                output_type, current_simulation_params, set_to_plot, site_plot_lims, feature_ind, site_lwd){
+
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   
   if (current_simulation_params$use_offset_bank == TRUE){
-    offset_site_indexes_to_use = collated_realisations$offset_bank_object$site_indexes
-    dev_site_indexes_to_use = collated_realisations$credit_object$site_indexes
+
   } else{
+    browser()
     offset_site_indexes_to_use = collated_realisations$offsets_object$site_indexes
     dev_site_indexes_to_use = collated_realisations$dev_object$site_indexes
   }
@@ -505,12 +509,13 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
                          site_plot_lims,
                          site_lwd, 
                          x_lab)
+    
     plot_type = 'overlay'
   }
   if (plot_site_offset_outcome == TRUE){
     overlay_trajectories(offset_site_indexes_to_use, 
                          current_simulation_params$use_offset_bank,
-                         trajectories = collated_realisations$site_scale$outcomes, 
+                         trajectories = collated_realisations$site_scale_outcomes, 
                          realisation_ind = 1, 
                          plot_col = 'darkgreen', 
                          plot_type, 
@@ -654,6 +659,7 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
 
 overlay_trajectories <- function(site_indexes_to_use, offset_bank, trajectories, realisation_ind, plot_col, plot_type, 
                                  overlay_type, sets_to_plot, y_lab, site_plot_lims, lwd, x_lab){
+  
   if (offset_bank == TRUE){
     current_site_indexes_to_use = unlist(site_indexes_to_use[[realisation_ind]])
     plot_list = list(Reduce('+', trajectories[[realisation_ind]][current_site_indexes_to_use]))
@@ -669,6 +675,7 @@ overlay_trajectories <- function(site_indexes_to_use, offset_bank, trajectories,
   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = y_lab, x_lab, 
                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(lwd, length(plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
+  
 }
 
 
@@ -696,6 +703,7 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
 
 overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_simulation_params, realisation_ind, 
                                  feature_ind, plot_from_impact_yr, sets_to_plot, site_plot_lims, time_steps, col_vec, plot_lwd){
+  
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   plot_lwd = 1
   
