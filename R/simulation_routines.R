@@ -265,10 +265,10 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       # determine current set of available development sites and calculate gains structure as detailed in current policy params
 
       if (simulation_data_object$simulation_params$development_selection_type == 'directed') {
-
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                           pool_type = 'developments',
-                                                                          current_pool = simulation_data_object$simulation_params$directed_developments[[yr]],
+                                                                          current_pool = setdiff(simulation_data_object$simulation_params$directed_developments[[yr]], 
+                                                                                                 simulation_data_object$output_data$index_object$site_indexes_used),
                                                                           yr)
       } else {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
@@ -296,6 +296,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       if ( simulation_data_object$output_data$credit_match_flag == FALSE && simulation_data_object$simulation_params$use_parcel_sets == TRUE){
         simulation_data_object <- match_sites_routine(simulation_data_object, yr)
       }
+      
     }
     
 
