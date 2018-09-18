@@ -236,7 +236,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     }
     
     collated_realisations = bind_collated_realisations(collated_filenames)
-    browser()
+
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
@@ -603,34 +603,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
 
 
 
-check_plot_options <- function(plot_params, current_simulation_params, scenario_filenames) {
-  
-  if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes'){
-    stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
-  }
-  
-  if (sum(current_simulation_params$intervention_vec) < max(plot_params$sets_to_plot)){
-    stop (paste('chosen example set to plot needs to be less than ', sum(current_simulation_params$intervention_vec)))
-  }
-  
-  if (plot_params$output_type == 'scenarios'){
-    if (length(scenario_filenames) == 0){
-      stop( paste('\nERROR: No files that match _simulation_params found in', plot_params$simulation_params_folder) )
-    } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
-      stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
-    }
-  } else if (plot_params$output_type == 'features'){
-    if (current_simulation_params$feature_num < max(plot_params$plot_vec)){
-      stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', current_simulation_params$feature_num, ')'))
-    }
-    
-  } else if (plot_params$output_type == 'multiple_sets'){
-    if ( max(plot_params$sets_to_plot) > sum(current_simulation_params$intervention_vec)){
-      stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', sum(current_simulation_params$intervention_vec), ')'))
-    }
-  }
-  
-}
+
 
 
 NNL_test <- function(NNL_set, collated_impacts){
@@ -1038,7 +1011,34 @@ overlay_plot_list <- function(plot_type, plot_list, yticks, ylims, heading, ylab
 }
 
 
-
-
-
-
+# check_plot_options <- function(plot_params, current_simulation_params, scenario_filenames) {
+#   
+#   if(plot_params$plot_type != 'impacts' & plot_params$plot_type != 'outcomes'){
+#     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', plot_params$plot_type) )
+#   }
+#   
+#   if (sum(current_simulation_params$intervention_vec) < max(plot_params$sets_to_plot)){
+#     stop (paste('chosen example set to plot needs to be less than ', sum(current_simulation_params$intervention_vec)))
+#   }
+#   
+#   if (plot_params$output_type == 'scenarios'){
+#     if (length(scenario_filenames) == 0){
+#       stop( paste('\nERROR: No files that match _simulation_params found in', plot_params$simulation_params_folder) )
+#     } else if (length(scenario_filenames) < max(plot_params$plot_vec)){
+#       stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, plot_params$plot_vec parameter does not match'))
+#     }
+#   } else if (plot_params$output_type == 'features'){
+#     if (current_simulation_params$feature_num < max(plot_params$plot_vec)){
+#       stop ( paste('\nERROR: plot_params$plot_vec exceeds number of features (', current_simulation_params$feature_num, ')'))
+#     }
+#     
+#   } else if (plot_params$output_type == 'multiple_sets'){
+#     if ( max(plot_params$sets_to_plot) > sum(current_simulation_params$intervention_vec)){
+#       stop ( paste('\nERROR: plot_params$sets_to_plot exceeds number of developments (', sum(current_simulation_params$intervention_vec), ')'))
+#     }
+#   }
+#   
+# }
+# 
+# 
+# 
