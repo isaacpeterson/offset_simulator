@@ -362,14 +362,6 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
   
   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
     
-    #     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
-    #                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-    #                                                       function(j) do.call(cbind, simulation_data_object$site_features[[i]][[j]])))
-    #     
-    #     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
-    #                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-    #                                                       function(j) current_metric_layers[[i]][[j]][simulation_data_object$site_element_index_key[[i]][[j]]]))
-    
     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
                                                       function(j) unwrap_condition_classes(simulation_data_object$site_features[[i]][[j]], 
@@ -379,13 +371,6 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
                                    function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
     
     saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds'))
-    
-    #     if(simulation_data_object$global_params$save_output_raster == TRUE){
-    #       current_feature_layer = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
-    #       current_feature_layer[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(current_metric_layers)
-    #       writeRaster(current_feature_raster, paste0(current_raster_folder, file_prefix, '.tif'), overwrite = TRUE)
-    #       
-    #     }
     
   }
   
@@ -491,6 +476,8 @@ select_sites_to_clear <- function(available_site_indexes, simulation_params, yr)
     clearing_thresh <- rep(simulation_params$unregulated_loss_prob, length(available_site_indexes))
     discrim <- runif(length(clearing_thresh)) < clearing_thresh
     inds_to_clear <- available_site_indexes[discrim]
+    
+    # use this to set the unregulated losses as development without offsets
   } else if (simulation_params$unregulated_loss_type == 'unregulated_stochastic_development'){
       inds_to_clear = sample(available_site_indexes, simulation_params$unregulated_intervention_vec[yr])
   } else if (simulation_params$unregulated_loss_type == 'unregulated_directed_development'){
