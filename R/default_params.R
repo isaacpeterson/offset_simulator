@@ -251,6 +251,12 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$offset_multiplier = 1
   default_simulation_params$project_by_group = FALSE
   
+  # allow pass of credit to simulation - can be used to run developments without offsets
+  default_simulation_params$initial_credit = 0
+  default_simulation_params$block_offsets = TRUE
+  # set to 'default' to use same probability of loss for each site and each time step
+  # set to unregulated_stochastic_development' in conjunction with defining simulation_params$unregulated_intervention_vec to mirror development 
+  # set to 'unregulated_directed_development' to perform directed development where specific vector of sites to be developed is specifed prior to simulation
   default_simulation_params$unregulated_loss_type = 'default'
   default_simulation_params$unregulated_intervention_vec = vector()
   default_simulation_params$directed_developments = vector()
