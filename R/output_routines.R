@@ -344,8 +344,6 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
   
   intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
   
-
-  
   if (object_to_output$output_params$output_type == 'png'){
 
     graphics.off()
@@ -383,7 +381,10 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       
       feature_layer_to_output = feature_layer_to_output * (object_to_output$output_params$col_map_vector[1] - 1)/scale_factor #map to color vector 0:127
       
-      sets_to_use = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) which(unlist(object_to_output$example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
+      sets_to_use = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), 
+                           function(i) which(unlist(object_to_output$example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
+      
+      # ignore empty intervention sets
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
       
       if (length(interventions_to_use) > 0){
@@ -391,10 +392,28 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
         sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
+          #resort to original raster pixel indices
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_element_indexes_grouped_by_feature_condition_class[sites_to_use[[i]]]))
         } else {
+          #resorting not necessary as order is preserved for metric calculations
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
+        
+        
+        if (object_to_output$simulation_params$block_offsets == TRUE){
+        
+        # if setting offsets to block of color 
+        # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
+        # i.e. use example_simulation_outputs$interventions$offsets_object$site_indexes to identify offset sites
+        # similar to sites_to_use = setNames(lapply(interventions_to_use, 
+        #                             function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
+        #                                         names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
+        # get site ids for offsets via something like sites_to_use$offsets_object
+        # feature_layer_to_output[unlist(site_characteristics$land_parcels[unlist(site_to_use$offsets_object)])] = 999
+        
+        }
+        
+        #mapping step to determine new mapped values 
         
         new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + object_to_output$output_params$col_map_vector[interventions_to_use[i]])
         feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
@@ -444,7 +463,8 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
   }
   
   if (plot_params$plot_program == TRUE){
-    
+
+
     plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
                   plot_type = 'program', 
                   enforce_limits = TRUE, 
@@ -453,7 +473,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   plot_title = 'Program Outcome', 
                   loss_stats = collated_realisations$net_program_loss, 
                   collated_realisations$realisation_num, 
-                  collated_realisations$program_cfacs$program_cfac_sum,
+                  collated_realisations$program_scale_cfacs$program_cfac_sum,
                   plot_params$program_outcome_lwd_vec, 
                   outcome_col = plot_params$landscape_col, 
                   cfac_col = plot_params$cfac_col,
@@ -470,7 +490,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
-                  collated_realisations$landscape_scale$landscape_cfacs[[1]], 
+                  collated_realisations$landscape_scale$net_landscape_cfac[[1]], 
                   plot_params$landscape_outcome_lwd_vec, 
                   outcome_col = plot_params$landscape_col, 
                   cfac_col = plot_params$cfac_col,
@@ -489,11 +509,9 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   if (current_simulation_params$use_offset_bank == TRUE){
 
   } else{
-    browser()
-    offset_site_indexes_to_use = collated_realisations$offsets_object$site_indexes
-    dev_site_indexes_to_use = collated_realisations$dev_object$site_indexes
+    offset_site_indexes_to_use = collated_realisations$intervention_pool$offsets_object
+    dev_site_indexes_to_use = collated_realisations$intervention_pool$dev_object
   }
-  
   x_lab = ''
   plot_type = 'non-overlay'
   if (plot_site_dev_outcome == TRUE){
@@ -515,7 +533,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   if (plot_site_offset_outcome == TRUE){
     overlay_trajectories(offset_site_indexes_to_use, 
                          current_simulation_params$use_offset_bank,
-                         trajectories = collated_realisations$site_scale_outcomes, 
+                         trajectories = collated_realisations$site_scale$outcomes, 
                          realisation_ind = 1, 
                          plot_col = 'darkgreen', 
                          plot_type, 
@@ -552,13 +570,13 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
   }
   # Plot the program scale impacts
   if (plot_params$plot_program == TRUE){
-    
-    NNL_object <- find_NNL_characteristics(collated_realisations$program_scale_NNL$NNL_mean, 
+
+    NNL_object <- find_NNL_characteristics(collated_realisations$NNL$program_scale,
                                            collated_realisations$program_scale_impacts$program_total)
-    
-    overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale_impacts$net_offset_gains, recursive = FALSE), 
-                                          unlist(collated_realisations$program_scale_impacts$net_dev_losses, recursive = FALSE),
-                                          unlist(collated_realisations$program_scale_impacts$program_total, recursive = FALSE)),
+
+    overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
+                                          collated_realisations$program_scale_impacts$net_dev_losses,
+                                          collated_realisations$program_scale_impacts$program_total),
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -591,10 +609,10 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
   
   # Plot the landscape scale impacts
   if (plot_params$plot_landscape == TRUE){
-    NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale_NNL$NNL_mean, 
+    NNL_object <- find_NNL_characteristics(collated_realisations$NNL$landscape_scale, 
                                            collated_realisations$landscape_scale$landscape_scale_impact)
     
-    overlay_realisations(plot_list = list(unlist(collated_realisations$landscape_scale$landscape_scale_impact, recursive = FALSE)),
+    overlay_realisations(plot_list = list(collated_realisations$landscape_scale$landscape_scale_impact),
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -955,6 +973,7 @@ plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, includ
     plot_vec = c(unlist(current_outcome_set), unlist(current_cfacs))
     plot_lims = c(min(plot_vec), max(plot_vec))
   }
+  
   plot_collated_realisation_set(current_outcome_set, overlay_plots = FALSE, plot_col = outcome_col, realisation_num, lwd_vec, 
                                 x_lab = sub_tit, plot_title = plot_title, plot_lims)
   
