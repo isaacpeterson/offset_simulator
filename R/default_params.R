@@ -171,7 +171,7 @@ initialise_default_simulation_params <- function(){
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
-  default_simulation_params$development_selection_type = 'sampled'  
+  default_simulation_params$development_selection_type = 'stochastic'  
 
   default_simulation_params$offset_selection_type = 'greedy'  
   

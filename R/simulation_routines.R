@@ -1354,14 +1354,14 @@ match_sites <- function(simulation_data_object, match_type, yr){
   
   while( (match_object$match_flag == FALSE)){   
     
-    if ((simulation_data_object$simulation_params$development_selection_type == 'sampled') 
+    if ((simulation_data_object$simulation_params$development_selection_type == 'stochastic') 
         | (simulation_data_object$simulation_params$development_selection_type == 'directed')){
-      current_dev_probability_list = rep(1/length(current_match_pool))
+      current_dev_probability_list = rep(1/length(current_match_pool), length(current_match_pool))
     } else if (simulation_data_object$simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
     } 
-    
-    sample_ind = sample(seq_along(current_match_pool), size = 1, prob = current_dev_probability_list)
+
+    sample_ind = sample(x = seq_along(current_match_pool), size = 1, prob = current_dev_probability_list, replace = TRUE)
     current_test_index = current_match_pool[sample_ind]
     vals_to_match = current_match_vals_pool[[sample_ind]]
     
@@ -1743,7 +1743,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
     if (simulation_params$screen_dev_zeros == FALSE){
       # if zeros are allowed use random selection 
-      match_procedure = 'sampled'
+      match_procedure = 'stochastic'
     } else {
       match_procedure = simulation_params$development_selection_type
     }
@@ -1786,7 +1786,8 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
         probability_list_to_use = rep(1/length(current_pool), length(current_pool))
       }
       match_params = list()
-      match_params$match_ind = sample(length(current_pool), 1, probability_list_to_use)
+
+      match_params$match_ind = sample(x = seq_along(current_pool), size = 1, prob = probability_list_to_use, replace = TRUE)
       match_params$match_vals = parcel_vals_pool[match_params$match_ind]
     }
     
