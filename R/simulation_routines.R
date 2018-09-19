@@ -478,11 +478,7 @@ select_sites_to_clear <- function(available_site_indexes, simulation_params, yr)
     inds_to_clear <- available_site_indexes[discrim]
     
     # use this to set the unregulated losses as development without offsets
-  } else if (simulation_params$unregulated_loss_type == 'unregulated_stochastic_development'){
-      inds_to_clear = sample(available_site_indexes, simulation_params$unregulated_intervention_vec[yr])
-  } else if (simulation_params$unregulated_loss_type == 'unregulated_directed_development'){
-      inds_to_clear = simulation_params$unregulated_intervention_vec[[yr]]
-  }
+  } 
   
   return(inds_to_clear)
 }
