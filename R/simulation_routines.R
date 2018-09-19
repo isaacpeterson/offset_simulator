@@ -62,11 +62,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               round(length(simulation_data_object$site_characteristics$land_parcels) -
                       length(simulation_data_object$site_characteristics$land_parcels)*(1 - simulation_data_object$simulation_params$unregulated_loss_prob)^simulation_data_object$simulation_params$time_steps))
     
-    # Work out if more than one core is specified, and if so, run the
-    # simulation in parallel using the doParallel, foreach and doRNG packages
-    
-    
-    
+
     # TODO(Isaac) test whether can set check and set seed if necessary much
     # earlier in the code before run_initialise_routines() is called
     if (simulation_data_object$global_params$number_of_cores > 1 && simulation_data_object$global_params$set_seed == TRUE){
@@ -197,7 +193,7 @@ build_background_cfacs <- function(simulation_data_object){
   background_cfacs_object$background_cfacs = collate_cfacs(simulation_data_object$site_features,
                                                            simulation_data_object$simulation_params, 
                                                            simulation_data_object$feature_params,
-                                                           simulation_data_object$eature_dynamics,
+                                                           simulation_data_object$feature_dynamics,
                                                            simulation_data_object$feature_dynamics_modes,
                                                            simulation_data_object$site_element_index_key,
                                                            background_projection_yrs_pool,
