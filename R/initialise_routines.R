@@ -341,7 +341,11 @@ build_output_data <- function(simulation_data_object){
   names(interventions) = names(output_data$index_object$site_indexes_used)
   output_data$interventions = interventions
   output_data$offset_pool_object <- list()
-  current_credit = matrix(rep(0, length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
+  
+  current_credit = matrix(rep(simulation_data_object$simulation_params$initial_credit, 
+                              length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
+                          ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
+  
   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
     current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
   }
@@ -1067,17 +1071,22 @@ split_site_feature <- function(current_site_feature, site_condition_class_layer,
 }
 
 
+#transforms planning units array into series of arrays describing allocation of elements to sites
 #' @export
 build_site_characteristics <- function(planning_units_array){
   
   site_ID_vals = unique(as.vector(planning_units_array))
-  land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
   
   site_characteristics = list()
+  
+  # scan through planning units ID array and associate all elements with the same ID val to a particular site
+  # results in nested list where raster array indicies corresponding to a particular planning unit ID are assigned to the same nested list block
+  site_characteristics$land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
+  
   site_characteristics$landscape_dims = dim(planning_units_array)
-  site_characteristics$site_indexes = seq_along(land_parcels)
-  site_characteristics$land_parcel_num = length(land_parcels)
-  site_characteristics$land_parcels = land_parcels
+  #create site ID's as consecutive integers
+  site_characteristics$site_indexes = seq_along(site_characteristics$land_parcels)
+  site_characteristics$land_parcel_num = length(site_characteristics$land_parcels)
   site_characteristics$parcel_array = planning_units_array
   site_characteristics$site_ID_vals = site_ID_vals
   return(site_characteristics)
