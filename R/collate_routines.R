@@ -455,7 +455,6 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
 }
 
 
-
 collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcomes){
 
   program_scale_outcomes = setNames(lapply(seq_along(simulation_outputs$interventions), 

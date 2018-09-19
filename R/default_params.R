@@ -253,7 +253,7 @@ initialise_default_simulation_params <- function(){
   
   # allow pass of credit to simulation - can be used to run developments without offsets
   default_simulation_params$initial_credit = 0
-  default_simulation_params$block_offsets = TRUE
+
   # set to 'default' to use same probability of loss for each site and each time step
   # set to unregulated_stochastic_development' in conjunction with defining simulation_params$unregulated_intervention_vec to mirror development 
   # set to 'unregulated_directed_development' to perform directed development where specific vector of sites to be developed is specifed prior to simulation
@@ -376,6 +376,9 @@ initialise_default_output_params <- function(base_folder){
   default_output_params$landscape_outcome_lwd_vec = c(3)
   default_output_params$print_dev_offset_sites = TRUE
   default_output_params$example_realisation_to_output = 1
+  
+  #ouput offset sites as block colors rather than site_vals
+  default_output_params$output_block_offsets = FALSE
   default_output_params$nx = 3 
   default_output_params$ny = 4
   

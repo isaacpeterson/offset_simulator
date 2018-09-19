@@ -388,7 +388,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
       
       if (length(interventions_to_use) > 0){
-        
+
         sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
@@ -399,17 +399,16 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
         
-        
-        if (object_to_output$simulation_params$block_offsets == TRUE){
+        if (object_to_output$output_params$output_block_offsets == TRUE){
         
         # if setting offsets to block of color 
         # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
         # i.e. use example_simulation_outputs$interventions$offsets_object$site_indexes to identify offset sites
-        # similar to sites_to_use = setNames(lapply(interventions_to_use, 
-        #                             function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
-        #                                         names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
+        sites_to_use = setNames(lapply(interventions_to_use, 
+                                    function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
+                                                names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
         # get site ids for offsets via something like sites_to_use$offsets_object
-        # feature_layer_to_output[unlist(site_characteristics$land_parcels[unlist(site_to_use$offsets_object)])] = 999
+          feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use$offsets_object)])] = 127
         
         }
         
