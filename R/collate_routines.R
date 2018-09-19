@@ -43,27 +43,24 @@ collate_simulation_outputs <- function(simulation_data_object, background_cfacs_
 run_collate_routines <- function(simulation_outputs, background_cfacs, feature_dynamics, feature_dynamics_modes, initial_feature_layer, simulation_params, feature_params, 
                                  global_params, current_data_dir, file_prefix, use_offset_metric){
   
-  intervention_pool = lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes)
+  intervention_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes), names(simulation_outputs$interventions))
+  intervention_yrs_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$intervention_yrs), names(simulation_outputs$interventions))
   object_name_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) rep(names(simulation_outputs$interventions)[i], length(intervention_pool[[i]]))))
-  intervention_pool = unlist(intervention_pool)
-  intervention_yrs_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$intervention_yrs))
   site_num_remaining_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_num_remaining))
   
   projection_yrs_pool = lapply(seq(length(unlist(intervention_pool))), 
                                function(i) lapply(seq(simulation_params$feature_num), 
-                                                  function(j) rep(list(intervention_yrs_pool[i]), 
-                                                                  length(feature_dynamics_modes[[intervention_pool[i] ]][[j]])) ))
-  
-  
+                                                  function(j) rep(list(unlist(intervention_yrs_pool)[i]), 
+                                                                  length(feature_dynamics_modes[[unlist(intervention_pool)[i] ]][[j]])) ))
   
   site_features_at_intervention_set = vector('list', length(initial_feature_layer))
   
   for (current_feature_ind in seq(simulation_params$feature_num)){
-    site_features_at_intervention = build_site_features_at_intervention(length(initial_feature_layer), current_data_dir, intervention_pool, intervention_yrs_pool, simulation_params, current_feature_ind, global_params$numeric_placeholder_width)
+    site_features_at_intervention = build_site_features_at_intervention(length(initial_feature_layer), current_data_dir, unlist(intervention_pool), unlist(intervention_yrs_pool), simulation_params, current_feature_ind, global_params$numeric_placeholder_width)
     site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
   }
   
-  site_scale_cfacs = vector('list', length(initial_feature_layer))
+
   
   if (use_offset_metric == FALSE){
     flog.info('building counterfactuals over time series - this may take a while')
@@ -72,21 +69,22 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
   }
   
   site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
-
-  site_scale_cfacs[intervention_pool] = collate_cfacs(site_features_at_intervention_set[intervention_pool],
-                                                      simulation_params, 
-                                                      feature_params,
-                                                      feature_dynamics[intervention_pool],
-                                                      feature_dynamics_modes[intervention_pool],
-                                                      site_element_index_key[intervention_pool],
-                                                      projection_yrs_pool,
-                                                      intervention_yrs_pool,
-                                                      site_num_remaining_pool,
-                                                      cfac_type = 'site_scale',
-                                                      object_type = object_name_pool, 
-                                                      use_cfac_type_in_sim = TRUE, 
-                                                      condition_class_bounds = feature_params$condition_class_bounds, 
-                                                      use_offset_metric)
+  
+  site_scale_cfacs = vector('list', length(initial_feature_layer))
+  site_scale_cfacs[unlist(intervention_pool)] = collate_cfacs(site_features_at_intervention_set[unlist(intervention_pool)],
+                                                              simulation_params, 
+                                                              feature_params,
+                                                              feature_dynamics[unlist(intervention_pool)],
+                                                              feature_dynamics_modes[unlist(intervention_pool)],
+                                                              site_element_index_key[unlist(intervention_pool)],
+                                                              projection_yrs_pool,
+                                                              unlist(intervention_yrs_pool),
+                                                              site_num_remaining_pool,
+                                                              cfac_type = 'site_scale',
+                                                              object_type = object_name_pool, 
+                                                              use_cfac_type_in_sim = TRUE, 
+                                                              condition_class_bounds = feature_params$condition_class_bounds, 
+                                                              use_offset_metric)
   
   if (use_offset_metric == FALSE){
     features_to_collate = seq(simulation_params$feature_num)
@@ -103,55 +101,53 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
     collated_object = list()
     if (use_offset_metric == FALSE){
       flog.info('collating feature %s', feature_ind)
-      collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, 
+      site_scale_outcomes_to_use = sum_data_stack(current_data_dir, 
                                                            file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0")), 
                                                            simulation_params$time_steps)
       
-      collated_object$summed_site_features_at_intervention = select_subset(summed_site_features_at_intervention, feature_ind)
-      collated_object$site_scale_cfacs = select_subset(site_scale_cfacs, feature_ind)
-      collated_object$background_cfacs = select_subset(background_cfacs, feature_ind)
+      summed_site_features_at_intervention_to_use = select_subset(summed_site_features_at_intervention, feature_ind)
+      site_scale_cfacs_to_use = select_subset(site_scale_cfacs, feature_ind)
+      background_cfacs_to_use = select_subset(background_cfacs, feature_ind)
     } else {
       flog.info('collating metric')
-      collated_object$site_scale_outcomes = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
-      collated_object$summed_site_features_at_intervention = summed_site_features_at_intervention
-      collated_object$site_scale_cfacs = site_scale_cfacs
-      collated_object$background_cfacs = background_cfacs
+      site_scale_outcomes_to_use = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
+      summed_site_features_at_intervention_to_use = summed_site_features_at_intervention
+      site_scale_cfacs_to_use = site_scale_cfacs
+      background_cfacs_to_use = background_cfacs
     }
     
     collated_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                                          function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
                                                                                              current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 
-                                                                                             site_scale_cfacs = collated_object$site_scale_cfacs, 
-                                                                                             collated_object$summed_site_features_at_intervention, 
-                                                                                             site_scale_outcomes = collated_object$site_scale_outcomes,  
+                                                                                             site_scale_cfacs = site_scale_cfacs_to_use, 
+                                                                                             summed_site_features_at_intervention_to_use, 
+                                                                                             site_scale_outcomes = site_scale_outcomes_to_use,  
                                                                                              collate_type = names(simulation_outputs$interventions)[[i]], 
                                                                                              simulation_params, 
                                                                                              feature_params, 
                                                                                              use_offset_metric)), names(simulation_outputs$interventions))
     
+    collated_object$program_scale_cfacs = collate_program_scale_cfacs(site_scale_cfacs_to_use, simulation_outputs$interventions, background_cfacs, intervention_yrs_pool)
+             
     collated_object$site_scale_net_impacts <- collate_site_scale_net_impacts(collated_site_scale_offsets = collated_object$site_scale_impacts$offsets_object$summed_gains_degs$nets,
                                                                              collated_site_scale_devs = collated_object$site_scale_impacts$dev_object$summed_gains_degs$nets)
     
-    collated_object$landscape_scale <- calc_landscape_characteristics(collated_object$site_scale_outcomes, collated_object$background_cfacs, use_offset_metric)
+    collated_object$landscape_scale <- calc_landscape_characteristics(site_scale_outcomes_to_use, background_cfacs_to_use, use_offset_metric)
     
-    collated_object$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, collated_object$site_scale_outcomes)
+    collated_object$program_outcomes <- collate_program_scale_outcomes(simulation_outputs, site_scale_outcomes_to_use)
     
     collated_object$program_scale_impacts <- collate_program_scale_impacts(collated_object)
     
-    collated_object$site_scale_NNL = assess_collated_NNL(assess_type = 'site_scale', 
-                                                         impacts = collated_object$site_scale_impacts$net_impacts, 
-                                                         intervention_yrs_to_use = collated_object$collated_offsets$intervention_yrs, 
-                                                         site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
+#     collated_object$site_scale_NNL = assess_site_scale_NNL(assess_type = 'site_scale', 
+#                                                          impacts = collated_object$site_scale_impacts$net_impacts, 
+#                                                          intervention_yrs_to_use = collated_object$collated_offsets$intervention_yrs, 
+#                                                          site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
     
-    collated_object$program_scale_NNL = assess_collated_NNL(assess_type = 'program', 
-                                                            impacts = collated_object$program_scale_impacts$program_total, 
-                                                            intervention_yrs_to_use = list(1), 
-                                                            site_indexes = vector())
+    collated_object$NNL$program_scale = assess_NNL(current_impacts = collated_object$program_scale_impacts$program_total, 
+                                                   intervention_yr = 1)
     
-    collated_object$landscape_scale_NNL = assess_collated_NNL(assess_type = 'landscape', 
-                                                              impacts = collated_object$landscape_scale$landscape_scale_impact, 
-                                                              intervention_yrs_to_use = list(1), 
-                                                              site_indexes = vector())
+    collated_object$NNL$landscape_scale = assess_NNL(collated_object$landscape_scale$landscape_scale_impact, 
+                                                     intervention_yr = 1)
     
     collated_object$net_program_loss = assess_fractional_loss(net_vals = collated_object$program_outcomes$net_outcome, 
                                                               NNL_yr = collated_object$program_scale_NNL$NNL)
@@ -160,6 +156,12 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
                                                                 NNL_yr = collated_object$landscape_scale_NNL$NNL)
     
     collated_object$sites_used = find_sites_used(simulation_outputs)
+    
+    collated_object$site_scale$outcomes = site_scale_outcomes_to_use
+    collated_object$site_scale$summed_site_features_at_intervention = summed_site_features_at_intervention_to_use
+    collated_object$site_scale$site_scale_cfacs = site_scale_cfacs_to_use
+    collated_object$site_scale$background_cfacs = background_cfacs_to_use
+    collated_object$intervention_pool = intervention_pool
     
     if (use_offset_metric == FALSE){
       collated_filename = paste0(file_prefix, '_feature_',
@@ -223,10 +225,10 @@ build_site_features_at_intervention <- function(land_site_num, current_data_dir,
 calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs, use_offset_metric){
 
   landscape_scale_object = list()
-  landscape_scale_object$landscape_cfacs = background_cfacs
+  landscape_scale_object$background_cfacs = background_cfacs
   landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes)
   landscape_scale_object$net_landscape_cfac = sum_list(background_cfacs)
-  landscape_scale_object$landscape_scale_impact = mapply('-', landscape_scale_object$landscape_outcome, landscape_scale_object$net_landscape_cfac, SIMPLIFY = FALSE)
+  landscape_scale_object$landscape_scale_impact = landscape_scale_object$landscape_outcome-landscape_scale_object$net_landscape_cfac
   
   return(landscape_scale_object)
 }
@@ -333,17 +335,16 @@ merge_lists <- function(list_a, list_b, merge_indexes){
   return(merged_list)
 }
 
-collate_program_cfacs <- function(simulation_outputs, background_cfacs, collated_offsets, collated_devs, collated_dev_credit, 
-                                  collated_offset_bank, collated_unregulated_loss){
+
+collate_program_scale_cfacs <- function(site_scale_cfacs, interventions, background_cfacs, intervention_yrs_pool){
   
-  program_cfacs_object = list()
-  program_cfacs_object$offset_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$offsets_object$site_indexes)], collated_offsets$cfacs, unlist(simulation_outputs$offsets_object$intervention_yrs))
-  program_cfacs_object$dev_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$dev_object$site_indexes)], collated_devs$cfacs, unlist(simulation_outputs$dev_object$intervention_yrs))
-  program_cfacs_object$dev_credit_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$credit_object$site_indexes)], collated_dev_credit$cfacs, unlist(simulation_outputs$credit_object$intervention_yrs))
-  program_cfacs_object$offset_bank_cfacs <- merge_lists(background_cfacs[unlist(simulation_outputs$offset_bank_object$site_indexes)], collated_offset_bank$cfacs, unlist(simulation_outputs$offset_bank_object$intervention_yrs))
-  program_cfacs_object$program_cfac_sum <- sum_list(unlist(program_cfacs_object, recursive = FALSE))
+  program_scale_cfacs = setNames(lapply(seq_along(interventions), 
+                                        function(i) merge_lists(background_cfacs[unlist(interventions[[i]]$site_indexes)], 
+                                                                site_scale_cfacs[unlist(interventions[[i]]$site_indexes)], unlist(intervention_yrs_pool[[i]]))), 
+                                 names(interventions))
+  program_scale_cfacs$program_cfac_sum <- Reduce('+', unlist(program_scale_cfacs, recursive = FALSE))
   
-  return(program_cfacs_object)
+  return(program_scale_cfacs)
   
 }
 
@@ -456,28 +457,25 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
 
 
 collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcomes){
-  
-  
-  program_scale_outcomes = lapply(seq_along(simulation_outputs$interventions), 
-                                  function(i) sum_list(site_scale_outcomes[unlist(simulation_outputs$interventions[[i]]$site_indexes)]))
-  names(program_scale_outcomes) = names(simulation_outputs$interventions)
-  
-  program_scale_outcomes$net_offsets <- sum_list(append(program_scale_outcomes$offsets_object, program_scale_outcomes$offset_bank_object))
-  program_scale_outcomes$net_devs <- sum_list(append(program_scale_outcomes$dev_object, program_scale_outcomes$credit_object))
-  program_scale_outcomes$net_outcome <- sum_list(append(program_scale_outcomes$net_offsets, program_scale_outcomes$net_devs))
+
+  program_scale_outcomes = setNames(lapply(seq_along(simulation_outputs$interventions), 
+                                  function(i) sum_list(site_scale_outcomes[unlist(simulation_outputs$interventions[[i]]$site_indexes)])), names(simulation_outputs$interventions))
+  program_scale_outcomes$net_outcome <- sum_list(program_scale_outcomes)
+  program_scale_outcomes$net_offsets <- sum_list(program_scale_outcomes[match(c('offsets_object', 'offset_bank_object'), names(program_scale_outcomes))])
+  program_scale_outcomes$net_devs <- sum_list(program_scale_outcomes[match(c('dev_object', 'credit_object'), names(program_scale_outcomes))])
+
   
   return(program_scale_outcomes)
 }
 
 
 collate_program_scale_impacts <- function(collated_data){
-  
-  program_scale_impacts = lapply(seq_along(collated_data$site_scale_impacts), function(i) collated_data$site_scale_impacts[[i]]$summed_gains_degs$nets)
-  names(program_scale_impacts) = names(collated_data$site_scale_impacts)
+
+  program_scale_impacts = setNames(lapply(seq_along(collated_data$site_scale_impacts), function(i) collated_data$site_scale_impacts[[i]]$summed_gains_degs$nets), names(collated_data$site_scale_impacts))
   
   program_scale_impacts$net_offset_gains = sum_list(append(program_scale_impacts$offsets_object, program_scale_impacts$offset_bank_object))
   program_scale_impacts$net_dev_losses = sum_list(append(program_scale_impacts$dev_object, program_scale_impacts$credit_object))
-  program_scale_impacts$program_total = sum_list(append(program_scale_impacts$net_offset_gains, program_scale_impacts$net_dev_losses))
+  program_scale_impacts$program_total = sum_list(list(program_scale_impacts$net_offset_gains, program_scale_impacts$net_dev_losses))
   
   return(program_scale_impacts)
 }
@@ -507,7 +505,7 @@ calc_site_scale_impacts <- function(current_simulation_outputs, current_site_set
   
   collated_object$site_indexes = current_site_sets
   collated_object$intervention_yrs = current_simulation_outputs$intervention_yrs
-  collated_object$cfacs = site_scale_cfacs$cfacs
+  
   return(collated_object)
 }
 
@@ -575,7 +573,6 @@ assess_gains_degs <- function(site_scale_outcomes_to_use, cfacs_to_use, summed_s
   avoided_loss = lapply(seq(site_num), function(i) rep(summed_site_features_at_intervention[[i]], length(cfacs_to_use[[i]])) - cfacs_to_use[[i]])
   rest_gains = lapply(seq(site_num), function(i) impact_trajectories[[i]] - rep(summed_site_features_at_intervention[[i]], length(impact_trajectories[[i]])))
   
-  browser()
   net_gains = mapply('-', impact_trajectories, cfacs_to_use, SIMPLIFY = FALSE)
   
   collated_object = list(net_gains, avoided_loss, rest_gains)
@@ -662,7 +659,8 @@ sum_list <- function(list_to_sum){
     if (length(sets_to_use) == 0){
       summed_list = list()
     } else {
-      summed_list <- list(Reduce('+', list_to_sum[sets_to_use]))
+      #summed_list <- list(Reduce('+', list_to_sum[sets_to_use]))
+      summed_list <- Reduce('+', list_to_sum[sets_to_use])
     }
   }
   return(summed_list)
@@ -681,53 +679,55 @@ sum_list <- function(list_to_sum){
 # }
 
 
-assess_NNL <- function(current_impacts){
+assess_NNL <- function(current_impacts, intervention_yr){
   
-  NNL_flag = FALSE
-  
-  for (NNL_yr in seq_along(current_impacts)){
-    NNL_flag = all(current_impacts[NNL_yr:length(current_impacts)] > 0)
-    if (NNL_flag == TRUE){
-      break
-    }
+  NNL_yr = vector()
+  if (length(current_impacts) == 0){
+    return(NNL_yr)
   }
   
-  if (NNL_flag == FALSE){
-    NNL_yr = vector()
-  } 
+  for (yr_to_test in seq_along(current_impacts)){
+    NNL_flag = all(current_impacts[yr_to_test:length(current_impacts)] > 0)
+    if (NNL_flag == TRUE){
+      NNL_yr = yr_to_test - intervention_yr
+    }
+  }
   
   return(NNL_yr)
 }
 
 
-assess_collated_NNL <- function(assess_type, impacts, intervention_yrs_to_use, site_indexes){
-  NNL_object <- list()
-  
-  if (length(unlist(impacts)) == 0){
-    return(NNL_object)
-  }
-  
-  
-  if (assess_type == 'site_scale'){
-    
-    site_indexes_to_use = match(unlist(lapply(seq_along(site_indexes), function(i) site_indexes[[i]][[1]])), unlist(site_indexes))
-    intervention_yrs_to_use = intervention_yrs_to_use[site_indexes_to_use]
-  } 
-  
-  
-  NNL_absolute = lapply(seq_along(impacts), function(i) assess_NNL(impacts[[i]]) )
-  
-  NNL_object$NNL = lapply(seq_along(NNL_absolute), function(i) (NNL_absolute[[i]] - intervention_yrs_to_use[[i]]))
-  
-  if (length(unlist(NNL_object$NNL)) >0){
-    NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
-    NNL_object$NNL_mean = mean(unlist(NNL_object$NNL))
-  } else {
-    NNL_object$NNL_mean = vector()
-  }
-  
-  return(NNL_object)
-}
+# assess_collated_NNL <- function(assess_type, impacts, intervention_yrs_to_use, site_indexes){
+# 
+#   browser()
+#   
+#   if (length(impacts) == 0){
+#     return(list())
+#   }
+#   
+# #   if (assess_type == 'site_scale'){
+# #     
+# #     site_indexes_to_use = match(unlist(lapply(seq_along(site_indexes), function(i) site_indexes[[i]][[1]])), unlist(site_indexes))
+# #     intervention_yrs_to_use = intervention_yrs_to_use[site_indexes_to_use]
+# #   } 
+#   
+#   NNL_object <- list()
+#   NNL_absolute = assess_NNL(impacts)
+#   
+#   if (length(NN_absolute) > 0){
+#     NNL_object$NNL = NNL_absolute - intervention_yrs_to_use
+#   } else {
+#   }
+#   
+#   if (length(NNL_object$NNL) > 0){
+#     NNL_object$NNL_success = length(unlist(NNL_object$NNL))/length(NNL_object$NNL)
+#     NNL_object$NNL_mean = mean(unlist(NNL_object$NNL))
+#   } else {
+#     NNL_object$NNL_mean = vector()
+#   }
+#   
+#   return(NNL_object)
+# }
 
 
 assess_fractional_loss <- function(net_vals, NNL_yr){
