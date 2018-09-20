@@ -62,7 +62,6 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_site_features = FALSE
   default_global_params$overwrite_condition_class_layers = FALSE
   
-  default_global_params$overwrite_site_condition_class_key = TRUE
   default_global_params$save_feature_dynamics = FALSE
   default_global_params$save_management_dynamics = FALSE
   default_global_params$overwrite_dev_probability_list = FALSE
@@ -260,6 +259,10 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$unregulated_loss_type = 'default'
   default_simulation_params$unregulated_intervention_vec = vector()
   default_simulation_params$directed_developments = vector()
+  # set to false to stop initial credit being transformed - this has a big impact when using the BAM metric which 
+  # transforms large values to ceiling defined by 100.68
+  
+  default_simulation_params$transform_initial_credit = TRUE
   return(default_simulation_params)
 }
 
