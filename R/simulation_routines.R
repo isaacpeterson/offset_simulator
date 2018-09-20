@@ -12,7 +12,7 @@
 #' @import Matrix
 #' @export 
 #' 
-osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, loglevel = WARN){
+osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, user_transform_function= NULL, loglevel = WARN){
   
   flog.threshold(loglevel)
   flog.info('starting offsetsim')
@@ -183,52 +183,7 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
   
 }
 
-build_background_cfacs <- function(simulation_data_object){
-  
-  background_cfacs_object = list()
-  background_projection_yrs_pool = lapply(seq_along(simulation_data_object$site_features), 
-                                          function(i) lapply(seq(simulation_data_object$simulation_params$feature_num), 
-                                                             function(j) rep(list(1), length(simulation_data_object$feature_dynamics_modes[[i]][[j]])) ))  
-  
-  background_cfacs_object$background_cfacs = collate_cfacs(simulation_data_object$site_features,
-                                                           simulation_data_object$simulation_params, 
-                                                           simulation_data_object$feature_params,
-                                                           simulation_data_object$feature_dynamics,
-                                                           simulation_data_object$feature_dynamics_modes,
-                                                           simulation_data_object$site_element_index_key,
-                                                           background_projection_yrs_pool,
-                                                           intervention_yrs = rep(1, length(initial_feature_layer)),
-                                                           vector(),
-                                                           cfac_type = 'background',
-                                                           object_type = vector(), 
-                                                           use_cfac_type_in_sim = FALSE, 
-                                                           condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
-                                                           use_offset_metric = FALSE)
-  
-  saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-  
-  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
-    
-    background_cfacs_object$user_metric_background_cfacs = collate_cfacs(simulation_data_object$site_features,
-                                                                         simulation_data_object$simulation_params, 
-                                                                         simulation_data_object$feature_params,
-                                                                         simulation_data_object$feature_dynamics,
-                                                                         simulation_data_object$feature_dynamics_modes,
-                                                                         simulation_data_object$site_element_index_key,
-                                                                         background_projection_yrs_pool,
-                                                                         intervention_yrs = rep(1, length(initial_feature_layer)),
-                                                                         vector(),
-                                                                         cfac_type = 'background',
-                                                                         object_type = vector(), 
-                                                                         use_cfac_type_in_sim = FALSE, 
-                                                                         condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
-                                                                         use_offset_metric = TRUE)
-    saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'user_metric_background_cfacs.rds'))
-    
-  }
-  
-  return(background_cfacs_object)
-}
+
 
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
@@ -366,9 +321,8 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
                                                       function(j) unwrap_condition_classes(simulation_data_object$site_features[[i]][[j]], 
                                                                                            simulation_data_object$site_element_index_key[[i]][[j]])))
-    
     current_metric_layers = lapply(seq_along(current_metric_layers), 
-                                   function(i) user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
+                                   function(i) simulation_data_object$user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
     
     saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds'))
     
@@ -527,7 +481,8 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
                                                  simulation_data_object$simulation_params,
                                                  simulation_data_object$feature_params,
                                                  simulation_data_object$simulation_params$offset_time_horizon,
-                                                 yr)  
+                                                 yr, 
+                                                 simulation_data_object$user_transform_function)  
   
   # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
   if (!is.null(unregulated_loss_object)){
@@ -951,7 +906,8 @@ build_intervention_pool <- function(simulation_data_object, pool_type, current_p
                                      simulation_data_object$simulation_params,
                                      simulation_data_object$feature_params,
                                      time_horizon = simulation_data_object$simulation_params$offset_time_horizon,
-                                     yr)      
+                                     yr, 
+                                     simulation_data_object$user_transform_function)      
   
   if(any(is.na(unlist(pool_object$parcel_vals_used)))){
     browser()
@@ -1441,7 +1397,8 @@ develop_from_credit <- function(simulation_data_object, intervention_vec, dev_in
                                          simulation_data_object$simulation_params,
                                          simulation_data_object$feature_params,
                                          time_horizon,
-                                         yr)
+                                         yr, 
+                                         simulation_data_object$user_transform_function)
   
   #   if (any(unlist(dev_pool_object$parcel_vals_used) < 0)){
   #     browser()
@@ -1914,7 +1871,7 @@ generate_time_horizons <- function(project_type, yr, intervention_yrs, time_hori
 assess_current_pool <- function(pool_object, pool_type, features_to_use, site_features_group, feature_dynamics, management_dynamics, 
                                 feature_dynamics_modes, site_element_index_key, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                                dev_probability_list, offset_probability_list, time_horizon_type, simulation_params, feature_params, time_horizon, yr){
+                                dev_probability_list, offset_probability_list, time_horizon_type, simulation_params, feature_params, time_horizon, yr, user_transform_function){
   
   if (length(site_features_group) == 0){
     return(list())

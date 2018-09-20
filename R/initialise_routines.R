@@ -293,6 +293,7 @@ build_input_data <- function(global_params, feature_params, simulation_params){
   simulation_data_object$global_params = global_params
   simulation_data_object$feature_params = feature_params
   simulation_data_object$simulation_params = simulation_params
+  simulation_data_object$user_transform_function = user_transform_function
   return(simulation_data_object)
   
 }
@@ -346,9 +347,9 @@ build_output_data <- function(simulation_data_object){
                               length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
                           ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
   
-  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
-    current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
-  }
+#   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
+#     current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
+#   }
   output_data$current_credit = current_credit
   output_data$credit_match_flag = FALSE
   return(output_data)

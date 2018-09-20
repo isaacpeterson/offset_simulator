@@ -22,7 +22,8 @@ collate_simulation_outputs <- function(simulation_data_object, background_cfacs_
                        simulation_data_object$global_params, 
                        current_data_dir, 
                        file_prefix,
-                       use_offset_metric = FALSE)
+                       use_offset_metric = FALSE, 
+                       simulation_data_object$user_transform_function)
   
   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
     run_collate_routines(simulation_outputs,
@@ -35,13 +36,64 @@ collate_simulation_outputs <- function(simulation_data_object, background_cfacs_
                          simulation_data_object$global_params, 
                          current_data_dir, 
                          file_prefix,
-                         use_offset_metric = TRUE)
+                         use_offset_metric = TRUE, 
+                         simulation_data_object$user_transform_function)
   }
   
 }
   
+build_background_cfacs <- function(simulation_data_object){
+  
+  background_cfacs_object = list()
+  background_projection_yrs_pool = lapply(seq_along(simulation_data_object$site_features), 
+                                          function(i) lapply(seq(simulation_data_object$simulation_params$feature_num), 
+                                                             function(j) rep(list(1), length(simulation_data_object$feature_dynamics_modes[[i]][[j]])) ))  
+  
+  background_cfacs_object$background_cfacs = collate_cfacs(simulation_data_object$site_features,
+                                                           simulation_data_object$simulation_params, 
+                                                           simulation_data_object$feature_params,
+                                                           simulation_data_object$feature_dynamics,
+                                                           simulation_data_object$feature_dynamics_modes,
+                                                           simulation_data_object$site_element_index_key,
+                                                           background_projection_yrs_pool,
+                                                           intervention_yrs = rep(1, length(initial_feature_layer)),
+                                                           vector(),
+                                                           cfac_type = 'background',
+                                                           object_type = vector(), 
+                                                           use_cfac_type_in_sim = FALSE, 
+                                                           condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
+                                                           use_offset_metric = FALSE, 
+                                                           simulation_data_object$user_transform_function)
+  
+  saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  
+  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
+    
+    background_cfacs_object$user_metric_background_cfacs = collate_cfacs(simulation_data_object$site_features,
+                                                                         simulation_data_object$simulation_params, 
+                                                                         simulation_data_object$feature_params,
+                                                                         simulation_data_object$feature_dynamics,
+                                                                         simulation_data_object$feature_dynamics_modes,
+                                                                         simulation_data_object$site_element_index_key,
+                                                                         background_projection_yrs_pool,
+                                                                         intervention_yrs = rep(1, length(initial_feature_layer)),
+                                                                         vector(),
+                                                                         cfac_type = 'background',
+                                                                         object_type = vector(), 
+                                                                         use_cfac_type_in_sim = FALSE, 
+                                                                         condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds, 
+                                                                         use_offset_metric = TRUE, 
+                                                                         simulation_data_object$user_transform_function)
+    
+    saveRDS(background_cfacs_object$background_cfacs, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'user_metric_background_cfacs.rds'))
+    
+  }
+  
+  return(background_cfacs_object)
+}
+
 run_collate_routines <- function(simulation_outputs, background_cfacs, feature_dynamics, feature_dynamics_modes, initial_feature_layer, simulation_params, feature_params, 
-                                 global_params, current_data_dir, file_prefix, use_offset_metric){
+                                 global_params, current_data_dir, file_prefix, use_offset_metric, user_transform_function){
   
   intervention_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_indexes), names(simulation_outputs$interventions))
   intervention_yrs_pool = setNames(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$intervention_yrs), names(simulation_outputs$interventions))
@@ -84,7 +136,8 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
                                                               object_type = object_name_pool, 
                                                               use_cfac_type_in_sim = TRUE, 
                                                               condition_class_bounds = feature_params$condition_class_bounds, 
-                                                              use_offset_metric)
+                                                              use_offset_metric, 
+                                                              user_transform_function)
   
   if (use_offset_metric == FALSE){
     features_to_collate = seq(simulation_params$feature_num)
@@ -92,7 +145,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
     features_to_collate = 1
   }
   
-  summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, simulation_params$transform_params)
+  summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, user_transform_function, simulation_params$transform_params)
   
 
   
@@ -352,7 +405,7 @@ collate_program_scale_cfacs <- function(site_scale_cfacs, interventions, backgro
 
 
 collate_cfacs <- function(site_features_group, simulation_params, feature_params, feature_dynamics, feature_dynamics_modes, site_element_index_key, projection_yrs, intervention_yrs, 
-                          site_num_remaining_pool, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric){
+                          site_num_remaining_pool, cfac_type, object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric, user_transform_function){
   
   
   if ((use_cfac_type_in_sim == FALSE) || (cfac_type == 'background')){
@@ -620,7 +673,7 @@ find_current_sites_used <- function(current_sites_list){
 }
 
 # determine cumulative value of all sites within parcel feature_layers for multiple features
-sum_sites <- function(site_features, use_offset_metric, transform_params){
+sum_sites <- function(site_features, use_offset_metric, user_transform_function, transform_params){
   
   sets_to_use = which(unlist(lapply(seq_along(site_features), function(i) length(site_features[[i]]) > 0)))
   

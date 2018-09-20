@@ -12,11 +12,13 @@ construct_simulated_data <- function(feature_params, simulation_inputs_folder, s
 }
 
 #' @export
-simulate_site_feature_elements <- function(site_sample_type, current_condition_class_modes, current_condition_class_bounds, element_num, initial_site_sd, initial_site_mean_sd){
+simulate_site_feature_elements <- function(site_sample_type, current_condition_class_mode, current_condition_class_set, element_num, initial_site_sd, initial_site_mean_sd){
 
-  if (current_condition_class_modes == 0){
+  if (current_condition_class_mode == 0){
     site_elements = array(0, element_num)
     return(site_elements)
+  } else {
+    current_condition_class_bounds = current_condition_class_set[[current_condition_class_mode]]
   }
   
   if (length(initial_site_sd) == 0){
