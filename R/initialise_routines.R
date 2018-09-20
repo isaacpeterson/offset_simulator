@@ -158,7 +158,7 @@ build_input_data <- function(global_params, feature_params, simulation_params){
     simulation_data_object$feature_dynamics_modes = readRDS(paste0(global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
   }
   
-  
+  browser()
   if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'site_features.rds')))
       | (global_params$overwrite_site_features == TRUE)){
     
@@ -176,15 +176,6 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                                                  background_condition_class_layers, 
                                                                                  simulation_data_object$feature_dynamics_modes)
   
-    saveRDS(object = simulation_data_object$site_features, paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
-
-  } else {
-    simulation_data_object$site_features = readRDS(paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
-  }
-  
-  
-  if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds')))
-      | (global_params$overwrite_site_condition_class_key == TRUE)){
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = global_params$store_zeros_as_sparse,
@@ -196,12 +187,14 @@ build_input_data <- function(global_params, feature_params, simulation_params){
                                                            function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
                                                                               function(j) match(simulation_data_object$site_characteristics$land_parcels[[i]], 
                                                                                                 do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
-    
+    saveRDS(object = simulation_data_object$site_features, paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
     saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
     saveRDS(object = simulation_data_object$site_element_index_key, paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   } else {
+    simulation_data_object$site_features = readRDS(paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
     simulation_data_object$site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   }
+  
   
   if (feature_params$management_condition_class == 'background'){
     simulation_data_object$management_dynamics_modes = simulation_data_object$feature_dynamics_modes 
@@ -347,9 +340,9 @@ build_output_data <- function(simulation_data_object){
                               length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
                           ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
   
-#   if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
-#     current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
-#   }
+  if (simulation_data_object$simulation_params$transform_initial_credit == TRUE){
+    current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
+  }
   output_data$current_credit = current_credit
   output_data$credit_match_flag = FALSE
   return(output_data)
