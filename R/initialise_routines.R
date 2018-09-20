@@ -158,7 +158,6 @@ build_input_data <- function(global_params, feature_params, simulation_params){
     simulation_data_object$feature_dynamics_modes = readRDS(paste0(global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
   }
   
-  browser()
   if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'site_features.rds')))
       | (global_params$overwrite_site_features == TRUE)){
     
@@ -719,11 +718,7 @@ generate_simulation_combs <- function(simulation_params_group){
 process_current_simulation_params <- function(current_simulation_params, common_params){
   
   current_simulation_params = append(current_simulation_params, common_params)
-  
-  if (class(current_simulation_params$features_to_use_in_simulation) == "character"){
-    browser()
-  } 
-  
+
   current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)
   
   if (current_simulation_params$use_offset_bank == TRUE){
