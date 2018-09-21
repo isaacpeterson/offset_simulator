@@ -165,8 +165,8 @@ initialise_default_simulation_params <- function(){
   #use a specified offset metric in the site match calculation
   default_simulation_params$use_offset_metric = FALSE
   
-  # How the development/offset parcels are selected options are 'random',
-  # 'weighted', or 'greedy'. Note that weighted requires an additonal weighting layer. If
+  # How the development/offset parcels are selected options are 'stochastic',
+  # 'weighted', or 'pre_determined'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
@@ -250,8 +250,7 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$offset_multiplier = 1
   default_simulation_params$project_by_group = FALSE
   
-  # allow pass of credit to simulation - can be used to run developments without offsets
-  default_simulation_params$initial_credit = 0
+
 
   # set to 'default' to use same probability of loss for each site and each time step
   # set to unregulated_stochastic_development' in conjunction with defining simulation_params$unregulated_intervention_vec to mirror development 
@@ -262,6 +261,8 @@ initialise_default_simulation_params <- function(){
   # set to false to stop initial credit being transformed - this has a big impact when using the BAM metric which 
   # transforms large values to ceiling defined by 100.68
   
+  # allow pass of credit to simulation - can be used to run developments without offsets
+  default_simulation_params$initial_credit = 0
   default_simulation_params$transform_initial_credit = TRUE
   return(default_simulation_params)
 }

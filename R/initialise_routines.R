@@ -71,7 +71,7 @@ build_feature_params <- function(user_feature_params){
   }
 }
 
-build_input_data <- function(global_params, feature_params, simulation_params){
+build_input_data <- function(global_params, feature_params, simulation_params, user_transform_function){
   
   simulation_data_object = list()
   
@@ -335,12 +335,23 @@ build_output_data <- function(simulation_data_object){
   output_data$interventions = interventions
   output_data$offset_pool_object <- list()
   
-  current_credit = matrix(rep(simulation_data_object$simulation_params$initial_credit, 
-                              length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
-                          ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
-  
   if (simulation_data_object$simulation_params$transform_initial_credit == TRUE){
-    current_credit = user_transform_function(current_credit, simulation_data_object$simulation_params$transform_params)
+    if (length(simulation_data_object$user_transform_function) > 0){
+      current_credit = simulation_data_object$user_transform_function(simulation_data_object$simulation_params$initial_credit, simulation_data_object$simulation_params$transform_params)
+    } else{
+      flog.error('user_transform_function not set')
+      stop()
+    }
+  } else {
+    if ((simulation_data_object$simulation_params$use_offset_metric == FALSE) &
+      ( length(simulation_data_object$simulation_params$initial_credit) != length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))){
+      flog.error('setting length of credit vector to match simulation_params$features_to_use_in_offset_calc')
+      current_credit = matrix(rep(simulation_data_object$simulation_params$initial_credit, 
+                                  length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
+                              ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
+    } else{
+      current_credit = simulation_data_object$simulation_params$initial_credit
+    }
   }
   output_data$current_credit = current_credit
   output_data$credit_match_flag = FALSE
@@ -917,7 +928,7 @@ initialise_index_object <- function(simulation_data_object){
   unregulated_indexes_to_exclude = which(unlist(simulation_data_object$unregulated_probability_list) == 0)
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
   
-  if (simulation_data_object$simulation_params$development_selection_type == 'directed'){
+  if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
     offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
     unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
   }

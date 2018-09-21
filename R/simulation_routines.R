@@ -12,7 +12,7 @@
 #' @import Matrix
 #' @export 
 #' 
-osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, user_transform_function= NULL, loglevel = WARN){
+osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, user_feature_params = NULL, user_transform_function = NULL, loglevel = WARN){
   
   flog.threshold(loglevel)
   flog.info('starting offsetsim')
@@ -38,7 +38,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     loop_strt <- Sys.time()
     
     #load objects from files etc
-    simulation_data_object <- build_input_data(params_object$global_params, params_object$feature_params, params_object$simulation_params_group[[scenario_ind]])
+    simulation_data_object <- build_input_data(params_object$global_params, params_object$feature_params, params_object$simulation_params_group[[scenario_ind]], user_transform_function)
     
     simulation_data_object$output_data = build_output_data(simulation_data_object)
     flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
@@ -215,7 +215,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       
       # determine current set of available development sites and calculate gains structure as detailed in current policy params
 
-      if (simulation_data_object$simulation_params$development_selection_type == 'directed') {
+      if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined') {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                           pool_type = 'developments',
                                                                           current_pool = setdiff(simulation_data_object$simulation_params$directed_developments[[yr]], 
@@ -290,7 +290,7 @@ unwrap_condition_classes <- function(current_site_feature, current_site_element_
 }
 
 save_landscape_routine <- function(simulation_data_object, current_data_dir, yr){
-  
+
   for (feature_ind in seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation)){
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
@@ -367,7 +367,7 @@ match_sites_routine <- function(simulation_data_object, yr){
 
 
 credit_match_routine <- function(simulation_data_object, yr){
-  
+
   if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$site_indexes) == 0)){
     match_object = setNames(list(FALSE), 'match_flag')
     
@@ -382,7 +382,7 @@ credit_match_routine <- function(simulation_data_object, yr){
                                     simulation_data_object$simulation_params,
                                     yr)
     if (match_object$match_flag == TRUE){
-      
+
       simulation_data_object$output_data$current_credit = match_object$current_credit
       
       subset_pool = list_intersect(simulation_data_object$dev_pool_object$site_indexes, match_object$match_indexes)
@@ -1307,7 +1307,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
   while( (match_object$match_flag == FALSE)){   
     
     if ((simulation_data_object$simulation_params$development_selection_type == 'stochastic') 
-        | (simulation_data_object$simulation_params$development_selection_type == 'directed')){
+        | (simulation_data_object$simulation_params$development_selection_type == 'pre_determined')){
       current_dev_probability_list = rep(1/length(current_match_pool), length(current_match_pool))
     } else if (simulation_data_object$simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
