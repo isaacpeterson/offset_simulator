@@ -53,6 +53,12 @@ build_simulation_params_group <- function(user_simulation_params){
     simulation_params = default_simulation_params
   }
   
+  if (simulation_params$development_selection_type == 'pre_determined'){
+    simulation_params$intervention_vec = lapply(seq_along(simulation_params$development_vec), function(i) length(simulation_params$development_vec[[i]]))
+  } else {
+    simulation_params$intervention_vec = simulation_params$development_vec
+  }
+    
   simulation_params_object = build_simulation_variants(simulation_params)
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
                                     function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))

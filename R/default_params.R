@@ -94,10 +94,9 @@ initialise_default_simulation_params <- function(){
     
     # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
-    default_simulation_params$intervention_vec = array(0, default_simulation_params$time_steps)
-    default_simulation_params$intervention_vec[intervention_locs] = 1
+    default_simulation_params$development_vec = array(0, default_simulation_params$time_steps)
+    default_simulation_params$development_vec[intervention_locs] = 1
     
-
     default_simulation_params$features_to_use_in_simulation = 1
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
