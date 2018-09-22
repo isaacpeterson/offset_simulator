@@ -466,9 +466,8 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
 
     plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
                   plot_type = 'program', 
-                  enforce_limits = TRUE, 
                   include_legend = FALSE, 
-                  y_lims = program_plot_lims ,
+                  plot_lims = program_plot_lims ,
                   plot_title = 'Program Outcome', 
                   loss_stats = collated_realisations$net_program_loss, 
                   collated_realisations$realisation_num, 
@@ -483,9 +482,8 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, p
   if (plot_params$plot_landscape == TRUE){ 
     plot_outcomes(collated_realisations$landscape_scale$landscape_outcome, 
                   plot_type = 'landscape', 
-                  enforce_limits = TRUE, 
                   include_legend = FALSE, 
-                  y_lims =landscape_plot_lims,
+                  plot_lims =landscape_plot_lims,
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
@@ -567,12 +565,13 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          plot_params$site_impact_col_vec, 
                          plot_params$site_impact_lwd)
   }
+  
   # Plot the program scale impacts
   if (plot_params$plot_program == TRUE){
 
     NNL_object <- find_NNL_characteristics(collated_realisations$NNL$program_scale,
                                            collated_realisations$program_scale_impacts$program_total)
-
+    
     overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
                                           collated_realisations$program_scale_impacts$net_dev_losses,
                                           collated_realisations$program_scale_impacts$program_total),
@@ -583,7 +582,8 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          col_vec = plot_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-                         plot_lims = program_plot_lims)
+                         plot_lims = program_plot_lims, 
+                         current_simulation_params$time_steps)
     
     if (length(NNL_object$mean_NNL) >0){
       abline(v = NNL_object$mean_NNL, lty = 2)
@@ -619,7 +619,8 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, pl
                          plot_params$landscape_col,
                          legend_loc = 'topright',
                          legend_vec = 'NA', 
-                         landscape_plot_lims) 
+                         landscape_plot_lims, 
+                         current_simulation_params$time_steps) 
   }
 }
 
@@ -791,6 +792,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
                         col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
                         legend_vec = 'NA', legend_loc = FALSE)
     }
+    
     plot_type = 'non-overlay'
   }
 }
@@ -816,31 +818,27 @@ overlay_impact <- function(collated_object, offset_bank, visualisation_type, rea
   } else {
     plot_list = list(collated_object[[realisation_ind]])
   }
+  
   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab, 
                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(plot_lwd, length(plot_list)), 
                     legend_vec = 'NA', legend_loc = FALSE)
 }
 
 
-plot_split_realisations <- function(plot_type, rest_gains, avoided_loss, nets, plot_title, feature_ind, lwd_vec, col_vec, legend_vec, legend_pos, realisation_num, ylim){
-  
-  plot_num = length(col_vec)
-  plot_collated_realisation_set(rest_gains, overlay_plots = FALSE, plot_col = col_vec[1], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
-  if (plot_type == 'offsets'){
-    plot_collated_realisation_set(avoided_loss, overlay_plots = TRUE, plot_col = col_vec[2], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)
-  }
-  plot_collated_realisation_set(nets, overlay_plots = TRUE, plot_col = col_vec[plot_num], realisation_num, lwd_vec, x_lab = '', plot_title = plot_title, plot_lims = ylim)  
-  legend(legend_pos, legend_vec, bty="n", lty = rep(2, plot_num), lwd = array(lwd_vec[1], plot_num), col = col_vec)
-}
-
 
 find_list_mean <- function(list_to_average){
-  list_mean = Reduce('+', list_to_average)/length(list_to_average)
+
+  list_elements_to_sum = which(unlist(lapply(seq_along(list_to_average), function(i) length(list_to_average[[i]]) > 0)))
+  if (length(list_elements_to_sum) > 0){
+    list_mean = sum_list(list_to_average[list_elements_to_sum])/length(list_elements_to_sum)
+  } else {
+    list_mean = list()
+  }
   return(list_mean)
 }
 
 
-plot_collated_realisation_set <- function(plot_list, overlay_plots, plot_col, realisation_num, lwd_vec, x_lab, plot_title, plot_lims){
+plot_collated_realisation_set <- function(plot_list, overlay_plots, plot_col, realisation_num, lwd_vec, x_lab, plot_title, time_steps){
   
   if (plot_col == 'blue'){
     back_plot_col = 'skyblue'
@@ -854,28 +852,18 @@ plot_collated_realisation_set <- function(plot_list, overlay_plots, plot_col, re
     back_plot_col = 'green'
   }
   
-  if (length(plot_lims) == 0){
-    mn = min(unlist(plot_list))
-    mx = max(unlist(plot_list))
-  } else {
-    mn = plot_lims[1]
-    mx = plot_lims[2]
-  }
   
-  if (overlay_plots == FALSE){
-    graphics::plot(plot_list[[1]], type = 'l', ylab = '', main = plot_title, xlab = x_lab, ylim = c(mn, mx), col = back_plot_col, lwd = lwd_vec[2])
-  } else { lines(plot_list[[1]], lwd = lwd_vec[2], col = back_plot_col)
-  }
-  
-  if (realisation_num > 1){
-    for (realisation_ind in 2:realisation_num){
-      lines(plot_list[[realisation_ind]], col = back_plot_col, lwd = lwd_vec[2])
+  for (realisation_ind in seq_len(realisation_num)){
+    if (length(plot_list[[realisation_ind]]) > 0){
+        lines(plot_list[[realisation_ind]], lwd = lwd_vec[2], col = back_plot_col)
     }
   }
   
-  plot_mean = find_list_mean(plot_list)
-  lines(plot_mean, ylim = c(mn, mx), col = plot_col, lwd = lwd_vec[1], lty = 2)
-  abline(h = 0, lty = 2)
+  current_plot_mean = find_list_mean(plot_list)
+  if (length(current_plot_mean) > 0){
+    lines(current_plot_mean, col = plot_col, lwd = lwd_vec[1], lty = 2)
+  } 
+
   
 }
 
@@ -921,7 +909,8 @@ plot_NNL_hists <- function(parcel_set_NNL, program_scale_NNL, system_NNL, use_pa
 
 
 overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, lwd_vec, 
-                                 col_vec, legend_vec, legend_loc, plot_lims){
+                                 col_vec, legend_vec, legend_loc, plot_lims, time_steps){
+  
   if (length(unlist(plot_list)) == 0){
     null_plot()
     return()
@@ -929,17 +918,17 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
   
   if (length(plot_lims) == 0){
     plot_lims = find_plot_lims(plot_list)
+  } else {
+    mn = plot_lims[1]
+    mx = plot_lims[2]
   }
   
+  graphics::plot(NULL, type = 'l', ylab = '', main = plot_title, xlab = x_lab,  ylim = c(mn, mx), xlim = c(0, time_steps))
+  abline(h = 0, lty = 2)
+  
   for (plot_ind in seq_along(plot_list)){
-    if (plot_ind == 1){
-      overlay_plots = FALSE
-    } else {
-      overlay_plots = TRUE
-    }
     plot_collated_realisation_set(plot_list[[plot_ind]], overlay_plots, plot_col = col_vec[plot_ind], 
-                                  realisation_num, lwd_vec, 
-                                  x_lab, plot_title, plot_lims = plot_lims)
+                                  realisation_num, lwd_vec,  x_lab, plot_title, time_steps)
   }
   
   if (legend_vec[1] != 'NA'){
@@ -950,7 +939,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
 
 
 
-plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, include_legend, y_lims, plot_title, 
+plot_outcomes <- function(current_outcome_set, plot_type, include_legend, plot_lims, plot_title, 
                           loss_stats, realisation_num,  cfacs, lwd_vec, outcome_col, cfac_col, legend_vec, time_steps){
   
   current_total_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$total_loss[[i]]))
@@ -966,19 +955,22 @@ plot_outcomes <- function(current_outcome_set, plot_type, enforce_limits, includ
   NNL_tit = ''
   sub_tit = cbind(NNL_tit, loss_tit)
   
-  if (enforce_limits == TRUE){
-    plot_lims = y_lims
+  if (length(plot_lims) == 0){
+    plot_lims = find_plot_lims(current_outcome_set)
   } else {
-    plot_vec = c(unlist(current_outcome_set), unlist(current_cfacs))
-    plot_lims = c(min(plot_vec), max(plot_vec))
+    mn = plot_lims[1]
+    mx = plot_lims[2]
   }
   
+  graphics::plot(NULL, type = 'l', ylab = '', main = plot_title, xlab = x_lab,  ylim = c(mn, mx), xlim = c(0, time_steps))
+  abline(h = 0, lty = 2)
+  
   plot_collated_realisation_set(current_outcome_set, overlay_plots = FALSE, plot_col = outcome_col, realisation_num, lwd_vec, 
-                                x_lab = sub_tit, plot_title = plot_title, plot_lims)
+                                x_lab = sub_tit, plot_title = plot_title, time_steps)
   
   if (plot_type == 'program'){
     plot_collated_realisation_set(cfacs, overlay_plots = TRUE, plot_col = cfac_col, realisation_num, lwd_vec, 
-                                  x_lab = '', plot_title = '', plot_lims = y_lims)
+                                  x_lab = '', plot_title = '', time_steps)
   } else {
     lines(cfacs, col = cfac_col, lty = 2, lwd = 2)
   }
@@ -1005,8 +997,13 @@ setup_sub_plots <- function(nx, ny, x_space, y_space){
 
 
 find_plot_lims <- function(plot_list){
-  mn = min(unlist(plot_list))
-  mx = max(unlist(plot_list))
+  if (length(unlist(plot_list)) > 0){
+    mn = min(unlist(plot_list))
+    mx = max(unlist(plot_list))
+  } else {
+    mn = 0
+    mx = 1
+  }
   plot_lims = c(mn, mx)
   return(plot_lims)
 }
