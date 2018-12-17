@@ -383,6 +383,7 @@ credit_match_routine <- function(simulation_data_object, yr){
                                     vals_to_match_initial = simulation_data_object$output_data$current_credit,
                                     simulation_data_object$simulation_params,
                                     yr)
+    
     if (match_object$match_flag == TRUE){
 
       simulation_data_object$output_data$current_credit = match_object$current_credit
@@ -1367,76 +1368,6 @@ match_sites <- function(simulation_data_object, match_type, yr){
 }
 
 
-develop_from_credit <- function(simulation_data_object, intervention_vec, dev_indexes_to_use, yr, time_horizon){
-  
-  parcel_num_remaining = length(dev_indexes_to_use)
-  
-  # store group of site characteristics in site characteristics object
-  dev_pool_object <- record_site_characteristics(simulation_data_object$site_features[dev_indexes_to_use],  
-                                                 dev_indexes_to_use,  
-                                                 parcel_num_remaining,  
-                                                 yr)
-  current_pool = unlist(dev_pool_object$site_indexes)
-  
-  dev_pool_object <- assess_current_pool(pool_object = dev_pool_object,
-                                         pool_type = 'developments',
-                                         features_to_use = simulation_data_object$simulation_params$features_to_use_in_offset_calc,
-                                         site_features = simulation_data_object$site_features[current_pool],
-                                         feature_dynamics = simulation_data_object$feature_dynamics[current_pool],  
-                                         management_dynamics = simulation_data_object$management_dynamics[current_pool],
-                                         feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
-                                         site_element_index_key = simulation_data_object$site_element_index_key[current_pool],
-                                         calc_type = simulation_data_object$simulation_params$dev_calc_type,
-                                         cfacs_flag = simulation_data_object$simulation_params$dev_cfacs_flag,
-                                         adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_dev_cfacs_flag,
-                                         action_type = simulation_data_object$simulation_params$offset_action_type,
-                                         include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_dev_calc,
-                                         include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_dev_calc,
-                                         include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_dev_calc,
-                                         recalculate_probabilities(simulation_data_object$dev_probability_list[current_pool]), 
-                                         recalculate_probabilities(simulation_data_object$offset_probability_list[current_pool]), 
-                                         time_horizon_type = 'future',
-                                         simulation_data_object$simulation_params,
-                                         simulation_data_object$feature_params,
-                                         time_horizon,
-                                         yr, 
-                                         simulation_data_object$user_transform_function)
-  
-  #   if (any(unlist(dev_pool_object$parcel_vals_used) < 0)){
-  #     browser()
-  #   }
-  #   subset_pool =  list_intersect(dev_pool_object$site_indexes, match_object$match_indexes)
-  #   match_object$development_object = subset_current_pool(dev_pool_object, subset_pool = subset_pool$match_ind)
-  
-  if (length(unlist(dev_pool_object$site_indexes)) > 0){
-    
-    pool_vals_to_use = dev_pool_object$parcel_vals_used
-    match_object <- match_from_pool(match_type = 'development', 
-                                    current_pool = dev_pool_object$site_indexes, 
-                                    pool_vals_to_use, 
-                                    simulation_data_object$output_data$current_credit,
-                                    simulation_data_object$dev_probability_list,
-                                    vals_to_match_initial = simulation_data_object$output_data$current_credit,
-                                    simulation_data_object$simulation_params,
-                                    yr)
-    
-  } else{
-    match_object = setNames(list(FALSE), 'match_flag')
-  }
-  
-  if (match_object$match_flag == TRUE){
-    subset_pool =  list_intersect(dev_pool_object$site_indexes, match_object$match_indexes)
-    match_object$development_object = subset_current_pool(dev_pool_object, subset_pool = subset_pool$match_ind)
-  } else{
-    #match_object$development_object = list()
-    #match_object$current_credit = simulation_data_object$output_data$current_credit
-  }
-  
-  return(match_object)
-  
-}
-
-
 evaluate_parcel_vals <- function(calc_type, current_condition_vals, projected_vals, cfac_vals){
   
   if (calc_type == 'current_condition'){
@@ -1631,13 +1562,12 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
       zero_inds <- which(unlist(lapply(seq_along(pool_vals_to_use), function(i) sum(pool_vals_to_use[[i]]) == 0)))
       
       if (length(zero_inds) > 0){
-        browser()
         current_pool <- remove_index(current_pool, zero_inds)
         pool_vals_to_use <- remove_index(pool_vals_to_use, zero_inds)
       }
       
       if (length(current_pool) == 0){
-        cat('all ', match_type, 'sites have zero value \n')
+        cat('all', match_type, 'sites have zero value \n')
         pool_object$break_flag = TRUE
         return(pool_object)
       } 
@@ -1668,10 +1598,6 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
 
 
 
-
-
-
-
 match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_credit, current_probability_list, 
                             vals_to_match_initial, simulation_params, yr){
   
@@ -1692,18 +1618,11 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     }
     
   } else if (match_type == 'development'){
-    
     # force only single development for development routine
     max_parcel_num = 1
-    
-    if (simulation_params$screen_dev_zeros == FALSE){
-      # if zeros are allowed use random selection 
-      match_procedure = 'stochastic'
-    } else {
-      match_procedure = simulation_params$development_selection_type
-    }
+    match_procedure = simulation_params$development_selection_type
     # when developing from credit, use inverse offset multiplier
-    vals_to_match = 1/simulation_params$offset_multiplier * vals_to_match_initial
+    vals_to_match = 1 / simulation_params$offset_multiplier * vals_to_match_initial
   }
   
   #create an array of threshold values defined by user based proportion 
@@ -1725,19 +1644,16 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   match_indexes = list()
   
   while(match_flag == FALSE){
-    
     if (length(current_pool) == 0){
       break
     }
-    
     if (match_procedure == 'greedy'){
       match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
     } else {
       
       if (match_procedure == 'weighted'){
         probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(current_pool)])
-        
-      } else {
+      } else if ( (match_procedure == 'stochastic') | (match_procedure == 'pre_determined')) {
         probability_list_to_use = rep(1/length(current_pool), length(current_pool))
       }
       match_params = list()
