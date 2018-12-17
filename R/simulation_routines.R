@@ -189,6 +189,7 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
 # main engine for code - returns all simulation outputs including developments, offsets etc.
 run_simulation <- function(simulation_data_object, current_data_dir){
   
+
   #run through main time loop
   for (yr in seq_len(simulation_data_object$simulation_params$time_steps)){
     
@@ -202,6 +203,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       simulation_data_object <- banking_routine(simulation_data_object, yr)
     }
     
+    #a = lapply(seq_along(simulation_data_object$site_features), function(i) sum(simulation_data_object$site_features[[i]][[1]][[1]]))
     
     if (simulation_data_object$simulation_params$intervention_vec[yr] > 0){
       
@@ -218,7 +220,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined') {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                           pool_type = 'developments',
-                                                                          current_pool = setdiff(simulation_data_object$simulation_params$directed_developments[[yr]], 
+                                                                          current_pool = setdiff(simulation_data_object$simulation_params$development_vec[[yr]], 
                                                                                                  simulation_data_object$output_data$index_object$site_indexes_used),
                                                                           yr)
       } else {
@@ -244,7 +246,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if ( simulation_data_object$output_data$credit_match_flag == FALSE && simulation_data_object$simulation_params$use_parcel_sets == TRUE){
+      if (simulation_data_object$output_data$credit_match_flag == FALSE && simulation_data_object$simulation_params$use_parcel_sets == TRUE){
         simulation_data_object <- match_sites_routine(simulation_data_object, yr)
       }
       
@@ -392,8 +394,8 @@ credit_match_routine <- function(simulation_data_object, yr){
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
       
-      flog.info(cat('developed site with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
-                    'from credit, remaining = ', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+      flog.info(cat('developed site', paste(development_object$site_indexes), 'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
+                    'from credit, remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
       
     }
   } 
@@ -1607,7 +1609,6 @@ select_cols <- function(arr_to_use, col_inds){
 
 select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_vals_to_use, 
                                  max_parcel_num, current_pool, match_type, screen_site_zeros){
-  
   pool_object = list()
   
   if (length(unlist(pool_vals_to_use)) == 0){
@@ -1625,17 +1626,18 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
     }
     
   } else {
-    
+
     if (screen_site_zeros == TRUE){ 
       zero_inds <- which(unlist(lapply(seq_along(pool_vals_to_use), function(i) sum(pool_vals_to_use[[i]]) == 0)))
       
       if (length(zero_inds) > 0){
+        browser()
         current_pool <- remove_index(current_pool, zero_inds)
         pool_vals_to_use <- remove_index(pool_vals_to_use, zero_inds)
       }
       
       if (length(current_pool) == 0){
-        cat('\nall sites yield zero assessment')
+        cat('all ', match_type, 'sites have zero value \n')
         pool_object$break_flag = TRUE
         return(pool_object)
       } 

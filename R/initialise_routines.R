@@ -53,12 +53,6 @@ build_simulation_params_group <- function(user_simulation_params){
     simulation_params = default_simulation_params
   }
   
-  if (simulation_params$development_selection_type == 'pre_determined'){
-    simulation_params$intervention_vec = lapply(seq_along(simulation_params$development_vec), function(i) length(simulation_params$development_vec[[i]]))
-  } else {
-    simulation_params$intervention_vec = simulation_params$development_vec
-  }
-    
   simulation_params_object = build_simulation_variants(simulation_params)
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
                                     function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
@@ -777,6 +771,8 @@ process_current_simulation_params <- function(current_simulation_params, common_
   }
   
   if (current_simulation_params$use_offset_bank == TRUE){
+    cat('offset bank not currently working')
+    stop()
     current_simulation_params$banked_offset_vec = build_stochastic_intervention(time_steps = simulation_params$time_steps,
                                                                                 current_simulation_params$offset_bank_start,
                                                                                 current_simulation_params$offset_bank_end,
@@ -803,6 +799,12 @@ process_current_simulation_params <- function(current_simulation_params, common_
   
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
+    if (current_simulation_params$development_selection_type == 'pre_determined'){
+      current_simulation_params$intervention_vec = unlist(lapply(seq_along(current_simulation_params$development_vec), function(i) length(which(current_simulation_params$development_vec[[i]] > 0))))
+    } else if (current_simulation_params$development_selection_type == 'stochastic'){
+      current_simulation_params$intervention_vec = unlist(current_simulation_params$development_vec)
+    }
+  current_simulation_params$intervention_num = sum(current_simulation_params$intervention_vec)
   return(current_simulation_params)
   
 }
@@ -850,7 +852,7 @@ parcel_set_list_names <- function(){
 
 #' @export
 build_stochastic_intervention <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
-  intervention_vec = array(0, time_steps)
+  intervention_vec = list_of_zeros(list_dims = time_steps, array_dims = 1)
   intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
   return(intervention_vec)
 }
