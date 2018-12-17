@@ -937,8 +937,8 @@ initialise_index_object <- function(simulation_data_object){
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
   
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
-    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
-    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
+    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_vec)))
+    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_vec)))
   }
   
   index_object = list()

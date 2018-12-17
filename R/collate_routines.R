@@ -147,8 +147,6 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
   
   summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, user_transform_function, simulation_params$transform_params)
   
-
-  
   for (feature_ind in features_to_collate){
     
     collated_object = list()
