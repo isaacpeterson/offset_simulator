@@ -58,9 +58,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   
   if (object_to_output$output_params$output_type == 'plot'){
     # Set the output filename, and open the pdf file for reading
-    
-    if (object_to_output$output_params$write_pdf == TRUE){
-      
+
       if (object_to_output$output_params$plot_type == 'impacts'){
         pdf_to_output = paste0(object_to_output$output_folder, '/impacts.pdf')
       } else if (object_to_output$output_params$plot_type == 'outcomes'){
@@ -68,9 +66,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
       }
       flog.info('writing PDF to %s', pdf_to_output)
       pdf(pdf_to_output, width = 8.3, height = 11.7)
-      
-    }
-    
+
     setup_sub_plots(object_to_output$output_params$nx, object_to_output$output_params$ny, x_space = 5, y_space = 5)
 
   } else if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
@@ -103,7 +99,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     
   }
   
-  if ((object_to_output$output_params$output_type == 'plot') & (object_to_output$output_params$write_pdf == TRUE)){
+  if (object_to_output$output_params$output_type == 'plot'){
     graphics.off()
     flog.info('closing PDF %s', pdf_to_output)
   }
