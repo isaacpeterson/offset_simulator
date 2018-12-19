@@ -770,18 +770,6 @@ process_current_simulation_params <- function(current_simulation_params, common_
     current_simulation_params$dev_cfacs_flag = FALSE
   }
   
-  if (current_simulation_params$use_offset_bank == TRUE){
-    cat('offset bank not currently working')
-    stop()
-    current_simulation_params$banked_offset_vec = build_stochastic_intervention(time_steps = simulation_params$time_steps,
-                                                                                current_simulation_params$offset_bank_start,
-                                                                                current_simulation_params$offset_bank_end,
-                                                                                current_simulation_params$offset_bank_num,
-                                                                                sd = 1)
-  } else {
-    current_simulation_params$banked_offset_vec = list()
-  }
-  
   if (current_simulation_params$dev_counterfactual_adjustment == 'as_offset'){
     current_simulation_params$include_potential_developments_in_dev_calc = current_simulation_params$include_potential_developments_in_offset_calc
     current_simulation_params$include_potential_offsets_in_dev_calc = current_simulation_params$include_potential_offsets_in_offset_calc
@@ -800,11 +788,11 @@ process_current_simulation_params <- function(current_simulation_params, common_
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
     if (current_simulation_params$development_selection_type == 'pre_determined'){
-      current_simulation_params$intervention_vec = unlist(lapply(seq_along(current_simulation_params$development_vec), function(i) length(which(current_simulation_params$development_vec[[i]] > 0))))
+      current_simulation_params$intervention_control = unlist(lapply(seq_along(current_simulation_params$development_control), function(i) length(which(current_simulation_params$development_control[[i]] > 0))))
     } else if (current_simulation_params$development_selection_type == 'stochastic'){
-      current_simulation_params$intervention_vec = unlist(current_simulation_params$development_vec)
+      current_simulation_params$intervention_control = unlist(current_simulation_params$development_control)
     }
-  current_simulation_params$intervention_num = sum(current_simulation_params$intervention_vec)
+  current_simulation_params$intervention_num = sum(current_simulation_params$intervention_control)
   return(current_simulation_params)
   
 }
@@ -852,9 +840,9 @@ parcel_set_list_names <- function(){
 
 #' @export
 build_stochastic_intervention <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
-  intervention_vec = list_of_zeros(list_dims = time_steps, array_dims = 1)
-  intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
-  return(intervention_vec)
+  intervention_control = list_of_zeros(list_dims = time_steps, array_dims = 1)
+  intervention_control[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
+  return(intervention_control)
 }
 
 split_vector <- function(N, M, sd, min_width) {               # make a vector of length N where the elements sum to M and with values normally distributed about M/N with std dev "sd"
@@ -937,8 +925,8 @@ initialise_index_object <- function(simulation_data_object){
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
   
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
-    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_vec)))
-    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_vec)))
+    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
+    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
   }
   
   index_object = list()
