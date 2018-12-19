@@ -183,7 +183,8 @@ initialise_default_simulation_params <- function(){
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$offset_bank_type = 'credit'     
-
+  default_simulation_params$banked_offset_selection_type = 'stochastic'  
+  
   default_simulation_params$banked_offset_control = list()
   
   # The time horizon in which the offset gains need to equal the devlopment impact
