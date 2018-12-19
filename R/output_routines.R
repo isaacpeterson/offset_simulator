@@ -585,7 +585,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, ou
     if (length(unlist(collated_realisations$site_scale_impacts$dev_object)) > 0){
       last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
                                        function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
-      dev_end = tail(which(current_simulation_params$intervention_vec > 0), 1)
+      dev_end = tail(which(current_simulation_params$intervention_control > 0), 1)
       
       if (last_dev_yr < dev_end){
         line_to_use = last_dev_yr
@@ -1029,8 +1029,8 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
 #     stop( paste0('\nERROR: Illegal plot option specified. Variable plot_type is set to ', output_params$plot_type) )
 #   }
 #   
-#   if (sum(current_simulation_params$intervention_vec) < max(output_params$sets_to_plot)){
-#     stop (paste('chosen example set to plot needs to be less than ', sum(current_simulation_params$intervention_vec)))
+#   if (sum(current_simulation_params$intervention_control) < max(output_params$sets_to_plot)){
+#     stop (paste('chosen example set to plot needs to be less than ', sum(current_simulation_params$intervention_control)))
 #   }
 #   
 #   if (output_params$output_type == 'scenarios'){
@@ -1045,8 +1045,8 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
 #     }
 #     
 #   } else if (output_params$output_type == 'multiple_sets'){
-#     if ( max(output_params$sets_to_plot) > sum(current_simulation_params$intervention_vec)){
-#       stop ( paste('\nERROR: output_params$sets_to_plot exceeds number of developments (', sum(current_simulation_params$intervention_vec), ')'))
+#     if ( max(output_params$sets_to_plot) > sum(current_simulation_params$intervention_control)){
+#       stop ( paste('\nERROR: output_params$sets_to_plot exceeds number of developments (', sum(current_simulation_params$intervention_control), ')'))
 #     }
 #   }
 #   
