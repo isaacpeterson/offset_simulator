@@ -94,8 +94,8 @@ initialise_default_simulation_params <- function(){
     
     # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
-    default_simulation_params$development_vec = array(0, default_simulation_params$time_steps)
-    default_simulation_params$development_vec[intervention_locs] = 1
+    default_simulation_params$development_control = array(0, default_simulation_params$time_steps)
+    default_simulation_params$development_control[intervention_locs] = 1
     
     default_simulation_params$features_to_use_in_simulation = 1
     
@@ -178,26 +178,14 @@ initialise_default_simulation_params <- function(){
   # parameters
   default_simulation_params$use_offset_bank = FALSE
 
-  # The time at which the offset in the bank offsets are first are implemented and start acurring grains, 
-  default_simulation_params$offset_bank_start = 1 
-
-  # The time at which no more offsets are added to the bank. The number of
-  # offsets per time step is determined as follows: First the mean number
-  # number per time step is determined, then sampling is done around this
-  # mean number using a normal distribution such that the total number of
-  # developments will always equal the total number (Note sd for this
-  # distribution is set in the code the currently isn't user settable)
-  default_simulation_params$offset_bank_end = 1 
-
-  # THe number parcels to include in banking scheme. These are randomly selected.
-  default_simulation_params$offset_bank_num = 200 
-
   # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$offset_bank_type = 'credit'     
 
+  default_simulation_params$banked_offset_control = list()
+  
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = 15
 
