@@ -229,7 +229,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
     }
     
     
-    for (current_dev_index in seq_len(simulation_data_object$simulation_params$intervention_control[yr])){
+    for (development_counter in seq_len(simulation_data_object$simulation_params$intervention_control[yr])){
       
       ###### TODO REINSTATE OFFSETBANK ROUTINES ####
       #           if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
@@ -774,20 +774,33 @@ run_offset_routines <- function(simulation_data_object, current_offset_object, y
 run_banking_routine <- function(simulation_data_object, yr){
   
   # how many offsets to be added in current year
-  offset_bank_num = unlist(simulation_data_object$simulation_params$banked_offset_control[yr])
+
+  
+  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
+    offset_bank_num = simulation_data_object$simulation_params$banked_offset_control[[yr]]
+  } else {
+    offset_bank_num = length(simulation_data_object$simulation_params$banked_offset_control[[yr]])
+  }
+  
   if (offset_bank_num == 0){
     return(simulation_data_object)
   }
   
   # select current number of offset sites from current available pool to add to banked offset pool
-  current_banked_offset_pool <- sample(simulation_data_object$output_data$index_object$available_indexes$offsets, offset_bank_num)
+  
+  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
+    current_pool <- sample(simulation_data_object$output_data$index_object$available_indexes$offsets, offset_bank_num)
+  } else {
+    current_pool = setdiff(simulation_data_object$simulation_params$banked_offset_control[[yr]], 
+                           simulation_data_object$output_data$index_object$site_indexes_used)
+  }
   
   # number of sites to potentially offset
   parcel_num_remaining = length(simulation_data_object$output_data$index_object$available_indexes$offsets)
   
   # record current offset pool characteristics
-  current_banked_object <- record_site_characteristics(simulation_data_object$site_features[current_banked_offset_pool],
-                                                       current_pool = current_banked_offset_pool,
+  current_banked_object <- record_site_characteristics(simulation_data_object$site_features[current_pool],
+                                                       current_pool,
                                                        parcel_num_remaining,
                                                        yr)   # arrange current parcel data
   
@@ -798,9 +811,9 @@ run_banking_routine <- function(simulation_data_object, yr){
   # remove current group of sites from available pool
   simulation_data_object$output_data$index_object <- update_index_object(simulation_data_object$output_data$index_object,
                                                                          update_type = 'banking',
-                                                                         current_banked_offset_pool)
+                                                                         current_pool)
   
-  current_pool = unlist(current_banked_object$site_indexes)
+  current_pool = unlist(current_pool)
   
   simulation_data_object$feature_dynamics_modes = update_feature_dynamics_modes(simulation_data_object$feature_dynamics_modes, 
                                                                                 simulation_data_object$simulation_params$feature_num,
@@ -916,6 +929,11 @@ assess_banking_credit <- function(output_data, simulation_params){
   return(current_credit)
 }
 
+
+
+
+
+
 # determine characteristics of potential offset sites
 build_intervention_pool <- function(simulation_data_object, pool_type, current_pool, yr){
   
@@ -934,15 +952,14 @@ build_intervention_pool <- function(simulation_data_object, pool_type, current_p
   }
   
   if (pool_type == 'offset_bank'){
+    browser()
     
-    flog.error('offset bank in development')
-    stop()
-    #     subset_pool = simulation_data_object$output_data$interventions$offset_bank_object$site_indexes
-    #     
-    #     pool_object <- subset_current_pool(simulation_data_object$output_data$interventions$offset_bank_object, subset_pool)
-    # 
-    #     current_pool = unlist(simulation_data_object$output_data$interventions$offset_bank_object$site_indexes[subset_pool])
-    #     pool_object$projected_vals <- find_current_parcel_sums(simulation_data_object$site_features[current_pool])
+    subset_pool = simulation_data_object$output_data$interventions$offset_bank_object$site_indexes
+    
+    pool_object <- subset_current_pool(simulation_data_object$output_data$interventions$offset_bank_object, subset_pool)
+    
+    current_pool = unlist(simulation_data_object$output_data$interventions$offset_bank_object$site_indexes[subset_pool])
+    pool_object$projected_vals <- find_current_parcel_sums(simulation_data_object$site_features[current_pool])
     
   } else {
     
