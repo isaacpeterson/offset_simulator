@@ -53,12 +53,6 @@ build_simulation_params_group <- function(user_simulation_params){
     simulation_params = default_simulation_params
   }
   
-  if (simulation_params$development_selection_type == 'pre_determined'){
-    simulation_params$intervention_vec = lapply(seq_along(simulation_params$development_vec), function(i) length(simulation_params$development_vec[[i]]))
-  } else {
-    simulation_params$intervention_vec = simulation_params$development_vec
-  }
-    
   simulation_params_object = build_simulation_variants(simulation_params)
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
                                     function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
@@ -225,7 +219,7 @@ build_input_data <- function(global_params, feature_params, simulation_params, u
                                                               features_to_use = seq_along(simulation_params$features_to_use_in_simulation),
                                                               feature_params$sample_background_dynamics,
                                                               feature_params$background_dynamics_type,
-                                                              store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
+                                                              store_dynamics_as_differential = feature_params$update_background_dynamics_by_differential,
                                                               feature_params$dynamics_sample_type,
                                                               feature_params$background_dynamics_bounds, 
                                                               simulation_data_object$feature_dynamics_modes)
@@ -776,16 +770,6 @@ process_current_simulation_params <- function(current_simulation_params, common_
     current_simulation_params$dev_cfacs_flag = FALSE
   }
   
-  if (current_simulation_params$use_offset_bank == TRUE){
-    current_simulation_params$banked_offset_vec = build_stochastic_intervention(time_steps = simulation_params$time_steps,
-                                                                                current_simulation_params$offset_bank_start,
-                                                                                current_simulation_params$offset_bank_end,
-                                                                                current_simulation_params$offset_bank_num,
-                                                                                sd = 1)
-  } else {
-    current_simulation_params$banked_offset_vec = list()
-  }
-  
   if (current_simulation_params$dev_counterfactual_adjustment == 'as_offset'){
     current_simulation_params$include_potential_developments_in_dev_calc = current_simulation_params$include_potential_developments_in_offset_calc
     current_simulation_params$include_potential_offsets_in_dev_calc = current_simulation_params$include_potential_offsets_in_offset_calc
@@ -803,6 +787,12 @@ process_current_simulation_params <- function(current_simulation_params, common_
   
   # select subset of feature layers to use in current simulation 
   # (e.g. if there 100 layers just run with 10 of them)
+    if (current_simulation_params$development_selection_type == 'pre_determined'){
+      current_simulation_params$intervention_control = unlist(lapply(seq_along(current_simulation_params$development_control), function(i) length(which(current_simulation_params$development_control[[i]] > 0))))
+    } else if (current_simulation_params$development_selection_type == 'stochastic'){
+      current_simulation_params$intervention_control = unlist(current_simulation_params$development_control)
+    }
+  current_simulation_params$intervention_num = sum(current_simulation_params$intervention_control)
   return(current_simulation_params)
   
 }
@@ -850,9 +840,9 @@ parcel_set_list_names <- function(){
 
 #' @export
 build_stochastic_intervention <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
-  intervention_vec = array(0, time_steps)
-  intervention_vec[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
-  return(intervention_vec)
+  intervention_control = list_of_zeros(list_dims = time_steps, array_dims = 1)
+  intervention_control[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
+  return(intervention_control)
 }
 
 split_vector <- function(N, M, sd, min_width) {               # make a vector of length N where the elements sum to M and with values normally distributed about M/N with std dev "sd"
@@ -935,8 +925,8 @@ initialise_index_object <- function(simulation_data_object){
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
   
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
-    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
-    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$directed_developments)))
+    offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
+    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
   }
   
   index_object = list()

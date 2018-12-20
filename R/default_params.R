@@ -41,6 +41,7 @@ initialise_default_global_params <- function(){
   # Fix the output directory (will overwrite existing files) instead of creating unique 
   default_global_params$unique_simulation_folder = TRUE
 
+  default_global_params$build_background_cfacs = TRUE
   # The number of realizations to run
   default_global_params$realisation_num = 1
 
@@ -90,12 +91,11 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$transform_params = vector()
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
-    default_simulation_params$intervention_num = 50
     
     # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
-    default_simulation_params$development_vec = array(0, default_simulation_params$time_steps)
-    default_simulation_params$development_vec[intervention_locs] = 1
+    default_simulation_params$development_control = array(0, default_simulation_params$time_steps)
+    default_simulation_params$development_control[intervention_locs] = 1
     
     default_simulation_params$features_to_use_in_simulation = 1
     
@@ -178,26 +178,15 @@ initialise_default_simulation_params <- function(){
   # parameters
   default_simulation_params$use_offset_bank = FALSE
 
-  # The time at which the offset in the bank offsets are first are implemented and start acurring grains, 
-  default_simulation_params$offset_bank_start = 1 
-
-  # The time at which no more offsets are added to the bank. The number of
-  # offsets per time step is determined as follows: First the mean number
-  # number per time step is determined, then sampling is done around this
-  # mean number using a normal distribution such that the total number of
-  # developments will always equal the total number (Note sd for this
-  # distribution is set in the code the currently isn't user settable)
-  default_simulation_params$offset_bank_end = 1 
-
-  # THe number parcels to include in banking scheme. These are randomly selected.
-  default_simulation_params$offset_bank_num = 200 
-
   # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$offset_bank_type = 'credit'     
-
+  default_simulation_params$banked_offset_selection_type = 'stochastic'  
+  
+  default_simulation_params$banked_offset_control = list()
+  
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = 15
 
@@ -324,21 +313,24 @@ initialise_default_feature_params <- function(){
   default_feature_params$management_mode_num = vector()
   default_feature_params$initial_condition_class_bounds = vector()
   default_feature_params$management_condition_class_bounds = vector()
-  default_feature_params$sample_management_dynamics = TRUE 
-  default_feature_params$sample_background_dynamics = TRUE
+
   default_feature_params$dynamics_sample_type = vector()
   default_feature_params$management_dynamics_type = vector()
   default_feature_params$background_dynamics_type = vector()
+  
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
-  default_feature_params$perform_management_dynamics_time_shift = vector()
-  default_feature_params$management_dynamics_sample_type = vector()
-  default_feature_params$perform_background_dynamics_time_shift = vector()
-  default_feature_params$management_update_dynamics_by_differential = TRUE
-  default_feature_params$background_update_dynamics_by_differential = TRUE
+  default_feature_params$management_dynamics_sample_type = 'by_distribution'
+  
+  default_feature_params$perform_management_dynamics_time_shift = TRUE
+
+  default_feature_params$perform_background_dynamics_time_shift = FALSE
+  default_feature_params$sample_management_dynamics = TRUE 
+  default_feature_params$sample_background_dynamics = TRUE
+  default_feature_params$update_management_dynamics_by_differential = TRUE
+  default_feature_params$update_background_dynamics_by_differential = TRUE
   default_feature_params$site_sample_type = 'uniform'
   default_feature_params$initial_site_sd = 1
   default_feature_params$project_by_mean = FALSE
-  default_feature_params$update_offset_dynamics_by_time_shift = FALSE
   default_feature_params$initial_site_mean_sd = 1
   default_feature_params$management_condition_class = 'background'
   return(default_feature_params)

@@ -5,7 +5,8 @@
 \title{Runs the Offset Simulator}
 \usage{
 osim.run(user_global_params = NULL, user_simulation_params = NULL,
-  user_feature_params = NULL, loglevel = WARN)
+  user_feature_params = NULL, user_transform_function = NULL,
+  loglevel = WARN)
 }
 \arguments{
 \item{user_global_params}{user configured parameters to use}

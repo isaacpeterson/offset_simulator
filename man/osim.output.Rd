@@ -5,7 +5,7 @@
 \title{Plots the results of the Offset Simulator run}
 \usage{
 osim.output(user_output_params = NULL, simulation_folder = NULL,
-  loglevel = INFO)
+  output_type = NULL, loglevel = INFO)
 }
 \arguments{
 \item{user_output_params}{user configured plotting parameters to use}
