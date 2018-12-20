@@ -90,7 +90,6 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$transform_params = vector()
     # how long to run the simulaton in years
     default_simulation_params$time_steps = 50
-    default_simulation_params$intervention_num = 50
     
     # when the interventions are set to take place, in this case force to occur once per year
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
