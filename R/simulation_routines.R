@@ -239,7 +239,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       # attempt to develop from current available credit
       
       if (simulation_data_object$simulation_params$allow_developments_from_credit == TRUE){
-        simulation_data_object <- credit_match_routine(simulation_data_object, yr)
+        simulation_data_object <- develop_from_credit_routine(simulation_data_object, yr)
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
@@ -364,7 +364,7 @@ match_sites_routine <- function(simulation_data_object, yr){
 
 
 
-credit_match_routine <- function(simulation_data_object, yr){
+develop_from_credit_routine <- function(simulation_data_object, yr){
 
   if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$site_indexes) == 0)){
     match_object = setNames(list(FALSE), 'match_flag')
@@ -1318,19 +1318,15 @@ match_sites <- function(simulation_data_object, match_type, yr){
   if (match_type == 'develop_using_offset_pool'){
     current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used
     
-    if (sum(unlist(current_match_vals_pool))== 0){
-      browser()
-      flog.info(cat('all', match_type, 'sites have zero value - blocking all developments \n'))
-      
+    if ( (sum(unlist(current_match_vals_pool)) == 0)){
       match_object$offset_object = list()
       match_object$current_credit = simulation_data_object$output_data$current_credit
-      
+      match_object$match_flag = FALSE
       return(match_object)
       
     } else {
       
       current_match_pool = unlist(simulation_data_object$dev_pool_object$site_indexes)
-      
       group_pool_vals = simulation_data_object$offset_pool_object$parcel_vals_used
       group_pool_indexes = simulation_data_object$offset_pool_object$site_indexes
       parcel_num_remaining = length(current_match_pool)
@@ -1582,6 +1578,8 @@ select_cols <- function(arr_to_use, col_inds){
 select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_vals_to_use, 
                                  max_parcel_num, current_pool, match_type, screen_site_zeros){
   pool_object = list()
+  pool_object$break_flag = FALSE
+  pool_object$zero_flag = FALSE
   
   if (length(unlist(pool_vals_to_use)) == 0){
     pool_object$break_flag = TRUE
@@ -1600,6 +1598,7 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
   } else {
 
     if (screen_site_zeros == TRUE){ 
+      
       zero_inds <- which(unlist(lapply(seq_along(pool_vals_to_use), function(i) sum(pool_vals_to_use[[i]]) == 0)))
       
       if (length(zero_inds) > 0){
@@ -1610,6 +1609,7 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
       if (length(current_pool) == 0){
         cat('all sites in', match_type, 'pool have zero value \n')
         pool_object$break_flag = TRUE
+        pool_object$zero_flag = TRUE
         return(pool_object)
       } 
       
@@ -1630,7 +1630,6 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
     } 
   }
   
-  pool_object$break_flag = FALSE
   pool_object$pool_vals_to_use = pool_vals_to_use
   pool_object$current_pool = current_pool
   
@@ -1638,13 +1637,12 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
 }
 
 
-
 match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_credit, current_probability_list, 
                             vals_to_match_initial, simulation_params, yr){
   
   if (length(unlist(current_pool)) == 0){
-    match_object = setNames(list(FALSE), 'match_flag')
-    return(match_object)
+    pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
+    return(pool_object)
   } 
   
   if (match_type == 'offset'){
@@ -1673,8 +1671,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
   if (pool_object$break_flag == TRUE){
-    match_object = setNames(list(FALSE), 'match_flag')
-    return(match_object)
+    return(pool_object)
   }
   
   # initialise parcel_vals for matching procedure
@@ -1685,6 +1682,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   match_indexes = list()
   
   while(match_flag == FALSE){
+    
     if (length(current_pool) == 0){
       break
     }
