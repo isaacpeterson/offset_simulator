@@ -347,6 +347,7 @@ build_site_features_at_intervention <- function(land_site_num, current_data_dir,
 
 calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs){
 
+  # browser()
   landscape_scale_object = list()
   landscape_scale_object$background_cfacs = background_cfacs
   landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes)

@@ -110,13 +110,27 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   if ((simulation_data_object$global_params$build_background_cfacs == TRUE) |
       (simulation_data_object$global_params$overwrite_feature_dynamics == TRUE) |
     !file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+
       flog.info('building background counterfactuals - this may take a while')
       background_cfacs_object = build_background_cfacs(simulation_data_object)
       flog.info('saving background counterfactuals')
       saveRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
   } else {
+    
     flog.info('loading background counterfactuals from file')
     background_cfacs_object = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+    
+    # new code added by Ascelin (which Isaac's guidance) to catch case when the user is changing time steps 
+    # but the number stored background_cfacs.rds object was generated with a different number of time steps.
+    if(simulation_data_object$simulation_params$time_steps != dim(background_cfacs_object$background_cfacs[[1]])[1] ){
+      
+      flog.warn('User defined number of time steps does not match time steps in background_cfacs_object (background_cfacs.rds).
+                 ... Building background_cfacs_object from scratch (to avoid this warning set global_params$overwrite_feature_dynamics to TRUE')
+      
+      background_cfacs_object = build_background_cfacs(simulation_data_object)
+      
+    }
+    
   }
     
   if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
@@ -1352,7 +1366,9 @@ match_sites <- function(simulation_data_object, match_type, yr){
     } else if (simulation_data_object$simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
     } 
-
+    
+    
+    # todo: possible crash due to pool containing one site, loop needs to break before this happens.
     sample_ind = sample(x = seq_along(current_match_pool), size = 1, prob = current_dev_probability_list, replace = TRUE)
     current_test_index = current_match_pool[sample_ind]
     vals_to_match = current_match_vals_pool[[sample_ind]]
