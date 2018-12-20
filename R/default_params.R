@@ -41,6 +41,7 @@ initialise_default_global_params <- function(){
   # Fix the output directory (will overwrite existing files) instead of creating unique 
   default_global_params$unique_simulation_folder = TRUE
 
+  default_global_params$build_background_cfacs = TRUE
   # The number of realizations to run
   default_global_params$realisation_num = 1
 

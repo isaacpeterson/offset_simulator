@@ -139,13 +139,32 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
                                                   file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0")), 
                                                   simulation_params$time_steps)
       background_cfacs_to_use = select_subset(background_cfacs, feature_ind)
+#       browser()
+#       offset_cfacs_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/offset_cfacs_to_test.rds')
+#       pool_object_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/pool_object_to_test.rds')
+#       projected_object_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/projected_offset_feature_layers_to_test.rds')
+#       offset_ind = which(pool_object_to_test$site_indexes == intervention_pool$offsets_object[[1]])
+#       apply(offset_cfacs_to_test[[offset_ind]][[1]][[2]], 1, 'sum')
+#       t(background_cfacs_to_use[[intervention_pool$offsets_object[[1]]]])
+#       
+#       apply(projected_object_to_test[[offset_ind]][[1]][[2]], 1, 'sum')
+#       t(site_scale_outcomes_to_use[[intervention_pool$offsets_object[[1]]]])
+      
     } else {
       flog.info('collating metric')
       site_scale_outcomes_to_use = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
       background_cfacs_to_use = background_cfacs
     }
     
-    collated_object$landscape_scale <- calc_landscape_characteristics(site_scale_outcomes_to_use, background_cfacs_to_use, use_offset_metric)
+    browser()
+    ###### remove after test
+    landscape_scale_object = list()
+    landscape_scale_object$background_cfacs = background_cfacs_to_use
+    landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes_to_use)
+    landscape_scale_object$net_landscape_cfac = sum_list(background_cfacs_to_use)
+    ###### remove after test
+    
+    collated_object$landscape_scale <- calc_landscape_characteristics(site_scale_outcomes_to_use, background_cfacs_to_use)
     collated_object$NNL$landscape_scale = assess_NNL(collated_object$landscape_scale$landscape_scale_impact, 
                                                      intervention_yr = 1)
     collated_object$net_landscape_loss = assess_fractional_loss(net_vals = collated_object$landscape_scale$landscape_outcome, 
@@ -168,7 +187,7 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
     
     
   }
-  
+  return(collated_object)
 }
 
 
@@ -185,7 +204,7 @@ run_collate_intervention_routines <- function(collated_object, intervention_obje
     site_scale_cfacs_to_use = intervention_object$site_scale_cfacs
     
   }
-  
+
   collated_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                                        function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
                                                                                            current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 
@@ -255,6 +274,7 @@ run_pre_collate_intervention_routines <- function(simulation_outputs, feature_dy
   site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   
   site_scale_cfacs = vector('list', length(initial_feature_layer))
+  
   site_scale_cfacs[unlist(intervention_pool)] = collate_cfacs(site_features_at_intervention_set[unlist(intervention_pool)],
                                                               simulation_params, 
                                                               feature_params,
@@ -325,8 +345,8 @@ build_site_features_at_intervention <- function(land_site_num, current_data_dir,
 }
 
 
-calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs, use_offset_metric){
-  
+calc_landscape_characteristics <- function(site_scale_outcomes, background_cfacs){
+
   landscape_scale_object = list()
   landscape_scale_object$background_cfacs = background_cfacs
   landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes)
@@ -510,7 +530,7 @@ collate_cfacs <- function(site_features_group, simulation_params, feature_params
   #   }
   
   if (use_offset_metric == FALSE){
-    
+
     cfacs = lapply(seq_along(site_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) matrix(do.call(cbind, sum_site_features( calc_site_cfacs(site_features_group[[i]],
