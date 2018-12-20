@@ -779,7 +779,8 @@ run_banking_routine <- function(simulation_data_object, yr){
   if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
     offset_bank_num = simulation_data_object$simulation_params$banked_offset_control[[yr]]
   } else {
-    offset_bank_num = length(simulation_data_object$simulation_params$banked_offset_control[[yr]])
+
+    offset_bank_num = length(which(simulation_data_object$simulation_params$banked_offset_control[[yr]] > 0))
   }
   
   if (offset_bank_num == 0){
