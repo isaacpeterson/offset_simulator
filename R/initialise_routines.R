@@ -219,7 +219,7 @@ build_input_data <- function(global_params, feature_params, simulation_params, u
                                                               features_to_use = seq_along(simulation_params$features_to_use_in_simulation),
                                                               feature_params$sample_background_dynamics,
                                                               feature_params$background_dynamics_type,
-                                                              store_dynamics_as_differential = feature_params$background_update_dynamics_by_differential,
+                                                              store_dynamics_as_differential = feature_params$update_background_dynamics_by_differential,
                                                               feature_params$dynamics_sample_type,
                                                               feature_params$background_dynamics_bounds, 
                                                               simulation_data_object$feature_dynamics_modes)

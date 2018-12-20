@@ -264,7 +264,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
 
     simulation_data_object$site_features = project_features(simulation_data_object$site_features,
                                                             simulation_data_object$feature_params$background_dynamics_type,
-                                                            simulation_data_object$feature_params$background_update_dynamics_by_differential, 
+                                                            simulation_data_object$feature_params$update_background_dynamics_by_differential, 
                                                             simulation_data_object$feature_dynamics,
                                                             simulation_data_object$feature_dynamics_modes,
                                                             current_time_horizons = rep(list(1), length(simulation_data_object$site_features)),
@@ -531,7 +531,7 @@ update_feature_dynamics <- function(site_group_to_use, feature_dynamics_to_updat
                                                                                                           feature_dynamics_modes_to_use[[i]],
                                                                                                           dynamics_type = feature_params$management_dynamics_type, 
                                                                                                           project_by_mean = feature_params$project_by_mean,
-                                                                                                          update_dynamics_by_differential = feature_params$management_update_dynamics_by_differential,
+                                                                                                          update_dynamics_by_differential = feature_params$update_management_dynamics_by_differential,
                                                                                                           time_shifts[[i]], 
                                                                                                           time_fill = TRUE))
   } 
@@ -1319,8 +1319,8 @@ match_sites <- function(simulation_data_object, match_type, yr){
     current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used
     
     if (sum(unlist(current_match_vals_pool))== 0){
-      
-      flog.info('all projected developments are zero - blocking all developments')
+      browser()
+      flog.info(cat('all', match_type, 'sites have zero value - blocking all developments \n'))
       
       match_object$offset_object = list()
       match_object$current_credit = simulation_data_object$output_data$current_credit
@@ -1608,7 +1608,7 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
       }
       
       if (length(current_pool) == 0){
-        cat('all', match_type, 'sites have zero value \n')
+        cat('all sites in', match_type, 'pool have zero value \n')
         pool_object$break_flag = TRUE
         return(pool_object)
       } 
@@ -1929,7 +1929,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                                  feature_dynamics_modes[[i]],
                                                                                                  dynamics_type = feature_params$management_dynamics_type, 
                                                                                                  project_by_mean = feature_params$project_by_mean,
-                                                                                                 update_dynamics_by_differential = feature_params$management_update_dynamics_by_differential,
+                                                                                                 update_dynamics_by_differential = feature_params$update_management_dynamics_by_differential,
                                                                                                  time_shifts[[i]],
                                                                                                  time_fill = TRUE))
         
@@ -1946,7 +1946,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
 
       projected_feature_layers = project_features(site_features_group,
                                                   dynamics_type = feature_params$management_dynamics_type,
-                                                  feature_params$management_update_dynamics_by_differential, 
+                                                  feature_params$update_management_dynamics_by_differential, 
                                                   feature_dynamics,
                                                   feature_dynamics_modes,
                                                   time_horizons,
@@ -2098,7 +2098,7 @@ calc_site_cfacs <- function(site_features, projection_yrs, cfac_weights, simulat
   }
 
   cfacs = lapply(seq_along(site_features), function(i) project_feature_layer( dynamics_type = feature_params$background_dynamics_type,
-                                                                              update_dynamics_by_differential = feature_params$background_update_dynamics_by_differential, 
+                                                                              update_dynamics_by_differential = feature_params$update_background_dynamics_by_differential, 
                                                                               site_features[[ i ]],
                                                                               feature_dynamics_to_use[[ i ]],
                                                                               feature_dynamics_modes_to_use[[ i ]],

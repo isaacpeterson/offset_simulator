@@ -313,17 +313,21 @@ initialise_default_feature_params <- function(){
   default_feature_params$management_mode_num = vector()
   default_feature_params$initial_condition_class_bounds = vector()
   default_feature_params$management_condition_class_bounds = vector()
-  default_feature_params$sample_management_dynamics = TRUE 
-  default_feature_params$sample_background_dynamics = TRUE
+
   default_feature_params$dynamics_sample_type = vector()
   default_feature_params$management_dynamics_type = vector()
   default_feature_params$background_dynamics_type = vector()
+  
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
-  default_feature_params$perform_management_dynamics_time_shift = vector()
-  default_feature_params$management_dynamics_sample_type = vector()
-  default_feature_params$perform_background_dynamics_time_shift = vector()
-  default_feature_params$management_update_dynamics_by_differential = TRUE
-  default_feature_params$background_update_dynamics_by_differential = TRUE
+  default_feature_params$management_dynamics_sample_type = 'by_distribution'
+  
+  default_feature_params$perform_management_dynamics_time_shift = TRUE
+
+  default_feature_params$perform_background_dynamics_time_shift = FALSE
+  default_feature_params$sample_management_dynamics = TRUE 
+  default_feature_params$sample_background_dynamics = TRUE
+  default_feature_params$update_management_dynamics_by_differential = TRUE
+  default_feature_params$update_background_dynamics_by_differential = TRUE
   default_feature_params$site_sample_type = 'uniform'
   default_feature_params$initial_site_sd = 1
   default_feature_params$project_by_mean = FALSE
