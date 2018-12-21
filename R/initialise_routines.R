@@ -783,15 +783,16 @@ process_current_simulation_params <- function(current_simulation_params, common_
   current_simulation_params$adjust_dev_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_dev_calc,
                                                           current_simulation_params$include_potential_offsets_in_dev_calc,
                                                           current_simulation_params$include_unregulated_loss_in_dev_calc) == TRUE)
+
+  if (current_simulation_params$development_selection_type == 'pre_determined'){
+    
+    current_simulation_params$intervention_control = unlist(lapply(seq_along(current_simulation_params$development_control), 
+                                                                   function(i) length(which(current_simulation_params$development_control[[i]] > 0))))
+    
+  } else if (current_simulation_params$development_selection_type == 'stochastic'){
+    current_simulation_params$intervention_control = unlist(current_simulation_params$development_control)
+  }
   
-  
-  # select subset of feature layers to use in current simulation 
-  # (e.g. if there 100 layers just run with 10 of them)
-    if (current_simulation_params$development_selection_type == 'pre_determined'){
-      current_simulation_params$intervention_control = unlist(lapply(seq_along(current_simulation_params$development_control), function(i) length(which(current_simulation_params$development_control[[i]] > 0))))
-    } else if (current_simulation_params$development_selection_type == 'stochastic'){
-      current_simulation_params$intervention_control = unlist(current_simulation_params$development_control)
-    }
   current_simulation_params$intervention_num = sum(current_simulation_params$intervention_control)
   return(current_simulation_params)
   
@@ -919,7 +920,7 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 initialise_index_object <- function(simulation_data_object){
-  
+
   offset_indexes_to_exclude = which(unlist(simulation_data_object$offset_probability_list) == 0) 
   unregulated_indexes_to_exclude = which(unlist(simulation_data_object$unregulated_probability_list) == 0)
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
@@ -927,6 +928,11 @@ initialise_index_object <- function(simulation_data_object){
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
     offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
     unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
+  }
+  
+  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
+    dev_indexes_to_exclude = unique(c(dev_indexes_to_exclude, unlist(simulation_data_object$simulation_params$banked_offset_control)))
+    unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$banked_offset_control)))
   }
   
   index_object = list()
@@ -962,9 +968,29 @@ initialise_index_object <- function(simulation_data_object){
                                                                           min_site_screen_size = simulation_data_object$simulation_params$min_site_screen_size,
                                                                           max_site_screen_size_quantile = simulation_data_object$simulation_params$max_site_screen_size_quantile,
                                                                           simulation_data_object$simulation_params$features_to_use_in_offset_calc)
+
+  index_object$banked_offset_control <- transform_control(simulation_data_object$simulation_params$banked_offset_control, 
+                                                          simulation_data_object$site_characteristics$site_IDs, 
+                                                          index_object$available_indexes$offsets)
+  
+  index_object$development_control <- transform_control(simulation_data_object$simulation_params$development_control, 
+                                                          simulation_data_object$site_characteristics$site_IDs, 
+                                                          index_object$available_indexes$devs)
+  
   return(index_object)
 }
 
+
+transform_control <- function(control_object, site_IDs, available_indexes){
+  
+  control_object <- lapply(seq_along(control_object), function(yr) which( which(site_IDs  %in% control_object[[yr]]) %in% available_indexes))
+  empties <- which(unlist(lapply(seq_along(control_object), function(yr) length(control_object[[yr]]) == 0)))
+  
+  if (length(empties) > 0){
+    control_object[empties] = 0
+  }
+  return(control_object)
+}
 
 set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_features, screen_site_zeros, min_site_screen_size, max_site_screen_size_quantile, 
                                   features_to_use_in_offset_calc){
@@ -1071,20 +1097,20 @@ split_site_feature <- function(current_site_feature, site_condition_class_layer,
 #' @export
 build_site_characteristics <- function(planning_units_array){
   
-  site_ID_vals = unique(as.vector(planning_units_array))
+  site_IDs = unique(as.vector(planning_units_array))
   
   site_characteristics = list()
   
   # scan through planning units ID array and associate all elements with the same ID val to a particular site
   # results in nested list where raster array indicies corresponding to a particular planning unit ID are assigned to the same nested list block
-  site_characteristics$land_parcels <- lapply(seq_along(site_ID_vals), function(i) which(planning_units_array == site_ID_vals[i]))
+  site_characteristics$land_parcels <- lapply(seq_along(site_IDs), function(i) which(planning_units_array == site_IDs[i]))
   
   site_characteristics$landscape_dims = dim(planning_units_array)
   #create site ID's as consecutive integers
   site_characteristics$site_indexes = seq_along(site_characteristics$land_parcels)
   site_characteristics$land_parcel_num = length(site_characteristics$land_parcels)
   site_characteristics$parcel_array = planning_units_array
-  site_characteristics$site_ID_vals = site_ID_vals
+  site_characteristics$site_IDs = site_IDs
   return(site_characteristics)
 }
 

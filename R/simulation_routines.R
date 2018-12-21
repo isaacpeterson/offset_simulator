@@ -110,10 +110,12 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   if ((simulation_data_object$global_params$build_background_cfacs == TRUE) |
       (simulation_data_object$global_params$overwrite_feature_dynamics == TRUE) |
     !file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+    
       flog.info('building background counterfactuals - this may take a while')
       background_cfacs_object = build_background_cfacs(simulation_data_object)
       flog.info('saving background counterfactuals')
       saveRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      
   } else {
     flog.info('loading background counterfactuals from file')
     background_cfacs_object = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
@@ -218,7 +220,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined') {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
                                                                           pool_type = 'developments',
-                                                                          current_pool = setdiff(simulation_data_object$simulation_params$development_control[[yr]], 
+                                                                          current_pool = setdiff(simulation_data_object$output_data$index_object$development_control[[yr]], 
                                                                                                  simulation_data_object$output_data$index_object$site_indexes_used),
                                                                           yr)
       } else {
@@ -338,9 +340,9 @@ match_sites_routine <- function(simulation_data_object, yr){
   
   if (match_object$match_flag == TRUE){
     
-    flog.info(cat('developed site', paste(match_object$development_object$site_indexes),
+    flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[match_object$unlist(development_object$site_indexes)]),
                   'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)), '\n',
-                  'offset with sites', paste(match_object$offset_object$site_indexes), 
+                  'offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
     #update available credit
@@ -392,7 +394,7 @@ develop_from_credit_routine <- function(simulation_data_object, yr){
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
       
-      flog.info(cat('developed site', paste(development_object$site_indexes), 'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
+      flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
                     'from credit, remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
       
     }
@@ -449,7 +451,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return(simulation_data_object)
   } else {
-    flog.info(cat('unregulated loss of sites ' , paste(inds_to_clear), '\n'))
+    flog.info(cat('unregulated loss of sites ' , paste(simulation_data_object$site_characteristics$site_IDs[inds_to_clear]), '\n'))
   }
   
   # store group of site characteristics in site characteristics object
@@ -776,12 +778,10 @@ run_banking_routine <- function(simulation_data_object, yr){
   
   # how many offsets to be added in current year
 
-  
   if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
-    offset_bank_num = simulation_data_object$simulation_params$banked_offset_control[[yr]]
+    offset_bank_num = simulation_data_object$output_data$index_object$banked_offset_control[[yr]]
   } else {
-
-    offset_bank_num = length(which(simulation_data_object$simulation_params$banked_offset_control[[yr]] > 0))
+    offset_bank_num = length(which(simulation_data_object$output_data$index_object$banked_offset_control[[yr]] > 0))
   }
   
   if (offset_bank_num == 0){
@@ -789,12 +789,13 @@ run_banking_routine <- function(simulation_data_object, yr){
   }
   
   # select current number of offset sites from current available pool to add to banked offset pool
-  
+
   if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
     current_pool <- sample(simulation_data_object$output_data$index_object$available_indexes$offsets, offset_bank_num)
   } else {
-    current_pool = setdiff(simulation_data_object$simulation_params$banked_offset_control[[yr]], 
-                           simulation_data_object$output_data$index_object$site_indexes_used)
+    browser()
+    current_pool = setdiff(simulation_data_object$output_data$index_object$banked_offset_control[[yr]], 
+                           unlist(simulation_data_object$output_data$index_object$site_indexes_used))
   }
   
   # number of sites to potentially offset
@@ -832,7 +833,7 @@ run_banking_routine <- function(simulation_data_object, yr){
                                                                                   action_type = 'offset', 
                                                                                   yr)
   
-  flog.info(paste(cat('banked offset sites', paste(current_pool), '\n')))
+  flog.info(paste(cat('banked offset sites', paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n')))
   
   return(simulation_data_object)
 }

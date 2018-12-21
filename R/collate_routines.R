@@ -139,30 +139,12 @@ run_collate_routines <- function(simulation_outputs, background_cfacs, feature_d
                                                   file_pattern = paste0('feature_', formatC(simulation_params$features_to_use_in_simulation[feature_ind], width = global_params$numeric_placeholder_width, format = "d", flag = "0")), 
                                                   simulation_params$time_steps)
       background_cfacs_to_use = select_subset(background_cfacs, feature_ind)
-#       browser()
-#       offset_cfacs_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/offset_cfacs_to_test.rds')
-#       pool_object_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/pool_object_to_test.rds')
-#       projected_object_to_test = readRDS('~/GitHub/offset_grasslands/test_folder/projected_offset_feature_layers_to_test.rds')
-#       offset_ind = which(pool_object_to_test$site_indexes == intervention_pool$offsets_object[[1]])
-#       apply(offset_cfacs_to_test[[offset_ind]][[1]][[2]], 1, 'sum')
-#       t(background_cfacs_to_use[[intervention_pool$offsets_object[[1]]]])
-#       
-#       apply(projected_object_to_test[[offset_ind]][[1]][[2]], 1, 'sum')
-#       t(site_scale_outcomes_to_use[[intervention_pool$offsets_object[[1]]]])
       
     } else {
       flog.info('collating metric')
       site_scale_outcomes_to_use = sum_data_stack(current_data_dir, file_pattern = paste0('metric_'), simulation_params$time_steps)
       background_cfacs_to_use = background_cfacs
     }
-    
-    browser()
-    ###### remove after test
-    landscape_scale_object = list()
-    landscape_scale_object$background_cfacs = background_cfacs_to_use
-    landscape_scale_object$landscape_outcome = sum_list(site_scale_outcomes_to_use)
-    landscape_scale_object$net_landscape_cfac = sum_list(background_cfacs_to_use)
-    ###### remove after test
     
     collated_object$landscape_scale <- calc_landscape_characteristics(site_scale_outcomes_to_use, background_cfacs_to_use)
     collated_object$NNL$landscape_scale = assess_NNL(collated_object$landscape_scale$landscape_scale_impact, 
@@ -205,6 +187,17 @@ run_collate_intervention_routines <- function(collated_object, intervention_obje
     
   }
 
+  browser()
+  current_simulation_outputs = simulation_outputs$interventions[[i]]
+  current_pool = unlist(current_simulation_outputs$site_indexes)
+  site_scale_outcomes_to_use = site_scale_outcomes_to_use[current_pool]
+  cfacs_to_use = site_scale_cfacs_to_use[current_pool]
+  summed_site_features_at_intervention_to_use[current_pool]
+  current_intervention_yrs = unlist(current_simulation_outputs$intervention_yrs)
+
+  time_steps = simulation_params$time_steps 
+
+  
   collated_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                                        function(i) calc_site_scale_impacts(current_simulation_outputs = simulation_outputs$interventions[[i]], 
                                                                                            current_site_sets = simulation_outputs$index_object$site_indexes_used[[i]], 
