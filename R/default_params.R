@@ -251,7 +251,7 @@ initialise_default_simulation_params <- function(){
   
   # allow pass of credit to simulation - can be used to run developments without offsets
   default_simulation_params$initial_credit = 0
-  default_simulation_params$transform_initial_credit = FALSE
+  default_simulation_params$transform_initial_credit = TRUE
   return(default_simulation_params)
 }
 
