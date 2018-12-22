@@ -41,9 +41,13 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     simulation_data_object <- build_input_data(params_object$global_params, params_object$feature_params, params_object$simulation_params_group[[scenario_ind]], user_transform_function)
     
     simulation_data_object$output_data = build_output_data(simulation_data_object)
-    flog.info('running scenario %s of %s, offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
+    
+    flog.info('running scenario %s of %s, with %s discrete time steps',  
               scenario_ind, 
               length(params_object$simulation_params_group),
+              simulation_data_object$simulation_params$time_steps)
+    
+    flog.info('offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
               simulation_data_object$simulation_params$offset_calc_type, 
               simulation_data_object$simulation_params$offset_action_type, 
               simulation_data_object$simulation_params$offset_time_horizon)

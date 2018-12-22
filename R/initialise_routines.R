@@ -881,16 +881,21 @@ initialise_index_object <- function(simulation_data_object){
 
 
   index_object = list()
+  
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
     index_object$development_control <- transform_control(simulation_data_object$simulation_params$development_control, 
                                                           simulation_data_object$site_characteristics$site_IDs, 
                                                           simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$dev_probability_list) > 0)])
   }
   
-  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
-    index_object$banked_offset_control <- transform_control(simulation_data_object$simulation_params$banked_offset_control, 
-                                                            simulation_data_object$site_characteristics$site_IDs, 
-                                                            simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$offset_probability_list) > 0)])
+  if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
+    if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
+      index_object$banked_offset_control <- transform_control(simulation_data_object$simulation_params$banked_offset_control, 
+                                                              simulation_data_object$site_characteristics$site_IDs, 
+                                                              simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$offset_probability_list) > 0)])
+    } else if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
+      index_object$banked_offset_control = simulation_data_object$simulation_params$banked_offset_control
+    }
   }
   
   if ((simulation_data_object$simulation_params$development_selection_type == 'pre_determined') & 
@@ -905,7 +910,6 @@ initialise_index_object <- function(simulation_data_object){
       stop()
     }
   }
-  
   
   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
     index_object$intervention_control = unlist(lapply(seq_along(index_object$development_control), 
