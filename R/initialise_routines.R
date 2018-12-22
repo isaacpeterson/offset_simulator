@@ -914,7 +914,7 @@ initialise_index_object <- function(simulation_data_object){
     index_object$intervention_control = unlist(simulation_data_object$simulation_params$development_control)
   }
 
-  browser()
+
   offset_indexes_to_exclude = which(unlist(simulation_data_object$offset_probability_list) == 0)
   unregulated_indexes_to_exclude = which(unlist(simulation_data_object$unregulated_probability_list) == 0)
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)

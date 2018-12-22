@@ -188,31 +188,7 @@ run_collate_intervention_routines <- function(collated_object, intervention_obje
     
   }
 
-#   ####### FLAG REMOVE AFTER TEST
-#   browser()
-#   current_intervention_simulation_outputs = simulation_outputs$interventions[[i]]
-#   current_pool = unlist(current_intervention_simulation_outputs$internal_site_indexes)
-#   current_intervention_pool = unlist(current_intervention_simulation_outputs$internal_site_indexes)
-#   current_intervention_yrs = unlist(current_intervention_simulation_outputs$intervention_yrs)
-#   current_intervention_site_scale_outcomes = site_scale_outcomes_to_use[current_pool]
-#   current_intervention_cfacs = site_scale_cfacs_to_use[current_pool]
-#   current_intervention_summed_site_features = summed_site_features_at_intervention_to_use[current_pool]
-#   time_steps = simulation_params$time_steps 
 
-  site_num = length(current_intervention_site_scale_outcomes)
-  impact_trajectories = lapply(seq(site_num), function(i) matrix(current_intervention_site_scale_outcomes[[i]][current_intervention_yrs[i]:time_steps], ncol = 1))
-  avoided_loss = lapply(seq(site_num), function(i) rep(current_intervention_summed_site_features[[i]], length(current_intervention_cfacs[[i]])) - current_intervention_cfacs[[i]])
-  rest_gains = lapply(seq(site_num), function(i) impact_trajectories[[i]] - rep(current_intervention_summed_site_features[[i]], length(impact_trajectories[[i]])))
-  
-  net_gains = mapply('-', impact_trajectories, current_intervention_cfacs, SIMPLIFY = FALSE)
-  
-  ####### FLAG REMOVE AFTER TEST
-  
-  
-  
-  
-  
-  
   collated_object$site_scale_impacts = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                                        function(i) calc_site_scale_impacts(current_intervention_simulation_outputs = simulation_outputs$interventions[[i]], 
                                                                                            current_intervention_site_sets = simulation_outputs$index_object$internal_site_indexes_used[[i]], 
