@@ -1,18 +1,219 @@
 # set of initialisation routines that are called for every simulation
-build_params <- function(user_global_params = NULL, user_feature_params = NULL, user_simulation_params = NULL){
+
+build_input_data <- function(user_global_params, user_feature_params, user_transform_function, simulation_params_group){
+  # Undertake all the run intialization proceedures, including generating
+  # simulated data if required or reading in previously generated input data
+
+  simulation_data_object = list()
+
+  simulation_data_object$global_params <- build_global_params(user_global_params, user_transform_function, simulation_params_group)
+  simulation_data_object$feature_params <- build_feature_params(user_feature_params, simulation_data_object$global_params)
   
-  params_object = list()
+  save_params(simulation_data_object$global_params, simulation_data_object$feature_params, simulation_params_group)
   
-  global_params <- build_global_params(user_global_params)
-  params_object$simulation_params_group = build_simulation_params_group(user_simulation_params)
-  params_object$feature_params <- build_feature_params(user_feature_params)
-  params_object$global_params <- save_params(global_params, params_object$simulation_params_group, params_object$feature_params)
-  return(params_object)
+  # generate simulated feature
+  if (simulation_data_object$global_params$run_from_simulated_data == TRUE) {
+    
+    current_filenames <- list.files(path = simulation_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                    include.dirs = FALSE, no.. = FALSE)
+    
+    if ((simulation_data_object$global_params$build_simulated_data == TRUE) | (length(current_filenames) == 0)){
+      construct_simulated_data(simulation_data_object$feature_params, 
+                               simulation_data_object$global_params$simulation_inputs_folder, 
+                               simulation_data_object$global_params$simulation_params_folder, 
+                               simulation_data_object$global_params$backup_simulation_inputs)
+    }
+  }
+  
+  if (all(simulation_data_object$global_params$feature_raster_files == 'default')){
+    feature_raster_files = list.files(path = simulation_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                                      full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                      include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
+    feature_raster_files = paste0(simulation_data_object$global_params$simulation_inputs_folder, 
+                                  feature_raster_files[simulation_data_object$global_params$features_to_use_in_simulation])
+  } else if (!all(file.exists(simulation_data_object$global_params$feature_raster_files))){
+    flog.error(paste('one or more feature raster files missing'))
+  } else{
+    feature_raster_files = simulation_data_object$global_params$feature_raster_files
+  }
+  
+  feature_raster_layers = load_rasters(feature_raster_files, 
+                                       features_to_use = simulation_data_object$global_params$features_to_use_in_simulation)
+  
+  initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
+  
+  if (simulation_data_object$feature_params$scale_features == TRUE){
+    initial_features = scale_features(initial_features)
+  }
+  
+  
+  if (!file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds')) || 
+      (simulation_data_object$global_params$overwrite_site_characteristics == TRUE)){
+    
+    if (simulation_data_object$global_params$planning_units_raster == 'default'){
+      planning_units_filename <- paste0(simulation_data_object$global_params$simulation_inputs_folder, 'planning_units.tif')
+    } else {
+      planning_units_filename = simulation_data_object$global_params$planning_units_raster
+    }
+    planning_units <- load_rasters(planning_units_filename, 'all')
+    planning_units_array <- raster_to_array(planning_units)
+    flog.info('building site characteristics object (this may take a while with large arrays) ..')
+    simulation_data_object$site_characteristics <- build_site_characteristics(planning_units_array)
+    
+    flog.info('saving site characteristics object')
+    saveRDS(object = simulation_data_object$site_characteristics, file = paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+    
+  } else {
+    simulation_data_object$site_characteristics = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+  }
+  
+  if (!file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
+      | (simulation_data_object$global_params$overwrite_condition_classes == TRUE)){
+    background_condition_class_layers = build_condition_class_layers(initial_features, 
+                                                                     simulation_data_object$global_params, 
+                                                                     simulation_data_object$feature_params)
+    
+    simulation_data_object$feature_dynamics_modes = split_modes(simulation_data_object$site_characteristics$land_parcels, background_condition_class_layers)
+    saveRDS(object = simulation_data_object$feature_dynamics_modes, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
+    
+  } else {
+    simulation_data_object$feature_dynamics_modes = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
+  }
+  
+  if ((!file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds')))
+      | (simulation_data_object$global_params$overwrite_site_features == TRUE)){
+    
+    if (!exists('background_condition_class_layers')){
+      background_condition_class_layers = build_condition_class_layers(initial_features, 
+                                                                       simulation_data_object$global_params, 
+                                                                       simulation_data_object$feature_params)
+    } 
+    
+    simulation_data_object$site_features <- separate_features_by_condition_class(initial_features, 
+                                                                                 split_type = 'feature_vals',
+                                                                                 store_zeros_as_sparse = simulation_data_object$global_params$store_zeros_as_sparse,
+                                                                                 simulation_data_object$site_characteristics$land_parcels, 
+                                                                                 background_condition_class_layers, 
+                                                                                 simulation_data_object$feature_dynamics_modes)
+    
+    site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
+                                                                                              split_type = 'element_index',
+                                                                                              store_zeros_as_sparse = simulation_data_object$global_params$store_zeros_as_sparse,
+                                                                                              simulation_data_object$site_characteristics$land_parcels, 
+                                                                                              background_condition_class_layers, 
+                                                                                              simulation_data_object$feature_dynamics_modes)
+    
+    simulation_data_object$site_element_index_key = lapply(seq_along(simulation_data_object$site_features), 
+                                                           function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
+                                                                              function(j) match(simulation_data_object$site_characteristics$land_parcels[[i]], 
+                                                                                                do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
+    saveRDS(object = simulation_data_object$site_features, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
+    saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
+    saveRDS(object = simulation_data_object$site_element_index_key, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
+  } else {
+    simulation_data_object$site_features = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
+    simulation_data_object$site_element_index_key = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
+  }
+  
+  
+  if (simulation_data_object$feature_params$management_condition_class == 'background'){
+    simulation_data_object$management_dynamics_modes = simulation_data_object$feature_dynamics_modes 
+  } else {
+    if (file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))){
+      management_condition_class_layers <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
+    } else {
+      flog.info('building management condition class layers, this may take a while..')
+      management_condition_class_layers = build_modes(features_to_use = initial_features, 
+                                                      condition_class_bounds = simulation_data_object$feature_params$management_condition_class_bounds)
+      
+      #saveRDS(management_condition_class_modes_layers, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
+    }
+    
+    simulation_data_object$management_dynamics_modes = split_modes(simulation_data_object$site_characteristics$land_parcels, management_condition_class_layers)
+  } 
+
+  if ((!file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))) |
+      (simulation_data_object$global_params$overwrite_feature_dynamics == TRUE)){
+    simulation_data_object$feature_dynamics <- build_dynamics(simulation_data_object$site_features,
+                                                              features_to_use = seq_along(simulation_data_object$global_params$features_to_use_in_simulation),
+                                                              simulation_data_object$feature_params$sample_background_dynamics,
+                                                              simulation_data_object$feature_params$background_dynamics_type,
+                                                              store_dynamics_as_differential = simulation_data_object$feature_params$update_background_dynamics_by_differential,
+                                                              simulation_data_object$feature_params$dynamics_sample_type,
+                                                              simulation_data_object$feature_params$background_dynamics_bounds, 
+                                                              simulation_data_object$feature_dynamics_modes)
+    
+    if (any(is.na(unlist(simulation_data_object$feature_dynamics)))){
+      flog.error('poorly defined feature_dynamics')
+      stop()
+    }
+    saveRDS(simulation_data_object$feature_dynamics, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
+  } else {
+    simulation_data_object$feature_dynamics <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+  }
+  
+  if (!(file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
+      (simulation_data_object$global_params$overwrite_management_dynamics == TRUE)){
+    simulation_data_object$management_dynamics <- build_dynamics(simulation_data_object$site_features,
+                                                                 features_to_use = seq_along(simulation_data_object$global_params$features_to_use_in_simulation),
+                                                                 simulation_data_object$feature_params$sample_management_dynamics,
+                                                                 simulation_data_object$feature_params$management_dynamics_type,
+                                                                 store_dynamics_as_differential = FALSE,
+                                                                 simulation_data_object$feature_params$management_dynamics_sample_type,
+                                                                 simulation_data_object$feature_params$management_dynamics_bounds, 
+                                                                 simulation_data_object$management_dynamics_modes)
+    
+    if (any(is.na(unlist(simulation_data_object$management_dynamics)))){
+      flog.error('poorly defined management_dynamics')
+      stop()
+    }
+    saveRDS(simulation_data_object$management_dynamics, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
+    
+  } else {
+    simulation_data_object$management_dynamics <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
+  }
+  
+  if (!(file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))) |
+      (simulation_data_object$global_params$overwrite_dev_probability_list == TRUE)){
+    flog.info('assigning equal development probability to all sites')
+    simulation_data_object$dev_probability_list <- rep(list(1/simulation_data_object$site_characteristics$site_num), 
+                                                       simulation_data_object$site_characteristics$site_num)
+    
+  } else {
+    simulation_data_object$dev_probability_list <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
+  }
+  
+  if (!(file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))) |
+      (simulation_data_object$global_params$overwrite_offset_probability_list == TRUE)){
+    flog.info('assigning equal offset probability to all sites')
+    simulation_data_object$offset_probability_list <- rep(list(1/simulation_data_object$site_characteristics$site_num), 
+                                                          simulation_data_object$site_characteristics$site_num)
+    
+  } else {
+    simulation_data_object$offset_probability_list <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
+  }
+  
+  if (!(file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))) |
+      (simulation_data_object$global_params$overwrite_unregulated_probability_list == TRUE)){
+    flog.info('assigning equal unregulated loss probability to all sites')
+    simulation_data_object$unregulated_probability_list <- rep(list(1/simulation_data_object$site_characteristics$site_num), simulation_data_object$site_characteristics$site_num)
+    
+  } else {
+    simulation_data_object$unregulated_probability_list <- readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))
+    
+  }
+  
+  return(simulation_data_object)
+  
 }
 
 
 
-build_global_params <- function(user_global_params){
+
+
+
+build_global_params <- function(user_global_params, user_transform_function, simulation_params_group){
   #' @import foreach
   #' @import doParallel
   #' @import abind
@@ -34,16 +235,47 @@ build_global_params <- function(user_global_params){
     set.seed(seed)
   }
   
+  if (global_params$simulation_folder != 'default'){
+    simulation_folder = write_folder(global_params$simulation_folder)
+    global_params$simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
+    base_run_folder = paste0(simulation_folder, '/simulation_runs/')
+  } else {
+    global_params$simulation_inputs_folder =  write_folder('simulation_inputs/')
+    base_run_folder = ('simulation_runs/')
+  }
   
+  current_run = find_current_run(base_run_folder)
+  
+  if ((global_params$unique_simulation_folder) & (length(current_run) > 0)){
+    current_run = current_run + 1
+  } else {
+    current_run = 1
+  } 
+  
+  if (class(global_params$scenario_subset) == 'character'){
+    if (global_params$scenario_subset == 'all'){
+      global_params$scenario_subset = seq_along(simulation_params_group)
+    } else {
+      flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
+    }
+  }
+  
+  global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
+  global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
+  global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
+  global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
+  
+  flog.info('writing simulation outputs into %s', global_params$run_folder)
   
   global_params <- initialise_cores(global_params)
   global_params$strt = Sys.time()
-  
+  global_params$feature_num = length(global_params$features_to_use_in_simulation)
+  global_params$user_transform_function = user_transform_function
   return(global_params)
 }
 
 
-build_simulation_params_group <- function(user_simulation_params){
+build_simulation_params_group <- function(user_simulation_params, features_to_use_in_simulation){
   
   default_simulation_params = initialise_default_simulation_params()
   if (!is.null(user_simulation_params) == TRUE){  
@@ -55,13 +287,14 @@ build_simulation_params_group <- function(user_simulation_params){
   
   simulation_params_object = build_simulation_variants(simulation_params)
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], simulation_params_object$common_params))
+                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], 
+                                                                                  simulation_params_object$common_params, features_to_use_in_simulation))
   
   return(simulation_params_group)
 }
 
 
-build_feature_params <- function(user_feature_params){
+build_feature_params <- function(user_feature_params, global_params){
   default_feature_params = initialise_default_feature_params()
   
   if (!is.null(user_feature_params) == TRUE){  
@@ -69,227 +302,19 @@ build_feature_params <- function(user_feature_params){
   } else {
     feature_params = default_feature_params
   }
-}
-
-build_input_data <- function(global_params, feature_params, simulation_params, user_transform_function){
   
-  simulation_data_object = list()
-  
-  # generate simulated feature
-  if (global_params$run_from_simulated_data == TRUE) {
-    
-    current_filenames <- list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
-                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                    include.dirs = FALSE, no.. = FALSE)
-    
-    if ((global_params$build_simulated_data == TRUE) | (length(current_filenames) == 0)){
-      construct_simulated_data(feature_params, 
-                               global_params$simulation_inputs_folder, 
-                               global_params$simulation_params_folder, 
-                               global_params$backup_simulation_inputs)
-    }
-  }
-  
-  if (all(global_params$feature_raster_files == 'default')){
-    feature_raster_files = list.files(path = global_params$simulation_inputs_folder, all.files = FALSE,
-                                      full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                      include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
-    feature_raster_files = paste0(global_params$simulation_inputs_folder, 
-                                  feature_raster_files[simulation_params$features_to_use_in_simulation])
-  } else if (!all(file.exists(global_params$feature_raster_files))){
-    flog.error(paste('one or more feature raster files missing'))
-  } else{
-    feature_raster_files = global_params$feature_raster_files
-  }
-  
-  feature_raster_layers = load_rasters(feature_raster_files, 
-                                       features_to_use = simulation_params$features_to_use_in_simulation)
-  
-  initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
-  
-  if (feature_params$scale_features == TRUE){
-    initial_features = scale_features(initial_features)
-  }
-  
-  
-  if (!file.exists(paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds')) || 
-      (global_params$overwrite_site_characteristics == TRUE)){
-    
-    if (global_params$planning_units_raster == 'default'){
-      planning_units_filename <- paste0(global_params$simulation_inputs_folder, 'planning_units.tif')
-    } else {
-      planning_units_filename = global_params$planning_units_raster
-    }
-    planning_units <- load_rasters(planning_units_filename, 'all')
-    planning_units_array <- raster_to_array(planning_units)
-    flog.info('building site characteristics object (this may take a while with large arrays) ..')
-    simulation_data_object$site_characteristics <- build_site_characteristics(planning_units_array)
-    
-    flog.info('saving site characteristics object')
-    saveRDS(object = simulation_data_object$site_characteristics, file = paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-    
-  } else {
-    simulation_data_object$site_characteristics = readRDS(paste0(global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-  }
-  
-  
-  feature_params <- select_feature_condition_class_bounds(feature_params, simulation_params)
-  
-  if (!file.exists(paste0(global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
-      | (global_params$overwrite_condition_classes == TRUE)){
-    background_condition_class_layers = build_condition_class_layers(initial_features, 
-                                                                     global_params, 
-                                                                     feature_params, 
-                                                                     simulation_params)
-    
-    simulation_data_object$feature_dynamics_modes = split_modes(simulation_data_object$site_characteristics$land_parcels, background_condition_class_layers)
-    saveRDS(object = simulation_data_object$feature_dynamics_modes, paste0(global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
-    
-  } else {
-    simulation_data_object$feature_dynamics_modes = readRDS(paste0(global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
-  }
-  
-  if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'site_features.rds')))
-      | (global_params$overwrite_site_features == TRUE)){
-    
-    if (!exists('background_condition_class_layers')){
-      background_condition_class_layers = build_condition_class_layers(initial_features, 
-                                                                       global_params, 
-                                                                       feature_params, 
-                                                                       simulation_params)
-    } 
-    
-    simulation_data_object$site_features <- separate_features_by_condition_class(initial_features, 
-                                                                                 split_type = 'feature_vals',
-                                                                                 store_zeros_as_sparse = global_params$store_zeros_as_sparse,
-                                                                                 simulation_data_object$site_characteristics$land_parcels, 
-                                                                                 background_condition_class_layers, 
-                                                                                 simulation_data_object$feature_dynamics_modes)
-  
-    site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
-                                                                                              split_type = 'element_index',
-                                                                                              store_zeros_as_sparse = global_params$store_zeros_as_sparse,
-                                                                                              simulation_data_object$site_characteristics$land_parcels, 
-                                                                                              background_condition_class_layers, 
-                                                                                              simulation_data_object$feature_dynamics_modes)
-    
-    simulation_data_object$site_element_index_key = lapply(seq_along(simulation_data_object$site_features), 
-                                                           function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
-                                                                              function(j) match(simulation_data_object$site_characteristics$land_parcels[[i]], 
-                                                                                                do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
-    saveRDS(object = simulation_data_object$site_features, paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
-    saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
-    saveRDS(object = simulation_data_object$site_element_index_key, paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
-  } else {
-    simulation_data_object$site_features = readRDS(paste0(global_params$simulation_inputs_folder, 'site_features.rds'))
-    simulation_data_object$site_element_index_key = readRDS(paste0(global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
-  }
-  
-  
-  if (feature_params$management_condition_class == 'background'){
-    simulation_data_object$management_dynamics_modes = simulation_data_object$feature_dynamics_modes 
-  } else {
-    if (file.exists(paste0(global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))){
-      management_condition_class_layers <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
-    } else {
-      flog.info('building management condition class layers, this may take a while..')
-      management_condition_class_layers = build_modes(features_to_use = initial_features, 
-                                                      condition_class_bounds = feature_params$management_condition_class_bounds)
-      
-      #saveRDS(management_condition_class_modes_layers, paste0(global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
-    }
-    
-    simulation_data_object$management_dynamics_modes = split_modes(simulation_data_object$site_characteristics$land_parcels, management_condition_class_layers)
-  } 
-  
-  
-  
-  if ((!file.exists(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))) |
-      (global_params$overwrite_feature_dynamics == TRUE)){
-    simulation_data_object$feature_dynamics <- build_dynamics(simulation_data_object$site_features,
-                                                              features_to_use = seq_along(simulation_params$features_to_use_in_simulation),
-                                                              feature_params$sample_background_dynamics,
-                                                              feature_params$background_dynamics_type,
-                                                              store_dynamics_as_differential = feature_params$update_background_dynamics_by_differential,
-                                                              feature_params$dynamics_sample_type,
-                                                              feature_params$background_dynamics_bounds, 
-                                                              simulation_data_object$feature_dynamics_modes)
-    
-    if (any(is.na(unlist(simulation_data_object$feature_dynamics)))){
-      flog.error('poorly defined feature_dynamics')
-      stop()
-    }
-    saveRDS(simulation_data_object$feature_dynamics, paste0(global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
-  } else {
-    simulation_data_object$feature_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'background_dynamics.rds'))
-  }
-  
-  if (!(file.exists(paste0(global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
-      (global_params$overwrite_management_dynamics == TRUE)){
-    simulation_data_object$management_dynamics <- build_dynamics(simulation_data_object$site_features,
-                                                                 features_to_use = seq_along(simulation_params$features_to_use_in_simulation),
-                                                                 feature_params$sample_management_dynamics,
-                                                                 feature_params$management_dynamics_type,
-                                                                 store_dynamics_as_differential = FALSE,
-                                                                 feature_params$management_dynamics_sample_type,
-                                                                 feature_params$management_dynamics_bounds, 
-                                                                 simulation_data_object$management_dynamics_modes)
-    
-    if (any(is.na(unlist(simulation_data_object$management_dynamics)))){
-      flog.error('poorly defined management_dynamics')
-      stop()
-    }
-    saveRDS(simulation_data_object$management_dynamics, paste0(global_params$simulation_inputs_folder, 'management_dynamics.rds'))
-    
-  } else {
-    simulation_data_object$management_dynamics <- readRDS(paste0(global_params$simulation_inputs_folder, 'management_dynamics.rds'))
-  }
-  
-  if (!(file.exists(paste0(global_params$simulation_inputs_folder, 'dev_probability_list.rds'))) |
-      (global_params$overwrite_dev_probability_list == TRUE)){
-    flog.info('assigning equal development probability to all sites')
-    simulation_data_object$dev_probability_list <- rep(list(1/length(simulation_data_object$site_characteristics$land_parcels)), 
-                                                       length(simulation_data_object$site_characteristics$land_parcels))
-    
-  } else {
-    simulation_data_object$dev_probability_list <- readRDS(paste0(global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
-  }
-  
-  if (!(file.exists(paste0(global_params$simulation_inputs_folder, 'offset_probability_list.rds'))) |
-      (global_params$overwrite_offset_probability_list == TRUE)){
-    flog.info('assigning equal offset probability to all sites')
-    simulation_data_object$offset_probability_list <- rep(list(1/length(simulation_data_object$site_characteristics$land_parcels)), 
-                                                          length(simulation_data_object$site_characteristics$land_parcels))
-    
-  } else {
-    simulation_data_object$offset_probability_list <- readRDS(paste0(global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
-  }
-  
-  if (!(file.exists(paste0(global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))) |
-      (global_params$overwrite_unregulated_probability_list == TRUE)){
-    flog.info('assigning equal unregulated loss probability to all sites')
-    simulation_data_object$unregulated_probability_list <- rep(list(1/length(simulation_data_object$site_characteristics$land_parcels)), length(simulation_data_object$site_characteristics$land_parcels))
-    
-  } else {
-    simulation_data_object$unregulated_probability_list <- readRDS(paste0(global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))
-    
-  }
-  
-  simulation_data_object$global_params = global_params
-  simulation_data_object$feature_params = feature_params
-  simulation_data_object$simulation_params = simulation_params
-  simulation_data_object$user_transform_function = user_transform_function
-  return(simulation_data_object)
+  feature_params <- select_feature_condition_class_bounds(feature_params, global_params)
   
 }
 
 
 
 
-build_condition_class_layers <- function(initial_features, global_params, feature_params, simulation_params){
+
+build_condition_class_layers <- function(initial_features, global_params, feature_params){
   
   load_condition_classes = FALSE
-  if (length(global_params$condition_class_raster_files) == simulation_params$feature_num){
+  if (length(global_params$condition_class_raster_files) == global_params$feature_num){
     if (all(file.exists(global_params$condition_class_raster_files))){
       load_condition_classes = TRUE
     }
@@ -298,7 +323,7 @@ build_condition_class_layers <- function(initial_features, global_params, featur
   if (load_condition_classes == TRUE){
     
     background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
-                                                      features_to_use = simulation_params$features_to_use_in_simulation)
+                                                      features_to_use = global_params$features_to_use_in_simulation)
     background_condition_class_layers = lapply(seq(dim(background_condition_class_layers)[3]), function(i) raster_to_array(subset(background_condition_class_layers, i)))
     
   } else {
@@ -312,7 +337,7 @@ build_condition_class_layers <- function(initial_features, global_params, featur
     
     lapply(seq_along(background_condition_class_layers), function(i) writeRaster(background_condition_class_rasters[[i]], 
                                                                                  paste0(global_params$simulation_inputs_folder, 'condition_class_raster_', 
-                                                                                        formatC(simulation_params$features_to_use_in_simulation[i], width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif'),
+                                                                                        formatC(global_params$features_to_use_in_simulation[i], width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif'),
                                                                                  overwrite = TRUE))
     
   }
@@ -320,30 +345,31 @@ build_condition_class_layers <- function(initial_features, global_params, featur
   return(background_condition_class_layers)
 }
 
-build_output_data <- function(simulation_data_object){
+
+build_output_data <- function(simulation_data_object, simulation_params){
   output_data = list()
-  output_data$index_object = initialise_index_object(simulation_data_object)
+  output_data$index_object = build_index_object(simulation_data_object, simulation_params)
   interventions = vector('list', 5)
   names(interventions) = names(output_data$index_object$internal_site_indexes_used)
   output_data$interventions = interventions
   output_data$offset_pool_object <- list()
   
-  if (simulation_data_object$simulation_params$transform_initial_credit == TRUE){
-    if (length(simulation_data_object$user_transform_function) > 0){
-      current_credit = simulation_data_object$user_transform_function(simulation_data_object$simulation_params$initial_credit, simulation_data_object$simulation_params$transform_params)
+  if (simulation_params$transform_initial_credit == TRUE){
+    if (length(simulation_data_object$global_params$user_transform_function) > 0){
+      current_credit = simulation_data_object$global_params$user_transform_function(simulation_params$initial_credit, simulation_params$transform_params)
     } else{
       flog.error('user_transform_function not set')
       stop()
     }
   } else {
-    if ((simulation_data_object$simulation_params$use_offset_metric == FALSE) &
-      ( length(simulation_data_object$simulation_params$initial_credit) != length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))){
+    if ((simulation_params$use_offset_metric == FALSE) &
+      ( length(simulation_params$initial_credit) != length(simulation_params$features_to_use_in_offset_calc))){
       flog.error('setting length of credit vector to match simulation_params$features_to_use_in_offset_calc')
-      current_credit = matrix(rep(simulation_data_object$simulation_params$initial_credit, 
-                                  length(simulation_data_object$simulation_params$features_to_use_in_offset_calc)), 
-                              ncol = length(simulation_data_object$simulation_params$features_to_use_in_offset_calc))
+      current_credit = matrix(rep(simulation_params$initial_credit, 
+                                  length(simulation_params$features_to_use_in_offset_calc)), 
+                              ncol = length(simulation_params$features_to_use_in_offset_calc))
     } else{
-      current_credit = simulation_data_object$simulation_params$initial_credit
+      current_credit = simulation_params$initial_credit
     }
   }
   output_data$current_credit = current_credit
@@ -351,14 +377,15 @@ build_output_data <- function(simulation_data_object){
   return(output_data)
 } 
 
-select_feature_condition_class_bounds <- function(feature_params, current_simulation_params){
-  feature_params_to_use = feature_params
-  feature_params_to_use$management_condition_class_bounds = feature_params$management_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params_to_use$condition_class_bounds = feature_params$condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params_to_use$initial_condition_class_bounds = feature_params$initial_condition_class_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params_to_use$background_dynamics_bounds = feature_params$background_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
-  feature_params_to_use$management_dynamics_bounds = feature_params$management_dynamics_bounds[current_simulation_params$features_to_use_in_simulation]
-  return(feature_params_to_use)
+select_feature_condition_class_bounds <- function(feature_params, global_params){
+  
+  feature_params$management_condition_class_bounds = feature_params$management_condition_class_bounds[global_params$features_to_use_in_simulation]
+  feature_params$condition_class_bounds = feature_params$condition_class_bounds[global_params$features_to_use_in_simulation]
+  feature_params$initial_condition_class_bounds = feature_params$initial_condition_class_bounds[global_params$features_to_use_in_simulation]
+  feature_params$background_dynamics_bounds = feature_params$background_dynamics_bounds[global_params$features_to_use_in_simulation]
+  feature_params$management_dynamics_bounds = feature_params$management_dynamics_bounds[global_params$features_to_use_in_simulation]
+  return(feature_params)
+  
 }
 
 sample_current_dynamics <- function(current_feature_dynamics_group, current_mode, current_feature_val, store_dynamics_as_differential, sample_dynamics, dynamics_sample_type){
@@ -636,48 +663,14 @@ find_current_run <- function(base_run_folder){
   return(current_run)
 }
 
-save_params <- function(global_params, simulation_params_group, feature_params){
-  
-  if (global_params$simulation_folder != 'default'){
-    simulation_folder = write_folder(global_params$simulation_folder)
-    global_params$simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
-    base_run_folder = paste0(simulation_folder, '/simulation_runs/')
-  } else {
-    global_params$simulation_inputs_folder =  write_folder('simulation_inputs/')
-    base_run_folder = ('simulation_runs/')
-  }
-  
-  current_run = find_current_run(base_run_folder)
-  
-  if ((global_params$unique_simulation_folder) & (length(current_run) > 0)){
-    current_run = current_run + 1
-  } else {
-    current_run = 1
-  } 
-  
-  global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
-  global_params$output_folder = write_folder(paste0(global_params$run_folder, '/simulation_outputs/'))
-  global_params$collated_folder = write_folder(paste0(global_params$run_folder, 'collated_outputs/'))
-  
-  flog.info('writing simulation outputs into %s', global_params$run_folder)
-  
-  if (class(global_params$scenario_subset) == 'character'){
-    if (global_params$scenario_subset == 'all'){
-      global_params$scenario_subset = seq_along(simulation_params_group)
-    } else {
-      flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
-    }
-  }
+save_params <- function(global_params, feature_params, simulation_params_group){
   
   for (scenario_ind in global_params$scenario_subset){
     write_folder(paste0(global_params$output_folder, '/scenario_', formatC(scenario_ind, width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
   }
   
-  global_params$simulation_params_folder = write_folder(paste0(global_params$run_folder, '/simulation_params/'))
   global_params_file = paste0(global_params$simulation_params_folder,  'global_params')
-  
   saveRDS(global_params, paste0(global_params$simulation_params_folder,  'global_params.rds'))
-  
   dump('global_params', paste0(global_params$simulation_params_folder,  'global_params.R'), control = NULL)
   
   saveRDS(feature_params, paste0(global_params$simulation_params_folder,  'feature_params.rds'))
@@ -692,9 +685,6 @@ save_params <- function(global_params, simulation_params_group, feature_params){
     dump('current_simulation_params', paste0(simulation_params_file, '.R'), control = NULL)
   }
   
-
-  
-  return(global_params)
 }
 
 
@@ -719,11 +709,9 @@ generate_simulation_combs <- function(simulation_params_group){
 # }
 
 
-process_current_simulation_params <- function(current_simulation_params, common_params){
+process_current_simulation_params <- function(current_simulation_params, common_params, features_to_use_in_simulation){
   
   current_simulation_params = append(current_simulation_params, common_params)
-
-  current_simulation_params$feature_num = length(current_simulation_params$features_to_use_in_simulation)
   
   if (current_simulation_params$use_offset_bank == TRUE){
     current_simulation_params$offset_time_horizon_type = 'current'  # 'current' - used for banking only - determine accrued offset gains till current year.
@@ -731,8 +719,8 @@ process_current_simulation_params <- function(current_simulation_params, common_
     current_simulation_params$offset_time_horizon_type = 'future'  #'future' - project from time of development to offset time horizon
   }
   
-  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, current_simulation_params$features_to_use_in_simulation)
-  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, current_simulation_params$features_to_use_in_simulation)
+  current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, features_to_use_in_simulation)
+  current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, features_to_use_in_simulation)
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
   current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
@@ -877,29 +865,28 @@ mcell <- function(x, vx, vy){       #used to break up array into samller set of 
 
 
 
-initialise_index_object <- function(simulation_data_object){
-
+build_index_object <- function(simulation_data_object, simulation_params){
 
   index_object = list()
   
-  if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
-    index_object$development_control <- transform_control(simulation_data_object$simulation_params$development_control, 
+  if (simulation_params$development_selection_type == 'pre_determined'){
+    index_object$development_control <- transform_control(simulation_params$development_control, 
                                                           simulation_data_object$site_characteristics$site_IDs, 
                                                           simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$dev_probability_list) > 0)])
   }
   
-  if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
-    if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
-      index_object$banked_offset_control <- transform_control(simulation_data_object$simulation_params$banked_offset_control, 
+  if (simulation_params$use_offset_bank == TRUE){
+    if (simulation_params$banked_offset_selection_type == 'pre_determined'){
+      index_object$banked_offset_control <- transform_control(simulation_params$banked_offset_control, 
                                                               simulation_data_object$site_characteristics$site_IDs, 
                                                               simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$offset_probability_list) > 0)])
-    } else if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
-      index_object$banked_offset_control = simulation_data_object$simulation_params$banked_offset_control
+    } else if (simulation_params$banked_offset_selection_type == 'stochastic'){
+      index_object$banked_offset_control = simulation_params$banked_offset_control
     }
   }
   
-  if ((simulation_data_object$simulation_params$development_selection_type == 'pre_determined') & 
-    (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined')){
+  if ((simulation_params$development_selection_type == 'pre_determined') & 
+    (simulation_params$banked_offset_selection_type == 'pre_determined')){
     internal_dev_indexes = unlist(index_object$development_control)[which(unlist(index_object$development_control)>0)]
     internal_offset_indexes = unlist(index_object$banked_offset_control[which(unlist(index_object$banked_offset_control)>0)])
     overlap = which(internal_dev_indexes %in% internal_offset_indexes)
@@ -911,11 +898,11 @@ initialise_index_object <- function(simulation_data_object){
     }
   }
   
-  if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
+  if (simulation_params$development_selection_type == 'pre_determined'){
     index_object$intervention_control = unlist(lapply(seq_along(index_object$development_control), 
                                                       function(i) length(which(index_object$development_control[[i]] > 0))))
-  } else if (simulation_data_object$simulation_params$development_selection_type == 'stochastic'){
-    index_object$intervention_control = unlist(simulation_data_object$simulation_params$development_control)
+  } else if (simulation_params$development_selection_type == 'stochastic'){
+    index_object$intervention_control = unlist(simulation_params$development_control)
   }
 
 
@@ -923,22 +910,22 @@ initialise_index_object <- function(simulation_data_object){
   unregulated_indexes_to_exclude = which(unlist(simulation_data_object$unregulated_probability_list) == 0)
   dev_indexes_to_exclude = which(unlist(simulation_data_object$dev_probability_list) == 0)
   
-  if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
+  if (simulation_params$development_selection_type == 'pre_determined'){
     offset_indexes_to_exclude = unique(c(which(unlist(simulation_data_object$offset_probability_list) == 0), 
-                                         unlist(simulation_data_object$simulation_params$development_control)))
+                                         unlist(simulation_params$development_control)))
     unregulated_indexes_to_exclude = unique(c(which(unlist(simulation_data_object$unregulated_probability_list) == 0), 
-                                              unlist(simulation_data_object$simulation_params$development_control)))
+                                              unlist(simulation_params$development_control)))
   }
   
-  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
+  if (simulation_params$banked_offset_selection_type == 'pre_determined'){
     dev_indexes_to_exclude = unique(c(which(unlist(simulation_data_object$dev_probability_list) == 0), 
-                                      unlist(simulation_data_object$simulation_params$banked_offset_control)))
+                                      unlist(simulation_params$banked_offset_control)))
     unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, 
-                                              unlist(simulation_data_object$simulation_params$banked_offset_control)))
+                                              unlist(simulation_params$banked_offset_control)))
   }
   
 
-  index_object$internal_site_indexes = seq_along(simulation_data_object$site_characteristics$land_parcels)
+  index_object$internal_site_indexes = seq(simulation_data_object$site_characteristics$site_num)
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
   names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'dev_object', 'credit_object', 'unregulated_loss_object')
@@ -949,55 +936,33 @@ initialise_index_object <- function(simulation_data_object){
                                                                  offset_indexes_to_exclude, 
                                                                  simulation_data_object$site_characteristics$land_parcels, 
                                                                  simulation_data_object$site_features, 
-                                                                 screen_site_zeros = simulation_data_object$simulation_params$screen_offset_zeros,
-                                                                 min_site_screen_size = simulation_data_object$simulation_params$min_site_screen_size,
-                                                                 max_site_screen_size_quantile = simulation_data_object$simulation_params$max_site_screen_size_quantile,
-                                                                 simulation_data_object$simulation_params$features_to_use_in_offset_calc)
+                                                                 screen_site_zeros = simulation_params$screen_offset_zeros,
+                                                                 min_site_screen_size = simulation_params$min_site_screen_size,
+                                                                 max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
+                                                                 simulation_params$features_to_use_in_offset_calc)
   
   index_object$available_indexes$devs = set_available_indexes(index_object$internal_site_indexes, 
                                                               dev_indexes_to_exclude,
                                                               simulation_data_object$site_characteristics$land_parcels, 
                                                               simulation_data_object$site_features, 
-                                                              screen_site_zeros = simulation_data_object$simulation_params$screen_dev_zeros,
-                                                              min_site_screen_size = simulation_data_object$simulation_params$min_site_screen_size,
-                                                              max_site_screen_size_quantile = simulation_data_object$simulation_params$max_site_screen_size_quantile,
-                                                              simulation_data_object$simulation_params$features_to_use_in_offset_calc)
+                                                              screen_site_zeros = simulation_params$screen_dev_zeros,
+                                                              min_site_screen_size = simulation_params$min_site_screen_size,
+                                                              max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
+                                                              simulation_params$features_to_use_in_offset_calc)
   
   index_object$available_indexes$unregulated_loss = set_available_indexes(index_object$internal_site_indexes, 
                                                                           indexes_to_exclude = unregulated_indexes_to_exclude,
                                                                           simulation_data_object$site_characteristics$land_parcels, 
                                                                           simulation_data_object$site_features, 
                                                                           screen_site_zeros = TRUE,
-                                                                          min_site_screen_size = simulation_data_object$simulation_params$min_site_screen_size,
-                                                                          max_site_screen_size_quantile = simulation_data_object$simulation_params$max_site_screen_size_quantile,
-                                                                          simulation_data_object$simulation_params$features_to_use_in_offset_calc)
+                                                                          min_site_screen_size = simulation_params$min_site_screen_size,
+                                                                          max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
+                                                                          simulation_params$features_to_use_in_offset_calc)
 
-#   if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined'){
-#     offset_indexes_to_exclude = unique(c(offset_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
-#     unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$development_control)))
-#   }
-#   
-#   if (simulation_data_object$simulation_params$banked_offset_selection_type == 'pre_determined'){
-#     dev_indexes_to_exclude = unique(c(dev_indexes_to_exclude, unlist(simulation_data_object$simulation_params$banked_offset_control)))
-#     unregulated_indexes_to_exclude = unique(c(unregulated_indexes_to_exclude, unlist(simulation_data_object$simulation_params$banked_offset_control)))
-#   }
-#   
-#   index_object$banked_offset_control <- transform_control(simulation_data_object$simulation_params$banked_offset_control, 
-#                                                           simulation_data_object$site_characteristics$site_IDs, 
-#                                                           index_object$available_indexes$offsets)
-#   
-#   index_object$development_control <- transform_control(simulation_data_object$simulation_params$development_control, 
-#                                                           simulation_data_object$site_characteristics$site_IDs, 
-#                                                           index_object$available_indexes$devs)
   
   return(index_object)
 }
 
-
-
-# control_object = simulation_data_object$simulation_params$development_control 
-# site_IDs = simulation_data_object$site_characteristics$site_IDs 
-# available_indexes = simulation_data_object$site_characteristics$site_IDs[which(unlist(simulation_data_object$dev_probability_list) > 0)]
 
 transform_control <- function(control_object, site_IDs, available_indexes){
 

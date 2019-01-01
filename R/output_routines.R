@@ -190,7 +190,7 @@ output_scenario <- function(object_to_output, scenario_ind){
   
   if (class(object_to_output$output_params$features_to_output) == 'character'){
     if (object_to_output$output_params$features_to_output == 'all'){
-      features_to_output = object_to_output$current_simulation_params$features_to_use_in_simulation
+      features_to_output = object_to_output$global_params$features_to_use_in_simulation
     } else {
       flog.error("features to plot parameter is poorly defined, assign vector of integers or 'all'")
     }
@@ -1042,8 +1042,8 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
 #       stop ( paste('\nERROR: only ', length(scenario_filenames), ' scenario params files found, output_params$plot_vec parameter does not match'))
 #     }
 #   } else if (output_params$output_type == 'features'){
-#     if (current_simulation_params$feature_num < max(output_params$plot_vec)){
-#       stop ( paste('\nERROR: output_params$plot_vec exceeds number of features (', current_simulation_params$feature_num, ')'))
+#     if (global_params$feature_num < max(output_params$plot_vec)){
+#       stop ( paste('\nERROR: output_params$plot_vec exceeds number of features (', global_params$feature_num, ')'))
 #     }
 #     
 #   } else if (output_params$output_type == 'multiple_sets'){

@@ -5,7 +5,13 @@ initialise_default_global_params <- function(){
   # Set the random number seed
   default_global_params$set_seed = FALSE
 
+  # set to FALSE if running into memory troubles when collating
+  default_global_params$collate_with_parallel_cores = TRUE
+  
   default_global_params$feature_raster_files = 'default'
+  
+  default_global_params$features_to_use_in_simulation = 1
+  
   default_global_params$condition_class_raster_files = 'default'
   default_global_params$numeric_placeholder_width = 3 # how many digits are used to store scenario index and realisation index
   # When specifying multiple scenarios using initialise_default_simulation_params,
@@ -16,7 +22,7 @@ initialise_default_global_params <- function(){
   default_global_params$scenario_subset = 'all'
   
   default_global_params$raster_file_type = '.tif'
-  default_global_params$output_raster_tiff = TRUE
+  default_global_params$output_raster_tiff = FALSE
   # If set to 'defaul', the values in set in
   # initialise_default_feature_params() are used. Otherwise this can
   # be set to point to a file, that contains the initialise_default_feature_params() 
@@ -96,8 +102,6 @@ initialise_default_simulation_params <- function(){
     intervention_locs = seq(1, default_simulation_params$time_steps, 1)
     default_simulation_params$development_control = array(0, default_simulation_params$time_steps)
     default_simulation_params$development_control[intervention_locs] = 1
-    
-    default_simulation_params$features_to_use_in_simulation = 1
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
     default_simulation_params$features_to_use_in_offset_calc = 1

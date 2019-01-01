@@ -17,76 +17,72 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   flog.threshold(loglevel)
   flog.info('starting offsetsim')
   
-  params_object <- build_params(user_global_params, user_feature_params, user_simulation_params)
-  
-  # Undertake all the run intialization proceedures, including generating
-  # simulated data if required or reading in previously generated input data
-  
-  # Write initial logging info
-  flog.info('Running %s scenarios with %s realisations on %s cores', 
-            length(params_object$simulation_params_group),  
-            params_object$global_params$realisation_num,
-            params_object$global_params$number_of_cores ) 
-  
   # Loop over all defined scenarios if only a subset of the scenarios is to be
   # reun (as defined by global_params$scenario_subset) then only
   # run these. By default global_params$scenario_subset
   
-  for (scenario_ind in params_object$global_params$scenario_subset){
+  #load all necessary GIS layers, objects from files etc
+
+  simulation_params_group <- build_simulation_params_group(user_simulation_params, user_global_params$features_to_use_in_simulation)
+  
+  input_data_object <- build_input_data(user_global_params, user_feature_params, user_transform_function, simulation_params_group)
+  
+  # Write initial logging info
+  flog.info('Running %s scenarios with %s realisations on %s cores', 
+            length(simulation_params_group),  
+            input_data_object$global_params$realisation_num,
+            input_data_object$global_params$number_of_cores ) 
+  
+  for (scenario_ind in input_data_object$global_params$scenario_subset){
     
     # Store the start time
     loop_strt <- Sys.time()
     
-    #load objects from files etc
-    simulation_data_object <- build_input_data(params_object$global_params, params_object$feature_params, params_object$simulation_params_group[[scenario_ind]], user_transform_function)
-    
-    simulation_data_object$output_data = build_output_data(simulation_data_object)
+    output_data = build_output_data(input_data_object, simulation_params_group[[scenario_ind]])
     
     flog.info('running scenario %s of %s, with %s discrete time steps',  
               scenario_ind, 
-              length(params_object$simulation_params_group),
-              simulation_data_object$simulation_params$time_steps)
+              length(simulation_params_group),
+              simulation_params_group[[scenario_ind]]$time_steps)
     
     flog.info('offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
-              simulation_data_object$simulation_params$offset_calc_type, 
-              simulation_data_object$simulation_params$offset_action_type, 
-              simulation_data_object$simulation_params$offset_time_horizon)
+              simulation_params_group[[scenario_ind]]$offset_calc_type, 
+              simulation_params_group[[scenario_ind]]$offset_action_type, 
+              simulation_params_group[[scenario_ind]]$offset_time_horizon)
     
     flog.info('system composed of %s x %s elements and %s sites',
-              simulation_data_object$site_characteristics$landscape_dims[1], 
-              simulation_data_object$site_characteristics$landscape_dims[2],
-              length(simulation_data_object$site_characteristics$land_parcels))
+              input_data_object$site_characteristics$landscape_dims[1], 
+              input_data_object$site_characteristics$landscape_dims[2],
+              input_data_object$site_characteristics$site_num)
     flog.info('%s potential development sites, %s potential offset sites',
-              length(simulation_data_object$output_data$index_object$available_indexes$devs), 
-              length(simulation_data_object$output_data$index_object$available_indexes$offsets)) 
+              length(output_data$index_object$available_indexes$devs), 
+              length(output_data$index_object$available_indexes$offsets)) 
     
-    flog.info('developing (and offsetting) %s sites', sum(simulation_data_object$output_data$index_object$intervention_control)) 
+    flog.info('developing (and offsetting) %s sites', sum(output_data$index_object$intervention_control)) 
     
     flog.info('estimated %s sites lost to unregulated clearing', 
-              round(length(simulation_data_object$site_characteristics$land_parcels) -
-                      length(simulation_data_object$site_characteristics$land_parcels)*(1 - simulation_data_object$simulation_params$unregulated_loss_prob)^simulation_data_object$simulation_params$time_steps))
+              round(input_data_object$site_characteristics$site_num -
+                      input_data_object$site_characteristics$site_num*(1 - simulation_params_group[[scenario_ind]]$unregulated_loss_prob)^simulation_params_group[[scenario_ind]]$time_steps))
     
-
     ##### TODO(Isaac) test whether can set check and set seed if necessary much earlier in the code before run_initialise_routines() is called
-    if (simulation_data_object$global_params$number_of_cores > 1 && simulation_data_object$global_params$set_seed == TRUE){
+    if (input_data_object$global_params$number_of_cores > 1 && input_data_object$global_params$set_seed == TRUE){
       # case when running DETERMINISTIC realisations in parallel
       # doRNG needed to get deterministic foreach loops, dsingh 24/nov/17
       flog.info('will use doRNG with seed %s to get determinisitc parallel runs', 123)
       registerDoRNG(123) 
       
       # foreach runs realizations in parallel
-      foreach(realisation_ind = seq_len(simulation_data_object$global_params$realisation_num)) %dorng%{
+      foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dorng%{
         
-        run_offset_simulation_routines(simulation_data_object, 
-                                       scenario_ind,
-                                       realisation_ind)
+        run_offset_simulation_routines(input_data_object, output_data, simulation_params_group[[scenario_ind]],  
+                                       scenario_ind, realisation_ind)
         
       }
-    } else if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
+    } else if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1)){
       # case when running NON-DETERMINISTIC realisations in parallel
-      foreach(realisation_ind = seq_len(simulation_data_object$global_params$realisation_num)) %dopar%{
+      foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dopar%{
         
-        run_offset_simulation_routines(simulation_data_object, 
+        run_offset_simulation_routines(input_data_object, output_data, simulation_params_group[[scenario_ind]],  
                                        scenario_ind,
                                        realisation_ind)
         
@@ -94,90 +90,98 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     } else {
       # Case when running single realisation
       ##### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
-      for (realisation_ind in 1:simulation_data_object$global_params$realisation_num){
+      for (realisation_ind in 1:input_data_object$global_params$realisation_num){
         
-        run_offset_simulation_routines(simulation_data_object,
+        run_offset_simulation_routines(input_data_object, output_data, simulation_params_group[[scenario_ind]], 
                                        scenario_ind,
                                        realisation_ind)
       }
       
     }
     
-    flog.info('scenario %s done in %s %s', 
+    flog.info('scenario %s simulation outputs generated for %s realisations in %s %s', 
               scenario_ind,
+              input_data_object$global_params$realisation_num,
               round(difftime(Sys.time(), loop_strt), 1), 
               units(difftime(Sys.time(), loop_strt)))
   }
   
   flog.info('running collate routines')
   
-  if ((simulation_data_object$global_params$build_background_cfacs == TRUE) |
-      (simulation_data_object$global_params$overwrite_feature_dynamics == TRUE) |
-    !file.exists(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+  for (scenario_ind in input_data_object$global_params$scenario_subset){
     
-      flog.info('building background counterfactuals - this may take a while')
-      background_cfacs_object = build_background_cfacs(simulation_data_object)
-      flog.info('saving background counterfactuals')
-      saveRDS(background_cfacs_object, paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+    if ((input_data_object$global_params$build_background_cfacs == TRUE) |
+        (input_data_object$global_params$overwrite_feature_dynamics == TRUE) |
+        !file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
       
-  } else {
-    flog.info('loading background counterfactuals from file')
-    background_cfacs_object = readRDS(paste0(simulation_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-  }
-    
-  if ((simulation_data_object$global_params$number_of_cores > 1) && (simulation_data_object$global_params$realisation_num > 1)){
-    # case when running NON-DETERMINISTIC realisations in parallel
-    foreach(realisation_ind = seq_len(simulation_data_object$global_params$realisation_num)) %dopar%{
-      collate_simulation_outputs(simulation_data_object, background_cfacs_object, scenario_ind, realisation_ind)
-    }
-  } else {
-    # Case when running single realisation
-    ###### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
-    for (realisation_ind in 1:simulation_data_object$global_params$realisation_num){
-      collate_simulation_outputs(simulation_data_object, background_cfacs_object, scenario_ind, realisation_ind)
+      flog.info('building background counterfactuals - this may take a while')
+
+      background_cfacs_object = build_background_cfacs(input_data_object, simulation_params_group[[scenario_ind]])
+      flog.info('saving background counterfactuals')
+      saveRDS(background_cfacs_object, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      
+    } else {
+      flog.info('loading background counterfactuals from file')
+      background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
     }
     
+    if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1) &&
+        (input_data_object$global_params$collate_with_parallel_cores == TRUE)){
+      # case when running NON-DETERMINISTIC realisations in parallel
+      foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dopar%{
+        collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+      }
+    } else {
+      # Case when running single realisation
+      ###### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
+      for (realisation_ind in 1:input_data_object$global_params$realisation_num){
+        collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+      }
+      
+    }
+    
+    flog.info('scenario %s collated and completed in %s %s', 
+              scenario_ind,
+              round(difftime(Sys.time(), loop_strt), 1), 
+              units(difftime(Sys.time(), loop_strt)))
   }
   
-  flog.info('scenario %s done in %s %s', 
-            scenario_ind,
-            round(difftime(Sys.time(), loop_strt), 1), 
-            units(difftime(Sys.time(), loop_strt)))
   
-  if (simulation_data_object$global_params$save_simulation_outputs == FALSE){
+  
+  if (input_data_object$global_params$save_simulation_outputs == FALSE){
     # This deletes all folders and subfolders that were created in the run
     # process that are no longer needed
-    unlink(simulation_data_object$global_params$output_folder, recursive = TRUE)
+    unlink(input_data_object$global_params$output_folder, recursive = TRUE)
   }
   
   flog.info('all scenarios done in %s %s', 
-            round(difftime(Sys.time(), simulation_data_object$global_params$strt), 1), 
-            units(difftime(Sys.time(), simulation_data_object$global_params$strt)))
+            round(difftime(Sys.time(), input_data_object$global_params$strt), 1), 
+            units(difftime(Sys.time(), input_data_object$global_params$strt)))
   
-  flog.info('all outputs written into %s', simulation_data_object$global_params$run_folder)
+  flog.info('all outputs written into %s', input_data_object$global_params$run_folder)
   
   # Clean up the parallel processes if there was more than one
-  parallel::stopCluster(simulation_data_object$global_params$clstr)
+  parallel::stopCluster(input_data_object$global_params$clstr)
 }
 
 
-run_offset_simulation_routines <- function(simulation_data_object, scenario_ind, realisation_ind){  
+run_offset_simulation_routines <- function(simulation_data_object, output_data, simulation_params, scenario_ind, realisation_ind){  
   
-  # run simulation with identical realisation instantiation
+  simulation_data_object$output_data = output_data
   
   current_data_dir = write_folder(paste0(simulation_data_object$global_params$output_folder, 
                                          'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                                          '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
   
-  save_landscape_routine(simulation_data_object, current_data_dir, yr = 0)
+  save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr = 0)
   
   flog.info('current data dir is %s', current_data_dir)
   
-  simulation_outputs <- run_simulation(simulation_data_object, current_data_dir)
+  simulation_outputs <- run_simulation(simulation_data_object, simulation_params, current_data_dir)
   
   # save raw simulation data
 
-    saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
+  saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
                                        formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                        '_outputs.rds'))
 
@@ -193,11 +197,11 @@ run_offset_simulation_routines <- function(simulation_data_object, scenario_ind,
 
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
-run_simulation <- function(simulation_data_object, current_data_dir){
+run_simulation <- function(simulation_data_object, simulation_params, current_data_dir){
   
 
   #run through main time loop
-  for (yr in seq_len(simulation_data_object$simulation_params$time_steps)){
+  for (yr in seq_len(simulation_params$time_steps)){
     
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     flog.info('t = %s', yr) 
@@ -205,8 +209,8 @@ run_simulation <- function(simulation_data_object, current_data_dir){
     
     #when running in offset banking select out current set of sites to add to bank
     
-    if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
-      simulation_data_object <- run_banking_routine(simulation_data_object, yr)
+    if (simulation_params$use_offset_bank == TRUE){
+      simulation_data_object <- run_banking_routine(simulation_data_object, simulation_params, yr)
     }
 
     if (simulation_data_object$output_data$index_object$intervention_control[yr] > 0){
@@ -215,20 +219,23 @@ run_simulation <- function(simulation_data_object, current_data_dir){
       
       # determine current set of available offset sites and calculate gains structure as detailed in current policy params
       simulation_data_object$offset_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                           simulation_params, 
                                                                            pool_type = 'offsets',
                                                                            current_pool = simulation_data_object$output_data$index_object$available_indexes$offsets,
                                                                            yr)
       
       # determine current set of available development sites and calculate gains structure as detailed in current policy params
 
-      if (simulation_data_object$simulation_params$development_selection_type == 'pre_determined') {
+      if (simulation_params$development_selection_type == 'pre_determined') {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                          simulation_params,
                                                                           pool_type = 'developments',
                                                                           current_pool = setdiff(simulation_data_object$output_data$index_object$development_control[[yr]], 
                                                                                                  simulation_data_object$output_data$index_object$internal_site_indexes_used),
                                                                           yr)
       } else {
         simulation_data_object$dev_pool_object <- build_intervention_pool(simulation_data_object, 
+                                                                          simulation_params, 
                                                                         pool_type = 'developments',
                                                                         current_pool = simulation_data_object$output_data$index_object$available_indexes$devs,
                                                                         yr)
@@ -239,24 +246,24 @@ run_simulation <- function(simulation_data_object, current_data_dir){
     for (development_counter in seq_len(simulation_data_object$output_data$index_object$intervention_control[yr])){
       
       ###### TODO REINSTATE OFFSETBANK ROUTINES ####
-      #           if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
-      #             simulation_data_object$output_data$current_credit = assess_banking_credit(simulation_data_object$output_data, simulation_data_object$simulation_params)
+      #           if (simulation_params$use_offset_bank == TRUE){
+      #             simulation_data_object$output_data$current_credit = assess_banking_credit(simulation_data_object$output_data, simulation_params)
       #           }
       
       # attempt to develop from current available credit
       
-      if (simulation_data_object$simulation_params$allow_developments_from_credit == TRUE){
-        simulation_data_object <- develop_from_credit_routine(simulation_data_object, yr)
+      if (simulation_params$allow_developments_from_credit == TRUE){
+        simulation_data_object <- develop_from_credit_routine(simulation_data_object, simulation_params, yr)
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if (simulation_data_object$output_data$credit_match_flag == FALSE && simulation_data_object$simulation_params$use_parcel_sets == TRUE){
-        simulation_data_object <- match_sites_routine(simulation_data_object, yr)
+      if (simulation_data_object$output_data$credit_match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
+        simulation_data_object <- match_sites_routine(simulation_data_object, simulation_params, yr)
       }
     }
     
-    if (!((simulation_data_object$simulation_params$unregulated_loss_type == 'default') & (simulation_data_object$simulation_params$unregulated_loss_prob == 0))){
-      simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, yr)
+    if (!((simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0))){
+      simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
     projection_yrs = lapply(seq_along(simulation_data_object$site_features), 
                             function(i) find_projection_yrs(perform_dynamics_time_shift = simulation_data_object$feature_params$perform_background_dynamics_time_shift, 
@@ -280,7 +287,7 @@ run_simulation <- function(simulation_data_object, current_data_dir){
                                                             projection_yrs, 
                                                             condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds)
     
-    save_landscape_routine(simulation_data_object, current_data_dir, yr)
+    save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr)
     
   }
   
@@ -294,13 +301,13 @@ unwrap_condition_classes <- function(current_site_feature, current_site_element_
   return(current_site_feature)
 }
 
-save_landscape_routine <- function(simulation_data_object, current_data_dir, yr){
+save_landscape_routine <- function(simulation_data_object, simulation_params, current_data_dir, yr){
 
-  for (feature_ind in seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation)){
+  for (feature_ind in seq_along(simulation_data_object$global_params$features_to_use_in_simulation)){
     feature_layer_to_save = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) simulation_data_object$site_features[[i]][[feature_ind]])
     
-    file_prefix = paste0('feature_', formatC(simulation_data_object$simulation_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
+    file_prefix = paste0('feature_', formatC(simulation_data_object$global_params$features_to_use_in_simulation[feature_ind], width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                          '_yr_', formatC(yr, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"))
     
     saveRDS(feature_layer_to_save, paste0(current_data_dir, file_prefix, '.rds'))
@@ -320,14 +327,14 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
     }
   }
   
-  if (simulation_data_object$simulation_params$use_offset_metric == TRUE){
+  if (simulation_params$use_offset_metric == TRUE){
     
     current_metric_layers = lapply(seq_along(simulation_data_object$site_features), 
                                    function(i) lapply(seq_along(simulation_data_object$site_features[[i]]),
                                                       function(j) unwrap_condition_classes(simulation_data_object$site_features[[i]][[j]], 
                                                                                            simulation_data_object$site_element_index_key[[i]][[j]])))
     current_metric_layers = lapply(seq_along(current_metric_layers), 
-                                   function(i) simulation_data_object$user_transform_function(current_metric_layers[[i]], simulation_data_object$simulation_params$transform_params))
+                                   function(i) simulation_data_object$global_params$user_transform_function(current_metric_layers[[i]], simulation_params$transform_params))
     
     saveRDS(current_metric_layers, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds'))
     
@@ -335,10 +342,10 @@ save_landscape_routine <- function(simulation_data_object, current_data_dir, yr)
   
 }
 
-match_sites_routine <- function(simulation_data_object, yr){
+match_sites_routine <- function(simulation_data_object, simulation_params, yr){
   #perform the matching routine - i.e. find a matching development/offset set 
   
-  match_object <- match_sites(simulation_data_object, match_type = 'develop_using_offset_pool', yr) 
+  match_object <- match_sites(simulation_data_object, simulation_params, match_type = 'develop_using_offset_pool', yr) 
   
   # if a match was found record current development and associated offsets and update site parameters.
   
@@ -354,6 +361,7 @@ match_sites_routine <- function(simulation_data_object, yr){
     
     # remove selected offset sites from available pool, save offset site characteristics, update decline rates to implement offset.
     simulation_data_object <- run_offset_routines(simulation_data_object,
+                                                  simulation_params, 
                                                   current_offset_object = match_object$offset_object,
                                                   yr)
     
@@ -371,7 +379,7 @@ match_sites_routine <- function(simulation_data_object, yr){
 
 
 
-develop_from_credit_routine <- function(simulation_data_object, yr){
+develop_from_credit_routine <- function(simulation_data_object, simulation_params, yr){
 
   if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$internal_site_indexes) == 0)){
     match_object = setNames(list(FALSE), 'match_flag')
@@ -384,7 +392,7 @@ develop_from_credit_routine <- function(simulation_data_object, yr){
                                     simulation_data_object$output_data$current_credit,
                                     simulation_data_object$dev_probability_list,
                                     vals_to_match_initial = simulation_data_object$output_data$current_credit,
-                                    simulation_data_object$simulation_params,
+                                    simulation_params,
                                     yr)
     
     if (match_object$match_flag == TRUE){
@@ -445,12 +453,12 @@ select_sites_to_clear <- function(available_internal_site_indexes, simulation_pa
 
 
 
-run_unregulated_loss_routine <- function(simulation_data_object, yr){
+run_unregulated_loss_routine <- function(simulation_data_object, simulation_params, yr){
   
   available_internal_site_indexes = setdiff(unlist(simulation_data_object$output_data$index_object$available_indexes$unregulated_loss), 
                                    unlist(simulation_data_object$output_data$index_object$internal_site_indexes_used))
   
-  inds_to_clear <- select_sites_to_clear(available_internal_site_indexes, simulation_data_object$simulation_params, yr)
+  inds_to_clear <- select_sites_to_clear(available_internal_site_indexes, simulation_params, yr)
   
   if (length(inds_to_clear) == 0){ #return null for no sites selected for clearing
     return(simulation_data_object)
@@ -468,27 +476,27 @@ run_unregulated_loss_routine <- function(simulation_data_object, yr){
   # record characteristics of cleared site
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
                                                  pool_type = 'developments',
-                                                 features_to_use = seq_along(simulation_data_object$simulation_params$features_to_use_in_simulation),
+                                                 features_to_use = seq_along(simulation_data_object$global_params$features_to_use_in_simulation),
                                                  site_features = simulation_data_object$site_features[current_pool],
                                                  feature_dynamics = simulation_data_object$feature_dynamics[current_pool],
                                                  management_dynamics = simulation_data_object$management_dynamics[current_pool],
                                                  feature_dynamics_mode = simulation_data_object$feature_dynamics_modes[current_pool],
                                                  site_element_index_key = simulation_data_object$site_element_index_key[current_pool],
-                                                 calc_type = simulation_data_object$simulation_params$dev_calc_type,
-                                                 cfacs_flag = simulation_data_object$simulation_params$dev_cfacs_flag,
-                                                 adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_dev_cfacs_flag,
-                                                 action_type = simulation_data_object$simulation_params$offset_action_type,
-                                                 include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_dev_calc,
-                                                 include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_dev_calc,
-                                                 include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_dev_calc,
+                                                 calc_type = simulation_params$dev_calc_type,
+                                                 cfacs_flag = simulation_params$dev_cfacs_flag,
+                                                 adjust_cfacs_flag = simulation_params$adjust_dev_cfacs_flag,
+                                                 action_type = simulation_params$offset_action_type,
+                                                 include_potential_developments = simulation_params$include_potential_developments_in_dev_calc,
+                                                 include_potential_offsets = simulation_params$include_potential_offsets_in_dev_calc,
+                                                 include_unregulated_loss = simulation_params$include_unregulated_loss_in_dev_calc,
                                                  recalculate_probabilities(simulation_data_object$dev_probability_list[current_pool]), 
                                                  recalculate_probabilities(simulation_data_object$offset_probability_list[current_pool]), 
                                                  time_horizon_type = 'future',
-                                                 simulation_data_object$simulation_params,
+                                                 simulation_params,
                                                  simulation_data_object$feature_params,
-                                                 simulation_data_object$simulation_params$offset_time_horizon,
+                                                 simulation_params$offset_time_horizon,
                                                  yr, 
-                                                 simulation_data_object$user_transform_function)  
+                                                 simulation_data_object$global_params$user_transform_function)  
   
   # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
   if (!is.null(unregulated_loss_object)){
@@ -724,10 +732,10 @@ find_time_shift <- function(current_feature_val, current_feature_dynamics_to_use
 
 
 # series of routines to implement offset
-run_offset_routines <- function(simulation_data_object, current_offset_object, yr){
+run_offset_routines <- function(simulation_data_object, simulation_params, current_offset_object, yr){
   
   # if running in banking mode remove offset site from available bank
-  if (simulation_data_object$simulation_params$use_offset_bank == TRUE){
+  if (simulation_params$use_offset_bank == TRUE){
     browser()
     
     banked_offset_pool = simulation_data_object$output_data$interventions$offset_bank_object$internal_site_indexes
@@ -762,14 +770,14 @@ run_offset_routines <- function(simulation_data_object, current_offset_object, y
                                                                                   simulation_data_object$management_dynamics[current_pool],
                                                                                   simulation_data_object$feature_dynamics_modes[current_pool],
                                                                                   simulation_data_object$feature_params, 
-                                                                                  features_to_update = simulation_data_object$simulation_params$features_to_use_in_offset_intervention, 
+                                                                                  features_to_update = simulation_params$features_to_use_in_offset_intervention, 
                                                                                   action_type = 'offset', 
                                                                                   yr)
 
   simulation_data_object$feature_dynamics_modes = update_feature_dynamics_modes(simulation_data_object$feature_dynamics_modes, 
-                                                                                simulation_data_object$simulation_params$feature_num,
-                                                                                simulation_data_object$simulation_params$features_to_use_in_offset_intervention, 
-                                                                                simulation_data_object$simulation_params$offset_action_type, 
+                                                                                simulation_data_object$global_params$feature_num,
+                                                                                simulation_params$features_to_use_in_offset_intervention, 
+                                                                                simulation_params$offset_action_type, 
                                                                                 current_pool)
   
   return(simulation_data_object)
@@ -778,11 +786,11 @@ run_offset_routines <- function(simulation_data_object, current_offset_object, y
 
 #########  TODO  COMBINE WITH ABOVE OFFSET ROUTINE
 # routines to perform offset banking
-run_banking_routine <- function(simulation_data_object, yr){
+run_banking_routine <- function(simulation_data_object, simulation_params, yr){
   
   # how many offsets to be added in current year
 
-  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
+  if (simulation_params$banked_offset_selection_type == 'stochastic'){
     offset_bank_num = simulation_data_object$output_data$index_object$banked_offset_control[[yr]]
   } else {
     offset_bank_num = length(which(simulation_data_object$output_data$index_object$banked_offset_control[[yr]] > 0))
@@ -794,7 +802,7 @@ run_banking_routine <- function(simulation_data_object, yr){
   
   # select current number of offset sites from current available pool to add to banked offset pool
 
-  if (simulation_data_object$simulation_params$banked_offset_selection_type == 'stochastic'){
+  if (simulation_params$banked_offset_selection_type == 'stochastic'){
     current_pool <- sample(simulation_data_object$output_data$index_object$available_indexes$offsets, offset_bank_num)
   } else {
     current_pool = setdiff(simulation_data_object$output_data$index_object$banked_offset_control[[yr]], 
@@ -822,9 +830,9 @@ run_banking_routine <- function(simulation_data_object, yr){
   current_pool = unlist(current_pool)
   
   simulation_data_object$feature_dynamics_modes = update_feature_dynamics_modes(simulation_data_object$feature_dynamics_modes, 
-                                                                                simulation_data_object$simulation_params$feature_num,
-                                                                                simulation_data_object$simulation_params$features_to_use_in_offset_intervention, 
-                                                                                action_type = simulation_data_object$simulation_params$offset_action_type, 
+                                                                                simulation_data_object$global_params$feature_num,
+                                                                                simulation_params$features_to_use_in_offset_intervention, 
+                                                                                action_type = simulation_params$offset_action_type, 
                                                                                 current_pool)
   
   simulation_data_object$feature_dynamics[current_pool] = update_feature_dynamics(simulation_data_object$site_features[current_pool], 
@@ -832,7 +840,7 @@ run_banking_routine <- function(simulation_data_object, yr){
                                                                                   simulation_data_object$management_dynamics[current_pool],
                                                                                   simulation_data_object$feature_dynamics_modes[current_pool],
                                                                                   simulation_data_object$feature_params, 
-                                                                                  features_to_update = simulation_data_object$simulation_params$features_to_use_in_offset_intervention, 
+                                                                                  features_to_update = simulation_params$features_to_use_in_offset_intervention, 
                                                                                   action_type = 'offset', 
                                                                                   yr)
   
@@ -894,13 +902,13 @@ run_clearing_routines <- function(simulation_data_object, current_dev_object, cl
                                                                                   simulation_data_object$management_dynamics[current_pool],
                                                                                   simulation_data_object$feature_dynamics_modes[current_pool],
                                                                                   simulation_data_object$feature_params, 
-                                                                                  features_to_update = seq(simulation_data_object$simulation_params$feature_num), 
+                                                                                  features_to_update = seq(simulation_data_object$global_params$feature_num), 
                                                                                   action_type = 'develop', 
                                                                                   yr)
   
   simulation_data_object$feature_dynamics_modes = update_feature_dynamics_modes(simulation_data_object$feature_dynamics_modes, 
-                                                                                simulation_data_object$simulation_params$feature_num,
-                                                                                seq(simulation_data_object$simulation_params$feature_num), 
+                                                                                simulation_data_object$global_params$feature_num,
+                                                                                seq(simulation_data_object$global_params$feature_num), 
                                                                                 action_type = 'development', 
                                                                                 current_pool)
   
@@ -941,7 +949,7 @@ assess_banking_credit <- function(output_data, simulation_params){
 
 
 # determine characteristics of potential offset sites
-build_intervention_pool <- function(simulation_data_object, pool_type, current_pool, yr){
+build_intervention_pool <- function(simulation_data_object, simulation_params, pool_type, current_pool, yr){
   
   # if no developments or banked offsets for the current year return null object
   if (simulation_data_object$output_data$index_object$intervention_control[yr] ==  0){
@@ -977,27 +985,27 @@ build_intervention_pool <- function(simulation_data_object, pool_type, current_p
   
   pool_object <- assess_current_pool(pool_object = pool_object,
                                      pool_type,
-                                     features_to_use = simulation_data_object$simulation_params$features_to_use_in_offset_calc,
+                                     features_to_use = simulation_params$features_to_use_in_offset_calc,
                                      site_features = simulation_data_object$site_features[current_pool],
                                      feature_dynamics = simulation_data_object$feature_dynamics[current_pool],
                                      management_dynamics = simulation_data_object$management_dynamics[current_pool],
                                      feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
                                      site_element_index_key = simulation_data_object$site_element_index_key[current_pool],
-                                     calc_type = simulation_data_object$simulation_params$offset_calc_type,
-                                     cfacs_flag = simulation_data_object$simulation_params$offset_cfacs_flag,
-                                     adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_offset_cfacs_flag,
-                                     action_type = simulation_data_object$simulation_params$offset_action_type,
-                                     include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_offset_calc,
-                                     include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_offset_calc,
-                                     include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_offset_calc,
+                                     calc_type = simulation_params$offset_calc_type,
+                                     cfacs_flag = simulation_params$offset_cfacs_flag,
+                                     adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
+                                     action_type = simulation_params$offset_action_type,
+                                     include_potential_developments = simulation_params$include_potential_developments_in_offset_calc,
+                                     include_potential_offsets = simulation_params$include_potential_offsets_in_offset_calc,
+                                     include_unregulated_loss = simulation_params$include_unregulated_loss_in_offset_calc,
                                      recalculate_probabilities(simulation_data_object$dev_probability_list[current_pool]), 
                                      recalculate_probabilities(simulation_data_object$offset_probability_list[current_pool]), 
-                                     time_horizon_type = simulation_data_object$simulation_params$offset_time_horizon_type,
-                                     simulation_data_object$simulation_params,
+                                     time_horizon_type = simulation_params$offset_time_horizon_type,
+                                     simulation_params,
                                      simulation_data_object$feature_params,
-                                     time_horizon = simulation_data_object$simulation_params$offset_time_horizon,
+                                     time_horizon = simulation_params$offset_time_horizon,
                                      yr, 
-                                     simulation_data_object$user_transform_function)      
+                                     simulation_data_object$global_params$user_transform_function)      
   
 
   return(pool_object)
@@ -1008,119 +1016,7 @@ build_intervention_pool <- function(simulation_data_object, pool_type, current_p
 
 
 
-assess_parcel_sets <- function(simulation_data_object, offsets_object, offset_parcel_sets, time_horizon, yr){
-  
-  assessed_parcel_sets_object <- list()
-  
-  parcel_set_count = length((offset_parcel_sets))
-  discriminator_metric <- vector('list', parcel_set_count)
-  
-  for (parcel_set_ind in seq_len(parcel_set_count)){
-    
-    # select current set of sites from offsets object
-    current_parcel_set <- which(unlist(offsets_object$internal_site_indexes) %in% unlist(offset_parcel_sets[[parcel_set_ind]]))
-    
-    # select characteristics of current set of sites
-    current_offset_object <- lapply(seq_along(offsets_object), function(i) offsets_object[[i]][current_parcel_set])
-    names(current_offset_object) <- names(offsets_object)
-    
-    parcel_vals_achieved <- assess_current_gain_pool(site_features,
-                                                     pool_object = current_offset_object,
-                                                     calc_type = simulation_data_object$simulation_params$offset_calc_type,
-                                                     include_potential_developments = simulation_data_object$simulation_params$include_potential_developments_in_offset_calc,
-                                                     include_potential_offsets = simulation_data_object$simulation_params$include_potential_offsets_in_offset_calc,
-                                                     include_unregulated_loss = simulation_data_object$simulation_params$include_unregulated_loss_in_offset_calc,
-                                                     simulation_data_object$simulation_params,
-                                                     simulation_data_object$feature_params, 
-                                                     feature_dynamics,
-                                                     time_horizon,
-                                                     yr)
-    
-    for (feature_ind in seq_len(simulation_data_object$simulation_params$feature_num)){
-      discriminator_metric[[parcel_set_ind]] = nested_list_sum(subtract_nested_lists(parcel_vals_achieved, current_offset_object$parcel_vals_used))
-    }
-  }
-  
-  # determine whether site has reached gains for subset of features used in offset calculations
-  parcel_set_success_inds <- unlist(lapply(seq_along(discriminator_metric),
-                                           function(i) (all(unlist(discriminator_metric[[i]][simulation_data_object$simulation_params$features_to_use_in_offset_calc]) > 0))))
-  
-  site_success_inds = which(unlist(offsets_object$internal_site_indexes) %in% unlist(offset_parcel_sets[parcel_set_success_inds]))
-  assessed_parcel_sets_object$site_success_inds <- offsets_object$internal_site_indexes[site_success_inds]
-  assessed_parcel_sets_object$discriminator_metric <- discriminator_metric
-  
-  return(assessed_parcel_sets_object)
-}
 
-
-
-# assess_current_gain_pool <- function(site_features, pool_object, calc_type, time_fill,
-#                                      include_potential_developments, include_potential_offsets, include_unregulated_loss,
-#                                      simulation_params, feature_params, feature_dynamics, time_horizon, yr){
-#   
-#   stop()
-#   print('reinstate routine')
-#   current_pool = unlist(pool_object$internal_site_indexes)
-#   parcel_count = length(current_pool)
-#   intervention_yrs = unlist(pool_object$intervention_yrs)
-#   
-#   time_horizons <- generate_time_horizons(project_type = 'current', yr, intervention_yrs, time_horizon, parcel_count)
-#   
-#   if (cfacs_flag == TRUE){
-#     
-#     if (adjust_cfacs_flag == FALSE){
-#       time_fill = FALSE
-#     } else {
-#       time_fill = TRUE
-#     }
-#     
-#     if (simulation_data_object$simulation_params$use_offset_metric == FALSE){
-#       cfacs = unlist(lapply(seq_along(site_group_to_use), 
-#                             function(i) sum_site_features(calc_site_cfacs(site_group_to_use[i],
-#                                                              parcel_num_remaining = pool_object$parcel_num_remaining[i],
-#                                                              simulation_data_object$simulation_params,
-#                                                              feature_params,
-#                                                              feature_dynamics_to_use[i],
-#                                                              feature_dynamics_modes_to_use[i],
-#                                                              time_horizons[i],
-#                                                              unlist(pool_object$intervention_yrs)[i],
-#                                                              include_potential_developments,
-#                                                              include_potential_offsets,
-#                                                              include_unregulated_loss,
-#                                                              adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_offset_cfacs_flag,
-#                                                              time_fill,
-#                                                              yr), simulation_data_object$simulation_params$feature_num)), recursive = FALSE)
-#       
-#     } else {
-#       
-#       cfacs = lapply(seq_along(site_group_to_use), 
-#                      function(i) sum_cols(user_transform_function(unlist(calc_site_cfacs(site_group_to_use[i],
-#                                                                                     parcel_num_remaining = pool_object$parcel_num_remaining[i],
-#                                                                                     simulation_data_object$simulation_params,
-#                                                                                     feature_params,
-#                                                                                     feature_dynamics_to_use[i],
-#                                                                                     feature_dynamics_modes_to_use[i],
-#                                                                                     time_horizons[i],
-#                                                                                     unlist(pool_object$intervention_yrs)[i],
-#                                                                                     include_potential_developments,
-#                                                                                     include_potential_offsets,
-#                                                                                     include_unregulated_loss,
-#                                                                                     adjust_cfacs_flag = simulation_data_object$simulation_params$adjust_offset_cfacs_flag,
-#                                                                                     time_fill,
-#                                                                                     yr), recursive = FALSE), simulation_data_object$simulation_params$transform_params)))
-#     }
-#     
-#     cfac_vals = nested_list_tail(cfacs)
-#     
-#   }
-#   projected_vals = site_features[current_pool]
-#   
-#   projected_vals = lapply(seq_along(projected_vals), function(i) lapply(seq_along(simulation_data_object$simulation_params$features_to_use_in_offset_calc), function(j) sum(projected_vals[[i]][[j]] )))
-#   
-#   parcel_vals_achieved = evaluate_parcel_vals(calc_type, pool_object$parcel_sums_at_offset, projected_vals, cfac_vals)
-#   
-#   return(parcel_vals_achieved)
-# }
 
 
 #construct a list of zero arrays with identical dimensions defined by array_dims
@@ -1315,7 +1211,7 @@ recalculate_probabilities <- function(current_probability_list){
 }
 
 
-match_sites <- function(simulation_data_object, match_type, yr){
+match_sites <- function(simulation_data_object, simulation_params, match_type, yr){
   ###### TODO check zero development routines the code below may not be the most efficient method for this ###
   
   match_object = setNames(list(FALSE), 'match_flag')
@@ -1350,10 +1246,10 @@ match_sites <- function(simulation_data_object, match_type, yr){
   
   while( (match_object$match_flag == FALSE)){   
     
-    if ((simulation_data_object$simulation_params$development_selection_type == 'stochastic') 
-        | (simulation_data_object$simulation_params$development_selection_type == 'pre_determined')){
+    if ((simulation_params$development_selection_type == 'stochastic') 
+        | (simulation_params$development_selection_type == 'pre_determined')){
       current_dev_probability_list = rep(1/length(current_match_pool), length(current_match_pool))
-    } else if (simulation_data_object$simulation_params$development_selection_type == 'weighted'){
+    } else if (simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
     } 
 
@@ -1361,7 +1257,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
     current_test_index = current_match_pool[sample_ind]
     vals_to_match = current_match_vals_pool[[sample_ind]]
     
-    if (simulation_data_object$simulation_params$use_offset_bank == FALSE){
+    if (simulation_params$use_offset_bank == FALSE){
       browser()
       dev_ind = list_intersect(group_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
       match_pool_to_use = remove_index(group_pool_indexes, dev_ind$match_ind)
@@ -1380,7 +1276,7 @@ match_sites <- function(simulation_data_object, match_type, yr){
                                     unlist(simulation_data_object$output_data$current_credit),
                                     simulation_data_object$offset_probability_list,
                                     vals_to_match_initial = vals_to_match,
-                                    simulation_data_object$simulation_params,
+                                    simulation_params,
                                     yr) #perform matching routine
     
     if (match_object$match_flag == FALSE){
@@ -1861,7 +1757,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
         cfac_weights = lapply(seq_along(site_features_group), function(i) lapply(seq_along(site_features_group[[i]]), function(j) array(1, time_horizons[[i]])))
       } else {
         cfac_weights = calc_cfac_weights(site_num = length(site_features_group), include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                                         dev_probability_list, offset_probability_list, simulation_params, feature_params, pool_object$parcel_num_remaining, time_horizons, unlist(pool_object$intervention_yrs))
+                                         dev_probability_list, offset_probability_list, simulation_params, global_params, feature_params, pool_object$parcel_num_remaining, time_horizons, unlist(pool_object$intervention_yrs))
       }
       
       projection_yrs = lapply(seq_along(site_features_group), 
@@ -2156,9 +2052,10 @@ adjust_cfacs <- function(current_cfac, current_cfac_weights, current_mode, time_
 
 
 calc_cfac_weights <- function(site_num, include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                              dev_probability_list, offset_probability_list, simulation_params, feature_params, parcel_num_remaining, time_horizons, intervention_yrs){
+                              dev_probability_list, offset_probability_list, simulation_params, global_params, feature_params, 
+                              parcel_num_remaining, time_horizons, intervention_yrs){
   
-  cfac_weights = lapply(seq(site_num), function(i) lapply(seq(simulation_params$feature_num), function(j) rep(1, time_horizons[[i]])))
+  cfac_weights = lapply(seq(site_num), function(i) lapply(seq(global_params$feature_num), function(j) rep(1, time_horizons[[i]])))
   
   if (include_unregulated_loss == TRUE){
     cfac_weights <- lapply(seq_along(cfac_weights), 
@@ -2215,16 +2112,16 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
   #                                                   offset_intervention_probs, 
   #                                                   simulation_params$restoration_rate, 
   #                                                   time_horizons, 
-  #                                                   simulation_params$feature_num, 
+  #                                                   global_params$feature_num, 
   #                                                   simulation_params$min_eco_val, 
   #                                                   simulation_params$max_eco_val)
   #     
   #     summed_offset_projections <- sum_offset_projs(offset_projections,
   #                                                   offset_intervention_probs, 
-  #                                                   simulation_params$feature_num, 
+  #                                                   global_params$feature_num, 
   #                                                   time_horizons)
   #     
-  #     adjusted_cfacs = sum_clearing_offsets(adjusted_cfacs, summed_offset_projections, simulation_params$feature_num)
+  #     adjusted_cfacs = sum_clearing_offsets(adjusted_cfacs, summed_offset_projections, global_params$feature_num)
   
   
   inds = lapply(seq_along(cfac_weights), 
