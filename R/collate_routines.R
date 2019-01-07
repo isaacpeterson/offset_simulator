@@ -1,54 +1,68 @@
-osim.collate <- function(){
+osim.collate <- function(input_data_object, simulation_params_group){
   flog.info('running collate routines')
   
-  if ((user_global_params$build_background_cfacs == TRUE) |
-      (userglobal_params$overwrite_feature_dynamics == TRUE) |
-      !file.exists(paste0(user_global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+  for (scenario_ind in input_data_object$global_params$scenario_subset){
     
-    flog.info('building background counterfactuals - this may take a while')
-    background_cfacs_object = build_background_cfacs(input_data_object, simulation_params)
-    flog.info('saving background counterfactuals')
-    saveRDS(background_cfacs_object, paste0(user_global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+    if ((input_data_object$global_params$build_background_cfacs == TRUE) |
+        (input_data_object$global_params$overwrite_feature_dynamics == TRUE) |
+        !file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
+      
+      flog.info('building background counterfactuals - this may take a while')
+      
+      background_cfacs_object = build_background_cfacs(input_data_object, simulation_params_group[[scenario_ind]])
+      flog.info('saving background counterfactuals')
+      saveRDS(background_cfacs_object, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      
+    } else {
+      flog.info('loading background counterfactuals from file')
+      background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+    }
     
-  } else {
-    flog.info('loading background counterfactuals from file')
-    background_cfacs_object = readRDS(paste0(user_global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+    if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1) &&
+        (input_data_object$global_params$collate_with_parallel_cores == TRUE)){
+      
+      foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dopar%{
+        collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+      }
+    } else {
+      # Case when running single realisation
+      
+      for (realisation_ind in 1:input_data_object$global_params$realisation_num){
+        collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+      }
+      
+    }
+    
+    flog.info('scenario %s collated and completed in %s %s', 
+              scenario_ind,
+              round(difftime(Sys.time(), loop_strt), 1), 
+              units(difftime(Sys.time(), loop_strt)))
   }
   
-  if ((user_global_params$number_of_cores > 1) && (user_global_params$realisation_num > 1) &&
-      (user_global_params$collate_with_parallel_cores == TRUE)){
-    # case when running NON-DETERMINISTIC realisations in parallel
-    foreach(realisation_ind = seq_len(user_global_params$realisation_num)) %dopar%{
-      collate_simulation_outputs(input_data_object, simulation_params, background_cfacs_object, scenario_ind, realisation_ind)
-    }
-  } else {
-    # Case when running single realisation
-    ###### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
-    for (realisation_ind in 1:user_global_params$realisation_num){
-      collate_simulation_outputs(input_data_object, simulation_params, background_cfacs_object, scenario_ind, realisation_ind)
-    }
-
-  }
   
-  flog.info('scenario %s collated and completed in %s %s', 
-            scenario_ind,
-            round(difftime(Sys.time(), loop_strt), 1), 
-            units(difftime(Sys.time(), loop_strt)))
   
-  if (user_global_params$save_simulation_outputs == FALSE){
+  if (input_data_object$global_params$save_simulation_outputs == FALSE){
     # This deletes all folders and subfolders that were created in the run
     # process that are no longer needed
-    unlink(user_global_params$output_folder, recursive = TRUE)
+    unlink(input_data_object$global_params$output_folder, recursive = TRUE)
+  }
+  
+  
+  if (input_data_object$global_params$save_simulation_outputs == FALSE){
+    # This deletes all folders and subfolders that were created in the run
+    # process that are no longer needed
+    unlink(input_data_object$global_params$output_folder, recursive = TRUE)
   }
   
   flog.info('all scenarios done in %s %s', 
-            round(difftime(Sys.time(), user_global_params$strt), 1), 
-            units(difftime(Sys.time(), user_global_params$strt)))
+            round(difftime(Sys.time(), input_data_object$global_params$strt), 1), 
+            units(difftime(Sys.time(), input_data_object$global_params$strt)))
   
-  flog.info('all outputs written into %s', user_global_params$run_folder)
+  flog.info('all outputs written into %s', input_data_object$global_params$run_folder)
   
   # Clean up the parallel processes if there was more than one
-  parallel::stopCluster(user_global_params$clstr)
+  parallel::stopCluster(input_data_object$global_params$clstr)
+  
 }
 
 

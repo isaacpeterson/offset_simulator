@@ -54,6 +54,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               input_data_object$site_characteristics$landscape_dims[1], 
               input_data_object$site_characteristics$landscape_dims[2],
               input_data_object$site_characteristics$site_num)
+    
     flog.info('%s potential development sites, %s potential offset sites',
               length(output_data$index_object$available_indexes$devs), 
               length(output_data$index_object$available_indexes$offsets)) 
@@ -122,18 +123,19 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       
     } else {
       flog.info('loading background counterfactuals from file')
-      background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      #background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      background_cfacs_object = readRDS('background_cfacs.rds')
     }
     
     if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1) &&
         (input_data_object$global_params$collate_with_parallel_cores == TRUE)){
-      # case when running NON-DETERMINISTIC realisations in parallel
+
       foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dopar%{
         collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
       }
     } else {
       # Case when running single realisation
-      ###### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
+
       for (realisation_ind in 1:input_data_object$global_params$realisation_num){
         collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
       }
