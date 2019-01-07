@@ -109,7 +109,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   
   flog.info('running collate routines')
   
-  if (global_params$background_cfacs_file = 'default'){
+  if (global_params$background_cfacs_file == 'default'){
     background_cfacs_file = paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds')
   } else {
     background_cfacs_file = global_params$background_cfacs_file
