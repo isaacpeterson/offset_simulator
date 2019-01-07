@@ -791,7 +791,9 @@ run_banking_routine <- function(simulation_data_object, simulation_params, yr){
   # how many offsets to be added in current year
 
   if (simulation_params$banked_offset_selection_type == 'stochastic'){
-    offset_bank_num = simulation_data_object$output_data$index_object$banked_offset_control[[yr]]
+    offset_bank_num = min(simulation_data_object$output_data$index_object$banked_offset_control[[yr]], 
+                          length(simulation_data_object$output_data$index_object$available_indexes$offsets))
+    
   } else {
     offset_bank_num = length(which(simulation_data_object$output_data$index_object$banked_offset_control[[yr]] > 0))
   }
