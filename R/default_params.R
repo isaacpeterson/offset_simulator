@@ -77,7 +77,8 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_management_dynamics = FALSE
   default_global_params$overwrite_feature_dynamics = FALSE
   default_global_params$overwrite_condition_classes = FALSE
-  
+  default_global_params$save_background_cfacs = TRUE
+  default_global_params$background_cfacs_file = 'default'
   return(default_global_params)
 }
 
