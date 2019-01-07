@@ -109,22 +109,44 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   
   flog.info('running collate routines')
   
+  if (global_params$background_cfacs_file = 'default'){
+    background_cfacs_file = paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds')
+  } else {
+    background_cfacs_file = global_params$background_cfacs_file
+  }
+      
+  build_cfacs_flag = ((input_data_object$global_params$build_background_cfacs == TRUE) |
+                        (input_data_object$global_params$overwrite_feature_dynamics == TRUE) |
+                        !file.exists(background_cfacs_file))
+  
   for (scenario_ind in input_data_object$global_params$scenario_subset){
     
-    if ((input_data_object$global_params$build_background_cfacs == TRUE) |
-        (input_data_object$global_params$overwrite_feature_dynamics == TRUE) |
-        !file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
-      
-      flog.info('building background counterfactuals - this may take a while')
+    if (!build_cfacs_flag){
+      build_scenario_background_cfacs_flag = FALSE
+      flog.info('loading background counterfactuals from file')
+      background_cfacs_object = readRDS(background_cfacs_file)
 
+      if (simulation_params_group[[scenario_ind]]$time_steps <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
+        background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
+                                                   function(i) lapply(seq_along(background_cfacs_object[[i]]), 
+                                                                      function(j) background_cfacs_object[[i]][[j]][1:simulation_params_group[[scenario_ind]]$time_steps, , drop = FALSE]
+                                                   )), names(background_cfacs_object))
+      } else {
+        flog.info('simulation time steps is not a subset of loaded background counterfactuals')
+        build_scenario_background_cfacs_flag = TRUE
+      }
+      
+    } 
+    
+    if (build_scenario_background_cfacs_flag){
+      flog.info('building background counterfactuals - this may take a while')
+      
       background_cfacs_object = build_background_cfacs(input_data_object, simulation_params_group[[scenario_ind]])
       flog.info('saving background counterfactuals')
-      saveRDS(background_cfacs_object, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+      if (input_data_object$global_params$save_background_cfacs == TRUE){
+          saveRDS(background_cfacs_object, global_params$background_cfacs_file)
+      }
       
-    } else {
-      flog.info('loading background counterfactuals from file')
-      #background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-      background_cfacs_object = readRDS('background_cfacs.rds')
     }
     
     if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1) &&
@@ -1470,13 +1492,6 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
   match_object$match_vals = match_vals
   match_object$match_ind = match_ind
   return(match_object)
-}
-
-
-select_cols <- function(arr_to_use, col_inds){
-  arr_to_use <- arr_to_use[, col_inds]
-  arr_to_use <- t(t(arr_to_use))
-  return(arr_to_use)
 }
 
 
