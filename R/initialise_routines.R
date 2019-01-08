@@ -208,6 +208,58 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 }
 
 
+run_build_background_cfacs_routines <- function(global_input_data, simulation_params){
+  
+  if (global_input_data$global_params$background_cfacs_file == 'default'){
+    background_cfacs_file = paste0(global_input_data$global_params$simulation_inputs_folder, 'background_cfacs_', '.rds')
+  } else {
+    background_cfacs_file = global_input_data$global_params$background_cfacs_file
+  }
+  
+  build_cfacs_flag = ((global_input_data$global_params$build_background_cfacs == TRUE) |
+                        (global_input_data$global_params$overwrite_feature_dynamics == TRUE) |
+                        !file.exists(background_cfacs_file))
+  
+  if (!build_cfacs_flag){
+    
+    flog.info('loading background counterfactuals from file')
+    background_cfacs_object = readRDS(background_cfacs_file)
+    
+    if (global_input_data$global_params$time_steps <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
+      build_current_background_cfacs_flag = FALSE
+      flog.info('processing background cfacs')
+      if (global_input_data$global_params$time_steps < dim(background_cfacs_object$background_cfacs[[1]])[1]){
+        background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
+                                                   function(i) lapply(seq_along(background_cfacs_object[[i]]), 
+                                                                      function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
+                                                   )), names(background_cfacs_object))
+      }
+
+    } else {
+      flog.info('specified simulation time is not a subset of saved background counterfactuals')
+      build_current_background_cfacs_flag = TRUE
+    }
+    
+  } else {
+    build_current_background_cfacs_flag = TRUE
+  }
+  
+  if (build_current_background_cfacs_flag == TRUE){
+    flog.info('building background counterfactuals - this may take a while')
+    
+    background_cfacs_object = build_background_cfacs(global_input_data, simulation_params)
+    
+  }
+  
+  if (global_input_data$global_params$save_background_cfacs == TRUE){
+    flog.info('saving background counterfactuals')
+    saveRDS(background_cfacs_object, background_cfacs_file)
+  }
+  
+  
+}
+
+
 estimate_illegal_sites <- function(loss_prob, time_steps, site_num){
   estimated_sites_cleared = (site_num - site_num*(1 - loss_prob)^time_steps)
   return(estimated_sites_cleared)
