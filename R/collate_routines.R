@@ -1,72 +1,3 @@
-# osim.collate <- function(input_data_object, simulation_params_group){
-#   flog.info('running collate routines')
-#   
-#   for (scenario_ind in input_data_object$global_params$scenario_subset){
-#     
-#     if ((input_data_object$global_params$build_background_cfacs == TRUE) |
-#         (input_data_object$global_params$overwrite_feature_dynamics == TRUE) |
-#         !file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))){
-#       
-#       flog.info('building background counterfactuals - this may take a while')
-#       
-#       background_cfacs_object = build_background_cfacs(input_data_object, simulation_params_group[[scenario_ind]])
-#       flog.info('saving background counterfactuals')
-#       saveRDS(background_cfacs_object, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-#       
-#     } else {
-#       flog.info('loading background counterfactuals from file')
-#       background_cfacs_object = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-#     }
-#     
-#     if ((input_data_object$global_params$number_of_cores > 1) && (input_data_object$global_params$realisation_num > 1) &&
-#         (input_data_object$global_params$collate_with_parallel_cores == TRUE)){
-#       
-#       foreach(realisation_ind = seq_len(input_data_object$global_params$realisation_num)) %dopar%{
-#         collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
-#       }
-#     } else {
-#       # Case when running single realisation
-#       
-#       for (realisation_ind in 1:input_data_object$global_params$realisation_num){
-#         collate_simulation_outputs(input_data_object, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
-#       }
-#       
-#     }
-#     
-#     flog.info('scenario %s collated and completed in %s %s', 
-#               scenario_ind,
-#               round(difftime(Sys.time(), loop_strt), 1), 
-#               units(difftime(Sys.time(), loop_strt)))
-#   }
-#   
-#   
-#   
-#   if (input_data_object$global_params$save_simulation_outputs == FALSE){
-#     # This deletes all folders and subfolders that were created in the run
-#     # process that are no longer needed
-#     unlink(input_data_object$global_params$output_folder, recursive = TRUE)
-#   }
-#   
-#   
-#   if (input_data_object$global_params$save_simulation_outputs == FALSE){
-#     # This deletes all folders and subfolders that were created in the run
-#     # process that are no longer needed
-#     unlink(input_data_object$global_params$output_folder, recursive = TRUE)
-#   }
-#   
-#   flog.info('all scenarios done in %s %s', 
-#             round(difftime(Sys.time(), input_data_object$global_params$strt), 1), 
-#             units(difftime(Sys.time(), input_data_object$global_params$strt)))
-#   
-#   flog.info('all outputs written into %s', input_data_object$global_params$run_folder)
-#   
-#   # Clean up the parallel processes if there was more than one
-#   parallel::stopCluster(input_data_object$global_params$clstr)
-#   
-# }
-
-
-
 collate_simulation_outputs <- function(input_data_object, simulation_params, background_cfacs_object, scenario_ind, realisation_ind){
   
   current_data_dir = write_folder(paste0(input_data_object$global_params$output_folder, 
@@ -89,7 +20,6 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
                                           file_prefix,
                                           use_offset_metric = FALSE)
   
-  
   if (simulation_params$use_offset_metric == TRUE){
     run_collate_routines(simulation_outputs,
                          simulation_params,
@@ -106,7 +36,7 @@ build_background_cfacs <- function(input_data_object, simulation_params){
   
   background_cfacs_object = list()
 
-  background_projection_yrs_pool = lapply(seq_along(input_data_object$site_features), 
+  background_projection_yrs_pool = lapply(seq_along(input_data_object$site_characteristics$site_num), 
                                           function(i) lapply(seq(input_data_object$global_params$feature_num), 
                                                              function(j) rep(list(1), length(input_data_object$feature_dynamics_modes[[i]][[j]])) ))  
   
@@ -297,11 +227,8 @@ run_pre_collate_intervention_routines <- function(simulation_outputs, input_data
   site_num_remaining_pool = unlist(lapply(seq_along(simulation_outputs$interventions), function(i) simulation_outputs$interventions[[i]]$site_num_remaining))
   
   intervention_object = list()
-  projection_yrs_pool = lapply(seq(input_data_object$site_characteristics$site_num), 
-                               function(i) lapply(seq(input_data_object$global_params$feature_num), 
-                                                  function(j) rep(list(unlist(intervention_yrs_pool)[i]), 
-                                                                  length(input_data_object$feature_dynamics_modes[[unlist(intervention_pool)[i] ]][[j]])) ))
-  
+  flog.info('current time')
+  browser()
   site_features_at_intervention_set = vector('list', input_data_object$site_characteristics$site_num)
   
   for (current_feature_ind in seq(input_data_object$global_params$feature_num)){
@@ -311,6 +238,8 @@ run_pre_collate_intervention_routines <- function(simulation_outputs, input_data
     site_features_at_intervention_set = lapply(seq_along(site_features_at_intervention_set), function(i) append(site_features_at_intervention_set[[i]], site_features_at_intervention[[i]]))
   }
   
+  summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, 
+                                                   input_data_object$global_params$user_transform_function, simulation_params$transform_params)
   if (use_offset_metric == FALSE){
     flog.info('building counterfactuals over time series - this may take a while')
   } else {
@@ -319,8 +248,12 @@ run_pre_collate_intervention_routines <- function(simulation_outputs, input_data
   
   site_element_index_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   
-  site_scale_cfacs = vector('list', input_data_object$site_characteristics$site_num)
+  pool_to_use = as.vector(unlist(intervention_yrs_pool))
+  projection_yrs_pool = lapply(seq_along(pool_to_use), 
+                               function(i) lapply(seq(input_data_object$global_params$feature_num), 
+                                                  function(j) rep(list(pool_to_use[i]), length(input_data_object$feature_dynamics_modes[[ pool_to_use[i] ]][[j]])) ))
   
+  site_scale_cfacs = vector('list', input_data_object$site_characteristics$site_num)
   site_scale_cfacs[unlist(intervention_pool)] = collate_cfacs(site_features_at_intervention_set[unlist(intervention_pool)],
                                                               simulation_params, 
                                                               input_data_object$feature_params,
@@ -338,8 +271,7 @@ run_pre_collate_intervention_routines <- function(simulation_outputs, input_data
                                                               use_offset_metric, 
                                                               input_data_object$global_params$user_transform_function)
   
-  summed_site_features_at_intervention = sum_sites(site_features_at_intervention_set, use_offset_metric, 
-                                                   input_data_object$global_params$user_transform_function, simulation_params$transform_params)
+
   
   flog.info('pre collate collate routines done')
   
