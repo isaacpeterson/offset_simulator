@@ -37,7 +37,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     loop_strt <- Sys.time()
     
     current_output_data = build_output_data(global_input_data, simulation_params_group[[scenario_ind]])
-    
+    current_background_cfacs_object = run_build_background_cfacs_routines(global_input_data, simulation_params)
+      
     flog.info('running scenario %s of %s, with %s discrete time steps',  
               scenario_ind, 
               length(simulation_params_group),
@@ -73,18 +74,18 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       
       # foreach runs realizations in parallel
       foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dorng%{
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
       }
     } else if ((global_input_data$global_params$number_of_cores > 1) && (global_input_data$global_params$realisation_num > 1)){
       # case when running NON-DETERMINISTIC realisations in parallel
       foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dopar%{
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
       }
     } else {
       # Case when running single realisation
       ##### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
       for (realisation_ind in 1:global_input_data$global_params$realisation_num){
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
       }
       
     }
@@ -96,79 +97,32 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               units(difftime(Sys.time(), loop_strt)))
   }
   
-  flog.info('running collate routines')
   
-  if (global_input_data$global_params$background_cfacs_file == 'default'){
-    background_cfacs_file = paste0(global_input_data$global_params$simulation_inputs_folder, 'background_cfacs_', '.rds')
-  } else {
-    background_cfacs_file = global_input_data$global_params$background_cfacs_file
-  }
-      
-  build_cfacs_flag = ((global_input_data$global_params$build_background_cfacs == TRUE) |
-                        (global_input_data$global_params$overwrite_feature_dynamics == TRUE) |
-                        !file.exists(background_cfacs_file))
   
-  for (scenario_ind in global_input_data$global_params$scenario_subset){
-    
-    if (!build_cfacs_flag){
-      
-      flog.info('loading background counterfactuals from file')
-      background_cfacs_object = readRDS(background_cfacs_file)
-
-      if (global_input_data$global_params$time_steps <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
-        build_current_background_cfacs_flag = FALSE
-        flog.info('processing background cfacs')
-        if (global_input_data$global_params$time_steps < dim(background_cfacs_object$background_cfacs[[1]])[1]){
-          browser()
-          background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
-                                                   function(i) lapply(seq_along(background_cfacs_object[[i]]), 
-                                                                      function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
-                                                   )), names(background_cfacs_object))
-        }
-        flog.info('background cfacs processed')
-      } else {
-        flog.info('specified simulation time is not a subset of saved background counterfactuals')
-        build_current_background_cfacs_flag = TRUE
-      }
-      
-    } else {
-      build_current_background_cfacs_flag = TRUE
-    }
-    
-    if (build_current_background_cfacs_flag == TRUE){
-      flog.info('building background counterfactuals - this may take a while')
-      
-      background_cfacs_object = build_background_cfacs(global_input_data, simulation_params_group[[scenario_ind]])
-      
-    }
-    
-    if (global_input_data$global_params$save_background_cfacs == TRUE){
-      flog.info('saving background counterfactuals')
-      saveRDS(background_cfacs_object, background_cfacs_file)
-    }
-    
-    
-    if ((global_input_data$global_params$number_of_cores > 1) && (global_input_data$global_params$realisation_num > 1) &&
-        (global_input_data$global_params$collate_with_parallel_cores == TRUE)){
-
-      foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dopar%{
-        collate_simulation_outputs(global_input_data, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
-      }
-    } else {
-      # Case when running single realisation
-
-      for (realisation_ind in 1:global_input_data$global_params$realisation_num){
-        collate_simulation_outputs(global_input_data, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
-      }
-      
-    }
-    
-    flog.info('scenario %s collated and completed in %s %s', 
-              scenario_ind,
-              round(difftime(Sys.time(), loop_strt), 1), 
-              units(difftime(Sys.time(), loop_strt)))
-  }
-  
+#   for (scenario_ind in global_input_data$global_params$scenario_subset){
+#     
+# 
+#     if ((global_input_data$global_params$number_of_cores > 1) && (global_input_data$global_params$realisation_num > 1) &&
+#         (global_input_data$global_params$collate_with_parallel_cores == TRUE)){
+# 
+#       foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dopar%{
+#         collate_simulation_outputs(global_input_data, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+#       }
+#     } else {
+#       # Case when running single realisation
+# 
+#       for (realisation_ind in 1:global_input_data$global_params$realisation_num){
+#         collate_simulation_outputs(global_input_data, simulation_params_group[[scenario_ind]],  background_cfacs_object, scenario_ind, realisation_ind)
+#       }
+#       
+#     }
+#     
+#     flog.info('scenario %s collated and completed in %s %s', 
+#               scenario_ind,
+#               round(difftime(Sys.time(), loop_strt), 1), 
+#               units(difftime(Sys.time(), loop_strt)))
+#   }
+#   
   
   
   if (global_input_data$global_params$save_simulation_outputs == FALSE){
@@ -188,41 +142,40 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
 }
 
 
-run_offset_simulation_routines <- function(simulation_data_object, simulation_params, output_data, scenario_ind, realisation_ind){  
+run_offset_simulation_routines <- function(global_input_data, simulation_params, output_data, current_background_cfacs_object, scenario_ind, realisation_ind){  
   
-  simulation_data_object$output_data = output_data
+  current_data_dir = write_folder(paste0(global_input_data$global_params$output_folder, 
+                                         'scenario_', formatC(scenario_ind, width = global_input_data$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
+                                         '/realisation_', formatC(realisation_ind, width = global_input_data$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
   
-  current_data_dir = write_folder(paste0(simulation_data_object$global_params$output_folder, 
-                                         'scenario_', formatC(scenario_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
-                                         '/realisation_', formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))
-  
-  save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr = 0)
+  save_landscape_routine(global_input_data, simulation_params, current_data_dir, yr = 0)
   
   flog.info('current data dir is %s', current_data_dir)
   
-  simulation_outputs <- run_simulation(simulation_data_object, simulation_params, current_data_dir)
+  simulation_outputs <- run_simulation(global_input_data, output_data, simulation_params, current_data_dir)
   
   # save raw simulation data
 
   saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
-                                       formatC(realisation_ind, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                                       formatC(realisation_ind, width = global_input_data$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                        '_outputs.rds'))
 
+  flog.info('running collate routines')
+  collate_simulation_outputs(global_input_data, simulation_params, current_background_cfacs_object, scenario_ind, realisation_ind)
   
   # delete current temporary files and folder
-  if (simulation_data_object$global_params$save_simulation_outputs == FALSE){
+  if (global_input_data$global_params$save_simulation_outputs == FALSE){
     unlink(current_data_dir, recursive = TRUE)
   }
   
 }
 
 
-
-
 # main engine for code - returns all simulation outputs including developments, offsets etc.
-run_simulation <- function(simulation_data_object, simulation_params, current_data_dir){
+run_simulation <- function(simulation_data_object, output_data, simulation_params, current_data_dir){
   
-
+  simulation_data_object$output_data = output_data
+  rm(output_data)
   #run through main time loop
   for (yr in seq_len(simulation_data_object$global_params$time_steps)){
     
