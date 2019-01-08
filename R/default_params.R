@@ -34,6 +34,10 @@ initialise_default_global_params <- function(){
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
  
+  
+  # how long to run the simulaton in years
+  default_global_params$time_steps = 50
+  
   # Whether the package is to be used to generate simulated data. If this is
   # FALSE then the it will look in the
   # default_global_params$unique_simulation_folder to get the required
@@ -96,12 +100,11 @@ initialise_default_simulation_params <- function(){
 
     default_simulation_params = list()
     default_simulation_params$transform_params = vector()
-    # how long to run the simulaton in years
-    default_simulation_params$time_steps = 50
-    
+
+    simulated_time_steps = 50
     # when the interventions are set to take place, in this case force to occur once per year
-    intervention_locs = seq(1, default_simulation_params$time_steps, 1)
-    default_simulation_params$development_control = array(0, default_simulation_params$time_steps)
+    intervention_locs = seq(1, simulated_time_steps, 1)
+    default_simulation_params$development_control = array(0, simulated_time_steps)
     default_simulation_params$development_control[intervention_locs] = 1
     
     # The total number of layers to use in the offset calcuation (iterating from the start)
