@@ -37,8 +37,9 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     loop_strt <- Sys.time()
     
     current_output_data = build_output_data(global_input_data, simulation_params_group[[scenario_ind]])
-    current_background_cfacs_object = run_build_background_cfacs_routines(global_input_data, simulation_params)
-      
+
+    current_background_cfacs_object = build_background_cfacs_routines(global_input_data, simulation_params_group[[scenario_ind]])
+
     flog.info('running scenario %s of %s, with %s discrete time steps',  
               scenario_ind, 
               length(simulation_params_group),
@@ -1333,25 +1334,25 @@ subtract_lists <- function(list_a, list_b){
   return(list_c)
 }
 
-sum_lists <- function(list_a, list_b){
-  if ( (length(list_a) == length(list_b)) & (length(list_a) >0)){
-    list_c = mapply('+', list_a, list_b, SIMPLIFY = FALSE)
-  } else if (length(list_a) == 0){
-    if (length(list_b) == 0){
-      list_c = list()
-    } else{
-      list_c = list_b
-    }
-  } else if (length(list_b) == 0){
-    if (length(list_a) == 0){
-      list_c = list()
-    } else{
-      list_c = list_a
-    }
-  }
-  return(list_c)
-}
-
+# sum_lists <- function(list_a, list_b){
+#   if ( (length(list_a) == length(list_b)) & (length(list_a) >0)){
+#     list_c = mapply('+', list_a, list_b, SIMPLIFY = FALSE)
+#   } else if (length(list_a) == 0){
+#     if (length(list_b) == 0){
+#       list_c = list()
+#     } else{
+#       list_c = list_b
+#     }
+#   } else if (length(list_b) == 0){
+#     if (length(list_a) == 0){
+#       list_c = list()
+#     } else{
+#       list_c = list_a
+#     }
+#   }
+#   return(list_c)
+# }
+# 
 
 # store group of site characteristics in parcel_set_object
 record_site_characteristics <- function(site_features, current_pool, parcel_num_remaining, yr){
@@ -1753,9 +1754,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                                time_fill = FALSE,
                                                                                                unlist_condition_classes = FALSE, 
                                                                                                site_element_index_key = vector()))), nrow = 1))
-        
-       
-        
+
       } else {
         
         cfac_vals = lapply(seq_along(site_features_group), 
@@ -2174,27 +2173,27 @@ calc_offset_projections <- function(dynamics_type, current_cfacs, offset_probs, 
   
 }
 
-
-sum_offset_projs <- function(offset_projections, offset_probs, feature_num, time_horizons){
-  parcel_num = length(offset_projections)
-  summed_offset_projections = vector('list', parcel_num)
-  for (parcel_ind in seq_len(parcel_num)){
-    
-    summed_offset_projections[[parcel_ind]] = vector('list', feature_num)
-    current_offset_prob = offset_probs[[parcel_ind]]
-    current_offset_prob <- current_offset_prob*(current_offset_prob > 0)
-    
-    current_offset_proj = offset_projections[[parcel_ind]]
-    
-    for (feature_ind in seq_len(feature_num)){
-      current_offset_projections <- current_offset_proj[[feature_ind]]
-      current_offset_projections <- lapply(seq_along(current_offset_projections), function(i) current_offset_projections[[i]]*current_offset_prob[i])
-      summed_offset_projections[[parcel_ind]][[feature_ind]] = Reduce('+', current_offset_projections)
-    }
-  }
-  
-  return(summed_offset_projections)
-}
+# 
+# sum_offset_projs <- function(offset_projections, offset_probs, feature_num, time_horizons){
+#   parcel_num = length(offset_projections)
+#   summed_offset_projections = vector('list', parcel_num)
+#   for (parcel_ind in seq_len(parcel_num)){
+#     
+#     summed_offset_projections[[parcel_ind]] = vector('list', feature_num)
+#     current_offset_prob = offset_probs[[parcel_ind]]
+#     current_offset_prob <- current_offset_prob*(current_offset_prob > 0)
+#     
+#     current_offset_proj = offset_projections[[parcel_ind]]
+#     
+#     for (feature_ind in seq_len(feature_num)){
+#       current_offset_projections <- current_offset_proj[[feature_ind]]
+#       current_offset_projections <- lapply(seq_along(current_offset_projections), function(i) current_offset_projections[[i]]*current_offset_prob[i])
+#       summed_offset_projections[[parcel_ind]][[feature_ind]] = Reduce('+', current_offset_projections)
+#     }
+#   }
+#   
+#   return(summed_offset_projections)
+# }
 
 
 
@@ -2218,18 +2217,18 @@ sum_clearing_offsets <- function(cfacs_include_clearing, summed_offset_projectio
 
 
 
-sum_cols <- function(array_to_sum){
-  
-  if (length(dim(array_to_sum)) <= 1){
-    summed_array = matrix(sum(array_to_sum), ncol = 1)
-  } else if (length(dim(array_to_sum)) == 2){
-    summed_array = matrix(apply(array_to_sum, MARGIN = 1, sum), ncol = 1)
-  } else if (length(dim(array_to_sum)) == 3){
-    summed_array = apply(array_to_sum, MARGIN = c(1, 3), sum)
-    dim(summed_array) = c(dim(summed_array), 1)
-    summed_array = aperm(summed_array, c(1, 3, 2))
-  }
-  return(summed_array)
-}
-
+# sum_cols <- function(array_to_sum){
+#   
+#   if (length(dim(array_to_sum)) <= 1){
+#     summed_array = matrix(sum(array_to_sum), ncol = 1)
+#   } else if (length(dim(array_to_sum)) == 2){
+#     summed_array = matrix(apply(array_to_sum, MARGIN = 1, sum), ncol = 1)
+#   } else if (length(dim(array_to_sum)) == 3){
+#     summed_array = apply(array_to_sum, MARGIN = c(1, 3), sum)
+#     dim(summed_array) = c(dim(summed_array), 1)
+#     summed_array = aperm(summed_array, c(1, 3, 2))
+#   }
+#   return(summed_array)
+# }
+# 
 
