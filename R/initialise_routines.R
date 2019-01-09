@@ -208,8 +208,8 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 }
 
 
-run_build_background_cfacs_routines <- function(global_input_data, simulation_params){
-  
+build_background_cfacs_routines <- function(global_input_data, simulation_params){
+
   if (global_input_data$global_params$background_cfacs_file == 'default'){
     background_cfacs_file = paste0(global_input_data$global_params$simulation_inputs_folder, 'background_cfacs_', '.rds')
   } else {
@@ -229,6 +229,7 @@ run_build_background_cfacs_routines <- function(global_input_data, simulation_pa
       build_current_background_cfacs_flag = FALSE
       flog.info('processing background cfacs')
       if (global_input_data$global_params$time_steps < dim(background_cfacs_object$background_cfacs[[1]])[1]){
+
         background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
                                                    function(i) lapply(seq_along(background_cfacs_object[[i]]), 
                                                                       function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
@@ -246,7 +247,7 @@ run_build_background_cfacs_routines <- function(global_input_data, simulation_pa
   
   if (build_current_background_cfacs_flag == TRUE){
     flog.info('building background counterfactuals - this may take a while')
-    
+    browser()
     background_cfacs_object = build_background_cfacs(global_input_data, simulation_params)
     
   }
@@ -256,9 +257,61 @@ run_build_background_cfacs_routines <- function(global_input_data, simulation_pa
     saveRDS(background_cfacs_object, background_cfacs_file)
   }
   
-  
+  return(background_cfacs_object)
 }
 
+build_background_cfacs <- function(input_data_object, simulation_params){
+  
+  background_cfacs_object = list()
+  
+  background_projection_yrs_pool = lapply(seq(input_data_object$site_characteristics$site_num), 
+                                          function(i) lapply(seq(input_data_object$global_params$feature_num), 
+                                                             function(j) rep(list(1), length(input_data_object$feature_dynamics_modes[[i]][[j]])) ))  
+  
+  background_cfacs_object$background_cfacs = collate_cfacs(input_data_object$site_features,
+                                                           simulation_params, 
+                                                           input_data_object$feature_params,
+                                                           input_data_object$global_params,
+                                                           input_data_object$feature_dynamics,
+                                                           input_data_object$feature_dynamics_modes,
+                                                           input_data_object$site_element_index_key,
+                                                           background_projection_yrs_pool,
+                                                           intervention_yrs = rep(1, input_data_object$site_characteristics$site_num),
+                                                           vector(),
+                                                           cfac_type = 'background',
+                                                           object_type = vector(), 
+                                                           use_cfac_type_in_sim = FALSE, 
+                                                           condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
+                                                           use_offset_metric = FALSE, 
+                                                           input_data_object$global_params$user_transform_function)
+  
+  saveRDS(background_cfacs_object$background_cfacs, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  
+  if (simulation_params$use_offset_metric == TRUE){
+    
+    background_cfacs_object$user_metric_background_cfacs = collate_cfacs(input_data_object$site_features,
+                                                                         simulation_params, 
+                                                                         input_data_object$feature_params,
+                                                                         input_data_object$global_params,
+                                                                         input_data_object$feature_dynamics,
+                                                                         input_data_object$feature_dynamics_modes,
+                                                                         input_data_object$site_element_index_key,
+                                                                         background_projection_yrs_pool,
+                                                                         intervention_yrs = rep(1, input_data_object$site_characteristics$site_num),
+                                                                         vector(),
+                                                                         cfac_type = 'background',
+                                                                         object_type = vector(), 
+                                                                         use_cfac_type_in_sim = FALSE, 
+                                                                         condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
+                                                                         use_offset_metric = TRUE, 
+                                                                         input_data_object$global_params$user_transform_function)
+    
+    saveRDS(background_cfacs_object$background_cfacs, paste0(input_data_object$global_params$simulation_inputs_folder, 'user_metric_background_cfacs.rds'))
+    
+  }
+  
+  return(background_cfacs_object)
+}
 
 estimate_illegal_sites <- function(loss_prob, time_steps, site_num){
   estimated_sites_cleared = (site_num - site_num*(1 - loss_prob)^time_steps)
