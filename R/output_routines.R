@@ -248,14 +248,14 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       
     } else if (object_to_output$output_params$output_type == 'csv'){ 
       flog.info('writing csv outputs')
-      write.table( data.frame(collated_realisations$program_outcomes$net_outcome), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'program_outcomes.csv'), sep=',' )
-      write.table( data.frame(collated_realisations$program_scale_impacts$program_total), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'program_impacts.csv'), sep=',' )
+      write.table( data.frame(collated_realisations$program_scale$outcomes$net_outcome), col.names = F, row.names = F, 
+                   paste0(object_to_output$collated_folder, 'program_scale_outcomes.csv'), sep=',' )
+      write.table( data.frame(collated_realisations$program_scale$impacts$program_total), col.names = F, row.names = F, 
+                   paste0(object_to_output$collated_folder, 'program_scale_impacts.csv'), sep=',' )
       write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'landscape_outcomes.csv'), sep=',' )
+                   paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'), sep=',' )
       write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'landscape_impacts.csv'), sep=',' )
+                   paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'), sep=',' )
       
     } else {
       
@@ -463,7 +463,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
   }
   
   if (output_params$plot_program == TRUE){
-    plot_outcomes(collated_realisations$program_outcomes$net_outcome, 
+    plot_outcomes(collated_realisations$program_scale$outcomes$net_outcome, 
                   plot_type = 'program', 
                   include_legend = FALSE, 
                   plot_lims = program_plot_lims ,
@@ -564,12 +564,12 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   # Plot the program scale impacts
   if (output_params$plot_program == TRUE){
 
-    NNL_object <- find_NNL_characteristics(collated_realisations$NNL$program_scale,
-                                           collated_realisations$program_scale_impacts$program_total)
+    NNL_object <- find_NNL_characteristics(collated_realisations$program_scale$NNL,
+                                           collated_realisations$program_scale$impacts$program_total)
     
-    overlay_realisations(plot_list = list(collated_realisations$program_scale_impacts$net_offset_gains, 
-                                          collated_realisations$program_scale_impacts$net_dev_losses,
-                                          collated_realisations$program_scale_impacts$program_total),
+    overlay_realisations(plot_list = list(collated_realisations$program_scale$impacts$net_offset_gains, 
+                                          collated_realisations$program_scale$impacts$net_dev_losses,
+                                          collated_realisations$program_scale$impacts$program_total),
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -585,10 +585,10 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
     }
     
     ###### TODO intervention control has moved to index object - fix this #######
-    if (length(unlist(collated_realisations$site_scale_impacts$dev_object)) > 0){
+    if (length(unlist(collated_realisations$site_scale$impacts$dev_object)) > 0){
       flog.error('intervention control has moved to index object - fix this')
-      last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale_impacts$dev_object), 
-                                       function(i) tail(unlist(collated_realisations$site_scale_impacts$dev_object[[i]]$intervention_yrs), 1))))
+      last_dev_yr = mean(unlist(lapply(seq_along(collated_realisations$site_scale$impacts$dev_object), 
+                                       function(i) tail(unlist(collated_realisations$site_scale$impacts$dev_object[[i]]$intervention_yrs), 1))))
       dev_end = tail(which(current_simulation_params$intervention_control > 0), 1)
       
       if (last_dev_yr < dev_end){
@@ -605,7 +605,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the landscape scale impacts
   if (output_params$plot_landscape == TRUE){
-    NNL_object <- find_NNL_characteristics(collated_realisations$NNL$landscape_scale, 
+    NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale$NNL, 
                                            collated_realisations$landscape_scale$landscape_scale_impact)
     
     overlay_realisations(plot_list = list(collated_realisations$landscape_scale$landscape_scale_impact),
@@ -704,14 +704,14 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   stats_to_use = unlist(collated_realisations$sites_used)
   x_lab = ''
   if (current_simulation_params$use_offset_bank == FALSE){
-    offset_set = collated_realisations$site_scale_impacts$offsets_object
-    dev_set = collated_realisations$site_scale_impacts$dev_object
-    net_plot_list = collated_realisations$site_scale_net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
+    offset_set = collated_realisations$site_scale$impacts$offsets_object
+    dev_set = collated_realisations$site_scale$impacts$dev_object
+    net_plot_list = collated_realisations$site_scale$net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
 
   } else {
-    offset_set = collated_realisations$program_scale_impacts$net_offset_gains
-    dev_set = collated_realisations$program_scale_impacts$net_dev_losses
-    net_plot_list = collated_realisations$program_scale_impacts$program_total[[realisation_ind]]
+    offset_set = collated_realisations$program_scale$impacts$net_offset_gains
+    dev_set = collated_realisations$program_scale$impacts$net_dev_losses
+    net_plot_list = collated_realisations$program_scale$impacts$program_total[[realisation_ind]]
   }
   
   if (length(plot_lims) == 0){
