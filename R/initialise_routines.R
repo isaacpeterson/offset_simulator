@@ -1,5 +1,6 @@
 # set of initialisation routines that are called for every simulation
 
+
 build_input_data <- function(user_global_params, user_feature_params, user_transform_function, simulation_params_group){
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data
@@ -145,7 +146,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     
     if (any(is.na(unlist(input_data_object$feature_dynamics)))){
       flog.error('poorly defined feature_dynamics')
-      stop()
     }
     saveRDS(input_data_object$feature_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   } else {
@@ -155,18 +155,14 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
-                                                                 features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
-                                                                 input_data_object$feature_params$sample_management_dynamics,
-                                                                 input_data_object$feature_params$management_dynamics_type,
-                                                                 store_dynamics_as_differential = FALSE,
-                                                                 input_data_object$feature_params$management_dynamics_sample_type,
-                                                                 input_data_object$feature_params$management_dynamics_bounds, 
-                                                                 input_data_object$management_dynamics_modes)
+                                                            features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
+                                                            input_data_object$feature_params$sample_management_dynamics,
+                                                            input_data_object$feature_params$management_dynamics_type,
+                                                            store_dynamics_as_differential = FALSE,
+                                                            input_data_object$feature_params$management_dynamics_sample_type,
+                                                            input_data_object$feature_params$management_dynamics_bounds, 
+                                                            input_data_object$management_dynamics_modes)
     
-    if (any(is.na(unlist(input_data_object$management_dynamics)))){
-      flog.error('poorly defined management_dynamics')
-      stop()
-    }
     saveRDS(input_data_object$management_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds'))
     
   } else {
@@ -178,7 +174,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     flog.info('assigning equal development probability to all sites')
     input_data_object$dev_probability_list <- rep(list(1/input_data_object$site_characteristics$site_num), 
                                                        input_data_object$site_characteristics$site_num)
-    
   } else {
     input_data_object$dev_probability_list <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
   }

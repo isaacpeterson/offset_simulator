@@ -40,7 +40,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
 
     current_background_cfacs_object = build_background_cfacs_routines(global_input_data, simulation_params_group[[scenario_ind]])
 
-    flog.info('running scenario %s of %s, with %s discrete time steps',  
+    flog.info('running scenario %s of %s, with %s iterations',  
               scenario_ind, 
               length(simulation_params_group),
               global_input_data$global_params$time_steps)
@@ -239,6 +239,10 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       }
     }
     
+#     flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 
+#                   'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit, 
+#                   remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+    
     if (!((simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0))){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
@@ -383,14 +387,13 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
       
-      flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 
-                    'from credit, remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
-      
+      flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 
+                    'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
+                    'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+
     }
   } 
-  
-  
-  
+
   simulation_data_object$output_data$credit_match_flag = match_object$match_flag
   
   return(simulation_data_object)

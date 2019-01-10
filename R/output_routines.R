@@ -564,6 +564,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   # Plot the program scale impacts
   if (output_params$plot_program == TRUE){
 
+    browser()
     NNL_object <- find_NNL_characteristics(collated_realisations$program_scale$NNL,
                                            collated_realisations$program_scale$impacts$program_total)
     
@@ -646,22 +647,19 @@ NNL_test <- function(NNL_set, collated_impacts){
 
 
 find_NNL_characteristics <- function(NNL_set, collated_impacts){
-  
+  browser()
   collated_impacts = unlist(collated_impacts, recursive = FALSE)
   NNL_to_use <- NNL_test(NNL_set, collated_impacts)
-  # get the mean values of the list of vecs
   
-  mean_collated_impact <- find_list_mean(collated_impacts)
-  
-  # get the last element of the mean vec
-  final_collated_impact <- tail(mean_collated_impact, n=1)
-  
-  if (length(NNL_to_use) > 0){
-    mean_NNL = round(mean(unlist(NNL_to_use)))
-    NNL_label = paste0(length(unlist(NNL_to_use)), ' realisations achieved NNL at ', mean_NNL, ' years')
-  } else {
+  if (length(NNL_to_use) == 0){
     mean_NNL = vector()
     NNL_label = 'All realisations faileld NNL'
+  } else {
+    mean_NNL = round(mean(unlist(NNL_to_use)))
+    mean_collated_impact <- find_list_mean(collated_impacts)
+    final_collated_impact <- tail(mean_collated_impact, n=1)
+    NNL_label = paste0(length(unlist(NNL_to_use)), ' realisations achieved NNL at ', mean_NNL, ' years')
+    
   } 
   
   NNL_object = list()
