@@ -62,7 +62,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     flog.info('building site scale counterfactuals - this may take a while')
     features_to_collate = seq(input_data_object$global_params$feature_num)
   } else {
-    flog.info('building user metric site scale counterfactuals - this may take a while')
+    flog.info('building counterfactuals for user metric - this may take a while')
     features_to_collate = 1
   }
   
@@ -91,10 +91,11 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
   }
   
   for (feature_ind in features_to_collate){
-    flog.info('collating feature %s', feature_ind)
+    
     collated_object = list()
+    
     if (use_offset_metric == FALSE){
-
+      flog.info('collating feature %s', feature_ind)
       collated_object$site_scale$outcomes = sum_data_stack(current_data_dir, 
                                                            file_pattern = paste0('feature_', formatC(input_data_object$global_params$features_to_use_in_simulation[feature_ind],
                                                                                                      width = input_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0")), 
@@ -176,8 +177,8 @@ run_collate_intervention_routines <- function(collated_object, intervention_yrs_
                                                                                            global_params,
                                                                                            use_offset_metric)), names(simulation_outputs$interventions))
   
-  collated_object$site_scale$net_impacts <- collate_site_scale_net_impacts(collated_site_scale_offsets = collated_object$site_scale$impacts$offsets_object$summed_gains_degs$nets,
-                                                                           collated_site_scale_devs = collated_object$site_scale$impacts$dev_object$summed_gains_degs$nets)
+  collated_object$site_scale$net_impacts <- collate_site_scale_net_impacts(collated_site_scale_offsets = collated_object$site_scale$impacts$offsets_object$nets,
+                                                                           collated_site_scale_devs = collated_object$site_scale$impacts$dev_object$nets)
   
   collated_object$program_scale$cfacs = collate_program_scale_cfacs(collated_object$site_scale$site_scale_cfacs, 
                                                                     simulation_outputs$interventions, 
@@ -528,8 +529,9 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
 
 
 collate_program_scale_impacts <- function(collated_data){
-  
-  program_scale_impacts = setNames(lapply(seq_along(collated_data$site_scale$impacts), function(i) collated_data$site_scale$impacts[[i]]$summed_gains_degs$nets), names(collated_data$site_scale$impacts))
+  browser()
+  program_scale_impacts = setNames(lapply(seq_along(collated_data$site_scale$impacts), function(i) collated_data$site_scale$impacts[[i]]$nets), 
+                                   names(collated_data$site_scale$impacts))
   
   program_scale_impacts$net_offset_gains = sum_list(append(program_scale_impacts$offsets_object, program_scale_impacts$offset_bank_object))
   program_scale_impacts$net_dev_losses = sum_list(append(program_scale_impacts$dev_object, program_scale_impacts$credit_object))
@@ -640,9 +642,10 @@ assess_gains_degs <- function(current_intervention_site_scale_outcomes, current_
   net_gains = mapply('-', impact_trajectories, current_intervention_cfacs, SIMPLIFY = FALSE)
   
   collated_object = list(net_gains, avoided_loss, rest_gains)
-  collated_object <- setNames(object = lapply(seq_along(collated_object),
-                            function(i) lapply(seq(3), function(j) merge_vectors(array(0, c(time_steps, 1)), collated_object[[i]][[j]], current_intervention_yrs[j]))), 
-                            c('nets', 'avoided_loss', 'rest_gains'))
+  collated_object <- setNames(lapply(seq_along(collated_object), 
+                                     function(i) lapply(seq(site_num), 
+                                                        function(j) merge_vectors(array(0, c(time_steps, 1)), collated_object[[i]][[j]], current_intervention_yrs[j]))), 
+                              c('nets', 'avoided_loss', 'rest_gains'))
 
   if ((current_intervention_collate_type == 'offsets_object') | (current_intervention_collate_type == 'offset_bank_object')){
     if (simulation_params$offset_calc_type == 'restoration_gains'){
