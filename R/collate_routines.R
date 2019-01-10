@@ -333,9 +333,11 @@ find_collated_files <- function(file_path, scenario_string, feature_string, real
 
 bind_collated_realisations <- function(collated_filenames){
   realisation_num = length(collated_filenames)
+  collated_realisation_object = setNames(vector('list', 3), c('site_scale', 'program_scale', 'landscape_scale'))
   
   for (realisation_ind in seq(realisation_num)){
     current_collated_realisation = readRDS(collated_filenames[[realisation_ind]])
+    
     if (realisation_ind == 1){
       collated_realisations = lapply(seq_along(current_collated_realisation), 
                                      function(i) nest_list(current_collated_realisation[[i]]))
@@ -529,7 +531,7 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
 
 
 collate_program_scale_impacts <- function(collated_data){
-  browser()
+
   program_scale_impacts = setNames(lapply(seq_along(collated_data$site_scale$impacts), function(i) collated_data$site_scale$impacts[[i]]$nets), 
                                    names(collated_data$site_scale$impacts))
   
@@ -719,7 +721,6 @@ sum_list <- function(list_to_sum){
   if (length(list_to_sum) == 0){
     summed_list = list()
   } else {
-
     sets_to_use = which(unlist(lapply(seq_along(list_to_sum), function(i) length(list_to_sum[[i]]) > 0)))
     if (length(sets_to_use) == 0){
       summed_list = list()

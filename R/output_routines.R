@@ -564,7 +564,6 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   # Plot the program scale impacts
   if (output_params$plot_program == TRUE){
 
-    browser()
     NNL_object <- find_NNL_characteristics(collated_realisations$program_scale$NNL,
                                            collated_realisations$program_scale$impacts$program_total)
     
@@ -647,7 +646,7 @@ NNL_test <- function(NNL_set, collated_impacts){
 
 
 find_NNL_characteristics <- function(NNL_set, collated_impacts){
-  browser()
+
   collated_impacts = unlist(collated_impacts, recursive = FALSE)
   NNL_to_use <- NNL_test(NNL_set, collated_impacts)
   

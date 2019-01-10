@@ -243,7 +243,6 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
   
   if (build_current_background_cfacs_flag == TRUE){
     flog.info('building background counterfactuals - this may take a while')
-    browser()
     background_cfacs_object = build_background_cfacs(global_input_data, simulation_params)
     
   }
