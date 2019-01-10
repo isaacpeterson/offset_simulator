@@ -211,7 +211,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 build_background_cfacs_routines <- function(global_input_data, simulation_params){
 
   if (global_input_data$global_params$background_cfacs_file == 'default'){
-    background_cfacs_file = paste0(global_input_data$global_params$simulation_inputs_folder, 'background_cfacs_', '.rds')
+    background_cfacs_file = paste0(global_input_data$global_params$simulation_inputs_folder, 'background_cfacs.rds')
   } else {
     background_cfacs_file = global_input_data$global_params$background_cfacs_file
   }
@@ -228,8 +228,9 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
     if (global_input_data$global_params$time_steps <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
       build_current_background_cfacs_flag = FALSE
       flog.info('processing background cfacs')
+      
       if (global_input_data$global_params$time_steps < dim(background_cfacs_object$background_cfacs[[1]])[1]){
-
+        
         background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
                                                    function(i) lapply(seq_along(background_cfacs_object[[i]]), 
                                                                       function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
