@@ -233,7 +233,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                                                object_to_output$output_params$realisation_num)
     }
     
-    collated_realisations = bind_collated_realisations(collated_filenames)
+    collated_realisations = run_bind_collated_realisations_routines(collated_filenames)
 
     if (object_to_output$output_params$output_type == 'plot'){
       
@@ -244,7 +244,8 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
         flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
       }
       
-       plot_outputs(object_to_output$output_params, feature_ind, scenario_ind, collated_realisations, object_to_output$current_simulation_params, object_to_output$global_params)
+      user_output_params <- initialise_user_output_params()
+      plot_outputs(object_to_output$output_params, feature_ind, scenario_ind, collated_realisations, object_to_output$current_simulation_params, object_to_output$global_params)
       
     } else if (object_to_output$output_params$output_type == 'csv'){ 
       flog.info('writing csv outputs')
@@ -446,7 +447,6 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
 plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, time_steps,
                              realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
-
   if (output_params$plot_site == TRUE){
     plot_site_outcomes(collated_realisations, 
                        output_params$plot_site_offset, 
@@ -462,24 +462,42 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
     
   }
   
+
   if (output_params$plot_program == TRUE){
-    plot_outcomes(collated_realisations$program_scale$outcomes$net_outcome, 
-                  plot_type = 'program', 
-                  include_legend = FALSE, 
-                  plot_lims = program_plot_lims ,
-                  plot_title = 'Program Outcome', 
-                  loss_stats = collated_realisations$net_program_loss, 
-                  collated_realisations$realisation_num, 
-                  collated_realisations$program_scale_cfacs$program_cfac_sum,
-                  output_params$program_outcome_lwd_vec, 
-                  outcome_col = output_params$landscape_col, 
-                  cfac_col = output_params$cfac_col,
-                  legend_vec = c('Outcome', 'Counterfactual'), 
-                  global_params$time_steps)
+
+    overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
+                                          unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
+                                          unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
+                         plot_title = 'Program Outcomes', 
+                         x_lab = '',
+                         collated_realisations$realisation_num,
+                         output_params$program_outcome_lwd_vec, 
+                         col_vec = output_params$program_col_vec, 
+                         legend_loc = 'topleft',
+                         legend_vec = c('net', 'offsets', 'developments'), 
+                         plot_lims = program_plot_lims, 
+                         global_params$time_steps)
+    
+#     plot_outcomes(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
+#                                    unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
+#                                    unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
+#                   plot_type = 'program', 
+#                   include_legend = FALSE, 
+#                   plot_lims = program_plot_lims,
+#                   plot_title = 'Program Outcome', 
+#                   loss_stats = collated_realisations$net_program_loss, 
+#                   collated_realisations$realisation_num, 
+#                   collated_realisations$program_scale_cfacs$program_cfac_sum,
+#                   output_params$program_outcome_lwd_vec, 
+#                   outcome_col = output_params$landscape_col, 
+#                   cfac_col = output_params$cfac_col,
+#                   legend_vec = c('Outcome', 'Counterfactual'), 
+#                   global_params$time_steps)
   }
   
   if (output_params$plot_landscape == TRUE){ 
-    plot_outcomes(collated_realisations$landscape_scale$landscape_outcome, 
+
+    plot_outcomes(unlist(collated_realisations$landscape_scale$outcomes$net_outcome, recursive = FALSE), 
                   plot_type = 'landscape', 
                   include_legend = FALSE, 
                   plot_lims =landscape_plot_lims,
@@ -564,12 +582,12 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   # Plot the program scale impacts
   if (output_params$plot_program == TRUE){
 
-    NNL_object <- find_NNL_characteristics(collated_realisations$program_scale$NNL,
-                                           collated_realisations$program_scale$impacts$program_total)
+    NNL_object <- find_NNL_characteristics(unlist(collated_realisations$program_scale$loss_characteristics$NNL, recursive = FALSE),
+                                           unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE))
     
-    overlay_realisations(plot_list = list(collated_realisations$program_scale$impacts$net_offset_gains, 
-                                          collated_realisations$program_scale$impacts$net_dev_losses,
-                                          collated_realisations$program_scale$impacts$program_total),
+    overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$impacts$net_offset_gains, recursive = FALSE), 
+                                          unlist(collated_realisations$program_scale$impacts$net_dev_losses,recursive = FALSE), 
+                                                 unlist(collated_realisations$program_scale$impacts$net_impacts,recursive = FALSE)),
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -605,10 +623,11 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the landscape scale impacts
   if (output_params$plot_landscape == TRUE){
-    NNL_object <- find_NNL_characteristics(collated_realisations$landscape_scale$NNL, 
-                                           collated_realisations$landscape_scale$landscape_scale_impact)
-    
-    overlay_realisations(plot_list = list(collated_realisations$landscape_scale$landscape_scale_impact),
+
+    NNL_object <- find_NNL_characteristics(unlist(collated_realisations$landscape_scale$loss_characteristics$NNL, recursive = FALSE),
+                                           unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE))
+ 
+    overlay_realisations(plot_list = list(unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE)),
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -646,25 +665,24 @@ NNL_test <- function(NNL_set, collated_impacts){
 
 
 find_NNL_characteristics <- function(NNL_set, collated_impacts){
-
-  collated_impacts = unlist(collated_impacts, recursive = FALSE)
-  NNL_to_use <- NNL_test(NNL_set, collated_impacts)
   
-  if (length(NNL_to_use) == 0){
-    mean_NNL = vector()
-    NNL_label = 'All realisations faileld NNL'
+  ######### test routines for when we have an increase rather than decrease 
+  ######### also when impact is exactly zero at initialisation and positive thereafter
+  NNL_object = list()
+  
+  if (length(unlist(NNL_set)) == 0){
+    NNL_object$NNL_label = 'All realisations failed NNL'
+    return(NNL_object)
   } else {
-    mean_NNL = round(mean(unlist(NNL_to_use)))
+    NNL_object$mean_NNL = round(find_list_mean(NNL_set))
     mean_collated_impact <- find_list_mean(collated_impacts)
     final_collated_impact <- tail(mean_collated_impact, n=1)
-    NNL_label = paste0(length(unlist(NNL_to_use)), ' realisations achieved NNL at ', mean_NNL, ' years')
     
+    NNL_object$NNL_label <- cbind(paste0(length(unlist(NNL_set)), ' realisations achieved NNL at ', NNL_object$mean_NNL, ' years'), 
+                                  paste0('mean final impact = ', format(final_collated_impact, scientific=TRUE, digits=3)))
+
   } 
   
-  NNL_object = list()
-  # add the last vale of the impact to the plot lable
-  NNL_object$NNL_label <- cbind(NNL_label, paste0('mean final impact = ', format(final_collated_impact, scientific=TRUE, digits=3)))
-  NNL_object$mean_NNL <- mean_NNL
   return(NNL_object)
 }
 
@@ -815,18 +833,25 @@ overlay_impact <- function(collated_object, offset_bank, visualisation_type, rea
 
 find_list_mean <- function(list_to_average){
 
-  list_elements_to_sum = which(unlist(lapply(seq_along(list_to_average), function(i) length(list_to_average[[i]]) > 0)))
-  if (length(list_elements_to_sum) > 0){
-    list_mean = sum_list(list_to_average[list_elements_to_sum])/length(list_elements_to_sum)
+  
+  if (is.null(list_to_average)){
+    return(NULL)
   } else {
-    list_mean = list()
+
+    set_lengths = lapply(list_to_average, 'length')
+    set_to_use = which(unlist(set_lengths) > 0) 
+    if (length(set_to_use) > 0){
+      list_to_average = list_to_average[set_to_use]
+      list_mean = Reduce('+', list_to_average)/length(list_to_average)
+      return(list_mean)
+    } else {
+      return(vector('list', 1))
+    }
   }
-  return(list_mean)
 }
 
-
 plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, lwd_vec, time_steps){
-  
+
   if (plot_col == 'blue'){
     back_plot_col = 'skyblue'
   } else if (plot_col == 'black'){
@@ -839,7 +864,6 @@ plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, 
     back_plot_col = 'green'
   }
   
-  
   for (realisation_ind in seq_len(realisation_num)){
     if (length(plot_list[[realisation_ind]]) > 0){
         lines(plot_list[[realisation_ind]], lwd = lwd_vec[2], col = back_plot_col)
@@ -847,6 +871,7 @@ plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, 
   }
   
   current_plot_mean = find_list_mean(plot_list)
+  
   if (length(current_plot_mean) > 0){
     lines(current_plot_mean, col = plot_col, lwd = lwd_vec[1], lty = 2)
   } 

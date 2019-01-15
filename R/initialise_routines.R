@@ -229,7 +229,8 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
         background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
                                                    function(i) lapply(seq_along(background_cfacs_object[[i]]), 
                                                                       function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
-                                                   )), names(background_cfacs_object))
+                                                   )), 
+                                            names(background_cfacs_object))
       }
 
     } else {
