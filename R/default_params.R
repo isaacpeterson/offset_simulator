@@ -54,6 +54,7 @@ initialise_default_global_params <- function(){
   # The number of realizations to run
   default_global_params$realisation_num = 1
 
+  default_global_params$threshold_control = 1e-5
   # Specify how many cores to run on. Default setting here it to use single core
   default_global_params$number_of_cores = 1
   
