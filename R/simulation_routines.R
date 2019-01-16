@@ -34,7 +34,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   for (scenario_ind in global_input_data$global_params$scenario_subset){
     
     # Store the start time
-    loop_strt <- Sys.time()
+    sim_time <- Sys.time()
     
     current_output_data = build_output_data(global_input_data, simulation_params_group[[scenario_ind]])
 
@@ -94,8 +94,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     flog.info('scenario %s simulation outputs generated for %s realisations in %s %s', 
               scenario_ind,
               global_input_data$global_params$realisation_num,
-              round(difftime(Sys.time(), loop_strt), 1), 
-              units(difftime(Sys.time(), loop_strt)))
+              round(difftime(Sys.time(), sim_time), 1), 
+              units(difftime(Sys.time(), sim_time)))
   }
   
   
@@ -120,8 +120,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
 #     
 #     flog.info('scenario %s collated and completed in %s %s', 
 #               scenario_ind,
-#               round(difftime(Sys.time(), loop_strt), 1), 
-#               units(difftime(Sys.time(), loop_strt)))
+#               round(difftime(Sys.time(), sim_time), 1), 
+#               units(difftime(Sys.time(), sim_time)))
 #   }
 #   
   

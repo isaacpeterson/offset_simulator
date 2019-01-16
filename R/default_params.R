@@ -33,6 +33,7 @@ initialise_default_global_params <- function(){
   
   # Where simulation outputs will be written
   default_global_params$simulation_folder = 'default'
+  default_global_params$simulation_inputs_folder = 'default'
  
   # how long to run the simulaton in years
   default_global_params$time_steps = 50

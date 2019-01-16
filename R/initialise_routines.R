@@ -339,13 +339,21 @@ build_global_params <- function(user_global_params, user_transform_function, sim
   
   if (global_params$simulation_folder != 'default'){
     simulation_folder = write_folder(global_params$simulation_folder)
-    global_params$simulation_inputs_folder = write_folder(paste0(simulation_folder, '/simulation_inputs/'))
     base_run_folder = paste0(simulation_folder, '/simulation_runs/')
   } else {
-    global_params$simulation_inputs_folder =  write_folder('simulation_inputs/')
+    simulation_folder = vector()
     base_run_folder = ('simulation_runs/')
   }
   
+  if (global_params$simulation_inputs_folder != 'default'){
+    global_params$simulation_inputs_folder = write_folder(global_params$simulation_inputs_folder)
+  } else {
+    if (global_params$simulation_folder != 'default'){
+      global_params$simulation_inputs_folder =  write_folder(paste0(simulation_folder, '/simulation_inputs/'))
+    } else {
+      global_params$simulation_inputs_folder = write_folder('simulation_inputs/')
+    }
+  }
   current_run = find_current_run(base_run_folder)
   
   if ((global_params$unique_simulation_folder) & (length(current_run) > 0)){
