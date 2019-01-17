@@ -625,7 +625,8 @@ shift_dynamics_set <- function(site_group_to_use, current_feature_dynamics_set, 
 
 
 
-shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use, current_feature_dynamics_mode, current_time_shift, time_fill, update_dynamics_by_differential){
+shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use, current_feature_dynamics_mode, 
+                           current_time_shift, time_fill, update_dynamics_by_differential){
   
   if (current_feature_dynamics_mode == 0){
     return(current_feature_dynamics_to_use)
@@ -641,16 +642,13 @@ shift_dynamics <- function(current_feature_val, current_feature_dynamics_to_use,
     
     if (update_dynamics_by_differential == TRUE){
       current_shifted_dynamics = diff(current_shifted_dynamics)
-      #current_shifted_dynamics = cumsum(diff(current_shifted_dynamics))
     }
   } else {
     
     if (update_dynamics_by_differential == TRUE){
       current_shifted_dynamics = diff(current_feature_dynamics_to_use)
-      #current_shifted_dynamics = cumsum(diff(current_feature_dynamics_to_use))
     } else {
       current_shifted_dynamics = current_feature_val + diff(current_feature_dynamics_to_use)
-      #current_shifted_dynamics = current_feature_val + cumsum(diff(current_feature_dynamics_to_use))
     }
     
   }
@@ -1096,8 +1094,6 @@ project_elements <- function(current_mode, current_vals_set, time_horizon, time_
     }
     
     current_feature_dynamics = cumsum(current_feature_dynamics)[time_vec]
-    
-    #current_feature_dynamics = current_feature_dynamics[time_vec]
     
     current_feature_dynamics = matrix( rep(current_feature_dynamics, length(current_vals_set)), byrow = FALSE, nrow = length(time_vec))
     

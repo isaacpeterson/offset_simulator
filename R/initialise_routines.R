@@ -153,8 +153,11 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$feature_dynamics <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
   }
   
+  browser()
+  
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
+    
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
@@ -1040,7 +1043,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                               unlist(simulation_params$banked_offset_control)))
   }
   
-  browser()
+
   index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
