@@ -247,16 +247,18 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       user_output_params <- initialise_user_output_params()
       plot_outputs(object_to_output$output_params, feature_ind, scenario_ind, collated_realisations, object_to_output$current_simulation_params, object_to_output$global_params)
       
-    } else if (object_to_output$output_params$output_type == 'csv'){ 
+    } else if (object_to_output$output_params$output_type == 'csv'){
       flog.info('writing csv outputs')
-      write.table( data.frame(collated_realisations$program_scale$outcomes$net_outcome), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'program_scale_outcomes.csv'), sep=',' )
-      write.table( data.frame(collated_realisations$program_scale$impacts$program_total), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'program_scale_impacts.csv'), sep=',' )
-      write.table( data.frame(collated_realisations$landscape$net_landscape), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'), sep=',' )
-      write.table( data.frame(collated_realisations$landscape$landscape_impact), col.names = F, row.names = F, 
-                   paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'), sep=',' )
+      write_output_block(collated_realisations$program_scale$outcomes, 
+                         paste0(object_to_output$collated_folder, 'program_scale_outcomes.csv'))
+      
+      block_to_use = which(names(collated_realisations$program_scale$impacts) %in% c("net_offset_gains", "net_dev_losses", "net_impacts"))
+      write_output_block(collated_realisations$program_scale$impacts[block_to_use], 
+                         paste0(object_to_output$collated_folder, 'program_scale_impacts.csv'))
+      write_output_block(collated_realisations$landscape_scale$outcomes, 
+                         paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'))
+      write_output_block(collated_realisations$landscape_scale$impacts, 
+                         paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'))
       
     } else {
       
@@ -337,6 +339,26 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
   
 }
 
+write_output_block <- function(block_to_output, filename){
+
+#   block_to_output = setNames(lapply(seq_along(block_to_output), 
+#                            function(i) lapply(seq_along(block_to_output[[i]]), 
+#                                               function(j) append(block_to_output[[i]][[j]], block_to_output[[i]][[j]]))), 
+#                            names(block_to_output))
+  
+  block_lengths = lapply(seq_along(block_to_output), function(i) length(unlist(block_to_output[[i]])))
+  sets_to_use = which(unlist(block_lengths) > 0)
+  block_to_use = block_to_output[sets_to_use]
+  data_block = lapply(seq_along(block_to_use), 
+                      function(i) lapply(seq_along(block_to_use[[i]]), 
+                                         function(j) setNames(as.data.frame(block_to_use[[i]]), 
+                                                              paste0(names(block_to_use)[i], '_realisation_', seq(length(block_to_use[[i]][[j]]))))
+                                         )
+                      )
+                                       
+  data_block = as.data.frame(data_block)
+  write.table( data_block, col.names = T, row.names = F, filename, sep=',' )
+}
 
 output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
   

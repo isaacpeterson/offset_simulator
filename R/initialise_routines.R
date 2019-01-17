@@ -1040,6 +1040,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                               unlist(simulation_params$banked_offset_control)))
   }
   
+  browser()
   index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
