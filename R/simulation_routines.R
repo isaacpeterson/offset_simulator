@@ -714,7 +714,6 @@ run_offset_routines <- function(simulation_data_object, simulation_params, curre
   
   # if running in banking mode remove offset site from available bank
   if (simulation_params$use_offset_bank == TRUE){
-    browser()
     
     banked_offset_pool = simulation_data_object$output_data$interventions$offset_bank_object$internal_site_indexes
     banked_offset_inds_used = list_intersect(banked_offset_pool, current_offset_object$internal_site_indexes)
@@ -946,7 +945,6 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
   }
   
   if (pool_type == 'offset_bank'){
-    browser()
     
     subset_pool = simulation_data_object$output_data$interventions$offset_bank_object$internal_site_indexes
     
@@ -1236,7 +1234,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     vals_to_match = current_match_vals_pool[[sample_ind]]
     
     if (simulation_params$use_offset_bank == FALSE){
-      browser()
+
       dev_ind = list_intersect(group_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
       match_pool_to_use = remove_index(group_pool_indexes, dev_ind$match_ind)
       pool_vals_to_use = remove_index(group_pool_vals, dev_ind$match_ind)
