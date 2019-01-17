@@ -68,6 +68,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$site_characteristics = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   }
   
+
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
       | (input_data_object$global_params$overwrite_condition_classes == TRUE)){
     background_condition_class_layers = build_condition_class_layers(initial_features, 
@@ -91,11 +92,11 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     } 
     
     input_data_object$site_features <- separate_features_by_condition_class(initial_features, 
-                                                                                 split_type = 'feature_vals',
-                                                                                 store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
-                                                                                 input_data_object$site_characteristics$land_parcels, 
-                                                                                 background_condition_class_layers, 
-                                                                                 input_data_object$feature_dynamics_modes)
+                                                                            split_type = 'feature_vals',
+                                                                            store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
+                                                                            input_data_object$site_characteristics$land_parcels, 
+                                                                            background_condition_class_layers, 
+                                                                            input_data_object$feature_dynamics_modes)
     
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
@@ -116,7 +117,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$site_element_index_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   }
   
-  
   if (input_data_object$feature_params$management_condition_class == 'background'){
     input_data_object$management_dynamics_modes = input_data_object$feature_dynamics_modes 
   } else {
@@ -135,14 +135,15 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 
   if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))) |
       (input_data_object$global_params$overwrite_feature_dynamics == TRUE)){
+
     input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_features,
-                                                              features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
-                                                              input_data_object$feature_params$sample_background_dynamics,
-                                                              input_data_object$feature_params$background_dynamics_type,
-                                                              store_dynamics_as_differential = input_data_object$feature_params$update_background_dynamics_by_differential,
-                                                              input_data_object$feature_params$dynamics_sample_type,
-                                                              input_data_object$feature_params$background_dynamics_bounds, 
-                                                              input_data_object$feature_dynamics_modes)
+                                                         features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
+                                                         input_data_object$feature_params$sample_background_dynamics,
+                                                         input_data_object$feature_params$background_dynamics_type,
+                                                         store_dynamics_as_differential = input_data_object$feature_params$update_background_dynamics_by_differential,
+                                                         input_data_object$feature_params$dynamics_sample_type,
+                                                         input_data_object$feature_params$background_dynamics_bounds, 
+                                                         input_data_object$feature_dynamics_modes)
     
     if (any(is.na(unlist(input_data_object$feature_dynamics)))){
       flog.error('poorly defined feature_dynamics')
@@ -172,8 +173,8 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))) |
       (input_data_object$global_params$overwrite_dev_probability_list == TRUE)){
     flog.info('assigning equal development probability to all sites')
-    input_data_object$dev_probability_list <- rep(list(1/input_data_object$site_characteristics$site_num), 
-                                                       input_data_object$site_characteristics$site_num)
+    input_data_object$dev_probability_list <- rep(list(1/length(input_data_object$site_characteristics$land_parcels)), 
+                                                       length(input_data_object$site_characteristics$land_parcels))
   } else {
     input_data_object$dev_probability_list <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'dev_probability_list.rds'))
   }
@@ -181,8 +182,8 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))) |
       (input_data_object$global_params$overwrite_offset_probability_list == TRUE)){
     flog.info('assigning equal offset probability to all sites')
-    input_data_object$offset_probability_list <- rep(list(1/input_data_object$site_characteristics$site_num), 
-                                                          input_data_object$site_characteristics$site_num)
+    input_data_object$offset_probability_list <- rep(list(1/length(input_data_object$site_characteristics$land_parcels)), 
+                                                          length(input_data_object$site_characteristics$land_parcels))
     
   } else {
     input_data_object$offset_probability_list <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
@@ -191,7 +192,8 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))) |
       (input_data_object$global_params$overwrite_unregulated_probability_list == TRUE)){
     flog.info('assigning equal unregulated loss probability to all sites')
-    input_data_object$unregulated_probability_list <- rep(list(1/input_data_object$site_characteristics$site_num), input_data_object$site_characteristics$site_num)
+
+    input_data_object$unregulated_probability_list <- rep(list(1/length(input_data_object$site_characteristics$land_parcels)), length(input_data_object$site_characteristics$land_parcels))
     
   } else {
     input_data_object$unregulated_probability_list <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'unregulated_probability_list.rds'))
@@ -260,7 +262,7 @@ build_background_cfacs <- function(input_data_object, simulation_params){
   
   background_cfacs_object = list()
   
-  background_projection_yrs_pool = lapply(seq(input_data_object$site_characteristics$site_num), 
+  background_projection_yrs_pool = lapply(seq(length(input_data_object$site_characteristics$land_parcels)), 
                                           function(i) lapply(seq(input_data_object$global_params$feature_num), 
                                                              function(j) rep(list(1), length(input_data_object$feature_dynamics_modes[[i]][[j]])) ))  
   
@@ -272,7 +274,7 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                            input_data_object$feature_dynamics_modes,
                                                            input_data_object$site_element_index_key,
                                                            background_projection_yrs_pool,
-                                                           intervention_yrs = rep(1, input_data_object$site_characteristics$site_num),
+                                                           intervention_yrs = rep(1, length(input_data_object$site_characteristics$land_parcels)),
                                                            vector(),
                                                            cfac_type = 'background',
                                                            object_type = vector(), 
@@ -293,7 +295,7 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                                          input_data_object$feature_dynamics_modes,
                                                                          input_data_object$site_element_index_key,
                                                                          background_projection_yrs_pool,
-                                                                         intervention_yrs = rep(1, input_data_object$site_characteristics$site_num),
+                                                                         intervention_yrs = rep(1, length(input_data_object$site_characteristics$land_parcels)),
                                                                          vector(),
                                                                          cfac_type = 'background',
                                                                          object_type = vector(), 
@@ -433,7 +435,7 @@ build_condition_class_layers <- function(initial_features, global_params, featur
   }
   
   if (load_condition_classes == TRUE){
-    
+    flog.info('loading condition class raster files ..')
     background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
                                                       features_to_use = global_params$features_to_use_in_simulation)
     background_condition_class_layers = lapply(seq(dim(background_condition_class_layers)[3]), function(i) raster_to_array(subset(background_condition_class_layers, i)))
@@ -559,7 +561,7 @@ build_dynamics <- function(site_features_to_use, features_to_use, sample_dynamic
                                                                                                     sample_dynamics,
                                                                                                     dynamics_sample_type)  )))
   } else if (dynamics_type == 'site_scale'){
-      
+
       dynamics_set = lapply(seq_along(feature_dynamics_modes), 
                             function(i) lapply(features_to_use,
                                                function(j) lapply(seq_along(feature_dynamics_modes[[i]][[j]]), 
@@ -569,6 +571,8 @@ build_dynamics <- function(site_features_to_use, features_to_use, sample_dynamic
                                                                                                       store_dynamics_as_differential, 
                                                                                                       sample_dynamics,
                                                                                                       dynamics_sample_type) )))
+      
+      
 
   }
   return(dynamics_set)
@@ -1036,8 +1040,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                               unlist(simulation_params$banked_offset_control)))
   }
   
-
-  index_object$internal_site_indexes = seq(input_data_object$site_characteristics$site_num)
+  index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
   names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'dev_object', 'credit_object', 'unregulated_loss_object')
@@ -1151,6 +1154,8 @@ split_modes <- function(land_parcels, condition_class_layer){
                                                             function(j) unique(condition_class_layer[[j]][ land_parcels[[i]]])))
   return(feature_condition_class_modes)
 }
+
+
 
 separate_features_by_condition_class <- function(features, split_type, store_zeros_as_sparse, land_parcels, condition_class_layer, condition_class_modes){
   
