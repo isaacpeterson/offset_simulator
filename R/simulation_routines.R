@@ -53,7 +53,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     flog.info('system composed of %s x %s elements and %s sites',
               global_input_data$site_characteristics$landscape_dims[1], 
               global_input_data$site_characteristics$landscape_dims[2],
-              global_input_data$site_characteristics$site_num)
+              length(global_input_data$site_characteristics$land_parcels))
     
     flog.info('%s potential development sites, %s potential offset sites',
               length(current_output_data$index_object$available_indexes$devs), 
@@ -64,7 +64,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     flog.info('estimated %s sites lost to unregulated clearing', 
               round(estimate_illegal_sites(simulation_params_group[[scenario_ind]]$unregulated_loss_prob, 
                                            global_input_data$global_params$time_steps, 
-                                            global_input_data$site_characteristics$site_num))) 
+                                            length(global_input_data$site_characteristics$land_parcels)))) 
     
     ##### TODO(Isaac) test whether can set check and set seed if necessary much earlier in the code before run_initialise_routines() is called
     if (global_input_data$global_params$number_of_cores > 1 && global_input_data$global_params$set_seed == TRUE){
@@ -272,6 +272,10 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
   }
   
+  flog.info('developed %s of %s available development sites',
+            simulation_data_object$index_object$internal_site_indexes_used$development_object,
+            length(simulation_data_object$index_object))
+  
   return(simulation_data_object$output_data)
 }
 
@@ -349,7 +353,7 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
     # remove selected development sites from available pool, save development site characteristics,
     # update decline rates to implement development loss.
     simulation_data_object <- run_clearing_routines(simulation_data_object,
-                                                    current_dev_object = match_object$development_object,
+                                                    current_development_object = match_object$development_object,
                                                     clearing_type = 'development',
                                                     yr)
   }
@@ -481,7 +485,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
   # remove selected sites from available pool, save site characteristics, update decline rates to implement loss.
   if (!is.null(unregulated_loss_object)){
     simulation_data_object <- run_clearing_routines(simulation_data_object,
-                                                    current_dev_object = unregulated_loss_object,
+                                                    current_development_object = unregulated_loss_object,
                                                     clearing_type = 'unregulated',
                                                     yr)
   }
@@ -848,33 +852,33 @@ remove_site_from_current_pool <- function(pool_object, current_internal_site_ind
 
 # routines to mark and destroy feature_layers in cleared sites e.g. Development or unregulated
 
-run_clearing_routines <- function(simulation_data_object, current_dev_object, clearing_type, yr){
+run_clearing_routines <- function(simulation_data_object, current_development_object, clearing_type, yr){
   
-  if (length(current_dev_object$internal_site_indexes) == 0){
+  if (length(current_development_object$internal_site_indexes) == 0){
     return(simulation_data_object)
   }
   #remove development parcels from available pool
   
-  simulation_data_object$output_data$index_object <- update_index_object(simulation_data_object$output_data$index_object, update_type = clearing_type, current_dev_object$internal_site_indexes)
+  simulation_data_object$output_data$index_object <- update_index_object(simulation_data_object$output_data$index_object, update_type = clearing_type, current_development_object$internal_site_indexes)
   if (clearing_type == 'development'){
     #record current development site characteristics
     
-    simulation_data_object$output_data$interventions$dev_object <- append_current_group(simulation_data_object$output_data$interventions$dev_object, current_dev_object, append_routine = 'standard')
+    simulation_data_object$output_data$interventions$development_object <- append_current_group(simulation_data_object$output_data$interventions$development_object, current_development_object, append_routine = 'standard')
     
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
-    simulation_data_object$output_data$interventions$credit_object <- append_current_group(simulation_data_object$output_data$interventions$credit_object, current_dev_object, append_routine = 'standard')
+    simulation_data_object$output_data$interventions$credit_object <- append_current_group(simulation_data_object$output_data$interventions$credit_object, current_development_object, append_routine = 'standard')
   } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
-    simulation_data_object$output_data$interventions$unregulated_loss_object <- append_current_group(simulation_data_object$output_data$interventions$unregulated_loss_object, current_dev_object, append_routine = 'standard')
+    simulation_data_object$output_data$interventions$unregulated_loss_object <- append_current_group(simulation_data_object$output_data$interventions$unregulated_loss_object, current_development_object, append_routine = 'standard')
   }
   
-  if (length(current_dev_object$internal_site_indexes) > 0){
-    simulation_data_object$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$offset_pool_object, current_internal_site_indexes = current_dev_object$internal_site_indexes)
-    simulation_data_object$dev_pool_object <- remove_site_from_current_pool(simulation_data_object$dev_pool_object, current_internal_site_indexes = current_dev_object$internal_site_indexes)
+  if (length(current_development_object$internal_site_indexes) > 0){
+    simulation_data_object$offset_pool_object <- remove_site_from_current_pool(simulation_data_object$offset_pool_object, current_internal_site_indexes = current_development_object$internal_site_indexes)
+    simulation_data_object$dev_pool_object <- remove_site_from_current_pool(simulation_data_object$dev_pool_object, current_internal_site_indexes = current_development_object$internal_site_indexes)
   }
   
-  current_pool = unlist(current_dev_object$internal_site_indexes)
+  current_pool = unlist(current_development_object$internal_site_indexes)
   
   simulation_data_object$feature_dynamics[current_pool] = update_feature_dynamics(simulation_data_object$site_features[current_pool],
                                                                                   simulation_data_object$feature_dynamics[current_pool], 
@@ -908,7 +912,7 @@ assess_banking_credit <- function(output_data, simulation_params){
   
   offset_credit = nested_list_sum(offset_pool_object$parcel_vals_used)
   
-  dev_list = append(output_data$interventions$credit_object$parcel_vals_used, output_data$interventions$dev_object$parcel_vals_used)
+  dev_list = append(output_data$interventions$credit_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
   
   if (length(dev_list) > 0){
     # determine total development losses
@@ -1636,7 +1640,7 @@ update_index_object <- function(index_object, update_type, internal_site_indexes
   if (update_type == 'offset'){
     index_object$internal_site_indexes_used$offsets_object = append(index_object$internal_site_indexes_used$offsets, list(internal_site_indexes))
   } else if (update_type == 'development'){
-    index_object$internal_site_indexes_used$dev_object = append(index_object$internal_site_indexes_used$dev_object, list(internal_site_indexes))
+    index_object$internal_site_indexes_used$development_object = append(index_object$internal_site_indexes_used$development_object, list(internal_site_indexes))
   } else if (update_type == 'unregulated'){
     index_object$internal_site_indexes_used$unregulated_loss_object = append(index_object$internal_site_indexes_used$unregulated_loss_object, list(internal_site_indexes))
   } else if (update_type == 'develop_from_credit'){

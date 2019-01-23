@@ -56,7 +56,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                                          input_data_object$global_params$user_transform_function, 
                                                                          simulation_params$transform_params)
     
-    intervention_object$site_scale_cfacs = vector('list', input_data_object$site_characteristics$site_num)
+    intervention_object$site_scale_cfacs = vector('list', length(input_data_object$site_characteristics$site_num))
     intervention_object$site_scale_cfacs[intervention_object$intervention_pool] = collate_cfacs(intervention_object$site_features_at_intervention_set[intervention_object$intervention_pool],
                                                                                                 simulation_params, 
                                                                                                 input_data_object$feature_params,
@@ -190,7 +190,7 @@ run_site_scale_routines <- function(intervention_object, summed_site_features_at
   
   
   site_scale$net_impacts <- list(calc_net_site_scale_impacts(site_scale$impacts$offsets_object$nets,
-                                                                             site_scale$impacts$dev_object$nets))
+                                                                             site_scale$impacts$development_object$nets))
   
   #additional list nesting is to maintain structure for collate routines
   site_scale$outcomes = list(site_scale_outcomes)
@@ -256,12 +256,12 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                         function(j) rep(list(intervention_object$intervention_pool[i]), 
                                                                                         length(input_data_object$feature_dynamics_modes[[ intervention_object$intervention_pool[i] ]][[j]])) ))
     
-    site_features_at_intervention_set = vector('list', input_data_object$site_characteristics$site_num)
+    site_features_at_intervention_set = vector('list', length(input_data_object$site_characteristics$site_num))
     
     flog.info('building site features at intervention')
     
     for (current_feature_ind in seq(input_data_object$global_params$feature_num)){
-      site_features_at_intervention = build_site_features_at_intervention(input_data_object$site_characteristics$site_num, 
+      site_features_at_intervention = build_site_features_at_intervention(length(input_data_object$site_characteristics$site_num), 
                                                                           current_data_dir, 
                                                                           intervention_object$intervention_pool, 
                                                                           unlist(intervention_object$intervention_yrs_pool), 
@@ -269,7 +269,7 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                           current_feature_ind, 
                                                                           input_data_object$global_params$numeric_placeholder_width)
       
-      site_features_at_intervention_set = lapply(seq(input_data_object$site_characteristics$site_num), 
+      site_features_at_intervention_set = lapply(seq(length(input_data_object$site_characteristics$site_num)), 
                                                  function(i) append(site_features_at_intervention_set[[i]], 
                                                                     site_features_at_intervention[[i]]))
     }
@@ -476,7 +476,7 @@ collate_program_scale_cfacs <- function(site_scale_cfacs, interventions, backgro
 
   program_scale_cfacs$net_offsets <- sum_list(unlist(program_scale_cfacs[match(c('offsets_object', 'offset_bank_object'), 
                                                                                names(program_scale_cfacs))], recursive = FALSE))
-  program_scale_cfacs$net_devs <- sum_list(unlist(program_scale_cfacs[match(c('dev_object', 'credit_object'), 
+  program_scale_cfacs$net_devs <- sum_list(unlist(program_scale_cfacs[match(c('development_object', 'development_credit_object'), 
                                                                             names(program_scale_cfacs))], recursive = FALSE))
   
   return(program_scale_cfacs)
@@ -596,7 +596,7 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
   
   program_scale_outcomes$net_outcome <- sum_list(unlist(program_scale_outcomes, recursive = FALSE))
   program_scale_outcomes$net_offsets <- sum_list(unlist(program_scale_outcomes[match(c('offsets_object', 'offset_bank_object'), names(program_scale_outcomes))], recursive = FALSE))
-  program_scale_outcomes$net_devs <- sum_list(unlist(program_scale_outcomes[match(c('dev_object', 'credit_object'), names(program_scale_outcomes))], recursive = FALSE))
+  program_scale_outcomes$net_devs <- sum_list(unlist(program_scale_outcomes[match(c('development_object', 'development_credit_object'), names(program_scale_outcomes))], recursive = FALSE))
   
   return(program_scale_outcomes)
 }
@@ -608,7 +608,7 @@ collate_program_scale_impacts <- function(site_scale_impacts){
                              names(site_scale_impacts))
   
   program_impacts$net_offset_gains = sum_list(append(program_impacts$offsets_object, program_impacts$offset_bank_object))
-  program_impacts$net_dev_losses = sum_list(append(program_impacts$dev_object, program_impacts$credit_object))
+  program_impacts$net_dev_losses = sum_list(append(program_impacts$development_object, program_impacts$development_credit_object))
   program_impacts$net_impacts = sum_list(append(program_impacts$net_offset_gains, program_impacts$net_dev_losses))
   
   return(program_impacts)
@@ -897,7 +897,7 @@ assess_fractional_loss <- function(net_vals, NNL_yr){
 
 select_cfac_params <- function(object_type, simulation_params){
   
-  if ((object_type == "dev_object") | (object_type == "credit_object") | (object_type == "unregulated_loss_object")){
+  if ((object_type == "development_object") | (object_type == "development_credit_object") | (object_type == "unregulated_loss_object")){
     cfac_params = list(simulation_params$include_potential_developments_in_dev_calc,
                        simulation_params$include_potential_offsets_in_dev_calc,
                        simulation_params$include_unregulated_loss_in_dev_calc,
