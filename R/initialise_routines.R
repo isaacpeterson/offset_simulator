@@ -71,10 +71,13 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
       | (input_data_object$global_params$overwrite_condition_classes == TRUE)){
+    
+    flog.info('building condition class object')
     background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                      input_data_object$global_params, 
                                                                      input_data_object$feature_params)
     
+    flog.info('building condition class modes')
     input_data_object$feature_dynamics_modes = split_modes(input_data_object$site_characteristics$land_parcels, background_condition_class_layers)
     saveRDS(object = input_data_object$feature_dynamics_modes, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
     
@@ -86,11 +89,13 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
       | (input_data_object$global_params$overwrite_site_features == TRUE)){
     
     if (!exists('background_condition_class_layers')){
+      flog.info('building condition class layers')
       background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                        input_data_object$global_params, 
                                                                        input_data_object$feature_params)
     } 
     
+    flog.info('separating feature rasters at site level')
     input_data_object$site_features <- separate_features_by_condition_class(initial_features, 
                                                                             split_type = 'feature_vals',
                                                                             store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -98,6 +103,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                             background_condition_class_layers, 
                                                                             input_data_object$feature_dynamics_modes)
     
+    flog.info('separating features by condition class')
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -105,6 +111,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                                               background_condition_class_layers, 
                                                                                               input_data_object$feature_dynamics_modes)
     
+    flog.info('building site index key')
     input_data_object$site_element_index_key = lapply(seq_along(input_data_object$site_features), 
                                                            function(i) lapply(seq_along(input_data_object$site_features[[i]]),
                                                                               function(j) match(input_data_object$site_characteristics$land_parcels[[i]], 
@@ -135,7 +142,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 
   if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))) |
       (input_data_object$global_params$overwrite_feature_dynamics == TRUE)){
-
+    flog.info('building background feature dynamics')
     input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_features,
                                                          features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                          input_data_object$feature_params$sample_background_dynamics,
@@ -146,7 +153,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                          input_data_object$feature_dynamics_modes)
     
     if (any(is.na(unlist(input_data_object$feature_dynamics)))){
-      flog.error('poorly defined feature_dynamics')
+      flog.error('poorly defined feature dynamics')
     }
     saveRDS(input_data_object$feature_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   } else {
@@ -157,7 +164,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
-
+    flog.info('building management feature dynamics')
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
@@ -1047,7 +1054,7 @@ build_index_object <- function(input_data_object, simulation_params){
   index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
-  names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'dev_object', 'credit_object', 'unregulated_loss_object')
+  names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'development_object', 'credit_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
   
@@ -1102,8 +1109,8 @@ transform_control <- function(control_object, site_IDs, available_indexes){
   return(control_object)
 }
 
-set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_features, screen_site_zeros, min_site_screen_size, max_site_screen_size_quantile, 
-                                  features_to_use_in_offset_calc){
+set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parcels, initial_features, screen_site_zeros, 
+                                  min_site_screen_size, max_site_screen_size_quantile, features_to_use_in_offset_calc){
   
   if (screen_site_zeros == TRUE){
     
