@@ -56,7 +56,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                                          input_data_object$global_params$user_transform_function, 
                                                                          simulation_params$transform_params)
     
-    intervention_object$site_scale_cfacs = vector('list', length(input_data_object$site_characteristics$site_num))
+    intervention_object$site_scale_cfacs = vector('list', length(input_data_object$site_characteristics$land_parcels))
     intervention_object$site_scale_cfacs[intervention_object$intervention_pool] = collate_cfacs(intervention_object$site_features_at_intervention_set[intervention_object$intervention_pool],
                                                                                                 simulation_params, 
                                                                                                 input_data_object$feature_params,
@@ -256,12 +256,12 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                         function(j) rep(list(intervention_object$intervention_pool[i]), 
                                                                                         length(input_data_object$feature_dynamics_modes[[ intervention_object$intervention_pool[i] ]][[j]])) ))
     
-    site_features_at_intervention_set = vector('list', length(input_data_object$site_characteristics$site_num))
+    site_features_at_intervention_set = vector('list', length(input_data_object$site_characteristics$land_parcels))
     
     flog.info('building site features at intervention')
     
     for (current_feature_ind in seq(input_data_object$global_params$feature_num)){
-      site_features_at_intervention = build_site_features_at_intervention(length(input_data_object$site_characteristics$site_num), 
+      site_features_at_intervention = build_site_features_at_intervention(length(input_data_object$site_characteristics$land_parcels), 
                                                                           current_data_dir, 
                                                                           intervention_object$intervention_pool, 
                                                                           unlist(intervention_object$intervention_yrs_pool), 
@@ -269,7 +269,7 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                           current_feature_ind, 
                                                                           input_data_object$global_params$numeric_placeholder_width)
       
-      site_features_at_intervention_set = lapply(seq(length(input_data_object$site_characteristics$site_num)), 
+      site_features_at_intervention_set = lapply(seq(length(input_data_object$site_characteristics$land_parcels)), 
                                                  function(i) append(site_features_at_intervention_set[[i]], 
                                                                     site_features_at_intervention[[i]]))
     }
