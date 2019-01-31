@@ -258,8 +258,6 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
     
     site_features_at_intervention_set = vector('list', length(input_data_object$site_characteristics$land_parcels))
     
-    flog.info('building site features at intervention')
-    
     for (current_feature_ind in seq(input_data_object$global_params$feature_num)){
       site_features_at_intervention = build_site_features_at_intervention(length(input_data_object$site_characteristics$land_parcels), 
                                                                           current_data_dir, 
