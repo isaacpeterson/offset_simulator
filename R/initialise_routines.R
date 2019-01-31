@@ -1055,7 +1055,7 @@ build_index_object <- function(input_data_object, simulation_params){
   index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
   index_object$internal_site_indexes_used = vector('list', 5)
-  names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'development_object', 'credit_object', 'unregulated_loss_object')
+  names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'development_object', 'development_credit_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
   

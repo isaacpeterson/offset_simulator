@@ -867,7 +867,7 @@ run_clearing_routines <- function(simulation_data_object, current_development_ob
     
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
-    simulation_data_object$output_data$interventions$credit_object <- append_current_group(simulation_data_object$output_data$interventions$credit_object, current_development_object, append_routine = 'standard')
+    simulation_data_object$output_data$interventions$development_credit_object <- append_current_group(simulation_data_object$output_data$interventions$development_credit_object, current_development_object, append_routine = 'standard')
   } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
     simulation_data_object$output_data$interventions$unregulated_loss_object <- append_current_group(simulation_data_object$output_data$interventions$unregulated_loss_object, current_development_object, append_routine = 'standard')
@@ -912,7 +912,7 @@ assess_banking_credit <- function(output_data, simulation_params){
   
   offset_credit = nested_list_sum(offset_pool_object$parcel_vals_used)
   
-  dev_list = append(output_data$interventions$credit_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
+  dev_list = append(output_data$interventions$development_credit_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
   
   if (length(dev_list) > 0){
     # determine total development losses
@@ -1644,7 +1644,7 @@ update_index_object <- function(index_object, update_type, internal_site_indexes
   } else if (update_type == 'unregulated'){
     index_object$internal_site_indexes_used$unregulated_loss_object = append(index_object$internal_site_indexes_used$unregulated_loss_object, list(internal_site_indexes))
   } else if (update_type == 'develop_from_credit'){
-    index_object$internal_site_indexes_used$credit_object = append(index_object$internal_site_indexes_used$credit_object, list(internal_site_indexes))
+    index_object$internal_site_indexes_used$development_credit_object = append(index_object$internal_site_indexes_used$development_credit_object, list(internal_site_indexes))
   } else if (update_type == 'banking'){
     index_object$internal_site_indexes_used$offset_bank_object = append(index_object$internal_site_indexes_used$offset_bank_object, list(internal_site_indexes))
   }
