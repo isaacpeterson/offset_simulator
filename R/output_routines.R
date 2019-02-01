@@ -34,8 +34,8 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   
   # get the names of all parameter files, separated into run scenarios
   object_to_output$scenario_filenames <- list.files(path = object_to_output$simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
-                                   full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                   include.dirs = FALSE, no.. = FALSE)
+                                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                                    include.dirs = FALSE, no.. = FALSE)
   
   if ( (class(object_to_output$output_params$scenario_vec) == 'character')){
     if (object_to_output$output_params$scenario_vec == 'all'){
@@ -58,17 +58,17 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   
   if (object_to_output$output_params$output_type == 'plot'){
     # Set the output filename, and open the pdf file for reading
-
-      if (object_to_output$output_params$plot_type == 'impacts'){
-        pdf_to_output = paste0(object_to_output$output_folder, '/impacts.pdf')
-      } else if (object_to_output$output_params$plot_type == 'outcomes'){
-        pdf_to_output = paste0(object_to_output$output_folder, '/outcomes.pdf')
-      }
-      flog.info('writing PDF to %s', pdf_to_output)
-      pdf(pdf_to_output, width = 8.3, height = 11.7)
-
+    
+    if (object_to_output$output_params$plot_type == 'impacts'){
+      pdf_to_output = paste0(object_to_output$output_folder, '/impacts.pdf')
+    } else if (object_to_output$output_params$plot_type == 'outcomes'){
+      pdf_to_output = paste0(object_to_output$output_folder, '/outcomes.pdf')
+    }
+    flog.info('writing PDF to %s', pdf_to_output)
+    pdf(pdf_to_output, width = 8.3, height = 11.7)
+    
     setup_sub_plots(object_to_output$output_params$nx, object_to_output$output_params$ny, x_space = 5, y_space = 5)
-
+    
   } else if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
     object_to_output$site_characteristics = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
     object_to_output$site_element_indexes_grouped_by_condition_classes = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
@@ -88,7 +88,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   }
   
   for (scenario_ind in scenario_vec){
-
+    
     output_flag = check_output_flag(object_to_output$output_params, object_to_output$current_simulation_params)
     
     if (output_flag == FALSE){
@@ -185,8 +185,8 @@ output_scenario <- function(object_to_output, scenario_ind){
   
   if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
     object_to_output$example_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
-                                                formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
-                                                '_outputs.rds'))
+                                                                 formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
+                                                                 '_outputs.rds'))
   } 
   
   if (class(object_to_output$output_params$features_to_output) == 'character'){
@@ -224,8 +224,8 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     
     if (use_offset_metric == TRUE){
       collated_filenames = paste0(object_to_output$collated_folder, list.files(path = object_to_output$collated_folder, all.files = FALSE,
-                                                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                                              include.dirs = FALSE, no.. = FALSE, pattern = '_metric'))
+                                                                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                                                               include.dirs = FALSE, no.. = FALSE, pattern = '_metric'))
       
     }  else {
       collated_filenames = find_collated_files(file_path = object_to_output$collated_folder,
@@ -235,7 +235,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     }
     
     collated_realisations = run_bind_collated_realisations_routines(collated_filenames)
-
+    
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
@@ -267,14 +267,14 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
         
         flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
         object_to_output$current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(object_to_output$site_element_indexes_grouped_by_condition_classes), 
-                                                                            function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
+                                                                                             function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
         
         if (object_to_output$output_params$output_type == 'raster'){
           file_prefix = paste0(object_to_output$output_raster_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_') 
         } else if (object_to_output$output_params$output_type == 'png'){
           file_prefix = paste0(object_to_output$output_image_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_')
         } 
-
+        
         output_feature_layers(object_to_output, 
                               feature_ind, 
                               current_data_dir, 
@@ -296,7 +296,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
         } else{
           file_prefix = paste0(object_to_output$output_image_folder, 'metric_yr_')
         }
-            
+        
         output_feature_layers(object_to_output, 
                               feature_ind, 
                               current_data_dir, 
@@ -310,7 +310,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
 }
 
 plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_realisations, current_simulation_params, global_params){
-
+  
   if (output_params$plot_type == 'impacts'){
     
     plot_impact_set(collated_realisations,
@@ -341,11 +341,11 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
 }
 
 write_output_block <- function(block_to_output, filename){
-
-#   block_to_output = setNames(lapply(seq_along(block_to_output), 
-#                            function(i) lapply(seq_along(block_to_output[[i]]), 
-#                                               function(j) append(block_to_output[[i]][[j]], block_to_output[[i]][[j]]))), 
-#                            names(block_to_output))
+  
+  #   block_to_output = setNames(lapply(seq_along(block_to_output), 
+  #                            function(i) lapply(seq_along(block_to_output[[i]]), 
+  #                                               function(j) append(block_to_output[[i]][[j]], block_to_output[[i]][[j]]))), 
+  #                            names(block_to_output))
   
   block_lengths = lapply(seq_along(block_to_output), function(i) length(unlist(block_to_output[[i]])))
   sets_to_use = which(unlist(block_lengths) > 0)
@@ -354,9 +354,9 @@ write_output_block <- function(block_to_output, filename){
                       function(i) lapply(seq_along(block_to_use[[i]]), 
                                          function(j) setNames(as.data.frame(block_to_use[[i]]), 
                                                               paste0(names(block_to_use)[i], '_realisation_', seq(length(block_to_use[[i]][[j]]))))
-                                         )
                       )
-                                       
+  )
+  
   data_block = as.data.frame(data_block)
   write.table( data_block, col.names = T, row.names = F, filename, sep=',' )
 }
@@ -367,9 +367,9 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
   intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes)
   
   if (object_to_output$output_params$output_type == 'png'){
-
+    
     graphics.off()
-
+    
     image_filename = paste0(file_prefix, "%03d.", 'png', sep = '')
     png(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
   } else if (object_to_output$output_params$output_type == 'jpg'){
@@ -410,7 +410,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
       
       if (length(interventions_to_use) > 0){
-
+        
         sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
@@ -422,16 +422,16 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
         }
         
         if (object_to_output$output_params$output_block_offsets == TRUE){
-        
-        # if setting offsets to block of color 
-        # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
-        # i.e. use example_simulation_outputs$interventions$offsets_object$internal_site_indexes to identify offset sites
-        sites_to_use = setNames(lapply(interventions_to_use, 
-                                    function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes[sets_to_use[[i]]])), 
-                                                names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
-        # get site ids for offsets via something like sites_to_use$offsets_object
+          
+          # if setting offsets to block of color 
+          # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
+          # i.e. use example_simulation_outputs$interventions$offsets_object$internal_site_indexes to identify offset sites
+          sites_to_use = setNames(lapply(interventions_to_use, 
+                                         function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes[sets_to_use[[i]]])), 
+                                  names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
+          # get site ids for offsets via something like sites_to_use$offsets_object
           feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use$offsets_object)])] = 127
-        
+          
         }
         
         #mapping step to determine new mapped values 
@@ -448,7 +448,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       
     } else if (object_to_output$output_params$output_type == 'png'){
-    
+      
       # rotate image with t(...) to align with tiff output
       feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev))
       if (object_to_output$output_params$map_vals == TRUE){
@@ -467,7 +467,8 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
 }
 
 
-plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, time_steps,
+
+plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, 
                              realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
   if (output_params$plot_site == TRUE){
@@ -485,9 +486,9 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
     
   }
   
-
+  
   if (output_params$plot_program == TRUE){
-
+    
     overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
                                           unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
                                           unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
@@ -501,25 +502,25 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
                          plot_lims = program_plot_lims, 
                          global_params$time_steps)
     
-#     plot_outcomes(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
-#                                    unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
-#                                    unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
-#                   plot_type = 'program', 
-#                   include_legend = FALSE, 
-#                   plot_lims = program_plot_lims,
-#                   plot_title = 'Program Outcome', 
-#                   loss_stats = collated_realisations$net_program_loss, 
-#                   collated_realisations$realisation_num, 
-#                   collated_realisations$program_scale_cfacs$program_cfac_sum,
-#                   output_params$program_outcome_lwd_vec, 
-#                   outcome_col = output_params$landscape_col, 
-#                   cfac_col = output_params$cfac_col,
-#                   legend_vec = c('Outcome', 'Counterfactual'), 
-#                   global_params$time_steps)
+    #     plot_outcomes(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
+    #                                    unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
+    #                                    unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
+    #                   plot_type = 'program', 
+    #                   include_legend = FALSE, 
+    #                   plot_lims = program_plot_lims,
+    #                   plot_title = 'Program Outcome', 
+    #                   loss_stats = collated_realisations$net_program_loss, 
+    #                   collated_realisations$realisation_num, 
+    #                   collated_realisations$program_scale_cfacs$program_cfac_sum,
+    #                   output_params$program_outcome_lwd_vec, 
+    #                   outcome_col = output_params$landscape_col, 
+    #                   cfac_col = output_params$cfac_col,
+    #                   legend_vec = c('Outcome', 'Counterfactual'), 
+    #                   global_params$time_steps)
   }
   
   if (output_params$plot_landscape == TRUE){ 
-
+    
     plot_outcomes(unlist(collated_realisations$landscape_scale$outcomes$net_outcome, recursive = FALSE), 
                   plot_type = 'landscape', 
                   include_legend = FALSE, 
@@ -540,7 +541,11 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
                                output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind,realisation_ind, site_lwd, time_steps){
-
+  
+  if (current_simulation_params$use_offset_bank == TRUE){
+    null_plot()
+    return()
+  }
   if ( set_to_plot > length(collated_realisations$intervention_pool$dev_object[[realisation_ind]])){
     stop ( paste('\nERROR: output_params$set_to_plot exceeds number of devs/offsets'))
   }
@@ -549,7 +554,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   
   if (length(plot_lims) == 0){
     site_group = unlist(c(unlist(collated_realisations$intervention_pool$dev_object[[realisation_ind]][set_to_plot]), 
-                    collated_realisations$intervention_pool$offsets_object[[realisation_ind]][set_to_plot]))
+                          collated_realisations$intervention_pool$offsets_object[[realisation_ind]][set_to_plot]))
     plot_lims = find_plot_lims(plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_group])
   } 
   graphics::plot(NULL, type = 'l', ylab = y_lab, main = 'Site Outcomes', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
@@ -560,7 +565,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][internal_site_indexes_to_use]
     overlay_plot_list(plot_list, col_vec = rep('red', length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(site_lwd, length(plot_list)))
   }
-
+  
   if (plot_site_offset_outcome == TRUE){
     
     if (current_simulation_params$use_offset_bank == FALSE){
@@ -604,14 +609,13 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the program scale impacts
   if (output_params$plot_program == TRUE){
-
+    
     NNL_object <- find_NNL_characteristics(unlist(collated_realisations$program_scale$loss_characteristics$NNL, recursive = FALSE),
                                            unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE))
     
-    browser()
     overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$impacts$net_offset_gains, recursive = FALSE), 
                                           unlist(collated_realisations$program_scale$impacts$net_dev_losses,recursive = FALSE), 
-                                                 unlist(collated_realisations$program_scale$impacts$net_impacts,recursive = FALSE)),
+                                          unlist(collated_realisations$program_scale$impacts$net_impacts,recursive = FALSE)),
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
@@ -647,10 +651,10 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the landscape scale impacts
   if (output_params$plot_landscape == TRUE){
-
+    
     NNL_object <- find_NNL_characteristics(unlist(collated_realisations$landscape_scale$loss_characteristics$NNL, recursive = FALSE),
                                            unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE))
- 
+    
     overlay_realisations(plot_list = list(unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE)),
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
@@ -704,7 +708,7 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
     
     NNL_object$NNL_label <- cbind(paste0(length(unlist(NNL_set)), ' realisations achieved NNL at ', NNL_object$mean_NNL, ' years'), 
                                   paste0('mean final impact = ', format(final_collated_impact, scientific=TRUE, digits=3)))
-
+    
   } 
   
   return(NNL_object)
@@ -746,7 +750,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     offset_set = collated_realisations$site_scale$impacts$offsets_object
     dev_set = collated_realisations$site_scale$impacts$dev_object
     net_plot_list = collated_realisations$site_scale$net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
-
+    
   } else {
     offset_set = unlist(collated_realisations$program_scale$impacts$net_offset_gains, recursive = FALSE)
     dev_set = unlist(collated_realisations$program_scale$impacts$net_dev_losses, recursive = FALSE)
@@ -812,9 +816,9 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
                         lty_vec = rep(1, length(net_plot_list)), 
                         lwd_vec = rep(plot_lwd, length(net_plot_list)))
       
-#       overlay_plot_list(plot_type, net_plot_list[plot_ind], yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
-#                         col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
-#                         legend_vec = 'NA', legend_loc = FALSE)
+      #       overlay_plot_list(plot_type, net_plot_list[plot_ind], yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
+      #                         col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
+      #                         legend_vec = 'NA', legend_loc = FALSE)
     }
     
     plot_type = 'non-overlay'
@@ -848,20 +852,20 @@ overlay_impact <- function(collated_object, offset_bank, visualisation_type, rea
                     lty_vec = rep(1, length(plot_list)), 
                     lwd_vec = rep(plot_lwd, length(plot_list)))
   
-#   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab, 
-#                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(plot_lwd, length(plot_list)), 
-#                     legend_vec = 'NA', legend_loc = FALSE)
+  #   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab, 
+  #                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(plot_lwd, length(plot_list)), 
+  #                     legend_vec = 'NA', legend_loc = FALSE)
 }
 
 
 
 find_list_mean <- function(list_to_average){
-
+  
   
   if (is.null(list_to_average)){
     return(NULL)
   } else {
-
+    
     set_lengths = lapply(list_to_average, 'length')
     set_to_use = which(unlist(set_lengths) > 0) 
     if (length(set_to_use) > 0){
@@ -875,7 +879,7 @@ find_list_mean <- function(list_to_average){
 }
 
 plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, lwd_vec, time_steps){
-
+  
   if (plot_col == 'blue'){
     back_plot_col = 'skyblue'
   } else if (plot_col == 'black'){
@@ -890,7 +894,7 @@ plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, 
   
   for (realisation_ind in seq_len(realisation_num)){
     if (length(plot_list[[realisation_ind]]) > 0){
-        lines(plot_list[[realisation_ind]], lwd = lwd_vec[2], col = back_plot_col)
+      lines(plot_list[[realisation_ind]], lwd = lwd_vec[2], col = back_plot_col)
     }
   }
   
@@ -899,7 +903,7 @@ plot_collated_realisation_set <- function(plot_list, plot_col, realisation_num, 
   if (length(current_plot_mean) > 0){
     lines(current_plot_mean, col = plot_col, lwd = lwd_vec[1], lty = 2)
   } 
-
+  
   
 }
 
@@ -977,10 +981,10 @@ plot_outcomes <- function(current_outcome_set, plot_type, include_legend, plot_l
   if (length(unlist(current_outcome_set)) == 0){
     return()
   }
-
+  
   current_total_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$total_loss[[i]]))
   if (length(current_total_loss) > 0){
-  loss_tit = paste0('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
+    loss_tit = paste0('Net Loss at ', time_steps, 'yrs = ', round(mean(unlist(current_total_loss))*100), '%')
     current_NNL_loss = unlist(lapply(seq_len(realisation_num), function(i) loss_stats$NNL_loss[[i]]))
     if (length(current_NNL_loss) > 0){
       NNL_tit = paste0('Mean NNL at  ', round(mean(current_NNL_loss*100)), '% landscape loss')
@@ -1051,25 +1055,25 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
     }
   }
   
-#   if (length(plot_list) == 0){
-#     null_plot()
-#   } else {
-#     if (plot_type == 'non-overlay'){
-#       graphics::plot(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
-#     } else {
-#       lines(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
-#     }
-#     
-#     if (length(plot_list) > 1){
-#       for (plot_ind in 2:length(plot_list)){
-#         lines(plot_list[[plot_ind]],  ylim = ylims, col = col_vec[plot_ind], lwd = lwd_vec[plot_ind], lty = lty_vec[plot_ind])
-#       }
-#     }
-#     abline(h = 0, lty = 2)
-#     if (legend_vec[1] != 'NA'){
-#       legend(legend_loc, legend_vec, bty="n", lty = lty_vec, cex = 1,  pt.cex = 1, lwd = lwd_vec, col = col_vec)
-#     }
-#   }
+  #   if (length(plot_list) == 0){
+  #     null_plot()
+  #   } else {
+  #     if (plot_type == 'non-overlay'){
+  #       graphics::plot(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
+  #     } else {
+  #       lines(plot_list[[1]], type = 'l', main = heading, ylim = ylims, ylab = ylab, xlab = x_lab, col = col_vec[1], lty = lty_vec[1], lwd = lwd_vec[1])
+  #     }
+  #     
+  #     if (length(plot_list) > 1){
+  #       for (plot_ind in 2:length(plot_list)){
+  #         lines(plot_list[[plot_ind]],  ylim = ylims, col = col_vec[plot_ind], lwd = lwd_vec[plot_ind], lty = lty_vec[plot_ind])
+  #       }
+  #     }
+  #     abline(h = 0, lty = 2)
+  #     if (legend_vec[1] != 'NA'){
+  #       legend(legend_loc, legend_vec, bty="n", lty = lty_vec, cex = 1,  pt.cex = 1, lwd = lwd_vec, col = col_vec)
+  #     }
+  #   }
 }
 
 
