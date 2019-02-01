@@ -622,7 +622,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
                          output_params$program_lwd_vec, 
                          col_vec = output_params$program_col_vec, 
                          legend_loc = 'topleft',
-                         legend_vec = 'NA', #c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
+                         legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
                          plot_lims = program_plot_lims, 
                          global_params$time_steps)
     
@@ -951,7 +951,12 @@ plot_NNL_hists <- function(parcel_set_NNL, program_scale_NNL, system_NNL, use_pa
 overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, lwd_vec, 
                                  col_vec, legend_vec, legend_loc, plot_lims, time_steps){
   
-  if (length(unlist(plot_list)) == 0){
+  inds_to_use = lapply(seq_along(plot_list), function(i) !is.null(unlist(plot_list[[i]])))
+  plot_list <- plot_list[unlist(inds_to_use)]
+  col_vec <- col_vec[unlist(inds_to_use)]
+  legend_vec <- legend_vec[unlist(inds_to_use)]
+  
+  if (length(plot_list) == 0){
     return()
   }
   
@@ -960,6 +965,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
   } 
   
   graphics::plot(NULL, type = 'l', ylab = '', main = plot_title, xlab = x_lab,  ylim = plot_lims, xlim = c(0, time_steps))
+  
   abline(h = 0, lty = 2)
   
   for (plot_ind in seq_along(plot_list)){
