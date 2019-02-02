@@ -258,10 +258,9 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
   if (build_current_background_cfacs_flag == TRUE){
     flog.info('building background counterfactuals - this may take a while')
     background_cfacs_object = build_background_cfacs(global_input_data, simulation_params)
-    
   }
   
-  if (global_input_data$global_params$save_background_cfacs == TRUE){
+  if ((global_input_data$global_params$save_background_cfacs == TRUE) | !file.exists(background_cfacs_file)){
     flog.info('saving background counterfactuals')
     saveRDS(background_cfacs_object, background_cfacs_file)
   }
@@ -294,7 +293,8 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                            use_offset_metric = FALSE, 
                                                            input_data_object$global_params$user_transform_function)
   
-  saveRDS(background_cfacs_object$background_cfacs, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
+  saveRDS(background_cfacs_object$background_cfacs, 
+          paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
   
   if (simulation_params$use_offset_metric == TRUE){
     
