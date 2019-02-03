@@ -79,7 +79,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
         dir.create(object_to_output$output_raster_folder)
       }
     } else if (object_to_output$output_params$output_type == 'png'){
-      browser()
+      
       object_to_output$output_image_folder = paste0(object_to_output$collated_folder, '/output_image_layers/')
       if (!dir.exists(object_to_output$output_image_folder)){
         dir.create(object_to_output$output_image_folder)
@@ -250,15 +250,16 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       
     } else if (object_to_output$output_params$output_type == 'csv'){
       flog.info('writing csv outputs')
-      write_output_block(collated_realisations$program_scale$outcomes, 
+      
+      write_output_block(unlist(collated_realisations$program_scale$outcomes, recursive = FALSE),
                          paste0(object_to_output$collated_folder, 'program_scale_outcomes.csv'))
       
       block_to_use = which(names(collated_realisations$program_scale$impacts) %in% c("net_offset_gains", "net_dev_losses", "net_impacts"))
-      write_output_block(collated_realisations$program_scale$impacts[block_to_use], 
+      write_output_block(unlist(collated_realisations$program_scale$impacts[block_to_use], recursive = FALSE),
                          paste0(object_to_output$collated_folder, 'program_scale_impacts.csv'))
-      write_output_block(collated_realisations$landscape_scale$outcomes, 
+      write_output_block(unlist(collated_realisations$landscape_scale$outcomes, recursive = FALSE),
                          paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'))
-      write_output_block(collated_realisations$landscape_scale$impacts, 
+      write_output_block(unlist(collated_realisations$landscape_scale$impacts, recursive = FALSE),
                          paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'))
       
     } else {
@@ -350,12 +351,18 @@ write_output_block <- function(block_to_output, filename){
   block_lengths = lapply(seq_along(block_to_output), function(i) length(unlist(block_to_output[[i]])))
   sets_to_use = which(unlist(block_lengths) > 0)
   block_to_use = block_to_output[sets_to_use]
+#  data_block = lapply(seq_along(block_to_use), 
+#                      function(i) lapply(seq_along(block_to_use[[i]]), 
+#                                         function(j) setNames(as.data.frame(block_to_use[[i]]), 
+#                                                              paste0(names(block_to_use)[i], '_realisation_', seq(length(block_to_use[[i]][[j]]))))
+#                                        )
+#                      )
   data_block = lapply(seq_along(block_to_use), 
                       function(i) lapply(seq_along(block_to_use[[i]]), 
                                          function(j) setNames(as.data.frame(block_to_use[[i]]), 
-                                                              paste0(names(block_to_use)[i], '_realisation_', seq(length(block_to_use[[i]][[j]]))))
-                      )
-  )
+                                                              names(block_to_use)[i])
+                                        )
+                      )  
   
   data_block = as.data.frame(data_block)
   write.table( data_block, col.names = T, row.names = F, filename, sep=',' )
@@ -377,7 +384,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
   }
   
   for (yr in 0:object_to_output$global_params$time_steps){
-    browser()
+    
     flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for year %s'), yr)
     feature_layer_to_output = matrix(0, nrow = object_to_output$site_characteristics$landscape_dims[1], ncol = object_to_output$site_characteristics$landscape_dims[2])
     
