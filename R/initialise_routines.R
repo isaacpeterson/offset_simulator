@@ -68,7 +68,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$site_characteristics = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
   }
   
-
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
       | (input_data_object$global_params$overwrite_condition_classes == TRUE)){
     
@@ -140,7 +139,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$management_dynamics_modes = split_modes(input_data_object$site_characteristics$land_parcels, management_condition_class_layers)
   } 
 
-  if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))) |
+  if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))) |
       (input_data_object$global_params$overwrite_feature_dynamics == TRUE)){
     flog.info('building background feature dynamics')
     input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_features,
@@ -157,14 +156,13 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     }
     saveRDS(input_data_object$feature_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   } else {
-    input_data_object$feature_dynamics <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'background_dynamics.rds'))
+    input_data_object$feature_dynamics <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   }
   
-
   
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
-    flog.info('building management feature dynamics')
+    flog.info('building management dynamics')
 
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
@@ -293,9 +291,6 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                            use_offset_metric = FALSE, 
                                                            input_data_object$global_params$user_transform_function)
   
-  saveRDS(background_cfacs_object$background_cfacs, 
-          paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
-  
   if (simulation_params$use_offset_metric == TRUE){
     
     background_cfacs_object$user_metric_background_cfacs = collate_cfacs(input_data_object$site_features,
@@ -314,11 +309,9 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                                          condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
                                                                          use_offset_metric = TRUE, 
                                                                          input_data_object$global_params$user_transform_function)
-    
-    saveRDS(background_cfacs_object$background_cfacs, paste0(input_data_object$global_params$simulation_inputs_folder, 'user_metric_background_cfacs.rds'))
-    
   }
   
+  saveRDS(background_cfacs_object, paste0(input_data_object$global_params$simulation_inputs_folder, 'background_cfacs.rds'))
   return(background_cfacs_object)
 }
 

@@ -70,10 +70,8 @@ initialise_default_global_params <- function(){
   default_global_params$backup_simulation_inputs = TRUE
   
   default_global_params$overwrite_site_characteristics = FALSE
-  
   default_global_params$overwrite_site_features = FALSE
   default_global_params$overwrite_condition_class_layers = FALSE
-  
   default_global_params$save_feature_dynamics = FALSE
   default_global_params$save_management_dynamics = FALSE
   default_global_params$overwrite_dev_probability_list = FALSE
@@ -84,6 +82,7 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_condition_classes = FALSE
   default_global_params$save_background_cfacs = TRUE
   default_global_params$background_cfacs_file = 'default'
+  
   return(default_global_params)
 }
 
