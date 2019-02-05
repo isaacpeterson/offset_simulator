@@ -498,6 +498,7 @@ build_initial_credit <- function(simulation_params, input_data_object){
   credit_object = list()
   credit_object$current_credit = current_credit
   credit_object$credit_match_flag = FALSE
+  return(credit_object)
 }
 
 select_feature_condition_class_bounds <- function(feature_params, global_params){

@@ -248,20 +248,21 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       # attempt to develop from current available credit
       
       if (simulation_params$allow_developments_from_credit == TRUE){
+
         simulation_data_object <- develop_from_credit_routine(simulation_data_object, simulation_params, yr)
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if (simulation_data_object$credit_match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
+      if (simulation_data_object$credit_object$match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
         simulation_data_object <- match_sites_routine(simulation_data_object, simulation_params, yr)
       }
     }
     
-#     flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 
-#                   'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit, 
-#                   remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+    dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$development_credit_object$intervention_yrs) == yr)
+    dev_credit_sites = unlist(simulation_data_object$output_data$interventions$development_credit_object$internal_site_indexes[dev_credit_set])
+    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites])))
     
-    if (!((simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0))){
+    if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
     projection_yrs = lapply(seq_along(simulation_data_object$site_features), 
@@ -416,7 +417,7 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
     }
   } 
 
-  simulation_data_object$credit_match_flag = match_object$match_flag
+  simulation_data_object$credit_object$match_flag = match_object$match_flag
   
   return(simulation_data_object)
 }
