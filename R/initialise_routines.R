@@ -471,7 +471,12 @@ build_output_data <- function(input_data_object, simulation_params){
   names(interventions) = names(output_data$index_object$internal_site_indexes_used)
   output_data$interventions = interventions
   output_data$offset_pool_object <- list()
-  
+
+  return(output_data)
+} 
+
+
+build_initial_credit <- function(simulation_params, input_data_object){
   if (simulation_params$transform_initial_credit == TRUE){
     if (length(input_data_object$global_params$user_transform_function) > 0){
       current_credit = input_data_object$global_params$user_transform_function(simulation_params$initial_credit, simulation_params$transform_params)
@@ -481,7 +486,7 @@ build_output_data <- function(input_data_object, simulation_params){
     }
   } else {
     if ((simulation_params$use_offset_metric == FALSE) &
-      ( length(simulation_params$initial_credit) != length(simulation_params$features_to_use_in_offset_calc))){
+        ( length(simulation_params$initial_credit) != length(simulation_params$features_to_use_in_offset_calc))){
       flog.error('setting length of credit vector to match simulation_params$features_to_use_in_offset_calc')
       current_credit = matrix(rep(simulation_params$initial_credit, 
                                   length(simulation_params$features_to_use_in_offset_calc)), 
@@ -490,10 +495,10 @@ build_output_data <- function(input_data_object, simulation_params){
       current_credit = simulation_params$initial_credit
     }
   }
-  output_data$current_credit = current_credit
-  output_data$credit_match_flag = FALSE
-  return(output_data)
-} 
+  credit_object = list()
+  credit_object$current_credit = current_credit
+  credit_object$credit_match_flag = FALSE
+}
 
 select_feature_condition_class_bounds <- function(feature_params, global_params){
   

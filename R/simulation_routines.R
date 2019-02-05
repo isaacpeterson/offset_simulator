@@ -75,18 +75,33 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
       
       # foreach runs realizations in parallel
       foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dorng%{
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, 
+                                       simulation_params_group[[scenario_ind]],  
+                                       current_output_data, 
+                                       current_background_cfacs_object, 
+                                       scenario_ind, 
+                                       realisation_ind)
       }
     } else if ((global_input_data$global_params$number_of_cores > 1) && (global_input_data$global_params$realisation_num > 1)){
       # case when running NON-DETERMINISTIC realisations in parallel
       foreach(realisation_ind = seq_len(global_input_data$global_params$realisation_num)) %dopar%{
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, 
+                                       simulation_params_group[[scenario_ind]],  
+                                       current_output_data, 
+                                       current_background_cfacs_object, 
+                                       scenario_ind, 
+                                       realisation_ind)
       }
     } else {
       # Case when running single realisation
       ##### TODO(Isaac): need to add case for running a single realization either with or without having the seed set.
       for (realisation_ind in 1:global_input_data$global_params$realisation_num){
-        run_offset_simulation_routines(global_input_data, simulation_params_group[[scenario_ind]],  current_output_data, current_background_cfacs_object, scenario_ind, realisation_ind)
+        run_offset_simulation_routines(global_input_data, 
+                                       simulation_params_group[[scenario_ind]],  
+                                       current_output_data, 
+                                       current_background_cfacs_object, 
+                                       scenario_ind, 
+                                       realisation_ind)
       }
       
     }
@@ -153,6 +168,7 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   
   flog.info('current data dir is %s', current_data_dir)
   
+  global_input_data$credit_object <- build_initial_credit(simulation_params, global_input_data)
   simulation_outputs <- run_simulation(global_input_data, output_data, simulation_params, current_data_dir)
   
   # save raw simulation data
@@ -170,6 +186,8 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   }
   
 }
+
+
 
 
 # main engine for code - returns all simulation outputs including developments, offsets etc.
@@ -224,7 +242,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       
       ###### TODO REINSTATE OFFSETBANK ROUTINES ####
       #           if (simulation_params$use_offset_bank == TRUE){
-      #             simulation_data_object$output_data$current_credit = assess_banking_credit(simulation_data_object$output_data, simulation_params)
+      #             simulation_data_object$credit_object$current_credit = assess_banking_credit(simulation_data_object$output_data, simulation_params)
       #           }
       
       # attempt to develop from current available credit
@@ -234,7 +252,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if (simulation_data_object$output_data$credit_match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
+      if (simulation_data_object$credit_match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
         simulation_data_object <- match_sites_routine(simulation_data_object, simulation_params, yr)
       }
     }
@@ -342,7 +360,7 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
     #update available credit
-    simulation_data_object$output_data$current_credit = match_object$current_credit
+    simulation_data_object$credit_object$current_credit = match_object$current_credit
     
     # remove selected offset sites from available pool, save offset site characteristics, update decline rates to implement offset.
     simulation_data_object <- run_offset_routines(simulation_data_object,
@@ -366,7 +384,7 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
 
 develop_from_credit_routine <- function(simulation_data_object, simulation_params, yr){
 
-  if (all(simulation_data_object$output_data$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$internal_site_indexes) == 0)){
+  if (all(simulation_data_object$credit_object$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$internal_site_indexes) == 0)){
     match_object = setNames(list(FALSE), 'match_flag')
     
   } else {
@@ -374,15 +392,15 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
     match_object <- match_from_pool(match_type = 'development', 
                                     current_pool = simulation_data_object$dev_pool_object$internal_site_indexes, 
                                     pool_vals_to_use, 
-                                    simulation_data_object$output_data$current_credit,
+                                    simulation_data_object$credit_object$current_credit,
                                     simulation_data_object$dev_probability_list,
-                                    vals_to_match_initial = simulation_data_object$output_data$current_credit,
+                                    vals_to_match_initial = simulation_data_object$credit_object$current_credit,
                                     simulation_params,
                                     yr)
     
     if (match_object$match_flag == TRUE){
 
-      simulation_data_object$output_data$current_credit = match_object$current_credit
+      simulation_data_object$credit_object$current_credit = match_object$current_credit
       
       subset_pool = list_intersect(simulation_data_object$dev_pool_object$internal_site_indexes, match_object$match_indexes)
       development_object = subset_current_pool(simulation_data_object$dev_pool_object, subset_pool = subset_pool$match_ind)
@@ -391,14 +409,14 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
       
-      flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 
-                    'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
-                    'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+#       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$internal_site_indexes)]), 
+#                     'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
+#                     'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
 
     }
   } 
 
-  simulation_data_object$output_data$credit_match_flag = match_object$match_flag
+  simulation_data_object$credit_match_flag = match_object$match_flag
   
   return(simulation_data_object)
 }
@@ -1201,7 +1219,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     
     if ( (sum(unlist(current_match_vals_pool)) == 0)){
       match_object$offset_object = list()
-      match_object$current_credit = simulation_data_object$output_data$current_credit
+      match_object$current_credit = simulation_data_object$credit_object$current_credit
       match_object$match_flag = FALSE
       return(match_object)
       
@@ -1253,7 +1271,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     match_object <- match_from_pool(match_type = 'offset',
                                     match_pool_to_use,
                                     pool_vals_to_use,
-                                    unlist(simulation_data_object$output_data$current_credit),
+                                    unlist(simulation_data_object$credit_object$current_credit),
                                     simulation_data_object$offset_probability_list,
                                     vals_to_match_initial = vals_to_match,
                                     simulation_params,
@@ -1278,7 +1296,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     match_object$offset_object = offset_object
   } else if (match_object$match_flag == FALSE){
     match_object$offset_object = list()
-    match_object$current_credit = simulation_data_object$output_data$current_credit
+    match_object$current_credit = simulation_data_object$credit_object$current_credit
   }
   
   return(match_object)
