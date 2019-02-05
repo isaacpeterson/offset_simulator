@@ -159,7 +159,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data_object$feature_dynamics <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   }
   
-  
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
     flog.info('building management dynamics')
@@ -468,7 +467,7 @@ build_output_data <- function(input_data_object, simulation_params){
   output_data = list()
   output_data$index_object = build_index_object(input_data_object, simulation_params)
   interventions = vector('list', 5)
-  names(interventions) = names(output_data$index_object$internal_site_indexes_used)
+  names(interventions) = names(output_data$index_object$site_indexes_used)
   output_data$interventions = interventions
   output_data$offset_pool_object <- list()
 
@@ -931,7 +930,7 @@ build_current_variant <- function(current_variant_indexes, variants){
 
 
 parcel_set_list_names <- function(){
-  list_names = c("internal_site_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
+  list_names = c("site_indexes", "parcel_num_remaining", "offset_yrs", "parcel_ecologies", "parcel_sums_at_offset", "cfac_trajs", "parcel_vals_used",
                  "restoration_vals", "cfac_vals")
   return(list_names)
 }
@@ -1051,14 +1050,14 @@ build_index_object <- function(input_data_object, simulation_params){
   }
   
 
-  index_object$internal_site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
+  index_object$site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$banked_offset_pool = list()
-  index_object$internal_site_indexes_used = vector('list', 5)
-  names(index_object$internal_site_indexes_used) = c('offsets_object', 'offset_bank_object', 'development_object', 'development_credit_object', 'unregulated_loss_object')
+  index_object$site_indexes_used = vector('list', 5)
+  names(index_object$site_indexes_used) = c('offsets_object', 'offset_bank_object', 'development_object', 'development_credit_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
   
-  index_object$available_indexes$offsets = set_available_indexes(index_object$internal_site_indexes, 
+  index_object$available_indexes$offsets = set_available_indexes(index_object$site_indexes, 
                                                                  offset_indexes_to_exclude, 
                                                                  input_data_object$site_characteristics$land_parcels, 
                                                                  input_data_object$site_features, 
@@ -1067,7 +1066,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                                                  max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                                  simulation_params$features_to_use_in_offset_calc)
   
-  index_object$available_indexes$devs = set_available_indexes(index_object$internal_site_indexes, 
+  index_object$available_indexes$devs = set_available_indexes(index_object$site_indexes, 
                                                               dev_indexes_to_exclude,
                                                               input_data_object$site_characteristics$land_parcels, 
                                                               input_data_object$site_features, 
@@ -1076,7 +1075,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                                               max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                               simulation_params$features_to_use_in_offset_calc)
   
-  index_object$available_indexes$unregulated_loss = set_available_indexes(index_object$internal_site_indexes, 
+  index_object$available_indexes$unregulated_loss = set_available_indexes(index_object$site_indexes, 
                                                                           indexes_to_exclude = unregulated_indexes_to_exclude,
                                                                           input_data_object$site_characteristics$land_parcels, 
                                                                           input_data_object$site_features, 

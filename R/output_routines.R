@@ -371,7 +371,7 @@ write_output_block <- function(block_to_output, filename){
 output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
   
   
-  intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes)
+  intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
   
   if (object_to_output$output_params$output_type == 'png'){
     
@@ -418,7 +418,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       
       if (length(interventions_to_use) > 0){
         
-        sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes[sets_to_use[[i]]]))
+        sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
           #resort to original raster pixel indices
@@ -432,9 +432,9 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
           
           # if setting offsets to block of color 
           # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
-          # i.e. use example_simulation_outputs$interventions$offsets_object$internal_site_indexes to identify offset sites
+          # i.e. use example_simulation_outputs$interventions$offsets_object$site_indexes to identify offset sites
           sites_to_use = setNames(lapply(interventions_to_use, 
-                                         function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$internal_site_indexes[sets_to_use[[i]]])), 
+                                         function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
                                   names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
           # get site ids for offsets via something like sites_to_use$offsets_object
           feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use$offsets_object)])] = 127
@@ -568,19 +568,19 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   abline(h = 0, lty = 2)
   
   if (plot_site_dev_outcome == TRUE){
-    internal_site_indexes_to_use = collated_realisations$intervention_pool$dev_object[[realisation_ind]][[set_to_plot]]
-    plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][internal_site_indexes_to_use]
+    site_indexes_to_use = collated_realisations$intervention_pool$dev_object[[realisation_ind]][[set_to_plot]]
+    plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]
     overlay_plot_list(plot_list, col_vec = rep('red', length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(site_lwd, length(plot_list)))
   }
   
   if (plot_site_offset_outcome == TRUE){
     
     if (current_simulation_params$use_offset_bank == FALSE){
-      internal_site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]][[set_to_plot]]
-      plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][internal_site_indexes_to_use]
+      site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]][[set_to_plot]]
+      plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]
     } else {
-      internal_site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]]
-      plot_list = list(Reduce('+', collated_realisations$site_scale$outcomes[[realisation_ind]][internal_site_indexes_to_use]))
+      site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]]
+      plot_list = list(Reduce('+', collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]))
     }
     
     overlay_plot_list(plot_list, 
@@ -839,8 +839,8 @@ overlay_impact <- function(collated_object, offset_bank, visualisation_type, rea
   
   if (offset_bank == FALSE){
     collated_traj_set = collated_object[[realisation_ind]]$nets
-    internal_site_indexes = unlist(collated_object[[realisation_ind]]$internal_site_indexes[set_to_plot])
-    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$internal_site_indexes) %in% internal_site_indexes)
+    site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
+    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)
     if (plot_from_impact_yr){
       intervention_yrs = collated_object[[realisation_ind]]$intervention_yrs[inds_to_plot]
     } else {
