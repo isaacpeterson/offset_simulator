@@ -429,7 +429,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
         }
         
         if (object_to_output$output_params$output_block_offsets == TRUE){
-          
+
           # if setting offsets to block of color 
           # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
           # i.e. use example_simulation_outputs$interventions$offsets_object$site_indexes to identify offset sites
@@ -437,7 +437,10 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
                                          function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
                                   names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
           # get site ids for offsets via something like sites_to_use$offsets_object
-          feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use$offsets_object)])] = 127
+          offsets_to_map = which(names(sites_to_use) %in% c("offsets_object", "offset_bank_object"))
+          if (length(offsets_to_map) > 0){
+            feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use[offsets_to_map])])] = 127
+          }
           
         }
         

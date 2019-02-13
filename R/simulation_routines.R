@@ -260,7 +260,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$development_credit_object$intervention_yrs) == yr)
     dev_credit_sites = unlist(simulation_data_object$output_data$interventions$development_credit_object$site_indexes[dev_credit_set])
-    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites])))
+    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '/n'))
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
