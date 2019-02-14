@@ -1,7 +1,6 @@
 initialise_default_global_params <- function(){
   default_global_params = list()
 
-  
   # Set the random number seed
   default_global_params$set_seed = FALSE
 
@@ -51,7 +50,6 @@ initialise_default_global_params <- function(){
   # Fix the output directory (will overwrite existing files) instead of creating unique 
   default_global_params$unique_simulation_folder = TRUE
 
-  default_global_params$build_background_cfacs = TRUE
   # The number of realizations to run
   default_global_params$realisation_num = 1
 
@@ -80,7 +78,6 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_management_dynamics = FALSE
   default_global_params$overwrite_feature_dynamics = FALSE
   default_global_params$overwrite_condition_classes = FALSE
-  default_global_params$save_background_cfacs = TRUE
   default_global_params$background_cfacs_file = 'default'
   
   return(default_global_params)
