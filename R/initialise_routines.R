@@ -162,7 +162,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
     flog.info('building management dynamics')
-    browser()
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
@@ -221,8 +220,8 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
     background_cfacs_file = global_input_data$global_params$background_cfacs_file
   }
   
-  build_cfacs_flag = ((global_input_data$global_params$overwrite_feature_dynamics == TRUE) |
-                        !file.exists(background_cfacs_file))
+  build_cfacs_flag = ((global_input_data$global_params$overwrite_feature_dynamics == TRUE) | !file.exists(background_cfacs_file))
+                        
   if (!build_cfacs_flag){
     
     flog.info('loading background counterfactuals from file')
