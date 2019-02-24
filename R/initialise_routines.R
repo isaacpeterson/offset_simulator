@@ -71,7 +71,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics_modes.rds'))
       | (input_data_object$global_params$overwrite_condition_classes == TRUE)){
     
-    flog.info('building condition class object')
+    flog.info('building condition classes')
     background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                      input_data_object$global_params, 
                                                                      input_data_object$feature_params)
@@ -88,13 +88,13 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
       | (input_data_object$global_params$overwrite_site_features == TRUE)){
     
     if (!exists('background_condition_class_layers')){
-      flog.info('building condition class layers')
+      flog.info('building condition classes')
       background_condition_class_layers = build_condition_class_layers(initial_features, 
                                                                        input_data_object$global_params, 
                                                                        input_data_object$feature_params)
     } 
     
-    flog.info('separating feature rasters at site level')
+    flog.info('separating feature elements at site scale')
     input_data_object$site_features <- separate_features_by_condition_class(initial_features, 
                                                                             split_type = 'feature_vals',
                                                                             store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -102,7 +102,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                             background_condition_class_layers, 
                                                                             input_data_object$feature_dynamics_modes)
     
-    flog.info('separating features by condition class')
+    flog.info('separating features by condition class at site scale')
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -110,7 +110,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                                               background_condition_class_layers, 
                                                                                               input_data_object$feature_dynamics_modes)
     
-    flog.info('building site index key')
+    flog.info('building condition class index key at site scale')
     input_data_object$site_element_index_key = lapply(seq_along(input_data_object$site_features), 
                                                            function(i) lapply(seq_along(input_data_object$site_features[[i]]),
                                                                               function(j) match(input_data_object$site_characteristics$land_parcels[[i]], 
@@ -142,6 +142,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))) |
       (input_data_object$global_params$overwrite_feature_dynamics == TRUE)){
     flog.info('building background feature dynamics')
+
     input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_features,
                                                          features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                          input_data_object$feature_params$sample_background_dynamics,
@@ -162,6 +163,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
     flog.info('building management dynamics')
+
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
