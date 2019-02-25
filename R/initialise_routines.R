@@ -102,7 +102,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                             background_condition_class_layers, 
                                                                             input_data_object$feature_dynamics_modes)
     
-    flog.info('separating element indexes by condition class at site scale')
+    flog.info('separating by condition class...')
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -124,7 +124,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     flog.info('saving condition class key')
     saveRDS(object = input_data_object$site_element_index_key, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   } else {
-    flog.info('loading site features and condition class index key')
+    flog.info('loading site features and condition class key')
     input_data_object$site_features = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
     input_data_object$site_element_index_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   }
@@ -172,7 +172,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   if (!(file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_dynamics.rds')))|
       (input_data_object$global_params$overwrite_management_dynamics == TRUE)){
     flog.info('building management dynamics')
-
+    browser()
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_features,
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
@@ -202,7 +202,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     flog.info('assigning equal offset probability to all sites')
     input_data_object$offset_probability_list <- rep(list(1/length(input_data_object$site_characteristics$land_parcels)), 
                                                           length(input_data_object$site_characteristics$land_parcels))
-    
   } else {
     input_data_object$offset_probability_list <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'offset_probability_list.rds'))
   }
