@@ -94,7 +94,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                        input_data_object$feature_params)
     } 
     
-    flog.info('separating feature elements at site scale')
+    flog.info('separating features by condition class at site scale')
     input_data_object$site_features <- separate_features_by_condition_class(initial_features, 
                                                                             split_type = 'feature_vals',
                                                                             store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
@@ -102,23 +102,29 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                                             background_condition_class_layers, 
                                                                             input_data_object$feature_dynamics_modes)
     
-    flog.info('separating features by condition class at site scale')
+    flog.info('separating element indexes by condition class at site scale')
     site_element_indexes_grouped_by_condition_classes <- separate_features_by_condition_class(initial_features, 
                                                                                               split_type = 'element_index',
                                                                                               store_zeros_as_sparse = input_data_object$global_params$store_zeros_as_sparse,
                                                                                               input_data_object$site_characteristics$land_parcels, 
                                                                                               background_condition_class_layers, 
                                                                                               input_data_object$feature_dynamics_modes)
+
+    flog.info('saving feature object')
+    saveRDS(object = input_data_object$site_features, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
     
-    flog.info('building condition class index key at site scale')
+    flog.info('saving condition class object')
+    saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
+    
+    flog.info('building condition class key')
     input_data_object$site_element_index_key = lapply(seq_along(input_data_object$site_features), 
                                                            function(i) lapply(seq_along(input_data_object$site_features[[i]]),
                                                                               function(j) match(input_data_object$site_characteristics$land_parcels[[i]], 
                                                                                                 do.call(cbind, site_element_indexes_grouped_by_condition_classes[[i]][[j]]))))
-    saveRDS(object = input_data_object$site_features, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
-    saveRDS(object = site_element_indexes_grouped_by_condition_classes, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
+    flog.info('saving condition class key')
     saveRDS(object = input_data_object$site_element_index_key, paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   } else {
+    flog.info('loading site features and condition class index key')
     input_data_object$site_features = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_features.rds'))
     input_data_object$site_element_index_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_element_index_key.rds'))
   }
@@ -141,6 +147,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
 
   if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))) |
       (input_data_object$global_params$overwrite_feature_dynamics == TRUE)){
+    
     flog.info('building background feature dynamics')
 
     input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_features,
@@ -154,8 +161,10 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     
     if (any(is.na(unlist(input_data_object$feature_dynamics)))){
       flog.error('poorly defined feature dynamics')
+      stop()
+    } else {
+      saveRDS(input_data_object$feature_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
     }
-    saveRDS(input_data_object$feature_dynamics, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   } else {
     input_data_object$feature_dynamics <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   }
