@@ -291,9 +291,9 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
   }
   
-  flog.info('developed %s of %s available development sites',
-            simulation_data_object$index_object$site_indexes_used$development_object,
-            length(simulation_data_object$index_object))
+  flog.info('developed %s sites, offset with %s sites',
+            simulation_data_object$output_data$index_object$site_indexes_used$development_object,
+            simulation_data_object$output_data$index_object$site_indexes_used$offset_object)
   
   return(simulation_data_object$output_data)
 }

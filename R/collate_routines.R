@@ -81,7 +81,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     collated_object = list()
     
     if (use_offset_metric == FALSE){
-      flog.info('collating feature %s', feature_ind)
+      flog.info('collating feature %s time series data', feature_ind)
       site_scale_outcomes = sum_data_stack(current_data_dir, 
                                            file_pattern = paste0('feature_', formatC(input_data_object$global_params$features_to_use_in_simulation[feature_ind],
                                                                                      width = input_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0")), 
