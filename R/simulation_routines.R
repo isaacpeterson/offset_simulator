@@ -266,7 +266,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
     projection_yrs = lapply(seq_along(simulation_data_object$site_features), 
-                            function(i) find_projection_yrs(perform_dynamics_time_shift = simulation_data_object$feature_params$perform_background_dynamics_time_shift, 
+                            function(i) build_projection_yrs(perform_dynamics_time_shift = simulation_data_object$feature_params$perform_background_dynamics_time_shift, 
                                                             simulation_data_object$site_features[[i]], 
                                                             yr, 
                                                             feature_dynamics_to_use = simulation_data_object$feature_dynamics[[i]], 
@@ -1092,9 +1092,9 @@ project_feature_layer <- function(dynamics_type, update_dynamics_by_differential
   return(projected_feature)
 }
 
+##### check these routines 
 
 project_elements <- function(current_mode, current_vals_set, time_horizon, time_vec, projection_yr, feature_dynamics_to_use, current_condition_class_bounds){
-  
   
   if (current_mode == 0){
     projected_elements = current_vals_set
@@ -1753,8 +1753,12 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       }
       
       projection_yrs = lapply(seq_along(site_features_group), 
-                              function(i) find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift, 
-                                                              site_features_group[[i]],  yr, feature_dynamics[[i]],  feature_dynamics_modes[[i]], feature_params$background_dynamics_type))
+                              function(i) build_projection_yrs(perform_dynamics_time_shift = feature_params$perform_background_dynamics_time_shift, 
+                                                              site_features_group[[i]],  
+                                                              yr, 
+                                                              feature_dynamics[[i]],  
+                                                              feature_dynamics_modes[[i]], 
+                                                              feature_params$background_dynamics_type))
       
       if (simulation_params$use_offset_metric == FALSE){
         
@@ -1806,7 +1810,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
       if (action_type == 'restore'){
 
         time_shifts = lapply(seq_along(site_features_group), 
-                             function(i) find_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
+                             function(i) build_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
                                                              site_features_group[[i]], 
                                                              yr, 
                                                              management_dynamics[[i]], 
@@ -1823,7 +1827,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_fe
                                                                                                  time_fill = TRUE))
         
         projection_yrs = lapply(seq_along(site_features_group), 
-                                function(i) find_projection_yrs(perform_dynamics_time_shift = FALSE, 
+                                function(i) build_projection_yrs(perform_dynamics_time_shift = FALSE, 
                                                                 site_features_group[[i]],  
                                                                 yr = 1,  
                                                                 management_dynamics[[i]],  
@@ -1962,11 +1966,10 @@ kill_site_features <- function(site_features_to_develop, store_zeros_as_sparse){
 }
 
 
-find_projection_yrs <- function(perform_dynamics_time_shift, current_site_features, yr, 
+build_projection_yrs <- function(perform_dynamics_time_shift, current_site_features, yr, 
                                 feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type){
   
   if (perform_dynamics_time_shift == FALSE){
-    
     projection_yrs = lapply(seq_along(current_site_features), function(i) rep(list(yr), length(feature_dynamics_modes_to_use[[i]])) )
   } else {
     projection_yrs = find_time_shifts(current_site_features,  feature_dynamics_to_use, feature_dynamics_modes_to_use, dynamics_type, perform_dynamics_time_shift)
