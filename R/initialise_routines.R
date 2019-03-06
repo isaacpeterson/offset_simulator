@@ -765,17 +765,6 @@ overwrite_current_params <- function(user_params, default_params){
 }
 
 
-select_feature_subset <- function(input_object, features_to_use){
-  if (length(input_object[[1]]) < features_to_use[length(features_to_use)]){
-    flog.error( cat('\nERROR: features in simulation_params$features_to_use do not match initial_features_dimensions'))
-    stop()
-  }
-  input_object <- lapply(seq_along(input_object),
-                         function(i) (input_object[[i]][features_to_use]))
-  return(input_object)
-}
-
-
 write_folder <- function(current_folder){
   if (!file.exists(current_folder)){
     dir.create(current_folder, recursive = TRUE)
