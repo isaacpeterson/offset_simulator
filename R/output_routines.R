@@ -71,7 +71,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     
   } else if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
     object_to_output$site_characteristics = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-    object_to_output$site_element_indexes_grouped_by_condition_classes = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_element_indexes_grouped_by_condition_classes.rds'))
+    object_to_output$site_scale_condition_class_key = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_scale_condition_class_key.rds'))
     
     if (object_to_output$output_params$output_type == 'raster'){
       object_to_output$output_raster_folder = paste0(object_to_output$collated_folder, '/output_rasters/')
@@ -184,6 +184,7 @@ output_scenario <- function(object_to_output, scenario_ind){
                             '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
   
   if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
+    browser()
     object_to_output$example_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
                                                                  formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                                                                  '_outputs.rds'))
@@ -199,7 +200,7 @@ output_scenario <- function(object_to_output, scenario_ind){
     features_to_output = object_to_output$output_params$features_to_output
   }
   
-  if (sum(features_to_output) != 0){
+  if (sum(features_to_output) > 0){
     output_collated_features(object_to_output,
                              features_to_output, 
                              use_offset_metric = FALSE, 
@@ -235,7 +236,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     }
     
     collated_realisations = run_bind_collated_realisations_routines(collated_filenames)
-    
+
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
@@ -267,8 +268,8 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
       if (use_offset_metric == FALSE){
         
         flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
-        object_to_output$current_element_indexes_grouped_by_feature_condition_class = lapply(seq_along(object_to_output$site_element_indexes_grouped_by_condition_classes), 
-                                                                                             function(i) object_to_output$site_element_indexes_grouped_by_condition_classes[[i]][[feature_ind]])
+        object_to_output$current_site_scale_condition_class_key = lapply(seq_along(object_to_output$site_scale_condition_class_key), 
+                                                                                             function(i) object_to_output$site_scale_condition_class_key[[i]][[feature_ind]])
         
         if (object_to_output$output_params$output_type == 'raster'){
           file_prefix = paste0(object_to_output$output_raster_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_') 
@@ -370,7 +371,6 @@ write_output_block <- function(block_to_output, filename){
 
 output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
   
-  
   intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
   
   if (object_to_output$output_params$output_type == 'png'){
@@ -396,10 +396,11 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), 
                                     function(i) lapply(seq_along(feature_layer_to_use[[i]]), function(j) as.matrix(feature_layer_to_use[[i]][[j]])))
       
-      feature_layer_to_output[unlist(object_to_output$current_element_indexes_grouped_by_feature_condition_class)] = unlist(feature_layer_to_use)
+      feature_layer_to_output[unlist(object_to_output$current_site_scale_condition_class_key)] = unlist(feature_layer_to_use)
       
     } else {
       
+      browser()
       feature_layer_to_use = readRDS(paste0(current_data_dir, 'metric_layer_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
       feature_layer_to_use = lapply(seq_along(feature_layer_to_use), function(i) as.matrix(feature_layer_to_use[[i]]))
       feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels)] = unlist(feature_layer_to_use)
@@ -421,23 +422,25 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
         sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_offset_metric == FALSE){
-          #resort to original raster pixel indices
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_element_indexes_grouped_by_feature_condition_class[sites_to_use[[i]]]))
+          #sort to original raster pixel indices
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_site_scale_condition_class_key[sites_to_use[[i]]]))
         } else {
-          #resorting not necessary as order is preserved for metric calculations
+          #sorting not necessary as order is preserved for metric calculations
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
         
         if (object_to_output$output_params$output_block_offsets == TRUE){
 
           # if setting offsets to block of color 
-          # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offsets_object, unregulted_loss_object etc.
-          # i.e. use example_simulation_outputs$interventions$offsets_object$site_indexes to identify offset sites
+          # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offset_object, unregulted_loss_object etc.
+          # i.e. use example_simulation_outputs$interventions$offset_object$site_indexes to identify offset sites
+          
           sites_to_use = setNames(lapply(interventions_to_use, 
                                          function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
                                   names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
-          # get site ids for offsets via something like sites_to_use$offsets_object
-          offsets_to_map = which(names(sites_to_use) %in% c("offsets_object", "offset_bank_object"))
+          
+          # get site ids for offsets via something like sites_to_use$offset_object
+          offsets_to_map = which(names(sites_to_use) %in% c("offset_object", "uncoupled_offset_object"))
           if (length(offsets_to_map) > 0){
             feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use[offsets_to_map])])] = 127
           }
@@ -552,7 +555,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
                                output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind,realisation_ind, site_lwd, time_steps){
   
-  if (current_simulation_params$use_offset_bank == TRUE){
+  if (current_simulation_params$use_uncoupled_offsets == TRUE){
     null_plot()
     return()
   }
@@ -564,7 +567,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   
   if (length(plot_lims) == 0){
     site_group = unlist(c(unlist(collated_realisations$intervention_pool$dev_object[[realisation_ind]][set_to_plot]), 
-                          collated_realisations$intervention_pool$offsets_object[[realisation_ind]][set_to_plot]))
+                          collated_realisations$intervention_pool$offset_object[[realisation_ind]][set_to_plot]))
     plot_lims = find_plot_lims(plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_group])
   } 
   graphics::plot(NULL, type = 'l', ylab = y_lab, main = 'Site Outcomes', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
@@ -578,11 +581,11 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
   
   if (plot_site_offset_outcome == TRUE){
     
-    if (current_simulation_params$use_offset_bank == FALSE){
-      site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]][[set_to_plot]]
+    if (current_simulation_params$use_uncoupled_offsets == FALSE){
+      site_indexes_to_use = collated_realisations$intervention_pool$offset_object[[realisation_ind]][[set_to_plot]]
       plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]
     } else {
-      site_indexes_to_use = collated_realisations$intervention_pool$offsets_object[[realisation_ind]]
+      site_indexes_to_use = collated_realisations$intervention_pool$offset_object[[realisation_ind]]
       plot_list = list(Reduce('+', collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]))
     }
     
@@ -738,10 +741,10 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
   
   ylab = paste0(y_lab, '\n', current_simulation_params$offset_calc_type, '/', current_simulation_params$dev_calc_type )
   
-  #   if (current_simulation_params$use_offset_bank == FALSE){
+  #   if (current_simulation_params$use_uncoupled_offsets == FALSE){
   #     y_lab = cbind(y_lab, paste0('T.H.', current_simulation_params$offset_time_horizon, ', ill_clear ', current_simulation_params$include_unregulated_loss_in_offset_calc))
   #   } else{
-  #     y_lab = cbind(y_lab, paste0(' offset_bank T, Clearing ', current_simulation_params$include_unregulated_loss_in_offset_calc))
+  #     y_lab = cbind(y_lab, paste0(' uncoupled_offset T, Clearing ', current_simulation_params$include_unregulated_loss_in_offset_calc))
   #   }
   #  y_lab = t(y_lab)
   return(y_lab)
@@ -756,8 +759,8 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   
   stats_to_use = unlist(collated_realisations$sites_used)
   x_lab = ''
-  if (current_simulation_params$use_offset_bank == FALSE){
-    offset_set = collated_realisations$site_scale$impacts$offsets_object
+  if (current_simulation_params$use_uncoupled_offsets == FALSE){
+    offset_set = collated_realisations$site_scale$impacts$offset_object
     dev_set = collated_realisations$site_scale$impacts$dev_object
     net_plot_list = collated_realisations$site_scale$net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
     
@@ -782,7 +785,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     if (plot_site_offset_impact == TRUE){
       
       overlay_impact(collated_object = offset_set,
-                     current_simulation_params$use_offset_bank,
+                     current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'stacked', 
                      realisation_ind, 
                      plot_col = col_vec[1], 
@@ -804,7 +807,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     if (plot_site_dev_impact == TRUE){
       
       overlay_impact(dev_set,
-                     current_simulation_params$use_offset_bank,
+                     current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'non-stacked', 
                      realisation_ind, 
                      plot_col = col_vec[2],
@@ -836,11 +839,11 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 }
 
 
-overlay_impact <- function(collated_object, offset_bank, visualisation_type, realisation_ind, 
+overlay_impact <- function(collated_object, use_uncoupled_offsets, visualisation_type, realisation_ind, 
                            plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
                            set_to_plot, plot_lims, time_steps){
   
-  if (offset_bank == FALSE){
+  if (use_uncoupled_offsets == FALSE){
     collated_traj_set = collated_object[[realisation_ind]]$nets
     site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
     inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)

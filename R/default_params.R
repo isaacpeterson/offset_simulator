@@ -57,7 +57,7 @@ initialise_default_global_params <- function(){
   # Specify how many cores to run on. Default setting here it to use single core
   default_global_params$number_of_cores = 1
   
-  default_global_params$store_zeros_as_sparse = FALSE
+  default_global_params$sparse_representation = FALSE
   
   # saves all raw data. Whether all of the outputs of the model are kept after a scenario is
   # finished. If false only data required to generate the plots is kept.
@@ -68,7 +68,7 @@ initialise_default_global_params <- function(){
   default_global_params$backup_simulation_inputs = TRUE
   
   default_global_params$overwrite_site_characteristics = FALSE
-  default_global_params$overwrite_site_features = FALSE
+  default_global_params$overwrite_features = FALSE
   default_global_params$overwrite_condition_class_layers = FALSE
   default_global_params$save_feature_dynamics = FALSE
   default_global_params$save_management_dynamics = FALSE
@@ -178,19 +178,19 @@ initialise_default_simulation_params <- function(){
 
   default_simulation_params$offset_selection_type = 'greedy'  
   
-  # Whether to use banking. FALSE - means perform offsets simultaneously with development, TRUE -
+  # Whether to use uncoupled offsets. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
-  default_simulation_params$use_offset_bank = FALSE
+  default_simulation_params$use_uncoupled_offsets = FALSE
 
   # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
-  default_simulation_params$offset_bank_type = 'credit'     
-  default_simulation_params$banked_offset_selection_type = 'stochastic'  
+  default_simulation_params$uncoupled_offset_type = 'credit'     
+  default_simulation_params$uncoupled_offset_selection_type = 'stochastic'  
   
-  default_simulation_params$banked_offset_control = list()
+  default_simulation_params$uncoupled_offset_control = list()
   
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = 15
@@ -403,7 +403,7 @@ initialise_default_output_params <- function(base_folder){
   # development: 256 : red  
   # unregulated_loss: 257 :orange
   
-  default_output_params$col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, offset_bank_col, dev_col, dev_credit_col, unregulated_loss_col)
+  default_output_params$col_map_vector = c(128, 128, 256, 256, 257) #c(offset_col, uncoupled_offset_col, dev_col, dev_credit_col, unregulated_loss_col)
   
  
   
