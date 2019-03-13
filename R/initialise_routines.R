@@ -1,6 +1,5 @@
 # set of initialisation routines that are called for every simulation
 
-
 build_input_data <- function(user_global_params, user_feature_params, user_transform_function, simulation_params_group){
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data

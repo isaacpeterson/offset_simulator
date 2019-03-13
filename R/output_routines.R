@@ -1095,6 +1095,16 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
   #   }
 }
 
+# write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_site_indexes){ 
+#   
+#   site_mask = array(0, landscape_dims)
+#   site_mask[ unlist(land_parcels[unlist(current_site_indexes)])] = 1
+#   # rgb.palette <- colorRampPalette(color_vec, space = "rgb")
+#   png(filename = output_filename, height = dim(site_mask)[1], width = dim(site_mask)[2])
+#   image(site_mask, zlim = c(0,1), col = rgb.palette(512))
+#   dev.off()
+#   return(site_mask)
+# }
 
 # check_plot_options <- function(output_params, current_simulation_params, scenario_filenames) {
 #   

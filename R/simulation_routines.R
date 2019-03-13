@@ -467,22 +467,6 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
 
 
 
-#write all offset parcels to single layer to output as image
-
-write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_site_indexes){ 
-  
-  site_mask = array(0, landscape_dims)
-  site_mask[ unlist(land_parcels[unlist(current_site_indexes)])] = 1
-  # rgb.palette <- colorRampPalette(color_vec, space = "rgb")
-  png(filename = output_filename, height = dim(site_mask)[1], width = dim(site_mask)[2])
-  image(site_mask, zlim = c(0,1), col = rgb.palette(512))
-  dev.off()
-  return(site_mask)
-}
-
-
-
-
 #sample over uniform random vector, indicies less than the threshold level are selected for clearing
 select_sites_to_clear <- function(available_site_indexes, simulation_params, yr){
   
