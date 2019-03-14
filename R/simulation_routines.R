@@ -298,7 +298,6 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
   }
   
-  browser()
   return(simulation_data_object$output_data)
   
 }
