@@ -59,7 +59,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                        input_data_object$global_params$transform_function,
                                        simulation_params$transform_params,
                                        input_data_object$global_params$time_steps, 
-                                       intervention_object)
+                                       input_data_object$global_params$numeric_placeholder_width)
   
   
   if (intervention_object$intervention_flag == TRUE){
@@ -672,11 +672,8 @@ group_site_scale_impacts <- function(collated_object, site_indexes){
 
 
 sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, features_to_collate, site_lengths, site_scale_condition_class_key, 
-                           transform_function, transform_params, time_steps, intervention_object){
+                           transform_function, transform_params, time_steps, numeric_placeholder_width){
   
-  current_filenames <- list.files(path = current_data_dir,
-                                  pattern = file_pattern, all.files = FALSE,
-                                  include.dirs = FALSE, no.. = FALSE)
 
   if (use_offset_metric == FALSE){
     flog.info('building site scale outcomes...')
@@ -684,11 +681,13 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
     flog.info('building site scale outcomes for metric...')
   }
   
-  browser()
-  
   for (yr in seq(time_steps)){
+    current_filename <- list.files(path = current_data_dir,
+                                    pattern = paste0(file_pattern, formatC(yr, width = numeric_placeholder_width, format = "d", flag = "0")), 
+                                    all.files = FALSE,
+                                    include.dirs = FALSE, no.. = FALSE)
     
-    site_scale_features = readRDS(paste0(current_data_dir, current_filenames[yr]))
+    site_scale_features = readRDS(paste0(current_data_dir, current_filename))
     
     if (yr == 1){
       data_stack = rep(list(matrix(0, nrow = time_steps, ncol = length(features_to_collate))), length(site_scale_features))
@@ -710,9 +709,6 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
     
   }
   
-  devs = lapply(intervention_object$grouped_intervention_pool$development_credit_object, function(i) data_stack[[i]][yr, ])
-  
-  browser()
   return(data_stack)
 }
 

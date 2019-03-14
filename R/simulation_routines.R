@@ -202,6 +202,15 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     
+    flog.info('program currently composed of %s development sites, %s offset sites',
+              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
+                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_credit_object))),
+              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
+                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
+    flog.info('%s available development sites, %s available offset sites',
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
+    
     #when running in uncoupled offset mode select out current set of sites to add
     
     if (simulation_params$use_uncoupled_offsets == TRUE){
@@ -258,7 +267,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$development_credit_object$intervention_yrs) == yr)
     dev_credit_sites = unlist(simulation_data_object$output_data$interventions$development_credit_object$site_indexes[dev_credit_set])
-    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '/n'))
+    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
@@ -287,16 +296,9 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr)
     
-    flog.info('program composed of %s development sites, %s offset sites',
-              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
-                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_credit_object))),
-              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
-                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
-    flog.info('%s available development sites, %s available offset sites remaining in landscape',
-              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
-              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
   }
   
+  browser()
   return(simulation_data_object$output_data)
   
 }
