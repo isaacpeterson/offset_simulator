@@ -287,11 +287,15 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr)
     
+    flog.info('program composed of %s development sites, %s offset sites',
+              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
+                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_credit_object))),
+              sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
+                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
+    flog.info('%s available development sites, %s available offset sites remaining in landscape',
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
   }
-  
-  flog.info('developed %s sites, offset with %s sites',
-            simulation_data_object$output_data$index_object$site_indexes_used$development_object,
-            simulation_data_object$output_data$index_object$site_indexes_used$offset_object)
   
   return(simulation_data_object$output_data)
   
@@ -1791,7 +1795,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
                                                               feature_params$background_dynamics_type))
       
       if (simulation_params$use_offset_metric == FALSE){
-        browser()
+
         cfac_vals = lapply(seq_along(site_scale_features_group), 
                            function(i) matrix(do.call(cbind, sum_site_scale_features(calc_site_cfacs(site_scale_features_group[[i]],
                                                                                                projection_yrs[[i]],
@@ -1811,7 +1815,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
                                                                                                site_scale_condition_class_key = vector()))), nrow = 1))
 
       } else {
-        
+
         cfac_vals = lapply(seq_along(site_scale_features_group), 
                            function(i) sum(user_transform_function(calc_site_cfacs(site_scale_features_group[[i]],
                                                                                           projection_yrs[[i]],

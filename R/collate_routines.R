@@ -14,15 +14,15 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
   
   intervention_object <- run_pre_collate_routines(simulation_outputs, input_data_object, simulation_params, current_data_dir)
   
-#   collated_object <- run_collate_routines(intervention_object, 
-#                                           simulation_outputs,
-#                                           input_data_object,
-#                                           background_cfacs_object$background_cfacs,
-#                                           simulation_params,
-#                                           current_data_dir, 
-#                                           file_prefix,
-#                                           use_offset_metric = FALSE)
-  
+  run_collate_routines(intervention_object, 
+                       simulation_outputs,
+                       input_data_object,
+                       background_cfacs_object$background_cfacs,
+                       simulation_params,
+                       current_data_dir, 
+                       file_prefix,
+                       use_offset_metric = FALSE)
+
   if (simulation_params$use_offset_metric == TRUE){
     run_collate_routines(intervention_object, 
                          simulation_outputs,
@@ -41,13 +41,26 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
 run_collate_routines <- function(intervention_object, simulation_outputs, input_data_object, background_cfacs,
                                  simulation_params, current_data_dir, file_prefix, use_offset_metric){
   
+
+
+  
   if (use_offset_metric == FALSE){
-    flog.info('building site scale counterfactuals - this may take a while')
     features_to_collate = seq(input_data_object$global_params$feature_num)
   } else {
-    flog.info('building counterfactuals for user metric - this may take a while')
     features_to_collate = 1
   }
+  
+  site_scale_outcomes = sum_data_stack(current_data_dir, 
+                                       file_pattern = 'feature_outputs_yr_',
+                                       use_offset_metric, 
+                                       features_to_collate,
+                                       input_data_object$site_characteristics$site_lengths, 
+                                       input_data_object$site_scale_condition_class_key,
+                                       input_data_object$global_params$transform_function,
+                                       simulation_params$transform_params,
+                                       input_data_object$global_params$time_steps, 
+                                       intervention_object)
+  
   
   if (intervention_object$intervention_flag == TRUE){
 
@@ -82,15 +95,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     
   }
   
-  site_scale_outcomes = sum_data_stack(current_data_dir, 
-                                       file_pattern = 'feature_outputs_yr_',
-                                       use_offset_metric, 
-                                       features_to_collate,
-                                       input_data_object$site_characteristics$site_lengths, 
-                                       input_data_object$site_scale_condition_class_key,
-                                       input_data_object$global_params$transform_function,
-                                       simulation_params$transform_params,
-                                       input_data_object$global_params$time_steps)
+
   
   for (feature_ind in features_to_collate){
     
@@ -152,7 +157,6 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     saveRDS(collated_object, collated_filename)
   }
   
-  return(collated_object)
 }
 
 
@@ -307,7 +311,7 @@ select_collated_feature_subset <- function(current_object, subset_ind, output_ty
   return(subset_object)
 }
 
-# 
+
 # build_site_layer_stack <- function(current_data_dir, file_pattern, current_pool, current_intervention_yrs, numeric_placeholder_width){
 #   browser()
 #   current_filenames <- list.files(path = current_data_dir,
@@ -541,7 +545,7 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
                                                                                            unlist(intervention_yrs)[i]), recursive = FALSE))
   
   if (use_offset_metric == FALSE){
-    
+    flog.info('building site scale counterfactuals - this may take a while...')
     cfacs = lapply(seq_along(site_scale_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) do.call(cbind, sum_site_scale_features( calc_site_cfacs(site_scale_features_group[[i]],
@@ -562,7 +566,7 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
                                                                                                                    site_scale_condition_class_key = vector()))))))
     
   } else {
-
+    flog.info('building counterfactuals for user metric - this may take a while...')
     cfacs = lapply(seq_along(site_scale_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) sum(user_transform_function(calc_site_cfacs(site_scale_features_group[[i]],
@@ -667,12 +671,21 @@ group_site_scale_impacts <- function(collated_object, site_indexes){
 
 
 
-sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, features_to_collate, site_lengths, site_scale_condition_class_key, transform_function, transform_params, time_steps){
+sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, features_to_collate, site_lengths, site_scale_condition_class_key, 
+                           transform_function, transform_params, time_steps, intervention_object){
   
   current_filenames <- list.files(path = current_data_dir,
                                   pattern = file_pattern, all.files = FALSE,
                                   include.dirs = FALSE, no.. = FALSE)
 
+  if (use_offset_metric == FALSE){
+    flog.info('building site scale outcomes...')
+  } else {
+    flog.info('building site scale outcomes for metric...')
+  }
+  
+  browser()
+  
   for (yr in seq(time_steps)){
     
     site_scale_features = readRDS(paste0(current_data_dir, current_filenames[yr]))
@@ -685,11 +698,11 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
       summed_site_scale_features = lapply(seq_along(site_scale_features), function(i) do.call(cbind, sum_site_scale_features(site_scale_features[[i]])))
     } else {
       summed_site_scale_features = lapply(seq_along(site_scale_features), 
-                                   function(i) sum(user_transform_function(lapply(seq_along(site_scale_features[[i]]),
-                                                                              function(j) unwrap_condition_classes(array(0, site_lengths[[i]]), 
-                                                                                                                   site_scale_features[[i]][[j]], 
-                                                                                                                   site_scale_condition_class_key[[i]][[j]])), 
-                                                                       transform_params)))
+                                          function(i) sum(user_transform_function(lapply(seq_along(site_scale_features[[i]]),
+                                                                                         function(j) unwrap_condition_classes(array(0, site_lengths[[i]]), 
+                                                                                                                              site_scale_features[[i]][[j]], 
+                                                                                                                              site_scale_condition_class_key[[i]][[j]])), 
+                                                                                  transform_params)))
       
     }
     
@@ -697,6 +710,9 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
     
   }
   
+  devs = lapply(intervention_object$grouped_intervention_pool$development_credit_object, function(i) data_stack[[i]][yr, ])
+  
+  browser()
   return(data_stack)
 }
 

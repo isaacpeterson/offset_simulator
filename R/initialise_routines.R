@@ -65,7 +65,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     
   } else {
     input_data_object$site_characteristics = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-
   }
   
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
@@ -1053,9 +1052,6 @@ build_index_object <- function(input_data_object, simulation_params){
                                                                           min_site_screen_size = simulation_params$min_site_screen_size,
                                                                           max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                                           simulation_params$features_to_use_in_offset_calc)
-
-  
-  
   return(index_object)
 }
 
