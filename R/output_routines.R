@@ -236,7 +236,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     }
     
     collated_realisations = run_bind_collated_realisations_routines(collated_filenames)
-
+    
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
@@ -264,7 +264,6 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                                                                     paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'))
       data_block$landcape_scale$impacts = write_output_block(unlist(collated_realisations$landscape_scale$impacts, recursive = FALSE),
                                                             paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'))
-
     } else {
       
       if (use_offset_metric == FALSE){

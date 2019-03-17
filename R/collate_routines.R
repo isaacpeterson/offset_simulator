@@ -12,7 +12,10 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
                                       formatC(realisation_ind, width = input_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                       '_outputs.rds'))
   
-  intervention_object <- run_pre_collate_routines(simulation_outputs, input_data_object, simulation_params, current_data_dir)
+  intervention_object <- run_pre_collate_routines(simulation_outputs, 
+                                                  input_data_object, 
+                                                  simulation_params, 
+                                                  current_data_dir)
   
   run_collate_routines(intervention_object, 
                        simulation_outputs,
@@ -40,9 +43,6 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
 
 run_collate_routines <- function(intervention_object, simulation_outputs, input_data_object, background_cfacs,
                                  simulation_params, current_data_dir, file_prefix, use_offset_metric){
-  
-
-
   
   if (use_offset_metric == FALSE){
     features_to_collate = seq(input_data_object$global_params$feature_num)
@@ -96,7 +96,6 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
   }
   
 
-  
   for (feature_ind in features_to_collate){
     
     collated_object = list()
@@ -112,7 +111,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     }
     
     collated_object$landscape_scale <- run_landscape_scale_routines(site_scale_outcomes_to_use, background_cfacs_to_use, input_data_object$global_params$threshold_control)
-    
+
     if (intervention_object$intervention_flag == TRUE){
       
       if (use_offset_metric == FALSE){
@@ -278,25 +277,8 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                                                             current_data_dir, 
                                                                                                             intervention_object$intervention_pool, 
                                                                                                             unlist(intervention_object$intervention_yrs_pool), 
-                                                                                                            file_pattern = 'feature_outputs')
-    
-# site_scale_features_at_intervention_set = vector('list', length(input_data_object$site_characteristics$land_parcels))
-#     for (current_feature_ind in seq(input_data_object$global_params$feature_num)){
-#       
-#       site_scale_features_at_intervention = build_site_scale_features_at_intervention(length(input_data_object$site_characteristics$land_parcels), 
-#                                                                                       current_data_dir, 
-#                                                                                       intervention_object$intervention_pool, 
-#                                                                                       unlist(intervention_object$intervention_yrs_pool), 
-#                                                                                       input_data_object$global_params, 
-#                                                                                       current_feature_ind, 
-#                                                                                       input_data_object$global_params$numeric_placeholder_width)
-#       
-#       site_scale_features_at_intervention_set = lapply(seq(length(input_data_object$site_characteristics$land_parcels)), 
-#                                                        function(i) append(site_scale_features_at_intervention_set[[i]], 
-#                                                                           site_scale_features_at_intervention[[i]]))
-#     }
-#     
-#    intervention_object$site_scale_features_at_intervention_set = site_scale_features_at_intervention_set
+                                                                                                            file_pattern = 'feature_outputs_yr_', 
+                                                                                                            input_data_object$global_params$numeric_placeholder_width)
     return(intervention_object)
   }
 }
@@ -517,40 +499,52 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
   }
   
   if (cfac_type == 'background'){ 
+    if (use_offset_metric == FALSE){
+      flog.info('building background counterfactuals - this may take a while ...')
+    } else {
+      flog.info('building user metric background counterfactuals ...')
+    }
     time_horizons <- generate_time_horizons(project_type = 'future', 
                                             yr = 1, 
                                             intervention_yrs = rep(1, length(site_scale_features_group)), 
-                                            time_horizon = (global_params$time_steps - 1), 
+                                            time_horizon = global_params$time_steps, 
                                             length(site_scale_features_group))
   } else if (cfac_type == 'site_scale'){
+    if (use_offset_metric == FALSE){
+      flog.info('building site scale counterfactuals ...')
+    } else {
+      flog.info('building user metric site scale counterfactuals...')
+    }
+    
     time_horizons = generate_time_horizons(project_type = 'current', 
                                            yr = global_params$time_steps, 
                                            unlist(intervention_yrs),
-                                           time_horizon = (global_params$time_steps - 1), 
+                                           time_horizon = global_params$time_steps, 
                                            length(site_scale_features_group))
   }
   
   time_horizons = lapply(seq_along(time_horizons), function(i) 0:time_horizons[i])
   
-  cfac_weights_group = lapply(seq_along(cfac_params), function(i) unlist(calc_cfac_weights(site_num = 1, 
-                                                                                           cfac_params[[i]]$include_potential_developments,
-                                                                                           cfac_params[[i]]$include_potential_offsets,
-                                                                                           cfac_params[[i]]$include_unregulated_loss,
-                                                                                           dev_probability_list = vector(), 
-                                                                                           offset_probability_list = vector(), 
-                                                                                           simulation_params, 
-                                                                                           feature_params, 
-                                                                                           site_num_remaining_pool[[i]], 
-                                                                                           time_horizons[i], 
-                                                                                           unlist(intervention_yrs)[i]), recursive = FALSE))
+
+#   cfac_weights_group = lapply(seq_along(cfac_params), function(i) unlist(calc_cfac_weights(site_num = 1, 
+#                                                                                            cfac_params[[i]]$include_potential_developments,
+#                                                                                            cfac_params[[i]]$include_potential_offsets,
+#                                                                                            cfac_params[[i]]$include_unregulated_loss,
+#                                                                                            dev_probability_list = vector(), 
+#                                                                                            offset_probability_list = vector(), 
+#                                                                                            simulation_params, 
+#                                                                                            feature_params, 
+#                                                                                            site_num_remaining_pool[[i]], 
+#                                                                                            time_horizons[i], 
+#                                                                                            unlist(intervention_yrs)[i]), recursive = FALSE))
   
   if (use_offset_metric == FALSE){
-    flog.info('building site scale counterfactuals - this may take a while...')
+
     cfacs = lapply(seq_along(site_scale_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) do.call(cbind, sum_site_scale_features( calc_site_cfacs(site_scale_features_group[[i]],
                                                                                                                    projection_yrs[[i]],
-                                                                                                                   cfac_weights_group[[i]],
+                                                                                                                   cfac_weights = vector(),
                                                                                                                    site_lengths[[i]],
                                                                                                                    simulation_params,
                                                                                                                    feature_params,
@@ -566,12 +560,12 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
                                                                                                                    site_scale_condition_class_key = vector()))))))
     
   } else {
-    flog.info('building counterfactuals for user metric - this may take a while...')
+
     cfacs = lapply(seq_along(site_scale_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
                                                      function(j) sum(user_transform_function(calc_site_cfacs(site_scale_features_group[[i]],
                                                                                                              projection_yrs[[i]],
-                                                                                                             cfac_weights_group[[i]],
+                                                                                                             cfac_weights = vector(),
                                                                                                              site_lengths[[i]],
                                                                                                              simulation_params,
                                                                                                              feature_params,
@@ -674,14 +668,14 @@ group_site_scale_impacts <- function(collated_object, site_indexes){
 sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, features_to_collate, site_lengths, site_scale_condition_class_key, 
                            transform_function, transform_params, time_steps, numeric_placeholder_width){
   
-
   if (use_offset_metric == FALSE){
     flog.info('building site scale outcomes...')
   } else {
     flog.info('building site scale outcomes for metric...')
   }
   
-  for (yr in seq(time_steps)){
+  for (yr in 0:time_steps){
+    
     current_filename <- list.files(path = current_data_dir,
                                     pattern = paste0(file_pattern, formatC(yr, width = numeric_placeholder_width, format = "d", flag = "0")), 
                                     all.files = FALSE,
@@ -689,8 +683,8 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
     
     site_scale_features = readRDS(paste0(current_data_dir, current_filename))
     
-    if (yr == 1){
-      data_stack = rep(list(matrix(0, nrow = time_steps, ncol = length(features_to_collate))), length(site_scale_features))
+    if (yr == 0){
+      data_stack = rep(list(matrix(0, nrow = (time_steps + 1), ncol = length(features_to_collate))), length(site_scale_features))
     }
     
     if (use_offset_metric == FALSE){
@@ -713,24 +707,26 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
 }
 
 stack_yr <- function(current_site, current_vals, yr){
-  current_site[yr, ] = current_vals
+  current_site[yr + 1, ] = current_vals
   return(current_site)
 }
 
 
 
-build_site_scale_features_at_intervention <- function(site_num, current_data_dir, intervention_pool, intervention_yrs_pool, file_pattern){
+build_site_scale_features_at_intervention <- function(site_num, current_data_dir, intervention_pool, intervention_yrs_pool, file_pattern, numeric_placeholder_width){
   
   site_scale_features_at_intervention = vector('list', site_num)
 
-  current_filenames <- list.files(path = current_data_dir,
-                                  pattern = file_pattern, all.files = FALSE,
-                                  include.dirs = FALSE, no.. = FALSE)
-  
   for (yr in unique(intervention_yrs_pool)){
     
+    current_filename <- list.files(path = current_data_dir,
+                                   pattern = paste0(file_pattern, formatC((yr - 1), width = numeric_placeholder_width, format = "d", flag = "0")), 
+                                   all.files = FALSE,
+                                   include.dirs = FALSE, no.. = FALSE)
+    
+    current_site_scale_feature_layer = readRDS(paste0(current_data_dir, current_filename))
+    
     current_intervention_set = intervention_pool[as.vector(which(intervention_yrs_pool == yr))]
-    current_site_scale_feature_layer = readRDS(paste0(current_data_dir, current_filenames[yr]))
     site_scale_features_at_intervention[current_intervention_set] = current_site_scale_feature_layer[current_intervention_set]
     
   }

@@ -208,15 +208,17 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
     flog.info('loading background counterfactuals from file')
     background_cfacs_object = readRDS(background_cfacs_file)
     
-    if (global_input_data$global_params$time_steps <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
+    time_vec_to_use = 0:global_input_data$global_params$time_steps
+    
+    if (length(time_vec_to_use) <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
       build_current_background_cfacs_flag = FALSE
       flog.info('processing background cfacs')
-      
-      if (global_input_data$global_params$time_steps < dim(background_cfacs_object$background_cfacs[[1]])[1]){
+
+      if (length(time_vec_to_use) < dim(background_cfacs_object$background_cfacs[[1]])[1]){
         
         background_cfacs_object <- setNames(lapply(seq_along(background_cfacs_object), 
                                                    function(i) lapply(seq_along(background_cfacs_object[[i]]), 
-                                                                      function(j) background_cfacs_object[[i]][[j]][1:global_input_data$global_params$time_steps, , drop = FALSE]
+                                                                      function(j) background_cfacs_object[[i]][[j]][seq_along(time_vec_to_use), , drop = FALSE]
                                                    )), 
                                             names(background_cfacs_object))
       }
@@ -231,7 +233,6 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
   }
   
   if (build_current_background_cfacs_flag == TRUE){
-    flog.info('building background counterfactuals - this may take a while')
 
     background_cfacs_object = build_background_cfacs(global_input_data, simulation_params)
     flog.info('saving background counterfactuals object')
