@@ -197,7 +197,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
   rm(output_data)
   #run through main time loop
   for (yr in seq_len(simulation_data_object$global_params$time_steps)){
-    
+
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -207,9 +207,6 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_credit_object))),
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
-    flog.info('%s available development sites, %s available offset sites',
-              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
-              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
     
     #when running in uncoupled offset mode select out current set of sites to add
     
@@ -267,7 +264,9 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$development_credit_object$intervention_yrs) == yr)
     dev_credit_sites = unlist(simulation_data_object$output_data$interventions$development_credit_object$site_indexes[dev_credit_set])
-    flog.info(cat('developed sites', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
+    flog.info('developed %s sites with site IDs', length(dev_credit_sites))
+
+    flog.info(cat(paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
@@ -279,6 +278,10 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
                                                             feature_dynamics_to_use = simulation_data_object$feature_dynamics[[i]], 
                                                             simulation_data_object$condition_class_modes[[i]],
                                                             dynamics_type = simulation_data_object$feature_params$background_dynamics_type))
+    
+    flog.info('%s available development sites, %s available offset sites',
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
     
     # update sites in landscape (both inside and outside development/offset program)
     flog.info('updating sites...')
@@ -295,7 +298,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
                                                             condition_class_bounds = simulation_data_object$feature_params$condition_class_bounds)
     
     save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr)
-    
+
   }
   
   return(simulation_data_object$output_data)
@@ -879,7 +882,10 @@ run_uncoupled_offset_routine <- function(simulation_data_object, simulation_para
                                                                                   action_type = 'offset', 
                                                                                   yr)
   
-  flog.info(paste(cat('uncoupled offset sites', paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n')))
+  flog.info('added %s uncoupled offset sites to program ', length(current_pool))
+  flog.info(cat('with site IDs ' paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n'))
+  
+  
   
   return(simulation_data_object)
 }
