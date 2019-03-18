@@ -408,14 +408,16 @@ build_feature_params <- function(user_feature_params, global_params){
 
 
 build_condition_class_layers <- function(initial_features, global_params, feature_params){
-  
-  load_condition_classes = FALSE
+
   if (length(global_params$condition_class_raster_files) == global_params$feature_num){
     if (all(file.exists(global_params$condition_class_raster_files))){
       load_condition_classes = TRUE
     } else {
       flog.info('could not locate condition class raster files ..')
+      load_condition_classes = FALSE
     }
+  } else {
+    load_condition_classes = FALSE
   }
   
   if (load_condition_classes == TRUE){
