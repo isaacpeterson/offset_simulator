@@ -883,9 +883,7 @@ run_uncoupled_offset_routine <- function(simulation_data_object, simulation_para
                                                                                   yr)
   
   flog.info('added %s uncoupled offset sites to program ', length(current_pool))
-  flog.info(cat('with site IDs ' paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n'))
-  
-  
+  flog.info(cat('with site IDs ', paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n'))
   
   return(simulation_data_object)
 }
