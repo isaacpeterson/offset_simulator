@@ -795,16 +795,6 @@ generate_simulation_combs <- function(simulation_params_group){
   
 }
 
-# build_simulation_params <- function(common_params, simulation_params_group, current_simulation_param_inds){
-#   
-#   current_simulation_params_variant <- lapply(seq_along(simulation_params_group), function(i) simulation_params_group[[i]][[current_simulation_param_inds[i] ]])
-#   current_simulation_params <- append(common_params, current_simulation_params_variant)
-#   names(current_simulation_params) <- append(names(common_params), names(simulation_params_group))
-#   
-#   return(current_simulation_params)
-#   
-# }
-
 
 process_current_simulation_params <- function(current_simulation_params, common_params, features_to_use_in_simulation){
   
@@ -869,11 +859,9 @@ process_current_simulation_params <- function(current_simulation_params, common_
 
 build_simulation_variants <- function(simulation_params){
   
-  variant_cond = unlist(lapply(seq_along(simulation_params), function(i) (is.list(simulation_params[[i]]))))
-  
-  indexes_to_vary = which(variant_cond)
+  indexes_to_vary = which(as.vector(lapply(simulation_params, 'length')) > 1)
   variants = simulation_params[indexes_to_vary]
-  common_params = simulation_params[which(!variant_cond)]
+  common_params = simulation_params[setdiff(seq_along(simulation_params), indexes_to_vary)]
   
   if (length(indexes_to_vary) > 0){
     simulation_combs <- generate_simulation_combs(variants)  #generate all combinations of offset programs
@@ -881,13 +869,15 @@ build_simulation_variants <- function(simulation_params){
   } else {
     simulation_num = 1
   }
+  
   simulation_params_group = vector('list', simulation_num)
   
   param_variants = lapply(seq(simulation_num), function(i)  
-    build_current_variant(current_variant_indexes = unlist(simulation_combs[i, ]), variants))
+                          build_current_variant(current_variant_indexes = unlist(simulation_combs[i, ]), variants))
   simulation_params_object = list()
   simulation_params_object$param_variants = param_variants
-  simulation_params_object$common_params = common_params
+  simulation_params_object$common_params = setNames(lapply(seq_along(common_params), function(i) common_params[[i]][[1]]), 
+                                                    names(common_params));
   
   return(simulation_params_object)
   
@@ -1025,7 +1015,7 @@ build_index_object <- function(input_data_object, simulation_params){
   index_object$site_indexes = seq(length(input_data_object$site_characteristics$land_parcels))
   index_object$uncoupled_offset_pool = list()
   index_object$site_indexes_used = vector('list', 5)
-  names(index_object$site_indexes_used) = c('offset_object', 'uncoupled_offset_object', 'development_object', 'development_credit_object', 'unregulated_loss_object')
+  names(index_object$site_indexes_used) = c('offset_object', 'uncoupled_offset_object', 'development_object', 'uncoupled_development_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
   
