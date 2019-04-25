@@ -240,10 +240,9 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
     if (object_to_output$output_params$output_type == 'plot'){
       
       if (object_to_output$output_params$print_dev_offset_sites == TRUE){
-        sites_used = collated_realisations$sites_used
-        stats_to_use = which(unlist(lapply(seq_along(sites_used), function(i) length(unlist(sites_used[[i]]))>0)))
-        mean_sites_used = lapply(stats_to_use, function (i) round(mean(unlist( sites_used[[i]] ))))
-        flog.info(rbind(names(sites_used[stats_to_use]), mean_sites_used))
+        sites_used = collated_realisations$program_scale$sites_used
+        mean_sites_used = lapply(seq_along(sites_used), function(i) paste(names(sites_used)[[i]], round(mean(unlist( sites_used[[i]] )))))
+        flog.info(paste(mean_sites_used))
       }
       
       user_output_params <- initialise_user_output_params()
