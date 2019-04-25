@@ -96,50 +96,45 @@ initialise_default_simulation_params <- function(){
   # as it's easy to create a large number scenarios.
 
     default_simulation_params = list()
-    default_simulation_params$transform_params = vector()
+    default_simulation_params$transform_params = list(vector())
 
-    simulated_time_steps = 50
-    # when the interventions are set to take place, in this case force to occur once per year
-    intervention_locs = seq(1, simulated_time_steps, 1)
-    default_simulation_params$development_control = array(0, simulated_time_steps)
-    default_simulation_params$development_control[intervention_locs] = 1
-    
+    default_simulation_params$development_control = list(rep(1, 50))
     # The total number of layers to use in the offset calcuation (iterating from the start)
-    default_simulation_params$features_to_use_in_offset_calc = 1
+    default_simulation_params$features_to_use_in_offset_calc = list(1)
     
     # What features are affected by the offset intervention
-    default_simulation_params$features_to_use_in_offset_intervention = default_simulation_params$features_to_use_in_offset_calc
+    default_simulation_params$features_to_use_in_offset_intervention = list(default_simulation_params$features_to_use_in_offset_calc)
     
     # The maxoimum number of parcels can be selected to offset a single development
-    default_simulation_params$max_offset_parcel_num = 10
+    default_simulation_params$max_offset_parcel_num = list(10)
     
     # Stops the offset from delivering any further gains once it has acheived the gains required
-    default_simulation_params$limit_offset_restoration = TRUE
+    default_simulation_params$limit_offset_restoration = list(TRUE)
     
     # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
-    default_simulation_params$unregulated_loss_prob = 0
+    default_simulation_params$unregulated_loss_prob = list(0)
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
-    default_simulation_params$min_eco_val = 0  
+    default_simulation_params$min_eco_val = list(0)
     
     # Max value that the logistic decline curve can reach. It will asypotote to this value
-    default_simulation_params$max_eco_val = 100 
+    default_simulation_params$max_eco_val = list(100)
     
     #ignore offset sites with zero value
-    default_simulation_params$screen_offset_zeros = TRUE
+    default_simulation_params$screen_offset_zeros = list(TRUE)
     
     # ignore development sites with zero value
-    default_simulation_params$screen_dev_zeros = TRUE
+    default_simulation_params$screen_dev_zeros = list(TRUE)
     
     # ignore parcels with size below this number of elements 
-    default_simulation_params$min_site_screen_size = 0 
+    default_simulation_params$min_site_screen_size = list(0) 
     
     # ignore parcels with size below this number of elements 
-    default_simulation_params$max_site_screen_size_quantile = 1
+    default_simulation_params$max_site_screen_size_quantile = list(1)
     
-    default_simulation_params$match_threshold_ratio = 0.01 
+    default_simulation_params$match_threshold_ratio = list(0.01)
     
-    default_simulation_params$match_threshold_noise = 1e-10
+    default_simulation_params$match_threshold_noise = list(1e-10)
 
   # The Options are 'restoration_gains' - the gains are calculated relative to
   # the site value at the time of the intervention above  - forces offsets to restore sites
@@ -153,68 +148,68 @@ initialise_default_simulation_params <- function(){
   # parameters to control the offset calculation and how the intervention is implemented
   # later internally processed into two additional parameters as (offset_calc_type, offset_action_type)
   
-  default_simulation_params$offset_action_params = c('net_gains', 'restore')
+  default_simulation_params$offset_action_params = list(c('net_gains', 'restore'))
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
   # 'future_condition' - is the do nothing trjectory of the development site.
-  default_simulation_params$dev_calc_type = 'future_condition'    #'future_condition', 'current_condition' 
+  default_simulation_params$dev_calc_type = list('future_condition')    #'future_condition', 'current_condition' 
 
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
-  default_simulation_params$allow_developments_from_credit = TRUE
+  default_simulation_params$allow_developments_from_credit = list(TRUE)
   
   #use a specified offset metric in the site match calculation
-  default_simulation_params$use_offset_metric = FALSE
+  default_simulation_params$use_offset_metric = list(FALSE)
   
   # How the development/offset parcels are selected options are 'stochastic',
   # 'weighted', or 'pre_determined'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
   
-  default_simulation_params$development_selection_type = 'stochastic'  
+  default_simulation_params$development_selection_type = list('stochastic')  
 
-  default_simulation_params$offset_selection_type = 'greedy'  
+  default_simulation_params$offset_selection_type = list('greedy')
   
   # Whether to use uncoupled offsets. FALSE - means perform offsets simultaneously with development, TRUE -
   # means perform offset banking prior to development according to offset bank
   # parameters
-  default_simulation_params$use_uncoupled_offsets = FALSE
+  default_simulation_params$use_uncoupled_offsets = list(FALSE)
 
   # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
   # gain that is subtracted as parcels are developed. 'parcel_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
-  default_simulation_params$uncoupled_offset_type = 'credit'     
-  default_simulation_params$uncoupled_offset_selection_type = 'stochastic'  
+  default_simulation_params$uncoupled_offset_type = list('credit')    
+  default_simulation_params$uncoupled_offset_selection_type = list('stochastic')
   
-  default_simulation_params$uncoupled_offset_control = list()
+  default_simulation_params$uncoupled_offset_control = list(list())
   
   # The time horizon in which the offset gains need to equal the devlopment impact
-  default_simulation_params$offset_time_horizon = 15
+  default_simulation_params$offset_time_horizon = list(15)
 
   # Include future legal developments in calculating contribution of avoided
   # losses to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_potential_developments_in_offset_calc = FALSE
+  default_simulation_params$include_potential_developments_in_offset_calc = list(FALSE)
 
   # Include future stochastic developments in calculating contribution of avoided losses
   # to the impact of the offset. This increases the impact of the
   # offset (due to future losses that are avoided)
-  default_simulation_params$include_unregulated_loss_in_offset_calc = FALSE
+  default_simulation_params$include_unregulated_loss_in_offset_calc = list(FALSE)
   
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the offset. The decreases the impact of the offset (due to
   # future gains that are avoided) - NOW WORKING
-  default_simulation_params$include_potential_offsets_in_offset_calc = FALSE
+  default_simulation_params$include_potential_offsets_in_offset_calc = list(FALSE)
 
   # include ability to set the counterfactual adjustment (include/exclude stochastic clearing, 
   # potential developments, and potential offsets) to be the same as the offset calculations or independent
   # settings are 'as_offset' or 'independent_to_offset'
   
-  default_simulation_params$dev_counterfactual_adjustment = 'as_offset' 
+  default_simulation_params$dev_counterfactual_adjustment = list('as_offset') 
   
   # Include future developments in calculating contribution of avoided losses
   # to the impact of the development. This reduces the development impact because
@@ -228,7 +223,7 @@ initialise_default_simulation_params <- function(){
   # impact because projected future value of the site is lower if there is
   # some probability the site may be stochasticly developed in the future
   
-  default_simulation_params$include_unregulated_loss_in_dev_calc = default_simulation_params$include_unregulated_loss_in_offset_calc
+  default_simulation_params$include_unregulated_loss_in_dev_calc = list(default_simulation_params$include_unregulated_loss_in_offset_calc)
 
   # Include future offsets in calculating contribution of avoided gains to the
   # impact of the development. This increases the impact of the development as
@@ -240,23 +235,22 @@ initialise_default_simulation_params <- function(){
   # they were caluclated) and the offset impact then needs to match this
   # multiplied development impact
   
-  default_simulation_params$offset_multiplier = 1
-  default_simulation_params$project_by_group = FALSE
-  
-
+  default_simulation_params$offset_multiplier = list(1)
+  default_simulation_params$project_by_group = list(FALSE)
 
   # set to 'default' to use same probability of loss for each site and each time step
   # set to unregulated_stochastic_development' in conjunction with defining simulation_params$unregulated_intervention_vec to mirror development 
   # set to 'unregulated_directed_development' to perform directed development where specific vector of sites to be developed is specifed prior to simulation
-  default_simulation_params$unregulated_loss_type = 'default'
-  default_simulation_params$unregulated_intervention_vec = vector()
-  default_simulation_params$directed_developments = vector()
+  default_simulation_params$unregulated_loss_type = list('default')
+  default_simulation_params$unregulated_intervention_vec = list(vector())
+  default_simulation_params$directed_developments = list(vector())
   # set to false to stop initial credit being transformed - this has a big impact when using the BAM metric which 
   # transforms large values to ceiling defined by 100.68
   
   # allow pass of credit to simulation - can be used to run developments without offsets
-  default_simulation_params$initial_credit = 0
-  default_simulation_params$transform_initial_credit = FALSE
+  default_simulation_params$initial_credit = list(0)
+  default_simulation_params$transform_initial_credit = list(FALSE)
+  
   return(default_simulation_params)
 }
 
