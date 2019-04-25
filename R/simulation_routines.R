@@ -202,9 +202,9 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     
-    flog.info('program currently composed of %s development sites, %s offset sites',
+    flog.info('%s development sites and %s offset sites in program',
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
-                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_credit_object))),
+                  length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_development_object))),
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
     
@@ -252,7 +252,6 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       # attempt to develop from current available credit
       
       if (simulation_params$allow_developments_from_credit == TRUE){
-
         simulation_data_object <- develop_from_credit_routine(simulation_data_object, simulation_params, yr)
       } 
       
@@ -262,8 +261,8 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       }
     }
     
-    dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$development_credit_object$intervention_yrs) == yr)
-    dev_credit_sites = unlist(simulation_data_object$output_data$interventions$development_credit_object$site_indexes[dev_credit_set])
+    dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$intervention_yrs) == yr)
+    dev_credit_sites = unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$site_indexes[dev_credit_set])
     flog.info('developed %s sites with site IDs', length(dev_credit_sites))
 
     flog.info(cat(paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
@@ -281,7 +280,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     flog.info('%s available development sites, %s available offset sites',
               sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
-              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsetss))))
+              sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsets))))
     
     # update sites in landscape (both inside and outside development/offset program)
     flog.info('updating sites...')
@@ -427,6 +426,7 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
                                                     clearing_type = 'development',
                                                     yr)
   }
+  
   return(simulation_data_object)
 }
 
@@ -923,7 +923,7 @@ run_clearing_routines <- function(simulation_data_object, current_development_ob
     
   } else if (clearing_type == 'develop_from_credit'){
     #record current development site characteristics
-    simulation_data_object$output_data$interventions$development_credit_object <- append_current_group(simulation_data_object$output_data$interventions$development_credit_object, current_development_object, append_routine = 'standard')
+    simulation_data_object$output_data$interventions$uncoupled_development_object <- append_current_group(simulation_data_object$output_data$interventions$uncoupled_development_object, current_development_object, append_routine = 'standard')
   } else if (clearing_type == 'unregulated'){
     #record current cleared site characteristics
     simulation_data_object$output_data$interventions$unregulated_loss_object <- append_current_group(simulation_data_object$output_data$interventions$unregulated_loss_object, current_development_object, append_routine = 'standard')
@@ -966,7 +966,7 @@ assess_banking_credit <- function(output_data, simulation_params){
   
   offset_credit = nested_list_sum(offset_pool_object$parcel_vals_used)
   
-  dev_list = append(output_data$interventions$development_credit_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
+  dev_list = append(output_data$interventions$uncoupled_development_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
   
   if (length(dev_list) > 0){
     # determine total development losses
@@ -1258,8 +1258,6 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used
     
     if ( (sum(unlist(current_match_vals_pool)) == 0)){
-      match_object$offset_object = list()
-      match_object$current_credit = simulation_data_object$credit_object$current_credit
       match_object$match_flag = FALSE
       return(match_object)
       
@@ -1273,7 +1271,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     
   }
   
-  if ((length(group_pool_indexes) == 0) | (parcel_num_remaining == 0)){
+  if ( (length(group_pool_indexes) == 0) | (parcel_num_remaining == 0) ){
     return(match_object)
   } 
   
@@ -1284,8 +1282,11 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
   
   while( (match_object$match_flag == FALSE)){   
     
-    if ((simulation_params$development_selection_type == 'stochastic') 
-        | (simulation_params$development_selection_type == 'pre_determined')){
+    if (length(current_match_pool) == 0){
+      return(match_object)
+    }
+    
+    if ((simulation_params$development_selection_type == 'stochastic') | (simulation_params$development_selection_type == 'pre_determined')){
       current_dev_probability_list = rep(1/length(current_match_pool), length(current_match_pool))
     } else if (simulation_params$development_selection_type == 'weighted'){
       current_dev_probability_list = recalculate_probabilities(simulation_data_object$dev_probability_list[unlist(current_match_pool)])
@@ -1300,9 +1301,11 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
       dev_ind = list_intersect(group_pool_indexes, current_test_index) #find and remove index that corresponds to potiential development index
       match_pool_to_use = remove_index(group_pool_indexes, dev_ind$match_ind)
       pool_vals_to_use = remove_index(group_pool_vals, dev_ind$match_ind)
+      
       if (length(match_pool_to_use) == 0){
-        break()
-      } 
+        return(match_object)
+      }
+      
     } else {
       match_pool_to_use = group_pool_indexes  #if performing offset banking use any of the available uncoupled offset pool
       pool_vals_to_use = group_pool_vals
@@ -1318,14 +1321,15 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
                                     yr) #perform matching routine
     
     if (match_object$match_flag == FALSE){
-      
       # only try to match sites with smaller ecological value than current site
       inds_to_keep = which(lapply(seq_along(simulation_data_object$dev_pool_object$parcel_vals_used),
                                   function(i) all(unlist(subtract_nested_lists(simulation_data_object$dev_pool_object$parcel_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
       
       current_match_pool = simulation_data_object$dev_pool_object$site_indexes[inds_to_keep]     
       current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used[inds_to_keep]
+
     }
+    
   }
   
   if (match_object$match_flag == TRUE){
@@ -1334,10 +1338,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     subset_pool =  list_intersect(simulation_data_object$offset_pool_object$site_indexes, match_object$match_indexes)
     offset_object <- subset_current_pool(pool_object = simulation_data_object$offset_pool_object, subset_pool = subset_pool$match_ind)
     match_object$offset_object = offset_object
-  } else if (match_object$match_flag == FALSE){
-    match_object$offset_object = list()
-    match_object$current_credit = simulation_data_object$credit_object$current_credit
-  }
+  } 
   
   return(match_object)
   
@@ -1509,12 +1510,10 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
 
 select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_vals_to_use, 
                                  max_parcel_num, current_pool, match_type, screen_site_zeros){
-  pool_object = list()
-  pool_object$break_flag = FALSE
-  pool_object$zero_flag = FALSE
+  
+  pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
   
   if (length(unlist(pool_vals_to_use)) == 0){
-    pool_object$break_flag = TRUE
     return(pool_object)
   } 
   
@@ -1522,10 +1521,10 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
     pool_vals_to_test = unlist(lapply(seq_along(vals_to_match), 
                                       function(i) vals_to_match[i] - sum(tail(sort(unlist(lapply(seq_along(pool_vals_to_use),  
                                                                                                  function(j) pool_vals_to_use[[j]][[i]]))), max_parcel_num)) < thresh[i]))
+    
     if (any(pool_vals_to_test == FALSE)){
-      pool_object$break_flag = TRUE
       return(pool_object)
-    }
+    } 
     
   } else {
 
@@ -1540,7 +1539,6 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
       
       if (length(current_pool) == 0){
         cat('all sites in', match_type, 'pool have zero value \n')
-        pool_object$break_flag = TRUE
         pool_object$zero_flag = TRUE
         return(pool_object)
       } 
@@ -1557,11 +1555,11 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
     current_pool <- current_pool[pool_condition]
     
     if (all(pool_condition == FALSE)){
-      pool_object$break_flag = TRUE
       return(pool_object)
     } 
   }
   
+  pool_object$match_flag = TRUE
   pool_object$pool_vals_to_use = pool_vals_to_use
   pool_object$current_pool = current_pool
   
@@ -1572,12 +1570,8 @@ select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_
 match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_credit, current_probability_list, 
                             vals_to_match_initial, simulation_params, yr){
   
-  if (length(unlist(current_pool)) == 0){
-    pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
-    return(pool_object)
-  } 
-  
   if (match_type == 'offset'){
+    
     max_parcel_num = simulation_params$max_offset_parcel_num
     match_procedure = simulation_params$offset_selection_type
     screen_site_zeros = simulation_params$screen_offset_zeros
@@ -1602,45 +1596,43 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_offset_metric, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
-  if (pool_object$break_flag == TRUE){
+  if (pool_object$match_flag == FALSE){
     return(pool_object)
   }
   
-  # initialise parcel_vals for matching procedure
-  parcel_vals_pool = pool_object$pool_vals_to_use
-  current_pool = pool_object$current_pool
   match_flag = FALSE
   match_vals = list()
   match_indexes = list()
   
   while(match_flag == FALSE){
     
-    if (length(current_pool) == 0){
+    if (length(pool_object$current_pool) == 0){
       break
     }
     if (match_procedure == 'greedy'){
-      match_params = euclidean_norm_match(parcel_vals_pool, vals_to_match)
+      match_params = euclidean_norm_match(pool_object$pool_vals_to_use, vals_to_match)
     } else {
       
       if (match_procedure == 'weighted'){
-        probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(current_pool)])
+        probability_list_to_use = recalculate_probabilities(current_probability_list[unlist(pool_object$current_pool)])
       } else if ( (match_procedure == 'stochastic') | (match_procedure == 'pre_determined')) {
-        probability_list_to_use = rep(1/length(current_pool), length(current_pool))
+        probability_list_to_use = rep(1/length(pool_object$current_pool), length(pool_object$current_pool))
       }
       match_params = list()
 
-      match_params$match_ind = sample(x = seq_along(current_pool), size = 1, prob = probability_list_to_use, replace = TRUE)
-      match_params$match_vals = parcel_vals_pool[match_params$match_ind]
+      match_params$match_ind = sample(x = seq_along(pool_object$current_pool), size = 1, prob = probability_list_to_use, replace = TRUE)
+      match_params$match_vals = pool_object$pool_vals_to_use[match_params$match_ind]
     }
     
     current_match_val = unlist(match_params$match_vals)
-    current_match_index = current_pool[match_params$match_ind]
+    current_match_index = pool_object$current_pool[match_params$match_ind]
     vals_to_match = vals_to_match - current_match_val
     
     if (max_parcel_num > 1){
-      ind_to_remove = list_intersect(current_pool, current_match_index)
-      current_pool = remove_index(current_pool, ind_to_remove$match_ind)
-      parcel_vals_pool = remove_index(parcel_vals_pool, ind_to_remove$match_ind)
+      
+      ind_to_remove = list_intersect(pool_object$current_pool, current_match_index)
+      pool_object$current_pool = remove_index(pool_object$current_pool, ind_to_remove$match_ind)
+      pool_object$pool_vals_to_use = remove_index(pool_object$pool_vals_to_use, ind_to_remove$match_ind)
       match_vals = append(match_vals, current_match_val)
       match_indexes = append(match_indexes, current_match_index)
       
@@ -1696,13 +1688,13 @@ update_index_object <- function(index_object, update_type, site_indexes){
   index_object$available_indexes$developments = setdiff(index_object$available_indexes$developments, site_indexes)
   
   if (update_type == 'offset'){
-    index_object$site_indexes_used$offset_object = append(index_object$site_indexes_used$offsets, list(site_indexes))
+    index_object$site_indexes_used$offset_object = append(index_object$site_indexes_used$offset_object, list(site_indexes))
   } else if (update_type == 'development'){
     index_object$site_indexes_used$development_object = append(index_object$site_indexes_used$development_object, list(site_indexes))
   } else if (update_type == 'unregulated'){
     index_object$site_indexes_used$unregulated_loss_object = append(index_object$site_indexes_used$unregulated_loss_object, list(site_indexes))
   } else if (update_type == 'develop_from_credit'){
-    index_object$site_indexes_used$development_credit_object = append(index_object$site_indexes_used$development_credit_object, list(site_indexes))
+    index_object$site_indexes_used$uncoupled_development_object = append(index_object$site_indexes_used$uncoupled_development_object, list(site_indexes))
   } else if (update_type == 'uncoupled'){
     index_object$site_indexes_used$uncoupled_offset_object = append(index_object$site_indexes_used$uncoupled_offset_object, list(site_indexes))
   }
