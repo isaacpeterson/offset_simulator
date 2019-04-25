@@ -202,9 +202,8 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
                                                                                           global_params,
                                                                                           use_offset_metric))
   
-  
-  site_scale$net_impacts <- list(calc_net_site_scale_impacts(site_scale$impacts$offset_object$nets,
-                                                                             site_scale$impacts$development_object$nets))
+  site_scale$net_impacts <- list(calc_net_site_scale_impacts(site_scale$impacts$offset_object$summed_impacts$nets,
+                                                                             site_scale$impacts$development_object$summed_impacts$nets))
   
   #additional list nesting is to maintain structure for collate routines
   site_scale$outcomes = list(site_scale_outcomes)
@@ -213,7 +212,7 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
   #     site_scale$NNL = assess_site_scale_NNL(assess_type = 'site_scale', 
   #                                                          impacts = site_scale_impacts$net_impacts, 
   #                                                          intervention_yrs_to_use = collated_object$collated_offsets$intervention_yrs, 
-  #                                                          site_indexes = simulation_outputs$index_object$site_indexes_used$offsets)
+  #                                                          site_indexes = simulation_outputs$index_object$site_indexes_used$offset_object)
   return(site_scale)
 }
 
@@ -234,9 +233,9 @@ run_program_scale_routines <- function(site_scale_impacts, site_scale_cfacs, sit
                                                    intervention_yr = 1, 
                                                    threshold_control)
   
-  program_scale$sites_used$total = setNames(lapply(seq_along(simulation_outputs$interventions), 
-                                             function(i) list(length(simulation_outputs$interventions[[i]]$site_indexes))),
-                                      names(simulation_outputs$interventions))
+  program_scale$sites_used = setNames(lapply(seq_along(simulation_outputs$interventions), 
+                                                   function(i) list(length(simulation_outputs$interventions[[i]]$site_indexes))),
+                                            names(simulation_outputs$interventions))
   
   return(program_scale)
 }
@@ -476,7 +475,7 @@ collate_program_scale_cfacs <- function(site_scale_cfacs, interventions, backgro
 
   program_scale_cfacs$net_offsets <- sum_list(unlist(program_scale_cfacs[match(c('offset_object', 'uncoupled_offset_object'), 
                                                                                names(program_scale_cfacs))], recursive = FALSE))
-  program_scale_cfacs$net_devs <- sum_list(unlist(program_scale_cfacs[match(c('development_object', 'development_credit_object'), 
+  program_scale_cfacs$net_devs <- sum_list(unlist(program_scale_cfacs[match(c('development_object', 'uncoupled_development_object'), 
                                                                             names(program_scale_cfacs))], recursive = FALSE))
   
   return(program_scale_cfacs)
@@ -596,7 +595,7 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
   
   program_scale_outcomes$net_outcome <- sum_list(unlist(program_scale_outcomes, recursive = FALSE))
   program_scale_outcomes$net_offsets <- sum_list(unlist(program_scale_outcomes[match(c('offset_object', 'uncoupled_offset_object'), names(program_scale_outcomes))], recursive = FALSE))
-  program_scale_outcomes$net_devs <- sum_list(unlist(program_scale_outcomes[match(c('development_object', 'development_credit_object'), names(program_scale_outcomes))], recursive = FALSE))
+  program_scale_outcomes$net_devs <- sum_list(unlist(program_scale_outcomes[match(c('development_object', 'uncoupled_development_object'), names(program_scale_outcomes))], recursive = FALSE))
   
   return(program_scale_outcomes)
 }
@@ -608,7 +607,7 @@ collate_program_scale_impacts <- function(site_scale_impacts){
                              names(site_scale_impacts))
   
   program_impacts$net_offset_gains = sum_list(append(program_impacts$offset_object, program_impacts$uncoupled_offset_object))
-  program_impacts$net_dev_losses = sum_list(append(program_impacts$development_object, program_impacts$development_credit_object))
+  program_impacts$net_dev_losses = sum_list(append(program_impacts$development_object, program_impacts$uncoupled_development_object))
   program_impacts$net_impacts = sum_list(append(program_impacts$net_offset_gains, program_impacts$net_dev_losses))
   
   return(program_impacts)
@@ -633,7 +632,7 @@ calc_intervention_impacts <- function(current_intervention_simulation_outputs, c
   site_scale_impacts$summed_impacts = setNames(lapply(seq_along(site_scale_impacts$grouped_impacts), 
                                                       function(i) lapply(seq_along(site_scale_impacts$grouped_impacts[[i]]), 
                                                                          function(j) Reduce('+', site_scale_impacts$grouped_impacts[[i]][[j]]))), 
-                                               site_scale_impacts$grouped_impacts)
+                                               names(site_scale_impacts$grouped_impacts))
   
   site_scale_impacts$site_indexes = list(current_intervention_site_sets)
   site_scale_impacts$intervention_yrs = list(current_intervention_simulation_outputs$intervention_yrs)
@@ -655,8 +654,8 @@ sum_gains_degs <- function(grouped_gains_degs){
 group_site_scale_impacts <- function(collated_object, site_indexes){ 
   
   grouped_gains_degs <- setNames(lapply(seq_along(collated_object), 
-                                        function(i) (lapply(seq_along(site_indexes), 
-                                                            function(j) collated_object[[i]][which(unlist(site_indexes) %in% site_indexes[[j]])]))), 
+                                        function(i) lapply(seq_along(site_indexes), 
+                                                            function(j) collated_object[[i]][which(unlist(site_indexes) %in% site_indexes[[j]])])), 
                                  names(collated_object))
   
   return(grouped_gains_degs)
@@ -941,7 +940,7 @@ assess_fractional_loss <- function(net_vals, NNL_yr){
 
 select_cfac_params <- function(object_type, simulation_params){
   
-  if ((object_type == "development_object") | (object_type == "development_credit_object") | (object_type == "unregulated_loss_object")){
+  if ((object_type == "development_object") | (object_type == "uncoupled_development_object") | (object_type == "unregulated_loss_object")){
     cfac_params = list(simulation_params$include_potential_developments_in_dev_calc,
                        simulation_params$include_potential_offsets_in_dev_calc,
                        simulation_params$include_unregulated_loss_in_dev_calc,
