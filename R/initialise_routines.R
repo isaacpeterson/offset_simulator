@@ -107,7 +107,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     if (file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))){
       management_condition_class_layers <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
     } else {
-      flog.info('building management condition class layers, this may take a while..')
+      flog.info('building management condition class layers...')
       management_condition_class_layers = build_modes(features_to_use = initial_features, 
                                                       condition_class_bounds = input_data_object$feature_params$management_condition_class_bounds)
       
@@ -214,7 +214,7 @@ build_background_cfacs_routines <- function(global_input_data, simulation_params
     
     if (length(time_vec_to_use) <= dim(background_cfacs_object$background_cfacs[[1]])[1]){
       build_current_background_cfacs_flag = FALSE
-      flog.info('processing background cfacs')
+      flog.info('processing background counterfactuals')
 
       if (length(time_vec_to_use) < dim(background_cfacs_object$background_cfacs[[1]])[1]){
         

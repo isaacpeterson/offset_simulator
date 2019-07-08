@@ -202,7 +202,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 
-    flog.info('%s development sites and %s offset sites in program',
+    flog.info('program composed of %s development sites and %s offset',
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_development_object))),
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
@@ -263,9 +263,8 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$intervention_yrs) == yr)
     dev_credit_sites = unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$site_indexes[dev_credit_set])
-    flog.info('developed %s sites', length(dev_credit_sites))
-
-    flog.info(cat(paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
+    
+    flog.info(cat('developed ', paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), 'from credit \n'))
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
@@ -407,7 +406,7 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
 
     flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$development_object$site_indexes)]),
                   'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)),
-                  ' offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
+                  ', offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
     #       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 
