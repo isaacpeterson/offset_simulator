@@ -201,7 +201,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    
+
     flog.info('%s development sites and %s offset sites in program',
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_development_object))),
@@ -406,8 +406,8 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
   if (match_object$match_flag == TRUE){
 
     flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$development_object$site_indexes)]),
-                  'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)), '\n',
-                  'offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
+                  'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)),
+                  ' offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
     #       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 
