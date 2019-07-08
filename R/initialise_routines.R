@@ -57,14 +57,16 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     }
     planning_units <- load_rasters(planning_units_filename, 'all')
     planning_units_array <- raster_to_array(planning_units)
-    flog.info('building site characteristics object (this may take a while with large arrays) ..')
+    flog.info('building site characteristics object (this may take a while) ..')
     input_data_object$site_characteristics <- build_site_characteristics(planning_units_array)
     
     flog.info('saving site characteristics object')
     saveRDS(object = input_data_object$site_characteristics, file = paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
     
   } else {
+
     input_data_object$site_characteristics = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+
   }
   
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
@@ -1045,6 +1047,7 @@ build_index_object <- function(input_data_object, simulation_params){
                                                                           min_site_screen_size = simulation_params$min_site_screen_size,
                                                                           max_site_screen_size_quantile = simulation_params$max_site_screen_size_quantile,
                                                                           simulation_params$features_to_use_in_offset_calc)
+
   return(index_object)
 }
 

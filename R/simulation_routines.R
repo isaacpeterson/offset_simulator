@@ -263,7 +263,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
     
     dev_credit_set = which(unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$intervention_yrs) == yr)
     dev_credit_sites = unlist(simulation_data_object$output_data$interventions$uncoupled_development_object$site_indexes[dev_credit_set])
-    flog.info('developed %s sites with site IDs', length(dev_credit_sites))
+    flog.info('developed %s sites', length(dev_credit_sites))
 
     flog.info(cat(paste(simulation_data_object$site_characteristics$site_IDs[dev_credit_sites]), '\n'))
     
@@ -404,12 +404,15 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
   # if a match was found record current development and associated offsets and update site parameters.
   
   if (match_object$match_flag == TRUE){
-    
-    flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[match_object$development_object$site_indexes]),
+
+    flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$development_object$site_indexes)]),
                   'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)), '\n',
                   'offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
+    #       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 
+    #                     'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
+    #                     'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
     #update available credit
     simulation_data_object$credit_object$current_credit = match_object$current_credit
     
@@ -2044,6 +2047,7 @@ calc_site_cfacs <- function(site_scale_features, projection_yrs, cfac_weights, s
   } 
   
   if (unlist_condition_classes == TRUE){
+
     cfacs = lapply(seq_along(cfacs), function(i) unwrap_condition_classes(array(0, site_length), 
                                                                           cfacs[[i]], 
                                                                           site_scale_condition_class_key[[i]]))
