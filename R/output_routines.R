@@ -184,7 +184,7 @@ output_scenario <- function(object_to_output, scenario_ind){
                             '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
   
   if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
-    browser()
+
     object_to_output$example_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
                                                                  formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                                                                  '_outputs.rds'))
