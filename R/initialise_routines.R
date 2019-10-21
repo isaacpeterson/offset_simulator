@@ -1268,7 +1268,7 @@ load_rasters <- function(current_filenames, features_to_use){
     
   }
   for (feature_ind in seq_along(features_to_use)){
-    
+
     current_raster = raster(current_filenames[features_to_use[feature_ind]])
     if (feature_ind == 1){
       raster_stack = current_raster

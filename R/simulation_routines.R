@@ -321,6 +321,8 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
 
   saveRDS(simulation_data_object$site_scale_features, paste0(current_data_dir, 'feature_outputs_', yr_string, '.rds'))
   
+  saveRDS(simulation_data_object$condition_class_modes, paste0(current_data_dir, 'condition_class_modes_', yr_string, '.rds'))
+  
 #   if (simulation_params$use_offset_metric == TRUE){
 #     
 #     browser()
@@ -331,13 +333,6 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
 #                                                                                                                                                       simulation_data_object$site_scale_condition_class_key[[i]][[j]])), 
 #                                                                                                           simulation_params$transform_params))
 # 
-#     feature_set_to_save = lapply(seq_along(simulation_data_object$site_scale_features), 
-#                                  function(i) lapply(seq_along(simulation_data_object$site_scale_features[[i]]),
-#                                                     function(j) lapply(seq_along(simulation_data_object$site_scale_features[[i]][[j]]), 
-#                                                                        function(k) select_site_scale_condition_class(feature_set_to_save[[i]][[j]], 
-#                                                                                                                      simulation_data_object$site_scale_condition_class_key[[i]][[j]][[k]])
-#                                                     )))
-#     
 #     saveRDS(feature_set_to_save,  paste0(current_data_dir, 'feature_outputs_user_metric_', yr_string, '.rds'))
 #     
 #   }
@@ -380,15 +375,6 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
 #                                                                                                                                                         simulation_data_object$site_scale_features[[i]][[j]], 
 #                                                                                                                                                         simulation_data_object$site_scale_condition_class_key[[i]][[j]])), 
 #                                                                                                             simulation_params$transform_params))
-#     browser()
-#     feature_set_to_save = lapply(seq_along(simulation_data_object$site_scale_features), 
-#                                                    function(i) lapply(seq_along(simulation_data_object$site_scale_features[[i]]),
-#                                                                       function(j) lapply(seq_along(simulation_data_object$site_scale_features[[i]][[j]]), 
-#                                                                                          function(k) select_site_scale_condition_class(feature_set_to_save[[i]][[j]], 
-#                                                                                                                                        simulation_data_object$site_scale_condition_class_key[[i]][[j]][[k]], 
-#                                                                                                                                        simulation_data_object$condition_class_modes[[i]][[j]][[k]])
-#                                                                       )))
-#     
 #     saveRDS(feature_set_to_save, paste0(current_data_dir, 'metric_layer', '_yr_', formatC(yr, width = simulation_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds'))
 #     
 #   }
@@ -1922,31 +1908,6 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   
   return(pool_object)
   
-}
-
-
-
-
-update_modes <- function(dynamics_type, current_modes, feature_layers_to_use, condition_class_bounds){
-  print('mode update not working ')
-  stop()
-  
-  if (dynamics_type == 'site_scale' ){
-      condition_class_modes = lapply(seq_along(feature_layers_to_use), 
-                                      function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                         function(j) switch_current_mode(mean(as.vector(feature_layers_to_use[[i]][[j]])), 
-                                                                                         condition_class_bounds[[j]], 
-                                                                                         current_modes[[i]][[j]]) ))
-  } else if (dynamics_type == 'element_scale'){
-    condition_class_modes = lapply(seq_along(feature_layers_to_use), 
-                                    function(i) lapply(seq_along(feature_layers_to_use[[i]]), 
-                                                       function(j) sapply(feature_layers_to_use[[i]][[j]], 
-                                                                          switch_current_mode, 
-                                                                          condition_class_bounds[[j]], 
-                                                                          current_modes[[i]][[j]])))
-  }
-  
-  return(condition_class_modes)
 }
 
 
