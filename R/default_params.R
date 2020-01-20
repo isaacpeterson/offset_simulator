@@ -40,12 +40,8 @@ initialise_default_global_params <- function(){
   # Whether the package is to be used to generate simulated data. If this is
   # FALSE then the it will look in the
   # default_global_params$unique_simulation_folder to get the required
-  # infromation
-  
-  default_global_params$run_from_simulated_data = TRUE
-  
-  # build simulated data on the fly (or not)
-  default_global_params$build_simulated_data = TRUE
+  # information and build simulated data on the fly (or not)
+  default_global_params$build_simulated_feature_layers = TRUE
   
   # Fix the output directory (will overwrite existing files) instead of creating unique 
   default_global_params$unique_simulation_folder = TRUE

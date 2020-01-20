@@ -12,18 +12,12 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   save_params(input_data_object$global_params, input_data_object$feature_params, simulation_params_group)
   
   # generate simulated feature
-  if (input_data_object$global_params$run_from_simulated_data == TRUE) {
+  if (input_data_object$global_params$build_simulated_feature_layers == TRUE) {
     
-    current_filenames <- list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
-                                    full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                    include.dirs = FALSE, no.. = FALSE)
-    
-    if ((input_data_object$global_params$build_simulated_data == TRUE) | (length(current_filenames) == 0)){
       construct_simulated_data(input_data_object$feature_params, 
                                input_data_object$global_params$simulation_inputs_folder, 
                                input_data_object$global_params$simulation_params_folder, 
                                input_data_object$global_params$backup_simulation_inputs)
-    }
   }
   
   if (all(input_data_object$global_params$feature_raster_files == 'default')){
@@ -33,7 +27,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     feature_raster_files = paste0(input_data_object$global_params$simulation_inputs_folder, 
                                   feature_raster_files[input_data_object$global_params$features_to_use_in_simulation])
   } else if (!all(file.exists(input_data_object$global_params$feature_raster_files))){
-    flog.error(paste('one or more feature raster files missing'))
+    flog.error(paste('one or more feature raster files missing - if running from simulated data set global_params$build_simulated_feature_layers = TRUE'))
   } else{
     feature_raster_files = input_data_object$global_params$feature_raster_files
   }
@@ -55,6 +49,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     } else {
       planning_units_filename = input_data_object$global_params$planning_units_raster
     }
+
     planning_units <- load_rasters(planning_units_filename, 'all')
     planning_units_array <- raster_to_array(planning_units)
     flog.info('building site characteristics object (this may take a while) ..')
