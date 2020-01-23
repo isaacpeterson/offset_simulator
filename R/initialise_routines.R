@@ -10,37 +10,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   input_data_object$feature_params <- build_feature_params(user_feature_params, input_data_object$global_params)
   
   save_params(input_data_object$global_params, input_data_object$feature_params, simulation_params_group)
-  
-  # generate simulated feature
-  if (input_data_object$global_params$build_simulated_feature_layers == TRUE) {
-    
-      construct_simulated_data(input_data_object$feature_params, 
-                               input_data_object$global_params$simulation_inputs_folder, 
-                               input_data_object$global_params$simulation_params_folder, 
-                               input_data_object$global_params$backup_simulation_inputs)
-  }
-  
-  if (all(input_data_object$global_params$feature_raster_files == 'default')){
-    feature_raster_files = list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
-                                      full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                      include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
-    feature_raster_files = paste0(input_data_object$global_params$simulation_inputs_folder, 
-                                  feature_raster_files[input_data_object$global_params$features_to_use_in_simulation])
-  } else if (!all(file.exists(input_data_object$global_params$feature_raster_files))){
-    flog.error(paste('one or more feature raster files missing - if running from simulated data set global_params$build_simulated_feature_layers = TRUE'))
-  } else{
-    feature_raster_files = input_data_object$global_params$feature_raster_files
-  }
-  
-  feature_raster_layers = load_rasters(feature_raster_files, 
-                                       features_to_use = input_data_object$global_params$features_to_use_in_simulation)
-  
-  initial_features = lapply(seq(dim(feature_raster_layers)[3]), function(i) raster_to_array(subset(feature_raster_layers, i)))
-  
-  if (input_data_object$feature_params$scale_features == TRUE){
-    initial_features = scale_features(initial_features)
-  }
-  
+
   if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds')) || 
       (input_data_object$global_params$overwrite_site_characteristics == TRUE)){
     
@@ -59,42 +29,81 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     saveRDS(object = input_data_object$site_characteristics, file = paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
     
   } else {
-
     input_data_object$site_characteristics = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-
   }
   
-  if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
+  
+  
+  # generate simulated feature
+  if (input_data_object$global_params$build_simulated_feature_layers == TRUE) {
+    
+    construct_simulated_data(input_data_object$feature_params, 
+                             input_data_object$global_params$simulation_inputs_folder, 
+                             input_data_object$global_params$simulation_params_folder, 
+                             input_data_object$global_params$backup_simulation_inputs)
+  }
+  
+  if (all(input_data_object$global_params$feature_raster_files == 'default')){
+    feature_raster_files = list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                                      full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                                      include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
+    feature_raster_files = paste0(input_data_object$global_params$simulation_inputs_folder, 
+                                  feature_raster_files[input_data_object$global_params$features_to_use_in_simulation])
+  } else if (!all(file.exists(input_data_object$global_params$feature_raster_files))){
+    flog.error(paste('one or more feature raster files missing - if running from simulated data set global_params$build_simulated_feature_layers = TRUE'))
+  } else{
+    feature_raster_files = input_data_object$global_params$feature_raster_files
+  }
+  
+  # feature_raster_layers = load_rasters(feature_raster_files, features_to_use = input_data_object$global_params$features_to_use_in_simulation)
+
+  initial_features = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_layers.rds'))
+  # cell_ids = 1:(input_data_object$site_characteristics$landscape_dims[1] * input_data_object$site_characteristics$landscape_dims[2])
+  # col_inds = ceiling(cell_ids/input_data_object$site_characteristics$landscape_dims[2])
+  # row_inds = rep(1:input_data_object$site_characteristics$landscape_dims[1], input_data_object$site_characteristics$landscape_dims[2])
+  # 
+  # initial_features = build_sparse_features(feature_raster_files[input_data_object$global_params$features_to_use_in_simulation], 
+  #                                          max(cell_ids), 
+  #                                          input_data_object$feature_params$scale_features)
+  # saveRDS(object = initial_features, paste0(input_data_object$global_params$simulation_inputs_folder, 'feature_layers.rds'))
+# 
+#   if (input_data_object$feature_params$normalise_features == TRUE){
+#     initial_features = scale_features(initial_features)
+#   }
+#   
+  if (!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_classes.rds'))
       | (input_data_object$global_params$overwrite_condition_classes == TRUE)){
     
-    background_condition_class_layers = build_condition_class_layers(initial_features, 
-                                                                     input_data_object$global_params, 
-                                                                     input_data_object$feature_params)
+    input_data_object$condition_class_modes = build_condition_classes(initial_features, 
+                                                                      input_data_object$global_params, 
+                                                                      input_data_object$feature_params)
     
-    flog.info('building condition class modes')
-    input_data_object$condition_class_modes = split_modes(input_data_object$site_characteristics$land_parcels, background_condition_class_layers)
-    saveRDS(object = input_data_object$condition_class_modes, paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
+    flog.info('saving condition classes ..')
+
+    saveRDS(input_data_object$condition_class_modes, paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_classes.rds'))
     
   } else {
-    input_data_object$condition_class_modes = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_class_modes.rds'))
+    input_data_object$condition_class_modes = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'condition_classes.rds'))
   }
   
-  if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_features.rds')))
-      | (input_data_object$global_params$overwrite_features == TRUE)){
-    
-    if (!exists('background_condition_class_layers')){
-      background_condition_class_layers = build_condition_class_layers(initial_features, 
-                                                                       input_data_object$global_params, 
-                                                                       input_data_object$feature_params)
-    } 
-    
-    input_data_object <- separate_features_by_condition_class(input_data_object, initial_features, background_condition_class_layers)
-   
-  } else {
-    flog.info('loading site features and condition class key')
-    input_data_object$site_scale_features = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_features.rds'))
-    input_data_object$site_scale_condition_class_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_condition_class_key.rds'))
-  }
+  browser()
+
+  # if ((!file.exists(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_features.rds')))
+  #     | (input_data_object$global_params$overwrite_features == TRUE)){
+  #   
+  #   if (!exists('background_condition_classes')){
+  #     background_condition_classes = build_condition_classes(initial_features, 
+  #                                                             input_data_object$global_params, 
+  #                                                             input_data_object$feature_params)
+  #   } 
+  #   
+  #   input_data_object <- separate_features_by_condition_class(input_data_object, initial_features, background_condition_classes)
+  #  
+  # } else {
+  #   flog.info('loading site features and condition class key')
+  #   input_data_object$site_scale_features = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_features.rds'))
+  #   input_data_object$site_scale_condition_class_key = readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'site_scale_condition_class_key.rds'))
+  # }
   
   if (input_data_object$feature_params$management_condition_class == 'background'){
     input_data_object$management_dynamics_modes = input_data_object$condition_class_modes 
@@ -103,8 +112,9 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
       management_condition_class_layers <- readRDS(paste0(input_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
     } else {
       flog.info('building management condition class layers...')
-      management_condition_class_layers = build_modes(features_to_use = initial_features, 
-                                                      condition_class_bounds = input_data_object$feature_params$management_condition_class_bounds)
+      flog.info('check management condition class bounds')
+      stop()
+      management_condition_class_layers = build_condition_class_modes(features_to_use, input_data_object$feature_params$management_condition_class_bounds)
       
       #saveRDS(management_condition_class_modes_layers, paste0(input_data_object$global_params$simulation_inputs_folder, 'management_condition_class_layers.rds'))
     }
@@ -117,7 +127,8 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     
     flog.info('building background feature dynamics')
 
-    input_data_object$feature_dynamics <- build_dynamics(input_data_object$site_scale_features,
+    input_data_object$feature_dynamics <- build_dynamics(initial_features,
+                                                         input_data_object$site_characteristics, 
                                                          features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                          input_data_object$feature_params$sample_background_dynamics,
                                                          input_data_object$feature_params$background_dynamics_type,
@@ -141,6 +152,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     flog.info('building management dynamics')
 
     input_data_object$management_dynamics <- build_dynamics(input_data_object$site_scale_features,
+                                                            input_data_object$site_characteristics, 
                                                             features_to_use = seq_along(input_data_object$global_params$features_to_use_in_simulation),
                                                             input_data_object$feature_params$sample_management_dynamics,
                                                             input_data_object$feature_params$management_dynamics_type,
@@ -188,6 +200,23 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   
 }
 
+build_sparse_features <- function(feature_raster_files, max_cell_id, scale_features){
+  
+  feature_num = length(feature_raster_files)
+  sparse_features = Matrix(0, max_cell_id, feature_num, sparse = TRUE)
+
+  for (feature_ind in seq(feature_num)){
+    
+    current_feature_file = feature_raster_files[feature_ind]
+    flog.info(paste('loading ', current_feature_file, 'as feature %s of %s'), feature_ind, feature_num)
+    
+    current_raster =  raster(current_feature_file)
+    current_feature = raster_to_array(current_raster)
+
+    sparse_features[ , feature_ind] = c(current_feature)
+  }
+  return(sparse_features)
+}
 
 build_background_cfacs_routines <- function(global_input_data, simulation_params){
 
@@ -404,7 +433,7 @@ build_feature_params <- function(user_feature_params, global_params){
 
 
 
-build_condition_class_layers <- function(initial_features, global_params, feature_params){
+build_condition_classes <- function(initial_features, global_params, feature_params){
 
   if (length(global_params$condition_class_raster_files) == global_params$feature_num){
     if (all(file.exists(global_params$condition_class_raster_files))){
@@ -416,30 +445,21 @@ build_condition_class_layers <- function(initial_features, global_params, featur
   } else {
     load_condition_classes = FALSE
   }
-  
+
   if (load_condition_classes == TRUE){
     flog.info('loading condition class raster files ..')
-    background_condition_class_layers <- load_rasters(global_params$condition_class_raster_files, 
+    background_condition_classes <- load_rasters(global_params$condition_class_raster_files, 
                                                       features_to_use = global_params$features_to_use_in_simulation)
-    background_condition_class_layers = lapply(seq(dim(background_condition_class_layers)[3]), function(i) raster_to_array(subset(background_condition_class_layers, i)))
+    background_condition_classes = lapply(seq(dim(background_condition_classes)[3]), function(i) raster_to_array(subset(background_condition_classes, i)))
     
   } else {
     flog.info('building condition classes ..')
-    background_condition_class_layers = build_modes(features_to_use = initial_features, 
-                                                    condition_class_bounds = feature_params$initial_condition_class_bounds)
-    
-    flog.info('writing condition classes ..')
-    
-    background_condition_class_rasters = lapply(seq_along(background_condition_class_layers), function(i) raster(background_condition_class_layers[[i]]))
-    
-    lapply(seq_along(background_condition_class_layers), function(i) writeRaster(background_condition_class_rasters[[i]], 
-                                                                                 paste0(global_params$simulation_inputs_folder, 'condition_class_raster_', 
-                                                                                        formatC(global_params$features_to_use_in_simulation[i], width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif'),
-                                                                                 overwrite = TRUE))
-    
+
+    background_condition_classes = build_condition_class_modes(initial_features, feature_params$initial_condition_class_bounds)
+
   }
   
-  return(background_condition_class_layers)
+  return(background_condition_classes)
 }
 
 
@@ -535,9 +555,9 @@ sample_current_dynamics <- function(current_feature_dynamics_group, current_mode
 }
 
 
-build_dynamics <- function(site_scale_features_to_use, features_to_use, sample_dynamics, dynamics_type, store_dynamics_as_differential, 
+build_dynamics <- function(site_scale_features_to_use, site_characteristics, features_to_use, sample_dynamics, dynamics_type, store_dynamics_as_differential, 
                            dynamics_sample_type, feature_dynamics_bounds, condition_class_modes){
-  
+  browser()
   if (dynamics_type == 'element_scale'){
     
     dynamics_set = lapply(seq_along(site_scale_features_to_use), 
@@ -562,7 +582,20 @@ build_dynamics <- function(site_scale_features_to_use, features_to_use, sample_d
                                                                                                       dynamics_sample_type) )))
       
       
-
+      site_scale_features_to_use = lapply(seq_along(site_characteristics$land_parcels), 
+                                          function(i) site_scale_features_to_use[ site_characteristics$land_parcels[[i]], ])
+      
+      site_scale_means = lapply(seq_along(site_scale_features_to_use), 
+                                          function(i) apply(site_scale_features_to_use[[i]], 2, 'mean'))
+      
+      # lapply(features_to_use,
+      #                                          function(j) lapply(seq_along(condition_class_modes[[i]][[j]]), 
+      #                                                             function(k) sample_current_dynamics(feature_dynamics_bounds[[j]],
+      #                                                                                                 condition_class_modes[[i]][[j]][k],
+      #                                                                                                 mean(site_scale_features_to_use[[i]][[j]][[k]]),
+      #                                                                                                 store_dynamics_as_differential, 
+      #                                                                                                 sample_dynamics,
+      #                                                                                                 dynamics_sample_type) )))
   }
   return(dynamics_set)
 }
@@ -600,11 +633,16 @@ find_current_mode <- function(current_feature_val, current_condition_class_bound
 
 
 
-build_modes <- function(features_to_use, condition_class_bounds){
+build_condition_class_modes <- function(features_to_use, condition_class_bounds){
+
+  condition_class_modes = Matrix(0, dim(features_to_use)[1], dim(features_to_use)[2], sparse = TRUE)
   
-  condition_class_modes = lapply(seq_along(features_to_use),  
-                                  function(i) matrix(sapply(features_to_use[[i]], find_current_mode, condition_class_bounds[[i]]), dim(features_to_use[[i]])))
-  
+  for (feature_ind in seq_along(condition_class_bounds)){
+    flog.info('building condition classes for feature %s', feature_ind)
+    current_condition_class_modes = sapply(features_to_use[, feature_ind], find_current_mode, condition_class_bounds[[feature_ind]])
+    condition_class_modes[, feature_ind] = current_condition_class_modes
+  }
+
   return(condition_class_modes)
 }
 
@@ -896,7 +934,8 @@ parcel_set_list_names <- function(){
 
 #' @export
 build_stochastic_intervention <- function(time_steps, intervention_start, intervention_end, intervention_num, sd){
-  intervention_control = list_of_zeros(list_dims = time_steps, array_dims = 1)
+
+  intervention_control = lapply(seq(time_steps), function(i) array(0, 1))
   intervention_control[intervention_start:intervention_end] = split_vector((intervention_end - intervention_start + 1), intervention_num, sd, min_width = -1)
   return(intervention_control)
 }
@@ -1015,7 +1054,7 @@ build_index_object <- function(input_data_object, simulation_params){
   names(index_object$site_indexes_used) = c('offset_object', 'uncoupled_offset_object', 'development_object', 'uncoupled_development_object', 'unregulated_loss_object')
   
   index_object$available_indexes = list()
-  
+
   index_object$available_indexes$offsets = set_available_indexes(index_object$site_indexes, 
                                                                  offset_indexes_to_exclude, 
                                                                  input_data_object$site_characteristics$land_parcels, 
@@ -1105,26 +1144,27 @@ set_available_indexes <- function(global_indexes, indexes_to_exclude, land_parce
 #' @export
 scale_features <- function(features){
   flog.info('scaling features')
-  scaled_features <- list_of_zeros(length(features), dim(features[[1]])) 
-  
-  for (feature_ind in seq_along(features)){
-    if (max(features[[feature_ind]]) > 0){
-      scaled_features[[feature_ind]] = features[[feature_ind]]/max(features[[feature_ind]])
+
+  for (feature_ind in seq(dim(features)[2])){
+    sc = max(features[, feature_ind])
+    if (sc > 0){
+      block_to_scale = features[, feature_ind] > 0
+      features[block_to_scale, feature_ind] = features[block_to_scale, feature_ind]/sc
     }
   }
   
-  return(scaled_features)
+  return(features)
 }
 
 split_modes <- function(land_parcels, condition_class_layers){
-  
+  browser()
   condition_class_modes = lapply(seq_along(land_parcels), 
                                          function(i) lapply(seq_along(condition_class_layers), 
                                                             function(j) sort(unique(condition_class_layers[[j]][ land_parcels[[i]]]), decreasing = TRUE)))
   
-  zeros_to_remove <- lapply(seq_along(condition_class_modes), 
-                            function(i) lapply(seq_along(condition_class_modes[[i]]), 
-                                               function(j) which(condition_class_modes[[i]][[j]] == 0)))
+  # zeros_to_remove <- lapply(seq_along(condition_class_modes), 
+  #                           function(i) lapply(seq_along(condition_class_modes[[i]]), 
+  #                                              function(j) which(condition_class_modes[[i]][[j]] == 0)))
   
   
   return(condition_class_modes)
@@ -1133,6 +1173,7 @@ split_modes <- function(land_parcels, condition_class_layers){
 
 separate_features_by_condition_class <- function(input_data_object, initial_features, condition_class_layer){
     
+  browser()
     flog.info('building condition class keys...')
     
     site_scale_condition_class_group = lapply(seq_along(input_data_object$site_characteristics$land_parcels), 
@@ -1166,7 +1207,7 @@ separate_features_by_condition_class <- function(input_data_object, initial_feat
     site_scale_feature_group = lapply(seq_along(input_data_object$site_characteristics$land_parcels), 
                                       function(i) lapply(seq_along(initial_features), 
                                                          function(j) initial_features[[j]][ input_data_object$site_characteristics$land_parcels[[i]] ] ))
-    
+    browser()
     flog.info('building site scale features...')
     input_data_object$site_scale_features = lapply(seq_along(input_data_object$site_scale_condition_class_key), 
                                                    function(i) lapply(seq_along(input_data_object$site_scale_condition_class_key[[i]]),
@@ -1175,7 +1216,7 @@ separate_features_by_condition_class <- function(input_data_object, initial_feat
                                                                                                                                        input_data_object$site_scale_condition_class_key[[i]][[j]][[k]], 
                                                                                                                                        input_data_object$condition_class_modes[[i]][[j]][[k]])
                                                                       )))
-
+    
   return(input_data_object)
   
 }

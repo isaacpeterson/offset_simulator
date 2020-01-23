@@ -258,7 +258,7 @@ initialise_default_feature_params <- function(){
   
   #setting this parameter to TRUE effectively evenly weights all features, setting to FALSE
   #gives an implicit weighting depending on the values of the features layers
-  default_feature_params$scale_features = TRUE
+  default_feature_params$normalise_features = TRUE
   
   #how many feature layers to generate
   default_feature_params$simulated_feature_num = 1
