@@ -613,7 +613,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 plot_impact_set <- function(collated_realisations, current_simulation_params, global_params, output_params, realisation_num, 
                             site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, sets_to_plot){
   
-  # Plot the site scale impacts
+# Plot the site scale impacts
   if (output_params$plot_site == TRUE){
     
     overlay_site_impacts(collated_realisations,
@@ -768,18 +768,19 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
   
   y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
   plot_lwd = 1
-  
+
   stats_to_use = unlist(collated_realisations$sites_used)
   x_lab = ''
   if (current_simulation_params$use_uncoupled_offsets == FALSE){
-    offset_set = collated_realisations$site_scale$impacts$offset_object
-    dev_set = collated_realisations$site_scale$impacts$dev_object
-    net_plot_list = collated_realisations$site_scale$net_impacts$net_impacts[[realisation_ind]][sets_to_plot]
-    
+    block_to_use = collated_realisations$site_scale$impacts
+    # offset_set = unlist(collated_realisations$program_scale$impacts$offset_object, recursive = FALSE)
+    # dev_set = unlist(collated_realisations$program_scale$impacts$development_object, recursive = FALSE)
+    # net_plot_list = unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE)
   } else {
-    offset_set = unlist(collated_realisations$program_scale$impacts$net_offset_gains, recursive = FALSE)
-    dev_set = unlist(collated_realisations$program_scale$impacts$net_dev_losses, recursive = FALSE)
-    net_plot_list = unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE)
+    block_to_use = collated_realisations$program_scale$impacts
+    # offset_set = unlist(collated_realisations$program_scale$impacts$offset_object, recursive = FALSE)
+    # dev_set = unlist(collated_realisations$program_scale$impacts$development_object, recursive = FALSE)
+    # net_plot_list = unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE)
   }
   
   if (length(plot_lims) == 0){
@@ -796,10 +797,9 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     # Plot the impact of the offset site(s) 
     if (plot_site_offset_impact == TRUE){
       
-      overlay_impact(collated_object = offset_set,
+      overlay_impact(block_to_use$offset_object[[realisation_ind]],
                      current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'stacked', 
-                     realisation_ind, 
                      plot_col = col_vec[1], 
                      plot_lwd,
                      plot_type,
@@ -817,11 +817,10 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     # Overlay the impact of the development site 
     
     if (plot_site_dev_impact == TRUE){
-      
-      overlay_impact(dev_set,
+
+      overlay_impact(block_to_use$development_object[[realisation_ind]],
                      current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'non-stacked', 
-                     realisation_ind, 
                      plot_col = col_vec[2],
                      plot_lwd,
                      plot_type,
@@ -836,10 +835,23 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     # Overlay the net impact of the offset and development impact 
     
     if (plot_site_net_impact == TRUE){
-      overlay_plot_list(net_plot_list[plot_ind], 
-                        col_vec = rep(col_vec[3], length(net_plot_list)), 
-                        lty_vec = rep(1, length(net_plot_list)), 
-                        lwd_vec = rep(plot_lwd, length(net_plot_list)))
+      
+      # overlay_plot_list(block_to_use$net_impacts[[realisation_ind]], 
+      #                   col_vec = rep(col_vec[3], length(net_plot_list)), 
+      #                   lty_vec = rep(1, length(net_plot_list)), 
+      #                   lwd_vec = rep(plot_lwd, length(net_plot_list)))
+      overlay_impact(block_to_use$net_impacts[[realisation_ind]]$nets[[current_set_to_plot]],
+                     TRUE,
+                     visualisation_type = 'non-stacked', 
+                     plot_col = col_vec[3],
+                     plot_lwd,
+                     plot_type,
+                     y_lab = '',
+                     x_lab,
+                     plot_from_impact_yr,
+                     current_set_to_plot, 
+                     site_plot_lims, 
+                     time_steps)
       
       #       overlay_plot_list(plot_type, net_plot_list[plot_ind], yticks = 'y', ylims = site_plot_lims, heading = 'Site Outcomes', ylab = '', x_lab = '', 
       #                         col_vec = rep(col_vec[3], length(net_plot_list)), lty_vec = rep(1, length(net_plot_list)), lwd_vec = rep(plot_lwd, length(net_plot_list)), 
@@ -851,25 +863,28 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 }
 
 
-overlay_impact <- function(collated_object, use_uncoupled_offsets, visualisation_type, realisation_ind, 
+overlay_impact <- function(plot_list, use_uncoupled_offsets, visualisation_type, 
                            plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
-                           set_to_plot, plot_lims, time_steps){
+                           current_set_to_plot, plot_lims, time_steps){
   
   if (use_uncoupled_offsets == FALSE){
-    collated_traj_set = collated_object[[realisation_ind]]$nets
-    site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
-    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)
+    
+    inds_to_plot = which(unlist(plot_list$site_indexes) %in% unlist(plot_list$site_indexes[current_set_to_plot]))
+    
     if (plot_from_impact_yr){
-      intervention_yrs = collated_object[[realisation_ind]]$intervention_yrs[inds_to_plot]
+      intervention_yrs = plot_list$intervention_yrs[inds_to_plot]
     } else {
       intervention_yrs = rep(list(1), length(inds_to_plot))
     }
-    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]][intervention_yrs[[i]]:time_steps])
+
+    plot_list = lapply(seq_along(inds_to_plot), function(i) plot_list$nets[[inds_to_plot[i]]][intervention_yrs[[i]]:time_steps])
+
     if (visualisation_type == 'stacked'){
       plot_list = lapply(seq_along(plot_list), function(i) Reduce('+', plot_list[1:i]))
     }
   } else {
-    plot_list = list(collated_object[[realisation_ind]])
+
+    plot_list = list(plot_list)
   }
   
   overlay_plot_list(plot_list, 
@@ -877,9 +892,7 @@ overlay_impact <- function(collated_object, use_uncoupled_offsets, visualisation
                     lty_vec = rep(1, length(plot_list)), 
                     lwd_vec = rep(plot_lwd, length(plot_list)))
   
-  #   overlay_plot_list(plot_type, plot_list, yticks = 'y', ylims = plot_lims, heading = 'Site Impact', y_lab, x_lab, 
-  #                     col_vec = rep(plot_col, length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(plot_lwd, length(plot_list)), 
-  #                     legend_vec = 'NA', legend_loc = FALSE)
+  
 }
 
 

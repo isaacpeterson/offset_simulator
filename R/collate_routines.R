@@ -123,7 +123,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
         summed_site_scale_features_at_intervention = intervention_object$summed_site_scale_features_at_intervention
         site_scale_cfacs = intervention_object$site_scale_cfacs
       }
-      
+
       collated_object$site_scale <- run_site_scale_routines(intervention_object, 
                                                             summed_site_scale_features_at_intervention,
                                                             site_scale_cfacs,
@@ -137,12 +137,12 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                             use_offset_metric)
       
       collated_object$program_scale <- run_program_scale_routines(collated_object$site_scale$impacts, 
-                                                    site_scale_cfacs, 
-                                                    site_scale_outcomes_to_use, 
-                                                    intervention_object$intervention_yrs_pool, 
-                                                    simulation_outputs, 
-                                                    background_cfacs_to_use, 
-                                                    input_data_object$global_params$threshold_control)
+                                                                  site_scale_cfacs, 
+                                                                  site_scale_outcomes_to_use, 
+                                                                  intervention_object$intervention_yrs_pool, 
+                                                                  simulation_outputs, 
+                                                                  background_cfacs_to_use, 
+                                                                  input_data_object$global_params$threshold_control)
     }
     
     
@@ -184,7 +184,7 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
                                     simulation_params, feature_params,  global_params, use_offset_metric){
   
   site_scale = list()
-  
+
   site_scale$impacts = setNames(vector('list', length(simulation_outputs$interventions)), 
                                 names(simulation_outputs$interventions))
   
@@ -202,8 +202,7 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
                                                                                           global_params,
                                                                                           use_offset_metric))
   
-  site_scale$net_impacts <- list(calc_net_site_scale_impacts(site_scale$impacts$offset_object$summed_impacts$nets,
-                                                                             site_scale$impacts$development_object$summed_impacts$nets))
+  site_scale$impacts$net_impacts$nets <- calc_net_site_scale_impacts(site_scale$impacts$offset_object$summed_impacts$nets, site_scale$impacts$development_object$summed_impacts$nets)
   
   #additional list nesting is to maintain structure for collate routines
   site_scale$outcomes = list(site_scale_outcomes)
@@ -381,7 +380,8 @@ run_bind_collated_realisations_routines <- function(collated_filenames){
                                                                           names(collated_group[[i]][[j]])) ),
                                              names(collated_group[[i]])))
   
-  scale_names = c('program_scale', 'landscape_scale')
+
+  scale_names = c('site_scale', 'program_scale', 'landscape_scale')
   collated_realisation_object = setNames(lapply(seq_along(scale_names), 
                                                 function(i) bind_current_group(nested_group, bind_type = scale_names[i], realisation_num)), 
                                          scale_names)
@@ -603,8 +603,7 @@ collate_program_scale_outcomes <- function(simulation_outputs, site_scale_outcom
 
 collate_program_scale_impacts <- function(site_scale_impacts){
   
-  program_impacts = setNames(lapply(seq_along(site_scale_impacts), function(i) site_scale_impacts[[i]]$nets), 
-                             names(site_scale_impacts))
+  program_impacts = setNames(lapply(seq_along(site_scale_impacts), function(i) site_scale_impacts[[i]]$nets), names(site_scale_impacts))
   
   program_impacts$net_offset_gains = sum_list(append(program_impacts$offset_object, program_impacts$uncoupled_offset_object))
   program_impacts$net_dev_losses = sum_list(append(program_impacts$development_object, program_impacts$uncoupled_development_object))
@@ -617,7 +616,7 @@ collate_program_scale_impacts <- function(site_scale_impacts){
 calc_intervention_impacts <- function(current_intervention_simulation_outputs, current_intervention_site_sets, current_collate_type, 
                                       site_scale_cfacs_to_use, summed_site_scale_features_at_intervention_to_use, site_scale_outcomes_to_use,  
                                       simulation_params, feature_params, global_params, use_offset_metric){
-  
+
   site_scale_impacts <- calc_site_scale_impacts(current_intervention_site_scale_outcomes = site_scale_outcomes_to_use,
                                                 current_intervention_cfacs = site_scale_cfacs_to_use,
                                                 current_intervention_summed_site_scale_features = summed_site_scale_features_at_intervention_to_use,
@@ -634,8 +633,8 @@ calc_intervention_impacts <- function(current_intervention_simulation_outputs, c
                                                                          function(j) Reduce('+', site_scale_impacts$grouped_impacts[[i]][[j]]))), 
                                                names(site_scale_impacts$grouped_impacts))
   
-  site_scale_impacts$site_indexes = list(current_intervention_site_sets)
-  site_scale_impacts$intervention_yrs = list(current_intervention_simulation_outputs$intervention_yrs)
+  site_scale_impacts$site_indexes = current_intervention_site_sets
+  site_scale_impacts$intervention_yrs = current_intervention_simulation_outputs$intervention_yrs
 
   return(site_scale_impacts)
   

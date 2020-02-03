@@ -395,9 +395,6 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
                   ', offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
                   'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
     
-    #       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 
-    #                     'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
-    #                     'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
     #update available credit
     simulation_data_object$credit_object$current_credit = match_object$current_credit
     
@@ -448,10 +445,10 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
                                                       development_object,
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
-      
-#       flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]), 
-#                     'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,', 
-#                     'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
+
+      flog.info(cat('developed site(s)', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]),
+                    'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,',
+                    'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
 
     }
   } 
