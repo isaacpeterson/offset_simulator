@@ -37,10 +37,12 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
                                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                                     include.dirs = FALSE, no.. = FALSE)
   
-  if ( (class(object_to_output$output_params$scenario_vec) == 'character')){
+  if ( class(object_to_output$output_params$scenario_vec) == 'character'){
+    
     if (object_to_output$output_params$scenario_vec == 'all'){
       scenario_vec = 1:length(object_to_output$scenario_filenames)
     }
+
   } else {
     scenario_vec = object_to_output$output_params$scenario_vec
   }
@@ -91,15 +93,20 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     } 
   }
   
-  for (scenario_ind in scenario_vec){
-    
+  for (scenario_ind in seq_along(scenario_vec)){
+
     output_flag = check_output_flag(object_to_output$output_params, object_to_output$current_simulation_params)
     
+    current_scenario = scenario_vec[scenario_ind] 
+    
     if (output_flag == FALSE){
-      flog.trace(' skipping scenario %d', scenario_ind )
+      flog.trace(' skipping scenario %d', current_scenario)
     } else {
-      flog.info(rbind(names(object_to_output$param_variants[[scenario_ind]]), as.vector(object_to_output$param_variants[[scenario_ind]]))) 
-      output_scenario(object_to_output,  scenario_ind, user_output_params)
+      
+      flog.trace(' bulding outputs for scenario %d', current_scenario)
+      flog.info(rbind(names(object_to_output$param_variants[[ current_scenario ]]), as.vector(object_to_output$param_variants[[ current_scenario ]]))) 
+      object_to_output$current_simulation_params = readRDS(paste0(object_to_output$simulation_params_folder, '/', object_to_output$scenario_filenames[scenario_ind]))
+      output_scenario(object_to_output,  current_scenario, user_output_params)
     }
     
   }
@@ -175,14 +182,9 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL, numer
 }
 
 
-output_scenario <- function(object_to_output, scenario_ind, user_output_params){
+output_scenario <- function(object_to_output, scenario_ind, user_output_params, current_simulation_params){
   
   flog.info('_________________________________')
-  
-  file_to_Read = paste0(object_to_output$simulation_params_folder, '/', object_to_output$scenario_filenames[scenario_ind])
-  flog.trace('reading %s', file_to_Read)
-  object_to_output$current_simulation_params = readRDS(file_to_Read)
-  
   current_data_dir = paste0(object_to_output$simulation_output_folder, '/scenario_', 
                             formatC(scenario_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                             '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
