@@ -21,11 +21,19 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   }
   
   if (all(input_data_object$global_params$feature_raster_files == 'default')){
-    feature_raster_files = list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
+    
+    raster_files = list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
                                       full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
-                                      include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
+                                      include.dirs = FALSE, no.. = FALSE, pattern = '.tif')
+    
+    feature_files = list.files(path = input_data_object$global_params$simulation_inputs_folder, all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
+                              include.dirs = FALSE, no.. = FALSE, pattern = 'feature_')
+    
+    feature_raster_files = intersect(raster_files, feature_files)
     feature_raster_files = paste0(input_data_object$global_params$simulation_inputs_folder, 
                                   feature_raster_files[input_data_object$global_params$features_to_use_in_simulation])
+    
   } else if (!all(file.exists(input_data_object$global_params$feature_raster_files))){
     flog.error(paste('one or more feature raster files missing - if running from simulated data set global_params$build_simulated_feature_layers = TRUE'))
   } else{
