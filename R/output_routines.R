@@ -209,15 +209,15 @@ output_scenario <- function(object_to_output, scenario_ind, user_output_params, 
   if (sum(features_to_output) > 0){
     output_collated_features(object_to_output,
                              features_to_output, 
-                             use_offset_metric = FALSE, 
+                             use_transform_metric = FALSE, 
                              scenario_ind, 
                              current_data_dir)
   }
   
-  if (object_to_output$output_params$plot_offset_metric == TRUE){
+  if (object_to_output$output_params$plot_transform_metric == TRUE){
     output_collated_features(object_to_output,
                              features_to_output = 1, 
-                             use_offset_metric = TRUE, 
+                             use_transform_metric = TRUE, 
                              scenario_ind, 
                              current_data_dir)
   }
@@ -225,11 +225,11 @@ output_scenario <- function(object_to_output, scenario_ind, user_output_params, 
 } 
 
 
-output_collated_features <- function(object_to_output, features_to_output, use_offset_metric, scenario_ind, current_data_dir){
+output_collated_features <- function(object_to_output, features_to_output, use_transform_metric, scenario_ind, current_data_dir){
   
   for (feature_ind in features_to_output){
     
-    if (use_offset_metric == TRUE){
+    if (use_transform_metric == TRUE){
       collated_filenames = paste0(object_to_output$collated_folder, list.files(path = object_to_output$collated_folder, all.files = FALSE,
                                                                                full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                                                                include.dirs = FALSE, no.. = FALSE, pattern = '_metric'))
@@ -270,7 +270,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                                                             paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'))
     } else {
       
-      if (use_offset_metric == FALSE){
+      if (use_transform_metric == FALSE){
         
         flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
         object_to_output$current_site_scale_condition_class_key = lapply(seq_along(object_to_output$site_scale_condition_class_key), 
@@ -286,7 +286,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                               feature_ind, 
                               current_data_dir, 
                               file_prefix,
-                              use_offset_metric = FALSE, 
+                              use_transform_metric = FALSE, 
                               scale_factor = max(unlist(object_to_output$feature_params$condition_class_bounds[[feature_ind]])))
         
       } else {
@@ -308,7 +308,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
                               feature_ind, 
                               current_data_dir, 
                               file_prefix,
-                              use_offset_metric = TRUE, 
+                              use_transform_metric = TRUE, 
                               scale_factor)
       } 
     } 
@@ -375,7 +375,7 @@ write_output_block <- function(block_to_output, filename){
   return(data_block)
 }
 
-output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
+output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_transform_metric, scale_factor){
   
   intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), 
                              function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
@@ -397,7 +397,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
     
     feature_set_to_output = readRDS(paste0(current_data_dir, 'feature_outputs_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
 
       feature_set_to_output = lapply(seq_along(feature_set_to_output), function(i) feature_set_to_output[[i]][[feature_ind]])
       feature_set_to_output = lapply(seq_along(feature_set_to_output), 
@@ -438,7 +438,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
         
         sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
-        if (use_offset_metric == FALSE){
+        if (use_transform_metric == FALSE){
           #sort to original raster pixel indices
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_site_scale_condition_class_key[sites_to_use[[i]]]))
         } else {
