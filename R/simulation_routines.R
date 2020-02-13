@@ -323,7 +323,7 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
   
   saveRDS(simulation_data_object$condition_class_modes, paste0(current_data_dir, 'condition_class_modes_', yr_string, '.rds'))
   
-#   if (simulation_params$use_offset_metric == TRUE){
+#   if (simulation_params$use_transform_metric == TRUE){
 #     
 #     browser()
 #     feature_set_to_save = lapply(seq_along(simulation_data_object$site_scale_features), 
@@ -367,7 +367,7 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
 #     
 #   }
 #   
-#   if (simulation_params$use_offset_metric == TRUE){
+#   if (simulation_params$use_transform_metric == TRUE){
 # 
 #     feature_set_to_save = lapply(seq_along(simulation_data_object$site_scale_features), 
 #                                    function(i) simulation_data_object$global_params$user_transform_function(lapply(seq_along(simulation_data_object$site_scale_features[[i]]),
@@ -1493,7 +1493,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
 }
 
 
-select_pool_to_match <- function(vals_to_match, use_offset_metric, thresh, pool_vals_to_use, 
+select_pool_to_match <- function(vals_to_match, use_transform_metric, thresh, pool_vals_to_use, 
                                  max_parcel_num, current_pool, match_type, screen_site_zeros){
   
   pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
@@ -1578,7 +1578,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   #create an array of threshold values defined by user based proportion 
   thresh = simulation_params$match_threshold_ratio * vals_to_match         
   
-  pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_offset_metric, thresh, 
+  pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_transform_metric, thresh, 
                                       pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
   if (pool_object$match_flag == FALSE){
@@ -1640,7 +1640,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
   }
   
-  #### TODO NOTE if running with offset_metric specified current credit is wrong as it copies all entries to the same value
+  #### TODO NOTE if running with transform_metric specified current credit is wrong as it copies all entries to the same value
   
   if (match_type == 'offset'){
     # switch sign for any additional credit from offset
@@ -1776,7 +1776,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
                                                               condition_class_modes[[i]], 
                                                               feature_params$background_dynamics_type))
       
-      if (simulation_params$use_offset_metric == FALSE){
+      if (simulation_params$use_transform_metric == FALSE){
 
         cfac_vals = lapply(seq_along(site_scale_features_group), 
                            function(i) matrix(do.call(cbind, sum_site_scale_features(calc_site_cfacs(site_scale_features_group[[i]],
@@ -1827,49 +1827,53 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
     
     if (pool_type == 'offsets') {
       
-      if (action_type == 'restore'){
-
-        time_shifts = lapply(seq_along(site_scale_features_group), 
-                             function(i) build_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
-                                                             site_scale_features_group[[i]], 
-                                                             yr, 
-                                                             management_dynamics[[i]], 
-                                                             condition_class_modes[[i]], 
-                                                             feature_params$management_dynamics_type))
+      if (action_type == 'maintain'){
+        projected_feature_layers = pool_object$parcel_sums_at_offset
+      } else {
         
-        feature_dynamics = lapply(seq_along(site_scale_features_group), function(i) shift_dynamics_set(site_scale_features_group[[i]], 
-                                                                                                 management_dynamics[[i]], 
-                                                                                                 condition_class_modes[[i]],
-                                                                                                 dynamics_type = feature_params$management_dynamics_type, 
-                                                                                                 project_by_mean = feature_params$project_by_mean,
-                                                                                                 update_dynamics_by_differential = feature_params$update_management_dynamics_by_differential,
-                                                                                                 time_shifts[[i]],
-                                                                                                 time_fill = TRUE))
-        
-        projection_yrs = lapply(seq_along(site_scale_features_group), 
-                                function(i) build_projection_yrs(perform_dynamics_time_shift = FALSE, 
-                                                                site_scale_features_group[[i]],  
-                                                                yr = 1,  
-                                                                management_dynamics[[i]],  
+        if (action_type == 'restore'){
+          
+          time_shifts = lapply(seq_along(site_scale_features_group), 
+                               function(i) build_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
+                                                                site_scale_features_group[[i]], 
+                                                                yr, 
+                                                                management_dynamics[[i]], 
                                                                 condition_class_modes[[i]], 
-                                                                feature_params$background_dynamics_type))
+                                                                feature_params$management_dynamics_type))
+          
+          feature_dynamics = lapply(seq_along(site_scale_features_group), function(i) shift_dynamics_set(site_scale_features_group[[i]], 
+                                                                                                         management_dynamics[[i]], 
+                                                                                                         condition_class_modes[[i]],
+                                                                                                         dynamics_type = feature_params$management_dynamics_type, 
+                                                                                                         project_by_mean = feature_params$project_by_mean,
+                                                                                                         update_dynamics_by_differential = feature_params$update_management_dynamics_by_differential,
+                                                                                                         time_shifts[[i]],
+                                                                                                         time_fill = TRUE))
+          
+          projection_yrs = lapply(seq_along(site_scale_features_group), 
+                                  function(i) build_projection_yrs(perform_dynamics_time_shift = FALSE, 
+                                                                   site_scale_features_group[[i]],  
+                                                                   yr = 1,  
+                                                                   management_dynamics[[i]],  
+                                                                   condition_class_modes[[i]], 
+                                                                   feature_params$background_dynamics_type))
+          
+        }
         
-      } 
+        projected_feature_layers = project_features(site_scale_features_group,
+                                                    dynamics_type = feature_params$management_dynamics_type,
+                                                    feature_params$update_management_dynamics_by_differential, 
+                                                    feature_dynamics,
+                                                    condition_class_modes,
+                                                    time_horizons,
+                                                    perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift,
+                                                    time_fill = FALSE,
+                                                    projection_yrs, 
+                                                    condition_class_bounds = feature_params$condition_class_bounds)
+        
+      }
       
-
-      projected_feature_layers = project_features(site_scale_features_group,
-                                                  dynamics_type = feature_params$management_dynamics_type,
-                                                  feature_params$update_management_dynamics_by_differential, 
-                                                  feature_dynamics,
-                                                  condition_class_modes,
-                                                  time_horizons,
-                                                  perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift,
-                                                  time_fill = FALSE,
-                                                  projection_yrs, 
-                                                  condition_class_bounds = feature_params$condition_class_bounds)
-      
-      
-      if (simulation_params$use_offset_metric == TRUE){
+      if (simulation_params$use_transform_metric == TRUE){
 
         projected_feature_layers = lapply(seq_along(projected_feature_layers), 
                                           function(i) lapply(seq_along(projected_feature_layers[[i]]),

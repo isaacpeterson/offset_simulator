@@ -24,9 +24,9 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
                        simulation_params,
                        current_data_dir, 
                        file_prefix,
-                       use_offset_metric = FALSE)
+                       use_transform_metric = FALSE)
 
-  if (simulation_params$use_offset_metric == TRUE){
+  if (simulation_params$use_transform_metric == TRUE){
     run_collate_routines(intervention_object, 
                          simulation_outputs,
                          input_data_object,
@@ -34,7 +34,7 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
                          simulation_params,
                          current_data_dir, 
                          file_prefix,
-                         use_offset_metric = TRUE)
+                         use_transform_metric = TRUE)
   }
   
 }
@@ -42,9 +42,9 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
 
 
 run_collate_routines <- function(intervention_object, simulation_outputs, input_data_object, background_cfacs,
-                                 simulation_params, current_data_dir, file_prefix, use_offset_metric){
+                                 simulation_params, current_data_dir, file_prefix, use_transform_metric){
   
-  if (use_offset_metric == FALSE){
+  if (use_transform_metric == FALSE){
     features_to_collate = seq(input_data_object$global_params$feature_num)
   } else {
     features_to_collate = 1
@@ -52,7 +52,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
   
   site_scale_outcomes = sum_data_stack(current_data_dir, 
                                        file_pattern = 'feature_outputs_yr_',
-                                       use_offset_metric, 
+                                       use_transform_metric, 
                                        features_to_collate,
                                        input_data_object$site_characteristics$site_lengths, 
                                        input_data_object$site_scale_condition_class_key,
@@ -69,7 +69,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                                                                                       input_data_object$condition_class_modes[intervention_object$intervention_pool],
                                                                                                                       input_data_object$site_scale_condition_class_key[intervention_object$intervention_pool],
                                                                                                                       input_data_object$site_characteristics$site_lengths[intervention_object$intervention_pool], 
-                                                                                                                      use_offset_metric, 
+                                                                                                                      use_transform_metric, 
                                                                                                                       input_data_object$global_params$user_transform_function, 
                                                                                                                       simulation_params$transform_params)
     
@@ -90,7 +90,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                                                                 object_type = intervention_object$object_name_pool, 
                                                                                                 use_cfac_type_in_sim = TRUE, 
                                                                                                 condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
-                                                                                                use_offset_metric, 
+                                                                                                use_transform_metric, 
                                                                                                 input_data_object$global_params$user_transform_function)
     
   }
@@ -100,7 +100,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     
     collated_object = list()
     
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
       flog.info('collating feature %s time series data', feature_ind)
       background_cfacs_to_use = select_collated_feature_subset(background_cfacs, feature_ind)
       site_scale_outcomes_to_use = select_collated_feature_subset(site_scale_outcomes, feature_ind)
@@ -114,7 +114,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
 
     if (intervention_object$intervention_flag == TRUE){
       
-      if (use_offset_metric == FALSE){
+      if (use_transform_metric == FALSE){
 
         summed_site_scale_features_at_intervention = select_collated_feature_subset(intervention_object$summed_site_scale_features_at_intervention, feature_ind)
         
@@ -134,7 +134,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
                                                             simulation_params, 
                                                             input_data_object$feature_params, 
                                                             input_data_object$global_params, 
-                                                            use_offset_metric)
+                                                            use_transform_metric)
       
       collated_object$program_scale <- run_program_scale_routines(collated_object$site_scale$impacts, 
                                                                   site_scale_cfacs, 
@@ -146,7 +146,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
     }
     
     
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
       collated_filename = paste0(file_prefix, '_feature_',
                                  formatC(input_data_object$global_params$features_to_use_in_simulation[feature_ind], 
                                          width = input_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.rds')
@@ -181,7 +181,7 @@ run_landscape_scale_routines <- function(site_scale_outcomes_to_use, background_
 
 
 run_site_scale_routines <- function(intervention_object, summed_site_scale_features_at_intervention, site_scale_cfacs, site_scale_outcomes, intervention_yrs_pool, simulation_outputs,  background_cfacs_to_use,
-                                    simulation_params, feature_params,  global_params, use_offset_metric){
+                                    simulation_params, feature_params,  global_params, use_transform_metric){
   
   site_scale = list()
 
@@ -200,7 +200,7 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
                                                                                           simulation_params, 
                                                                                           feature_params, 
                                                                                           global_params,
-                                                                                          use_offset_metric))
+                                                                                          use_transform_metric))
   
   site_scale$impacts$net_impacts$nets <- calc_net_site_scale_impacts(site_scale$impacts$offset_object$summed_impacts$nets, site_scale$impacts$development_object$summed_impacts$nets)
   
@@ -241,7 +241,7 @@ run_program_scale_routines <- function(site_scale_impacts, site_scale_cfacs, sit
 
 
 
-run_pre_collate_routines <- function(simulation_outputs, input_data_object, simulation_params, current_data_dir, use_offset_metric){
+run_pre_collate_routines <- function(simulation_outputs, input_data_object, simulation_params, current_data_dir, use_transform_metric){
   
   intervention_object = list()
   
@@ -485,7 +485,7 @@ collate_program_scale_cfacs <- function(site_scale_cfacs, interventions, backgro
 
 collate_cfacs <- function(site_scale_features_group, simulation_params, feature_params, global_params, feature_dynamics, condition_class_modes, 
                           site_scale_condition_class_key, site_lengths, projection_yrs, intervention_yrs, site_num_remaining_pool, cfac_type, 
-                          object_type, use_cfac_type_in_sim, condition_class_bounds, use_offset_metric, user_transform_function){
+                          object_type, use_cfac_type_in_sim, condition_class_bounds, use_transform_metric, user_transform_function){
   
   if ((use_cfac_type_in_sim == FALSE) || (cfac_type == 'background')){
     cfac_params = lapply(seq_along(site_scale_features_group), function(i) setNames(rep(list(FALSE), 4), 
@@ -498,7 +498,7 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
   }
   
   if (cfac_type == 'background'){ 
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
       flog.info('building background counterfactuals - this may take a while ...')
     } else {
       flog.info('building user metric background counterfactuals ...')
@@ -509,7 +509,7 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
                                             time_horizon = global_params$time_steps, 
                                             length(site_scale_features_group))
   } else if (cfac_type == 'site_scale'){
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
       flog.info('building site scale counterfactuals ...')
     } else {
       flog.info('building user metric site scale counterfactuals...')
@@ -537,7 +537,7 @@ collate_cfacs <- function(site_scale_features_group, simulation_params, feature_
 #                                                                                            time_horizons[i], 
 #                                                                                            unlist(intervention_yrs)[i]), recursive = FALSE))
   
-  if (use_offset_metric == FALSE){
+  if (use_transform_metric == FALSE){
 
     cfacs = lapply(seq_along(site_scale_features_group),
                    function(i) do.call(rbind, lapply(seq_along(time_horizons[[i]]), 
@@ -615,7 +615,7 @@ collate_program_scale_impacts <- function(site_scale_impacts){
 
 calc_intervention_impacts <- function(current_intervention_simulation_outputs, current_intervention_site_sets, current_collate_type, 
                                       site_scale_cfacs_to_use, summed_site_scale_features_at_intervention_to_use, site_scale_outcomes_to_use,  
-                                      simulation_params, feature_params, global_params, use_offset_metric){
+                                      simulation_params, feature_params, global_params, use_transform_metric){
 
   site_scale_impacts <- calc_site_scale_impacts(current_intervention_site_scale_outcomes = site_scale_outcomes_to_use,
                                                 current_intervention_cfacs = site_scale_cfacs_to_use,
@@ -625,7 +625,7 @@ calc_intervention_impacts <- function(current_intervention_simulation_outputs, c
                                                 simulation_params, 
                                                 feature_params,
                                                 time_steps = global_params$time_steps, 
-                                                use_offset_metric)
+                                                use_transform_metric)
   
   site_scale_impacts$grouped_impacts = group_site_scale_impacts(site_scale_impacts, current_intervention_site_sets)
   site_scale_impacts$summed_impacts = setNames(lapply(seq_along(site_scale_impacts$grouped_impacts), 
@@ -663,10 +663,10 @@ group_site_scale_impacts <- function(collated_object, site_indexes){
 
 
 
-sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, features_to_collate, site_lengths, site_scale_condition_class_key, 
+sum_data_stack <- function(current_data_dir, file_pattern, use_transform_metric, features_to_collate, site_lengths, site_scale_condition_class_key, 
                            transform_function, transform_params, time_steps, numeric_placeholder_width){
   
-  if (use_offset_metric == FALSE){
+  if (use_transform_metric == FALSE){
     flog.info('building site scale outcomes...')
   } else {
     flog.info('building site scale outcomes for metric...')
@@ -685,7 +685,7 @@ sum_data_stack <- function(current_data_dir, file_pattern, use_offset_metric, fe
       data_stack = rep(list(matrix(0, nrow = (time_steps + 1), ncol = length(features_to_collate))), length(site_scale_features))
     }
     
-    if (use_offset_metric == FALSE){
+    if (use_transform_metric == FALSE){
       summed_site_scale_features = lapply(seq_along(site_scale_features), function(i) do.call(cbind, sum_site_scale_features(site_scale_features[[i]])))
     } else {
       summed_site_scale_features = lapply(seq_along(site_scale_features), 
@@ -741,7 +741,7 @@ merge_vectors <- function(vec_a, vec_b, start_ind){
 
 
 calc_site_scale_impacts <- function(current_intervention_site_scale_outcomes, current_intervention_cfacs, current_intervention_summed_site_scale_features, 
-                                    current_intervention_yrs, current_intervention_collate_type, simulation_params, feature_params, time_steps, use_offset_metric){
+                                    current_intervention_yrs, current_intervention_collate_type, simulation_params, feature_params, time_steps, use_transform_metric){
   
   site_num = length(current_intervention_site_scale_outcomes)
   
@@ -782,11 +782,11 @@ calc_site_scale_impacts <- function(current_intervention_site_scale_outcomes, cu
 
 
 # determine cumulative value of all sites within parcel feature_layers for multiple features
-sum_sites <- function(site_scale_features, condition_class_modes, site_scale_condition_class_key, site_lengths, use_offset_metric, user_transform_function, transform_params){
+sum_sites <- function(site_scale_features, condition_class_modes, site_scale_condition_class_key, site_lengths, use_transform_metric, user_transform_function, transform_params){
   
   summed_site_scale_features = vector('list', length(site_scale_features))
   
-  if (use_offset_metric == TRUE){
+  if (use_transform_metric == TRUE){
 
     site_scale_features = lapply(seq_along(site_scale_features), function(i) lapply(seq_along(site_scale_features[[i]]),
                                                                                          function(j) unwrap_condition_classes(array(0, site_lengths[[i]]),

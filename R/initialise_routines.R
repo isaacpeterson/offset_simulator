@@ -270,11 +270,11 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                            object_type = vector(), 
                                                            use_cfac_type_in_sim = FALSE, 
                                                            condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
-                                                           use_offset_metric = FALSE, 
+                                                           use_transform_metric = FALSE, 
                                                            input_data_object$global_params$user_transform_function)
   
   
-  if (simulation_params$use_offset_metric == TRUE){
+  if (simulation_params$use_transform_metric == TRUE){
     
     background_cfacs_object$user_metric_background_cfacs = collate_cfacs(input_data_object$site_scale_features,
                                                                          simulation_params, 
@@ -291,7 +291,7 @@ build_background_cfacs <- function(input_data_object, simulation_params){
                                                                          object_type = vector(), 
                                                                          use_cfac_type_in_sim = FALSE, 
                                                                          condition_class_bounds = input_data_object$feature_params$condition_class_bounds, 
-                                                                         use_offset_metric = TRUE, 
+                                                                         use_transform_metric = TRUE, 
                                                                          input_data_object$global_params$user_transform_function)
   }
   
@@ -472,7 +472,7 @@ build_initial_credit <- function(simulation_params, input_data_object){
       stop()
     }
   } else {
-    if ((simulation_params$use_offset_metric == FALSE) &
+    if ((simulation_params$use_transform_metric == FALSE) &
         ( length(simulation_params$initial_credit) != length(simulation_params$features_to_use_in_offset_calc))){
       flog.error('setting length of credit vector to match simulation_params$features_to_use_in_offset_calc')
       current_credit = matrix(rep(simulation_params$initial_credit, 
