@@ -456,12 +456,10 @@ build_condition_class_layers <- function(initial_features, global_params, featur
 
 
 build_output_data <- function(input_data_object, simulation_params){
+  
   output_data = list()
   output_data$index_object = build_index_object(input_data_object, simulation_params)
-  interventions = vector('list', 5)
-  names(interventions) = names(output_data$index_object$site_indexes_used)
-  output_data$interventions = interventions
-  output_data$offset_pool_object <- list()
+  output_data$interventions = setNames(vector('list', 5), names(output_data$index_object$site_indexes_used))
 
   return(output_data)
 } 

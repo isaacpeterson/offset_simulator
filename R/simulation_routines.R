@@ -209,7 +209,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_offset_object))))
     
     #when running in uncoupled offset mode select out current set of sites to add
-    
+
     if (simulation_params$use_uncoupled_offsets == TRUE){
       simulation_data_object <- run_uncoupled_offset_routine(simulation_data_object, simulation_params, yr)
     }
