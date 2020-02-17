@@ -502,6 +502,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
                              realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
   
   if (output_params$plot_site == TRUE){
+    browser()
     plot_site_outcomes(collated_realisations, 
                        output_params$plot_site_offset, 
                        output_params$plot_site_dev, 
@@ -518,7 +519,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
   
   
   if (output_params$plot_program == TRUE){
-    
+    browser()
     overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
                                           unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
                                           unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
@@ -550,7 +551,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
   }
   
   if (output_params$plot_landscape == TRUE){ 
-    
+    browser()
     plot_outcomes(unlist(collated_realisations$landscape_scale$outcomes$net_outcome, recursive = FALSE), 
                   plot_type = 'landscape', 
                   include_legend = FALSE, 
@@ -571,6 +572,8 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
                                output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind,realisation_ind, site_lwd, time_steps){
+  
+  browser()
   
   if (current_simulation_params$use_uncoupled_offsets == TRUE){
     null_plot()
@@ -1033,7 +1036,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
 
 plot_outcomes <- function(current_outcome_set, plot_type, include_legend, plot_lims, plot_title, 
                           loss_stats, realisation_num,  cfacs, lwd_vec, outcome_col, cfac_col, legend_vec, time_steps){
-  
+  browser()
   if (length(unlist(current_outcome_set)) == 0){
     return()
   }

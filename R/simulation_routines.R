@@ -53,7 +53,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     flog.info('system composed of %s x %s elements and %s sites',
               global_input_data$site_characteristics$landscape_dims[1], 
               global_input_data$site_characteristics$landscape_dims[2],
-              length(global_input_data$site_characteristics$land_parcels))
+              length(global_input_data$site_characteristics$land_sites))
     
     flog.info('%s potential development sites, %s potential offset sites',
               length(current_output_data$index_object$available_indexes$developments), 
@@ -64,7 +64,7 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     flog.info('estimated %s sites lost to unregulated clearing', 
               round(estimate_illegal_sites(simulation_params_group[[scenario_ind]]$unregulated_loss_prob, 
                                            global_input_data$global_params$time_steps, 
-                                            length(global_input_data$site_characteristics$land_parcels)))) 
+                                            length(global_input_data$site_characteristics$land_sites)))) 
     
     ##### TODO(Isaac) test whether can set check and set seed if necessary much earlier in the code before run_initialise_routines() is called
     if (global_input_data$global_params$number_of_cores > 1 && global_input_data$global_params$set_seed == TRUE){
@@ -256,7 +256,7 @@ run_simulation <- function(simulation_data_object, output_data, simulation_param
       } 
       
       #if insufficient credits accumulated to allow development attempt development with offset match.
-      if (simulation_data_object$credit_object$match_flag == FALSE && simulation_params$use_parcel_sets == TRUE){
+      if (simulation_data_object$credit_object$match_flag == FALSE && simulation_params$use_site_sets == TRUE){
         simulation_data_object <- match_sites_routine(simulation_data_object, simulation_params, yr)
       }
     }
@@ -359,7 +359,7 @@ save_landscape_routine <- function(simulation_data_object, simulation_params, cu
 #                                                                         simulation_data_object$site_scale_condition_class_key[[i]][[feature_ind]]))
 #       
 #       feature_layer_to_output = matrix(0, nrow = simulation_data_object$site_characteristics$landscape_dims[1], ncol = simulation_data_object$site_characteristics$landscape_dims[2])
-#       feature_layer_to_output[unlist(simulation_data_object$site_characteristics$land_parcels)] = unlist(feature_set_to_save)
+#       feature_layer_to_output[unlist(simulation_data_object$site_characteristics$land_sites)] = unlist(feature_set_to_save)
 #       feature_layer_to_output = raster(feature_layer_to_output)
 #       writeRaster(feature_layer_to_output, paste0(current_data_dir, 'raster_folder/', file_prefix, simulation_data_object$global_params$raster_file_type))
 #       
@@ -391,9 +391,9 @@ match_sites_routine <- function(simulation_data_object, simulation_params, yr){
   if (match_object$match_flag == TRUE){
 
     flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$development_object$site_indexes)]),
-                  'with value', paste( round(Reduce('+', match_object$development_object$parcel_vals_used), 1)),
+                  'with value', paste( round(Reduce('+', match_object$development_object$site_vals_used), 1)),
                   ', offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[unlist(match_object$offset_object$site_indexes)]), 
-                  'with net value', paste(round(Reduce('+', match_object$offset_object$parcel_vals_used), 1)), '\n'))
+                  'with net value', paste(round(Reduce('+', match_object$offset_object$site_vals_used), 1)), '\n'))
     
     #update available credit
     simulation_data_object$credit_object$current_credit = match_object$current_credit
@@ -425,7 +425,7 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
     match_object = setNames(list(FALSE), 'match_flag')
     
   } else {
-    pool_vals_to_use = simulation_data_object$dev_pool_object$parcel_vals_used
+    pool_vals_to_use = simulation_data_object$dev_pool_object$site_vals_used
     match_object <- match_from_pool(match_type = 'development', 
                                     current_pool = simulation_data_object$dev_pool_object$site_indexes, 
                                     pool_vals_to_use, 
@@ -447,7 +447,7 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
                                                       yr)
 
       flog.info(cat('developed site(s)', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]),
-                    'with value', paste(lapply(development_object$parcel_vals_used, round, 2)), 'from credit,',
+                    'with value', paste(lapply(development_object$site_vals_used, round, 2)), 'from credit,',
                     'remaining =', paste(lapply(match_object$current_credit, round, 2)), '\n'))
 
     }
@@ -492,7 +492,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
   # store group of site characteristics in site characteristics object
   unregulated_loss_object <- record_site_characteristics(simulation_data_object$site_scale_features[inds_to_clear],
                                                          inds_to_clear,
-                                                         parcel_num_remaining = length(available_site_indexes),
+                                                         site_num_remaining = length(available_site_indexes),
                                                          yr)
   
   current_pool = unlist(unregulated_loss_object$site_indexes)
@@ -762,11 +762,11 @@ run_offset_routines <- function(simulation_data_object, simulation_params, curre
     uncoupled_offset_pool = simulation_data_object$output_data$interventions$uncoupled_offset_object$site_indexes
     uncoupled_offset_inds_used = list_intersect(uncoupled_offset_pool, current_offset_object$site_indexes)
     
-    # determine parcels used in matching routine and remove from available pool
+    # determine sites used in matching routine and remove from available pool
     simulation_data_object$output_data$interventions$uncoupled_offset_object$site_indexes = remove_index(uncoupled_offset_pool, uncoupled_offset_inds_used$match_ind)
     
   } else {
-    # determine parcels used in matching routine and remove from available pool
+    # determine sites used in matching routine and remove from available pool
     
     simulation_data_object$output_data$index_object <- update_index_object(simulation_data_object$output_data$index_object, 
                                                                            update_type = 'offset', 
@@ -833,13 +833,13 @@ run_uncoupled_offset_routine <- function(simulation_data_object, simulation_para
   }
   
   # number of sites to potentially offset
-  parcel_num_remaining = length(simulation_data_object$output_data$index_object$available_indexes$offsets)
+  site_num_remaining = length(simulation_data_object$output_data$index_object$available_indexes$offsets)
   
   # record current offset pool characteristics
   current_uncoupled_object <- record_site_characteristics(simulation_data_object$site_scale_features[current_pool],
                                                        current_pool,
-                                                       parcel_num_remaining,
-                                                       yr)   # arrange current parcel data
+                                                       site_num_remaining,
+                                                       yr)   # arrange current site data
   
   simulation_data_object$output_data$interventions$uncoupled_offset_object = append_current_group(object_to_append = simulation_data_object$output_data$interventions$uncoupled_offset_object,
                                                                                              current_object = current_uncoupled_object,
@@ -898,7 +898,7 @@ run_clearing_routines <- function(simulation_data_object, current_development_ob
   if (length(current_development_object$site_indexes) == 0){
     return(simulation_data_object)
   }
-  #remove development parcels from available pool
+  #remove development sites from available pool
   
   simulation_data_object$output_data$index_object <- update_index_object(simulation_data_object$output_data$index_object, update_type = clearing_type, current_development_object$site_indexes)
   if (clearing_type == 'development'){
@@ -949,9 +949,9 @@ assess_banking_credit <- function(output_data, simulation_params){
   features_to_use_in_offset_calc = simulation_params$features_to_use_in_offset_calc
   # determine total offset gains
   
-  offset_credit = nested_list_sum(offset_pool_object$parcel_vals_used)
+  offset_credit = nested_list_sum(offset_pool_object$site_vals_used)
   
-  dev_list = append(output_data$interventions$uncoupled_development_object$parcel_vals_used, output_data$interventions$development_object$parcel_vals_used)
+  dev_list = append(output_data$interventions$uncoupled_development_object$site_vals_used, output_data$interventions$development_object$site_vals_used)
   
   if (length(dev_list) > 0){
     # determine total development losses
@@ -994,14 +994,14 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
     pool_object <- subset_current_pool(simulation_data_object$output_data$interventions$uncoupled_offset_object, subset_pool)
     
     current_pool = unlist(simulation_data_object$output_data$interventions$uncoupled_offset_object$site_indexes[subset_pool])
-    pool_object$projected_vals <- find_current_parcel_sums(simulation_data_object$site_scale_features[current_pool])
+    pool_object$projected_vals <- find_current_site_sums(simulation_data_object$site_scale_features[current_pool])
     
   } else {
     
     pool_object <- record_site_characteristics(simulation_data_object$site_scale_features[current_pool],
                                                current_pool,
-                                               parcel_num_remaining = length(current_pool),
-                                               yr)   #arrange available parcel pool into form to use in parcel set determination
+                                               site_num_remaining = length(current_pool),
+                                               yr)   #arrange available site pool into form to use in site set determination
   }
   
   pool_object <- assess_current_pool(pool_object = pool_object,
@@ -1062,7 +1062,7 @@ mcell <- function(x, vx, vy){
   cols = length(colsizes);
   
   a = 1
-  # make an array composed of lists with dimenisons that define the land parcels/regions.
+  # make an array composed of lists with dimenisons that define the land sites/regions.
   # The list format allows arrays of different sizes to be stored
   B = vector('list', rows*cols)
   colStart = 0
@@ -1078,10 +1078,10 @@ mcell <- function(x, vx, vy){
     colStart = colStart + colsizes[i]
   }
   
-  parcel = list()
-  parcel$dims = c(length(vy), length(vx))
-  parcel$elements = B
-  return(parcel)
+  site = list()
+  site$dims = c(length(vy), length(vx))
+  site$elements = B
+  return(site)
   
 }
 
@@ -1240,7 +1240,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
   match_object = setNames(list(FALSE), 'match_flag')
   
   if (match_type == 'develop_using_offset_pool'){
-    current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used
+    current_match_vals_pool = simulation_data_object$dev_pool_object$site_vals_used
     
     if ( (sum(unlist(current_match_vals_pool)) == 0)){
       match_object$match_flag = FALSE
@@ -1249,14 +1249,14 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     } else {
       
       current_match_pool = unlist(simulation_data_object$dev_pool_object$site_indexes)
-      group_pool_vals = simulation_data_object$offset_pool_object$parcel_vals_used
+      group_pool_vals = simulation_data_object$offset_pool_object$site_vals_used
       group_pool_indexes = simulation_data_object$offset_pool_object$site_indexes
-      parcel_num_remaining = length(current_match_pool)
+      site_num_remaining = length(current_match_pool)
     }
     
   }
   
-  if ( (length(group_pool_indexes) == 0) | (parcel_num_remaining == 0) ){
+  if ( (length(group_pool_indexes) == 0) | (site_num_remaining == 0) ){
     return(match_object)
   } 
   
@@ -1307,11 +1307,11 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
     
     if (match_object$match_flag == FALSE){
       # only try to match sites with smaller ecological value than current site
-      inds_to_keep = which(lapply(seq_along(simulation_data_object$dev_pool_object$parcel_vals_used),
-                                  function(i) all(unlist(subtract_nested_lists(simulation_data_object$dev_pool_object$parcel_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
+      inds_to_keep = which(lapply(seq_along(simulation_data_object$dev_pool_object$site_vals_used),
+                                  function(i) all(unlist(subtract_nested_lists(simulation_data_object$dev_pool_object$site_vals_used[[i]], vals_to_match)) < 0) ) == TRUE)
       
       current_match_pool = simulation_data_object$dev_pool_object$site_indexes[inds_to_keep]     
-      current_match_vals_pool = simulation_data_object$dev_pool_object$parcel_vals_used[inds_to_keep]
+      current_match_vals_pool = simulation_data_object$dev_pool_object$site_vals_used[inds_to_keep]
 
     }
     
@@ -1330,7 +1330,7 @@ match_sites <- function(simulation_data_object, simulation_params, match_type, y
 }
 
 
-evaluate_parcel_vals <- function(calc_type, current_condition_vals, projected_vals, cfac_vals){
+evaluate_site_vals <- function(calc_type, current_condition_vals, projected_vals, cfac_vals){
   
   if (calc_type == 'current_condition'){
     projected_vals = current_condition_vals
@@ -1345,8 +1345,8 @@ evaluate_parcel_vals <- function(calc_type, current_condition_vals, projected_va
     projected_vals = cfac_vals
     cfac_vals = list_of_zeros(length(current_condition_vals), 1)
   }
-  parcel_vals_pool = subtract_nested_lists(projected_vals, cfac_vals)
-  return(parcel_vals_pool)
+  site_vals_pool = subtract_nested_lists(projected_vals, cfac_vals)
+  return(site_vals_pool)
 }
 
 
@@ -1399,16 +1399,16 @@ subtract_lists <- function(list_a, list_b){
 # }
 # 
 
-# store group of site characteristics in parcel_set_object
-record_site_characteristics <- function(site_scale_features, current_pool, parcel_num_remaining, yr){
+# store group of site characteristics in site_set_object
+record_site_characteristics <- function(site_scale_features, current_pool, site_num_remaining, yr){
   
-  parcel_set_object = list()
-  parcel_set_object$intervention_yrs = rep(list(yr), length(current_pool))
-  parcel_set_object$parcel_sums_at_offset = lapply(seq_along(site_scale_features), function(i) do.call(cbind, sum_site_scale_features(site_scale_features[[i]])))
-  parcel_set_object$site_indexes = as.list(current_pool)
-  parcel_set_object$parcel_num_remaining = rep(list(parcel_num_remaining), length(current_pool))
+  site_set_object = list()
+  site_set_object$intervention_yrs = rep(list(yr), length(current_pool))
+  site_set_object$site_sums_at_offset = lapply(seq_along(site_scale_features), function(i) do.call(cbind, sum_site_scale_features(site_scale_features[[i]])))
+  site_set_object$site_indexes = as.list(current_pool)
+  site_set_object$site_num_remaining = rep(list(site_num_remaining), length(current_pool))
   
-  return(parcel_set_object)
+  return(site_set_object)
   
 }
 
@@ -1425,19 +1425,19 @@ nested_list_tail <- function(list_a){
 ##### TODO probability list should be passed to this - otherwise underlying assumption is equal weights for all sites which is wrong #####
 ###### NOTE THAT PROBABILITY CALC IS WRONG 
 find_intervention_probability <- function(intervention_control, site_intervention_probability, intervention_yrs, calc_type, offset_intervention_scale, 
-                                          time_horizons, parcel_num, parcel_num_remaining, time_steps){
+                                          time_horizons, site_num, site_num_remaining, time_steps){
   
-  intervention_probs = vector('list', parcel_num)
-  parcel_num_remaining = unlist(parcel_num_remaining)
+  intervention_probs = vector('list', site_num)
+  site_num_remaining = unlist(site_num_remaining)
   intervention_yrs = unlist(intervention_yrs)
   
-  for (parcel_ind in seq_len(parcel_num)){
+  for (site_ind in seq_len(site_num)){
     
-    time_horizon = time_horizons[parcel_ind]
+    time_horizon = time_horizons[site_ind]
     
     current_prob = array(0, (time_horizon))
     
-    current_intervention_control = intervention_control[intervention_yrs[parcel_ind]:time_steps]
+    current_intervention_control = intervention_control[intervention_yrs[site_ind]:time_steps]
     
     if (length(current_intervention_control) < (time_horizon)){
       current_intervention_control = c(current_intervention_control, array(0, ((time_horizon) - length(current_intervention_control))))
@@ -1445,17 +1445,17 @@ find_intervention_probability <- function(intervention_control, site_interventio
     
     current_intervention_control = current_intervention_control[1:(time_horizon)]
     
-    current_parcel_num_remaining = parcel_num_remaining[parcel_ind]
+    current_site_num_remaining = site_num_remaining[site_ind]
     
-    if (current_parcel_num_remaining > 0) {
-      current_prob = current_prob + site_intervention_probability[[parcel_ind]]*(current_intervention_control)
+    if (current_site_num_remaining > 0) {
+      current_prob = current_prob + site_intervention_probability[[site_ind]]*(current_intervention_control)
     }
     
     if (calc_type == 'offset'){
       current_prob = offset_intervention_scale*current_prob
     }
     
-    intervention_probs[[parcel_ind]] = current_prob
+    intervention_probs[[site_ind]] = current_prob
     
   }
   
@@ -1464,12 +1464,12 @@ find_intervention_probability <- function(intervention_control, site_interventio
 
 
 
-# test to determine nearest neighbour by Euclidean norm given a pool of potential candidates (parcel_vals_pool)
+# test to determine nearest neighbour by Euclidean norm given a pool of potential candidates (site_vals_pool)
 # and the criterion to match to (vals_to_match)
 
-euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
+euclidean_norm_match <- function(site_vals_pool, vals_to_match){
   
-  euclidean_norm = lapply(seq_along(parcel_vals_pool), function(i) parcel_vals_pool[[i]] - vals_to_match)
+  euclidean_norm = lapply(seq_along(site_vals_pool), function(i) site_vals_pool[[i]] - vals_to_match)
   
   #build euclidean metric to perform euclidean match
   euclidean_norm = unlist(lapply(seq_along(euclidean_norm), function(i) sum(euclidean_norm[[i]]^2)))
@@ -1484,7 +1484,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
     match_ind = sample(match_ind, 1)
   }
   
-  match_vals = parcel_vals_pool[match_ind]
+  match_vals = site_vals_pool[match_ind]
   
   match_object = list()
   match_object$match_vals = match_vals
@@ -1494,7 +1494,7 @@ euclidean_norm_match <- function(parcel_vals_pool, vals_to_match){
 
 
 select_pool_to_match <- function(vals_to_match, use_transform_metric, thresh, pool_vals_to_use, 
-                                 max_parcel_num, current_pool, match_type, screen_site_zeros){
+                                 max_site_num, current_pool, match_type, screen_site_zeros){
   
   pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
   
@@ -1502,10 +1502,10 @@ select_pool_to_match <- function(vals_to_match, use_transform_metric, thresh, po
     return(pool_object)
   } 
   
-  if (max_parcel_num > 1){
+  if (max_site_num > 1){
     pool_vals_to_test = unlist(lapply(seq_along(vals_to_match), 
                                       function(i) vals_to_match[i] - sum(tail(sort(unlist(lapply(seq_along(pool_vals_to_use),  
-                                                                                                 function(j) pool_vals_to_use[[j]][[i]]))), max_parcel_num)) < thresh[i]))
+                                                                                                 function(j) pool_vals_to_use[[j]][[i]]))), max_site_num)) < thresh[i]))
     
     if (any(pool_vals_to_test == FALSE)){
       return(pool_object)
@@ -1557,7 +1557,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   
   if (match_type == 'offset'){
     
-    max_parcel_num = simulation_params$max_offset_parcel_num
+    max_site_num = simulation_params$max_offset_site_num
     match_procedure = simulation_params$offset_selection_type
     screen_site_zeros = simulation_params$screen_offset_zeros
     
@@ -1569,7 +1569,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
   } else if (match_type == 'development'){
     # force only single development for development routine
-    max_parcel_num = 1
+    max_site_num = 1
     match_procedure = simulation_params$development_selection_type
     # when developing from credit, use inverse offset multiplier
     vals_to_match = 1 / simulation_params$offset_multiplier * vals_to_match_initial
@@ -1579,7 +1579,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
   thresh = simulation_params$match_threshold_ratio * vals_to_match         
   
   pool_object <- select_pool_to_match(vals_to_match, simulation_params$use_transform_metric, thresh, 
-                                      pool_vals_to_use, max_parcel_num, current_pool, match_type, simulation_params$screen_dev_zeros)
+                                      pool_vals_to_use, max_site_num, current_pool, match_type, simulation_params$screen_dev_zeros)
   
   if (pool_object$match_flag == FALSE){
     return(pool_object)
@@ -1613,7 +1613,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     current_match_index = pool_object$current_pool[match_params$match_ind]
     vals_to_match = vals_to_match - current_match_val
     
-    if (max_parcel_num > 1){
+    if (max_site_num > 1){
       
       ind_to_remove = list_intersect(pool_object$current_pool, current_match_index)
       pool_object$current_pool = remove_index(pool_object$current_pool, ind_to_remove$match_ind)
@@ -1621,7 +1621,7 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
       match_vals = append(match_vals, current_match_val)
       match_indexes = append(match_indexes, current_match_index)
       
-      if (length(unlist(match_indexes)) > max_parcel_num){
+      if (length(unlist(match_indexes)) > max_site_num){
         match_flag = FALSE
         break
       }
@@ -1661,8 +1661,8 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
 
 
 sum_site_scale_features <- function(site_scale_features){
-  parcel_sums = lapply(seq_along(site_scale_features), function(i) do.call(sum, lapply(site_scale_features[[i]], sum)))
-  return(parcel_sums)
+  site_sums = lapply(seq_along(site_scale_features), function(i) do.call(sum, lapply(site_scale_features[[i]], sum)))
+  return(site_sums)
 }
 
 
@@ -1716,17 +1716,17 @@ subset_current_pool <- function(pool_object, subset_pool){
 
 
 #function to work out vector of time intervals used in gains calculations
-generate_time_horizons <- function(project_type, yr, intervention_yrs, time_horizon, parcel_count){
+generate_time_horizons <- function(project_type, yr, intervention_yrs, time_horizon, site_count){
   
   if (project_type == 'current'){
     # work out time intervals from time of offset to current year
-    time_horizons = rep(yr, parcel_count) - intervention_yrs
+    time_horizons = rep(yr, site_count) - intervention_yrs
   } else if (project_type == 'future'){
     # work out time intervals from current year to projected year defined by time_horizon
-    time_horizons = rep(time_horizon, parcel_count)
+    time_horizons = rep(time_horizon, site_count)
   } else if (project_type == 'zeros'){
     #set up dummy times
-    time_horizons = rep(0, parcel_count)
+    time_horizons = rep(0, site_count)
   }
   return(time_horizons)
 }
@@ -1751,7 +1751,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
     site_scale_condition_class_key = lapply(seq_along(site_scale_condition_class_key), function(i) site_scale_condition_class_key[[i]][features_to_use])
   }
   
-  current_condition_vals = lapply(seq_along(pool_object$parcel_sums_at_offset), function(i) pool_object$parcel_sums_at_offset[[i]][features_to_use])
+  current_condition_vals = lapply(seq_along(pool_object$site_sums_at_offset), function(i) pool_object$site_sums_at_offset[[i]][features_to_use])
   
   if (calc_type == 'current_condition') {
     projected_vals = current_condition_vals
@@ -1765,7 +1765,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
         cfac_weights = lapply(seq_along(site_scale_features_group), function(i) lapply(seq_along(site_scale_features_group[[i]]), function(j) array(1, time_horizons[[i]])))
       } else {
         cfac_weights = calc_cfac_weights(site_num = length(site_scale_features_group), include_potential_developments, include_potential_offsets, include_unregulated_loss,
-                                         dev_probability_list, offset_probability_list, simulation_params, global_params, feature_params, pool_object$parcel_num_remaining, time_horizons, unlist(pool_object$intervention_yrs))
+                                         dev_probability_list, offset_probability_list, simulation_params, global_params, feature_params, pool_object$site_num_remaining, time_horizons, unlist(pool_object$intervention_yrs))
       }
       
       projection_yrs = lapply(seq_along(site_scale_features_group), 
@@ -1828,7 +1828,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
     if (pool_type == 'offsets') {
       
       if (action_type == 'maintain'){
-        projected_feature_layers = pool_object$parcel_sums_at_offset
+        projected_feature_layers = pool_object$site_sums_at_offset
       } else {
         
         if (action_type == 'restore'){
@@ -1893,15 +1893,15 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   }
   
   if (pool_type == 'developments') {
-    pool_object$parcel_vals_used = mapply('-', cfac_vals, projected_vals, SIMPLIFY = FALSE)
+    pool_object$site_vals_used = mapply('-', cfac_vals, projected_vals, SIMPLIFY = FALSE)
   } else {
     
-    pool_object$parcel_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
+    pool_object$site_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   }
-  if (any(is.na(pool_object$parcel_vals_used))){
+  if (any(is.na(pool_object$site_vals_used))){
 
-    for (f_ind in seq_along(pool_object$parcel_vals_used[[1]])){
-      bad_inds = which(unlist(lapply(seq_along(pool_object$parcel_vals_used), function(i) any(unlist(pool_object$parcel_vals_used[[i]][[f_ind]]) < 0))))
+    for (f_ind in seq_along(pool_object$site_vals_used[[1]])){
+      bad_inds = which(unlist(lapply(seq_along(pool_object$site_vals_used), function(i) any(unlist(pool_object$site_vals_used[[i]][[f_ind]]) < 0))))
       
       print(unlist(lapply(bad_inds, function(i) condition_class_modes[[i]][f_ind])))
     }
@@ -1935,18 +1935,18 @@ append_current_group <- function(object_to_append, current_object, append_routin
 
 
 
-append_current_object <- function(parcel_set_object, current_parcel_set_object, append_type, inds_to_append){
+append_current_object <- function(site_set_object, current_site_set_object, append_type, inds_to_append){
   if (append_type == 'as_group'){
     #routine to append by characteristic for nested object
     
-    parcel_set_object[inds_to_append] <- lapply(inds_to_append, function(i) append(parcel_set_object[[i]], list(current_parcel_set_object[[i]])))
+    site_set_object[inds_to_append] <- lapply(inds_to_append, function(i) append(site_set_object[[i]], list(current_site_set_object[[i]])))
   } else if (append_type == 'as_list'){
     #routine to append by characteristic for non nested object
-    parcel_set_object[inds_to_append] <- lapply(inds_to_append, function(i) append(parcel_set_object[[i]], current_parcel_set_object[[i]]))
+    site_set_object[inds_to_append] <- lapply(inds_to_append, function(i) append(site_set_object[[i]], current_site_set_object[[i]]))
   }
   #set names of group to current object name
-  names(parcel_set_object) = names(current_parcel_set_object)
-  return(parcel_set_object)
+  names(site_set_object) = names(current_site_set_object)
+  return(site_set_object)
 }
 
 
@@ -2049,7 +2049,7 @@ adjust_cfacs <- function(current_cfac, current_cfac_weights, current_mode, time_
 
 calc_cfac_weights <- function(site_num, include_potential_developments, include_potential_offsets, include_unregulated_loss,
                               dev_probability_list, offset_probability_list, simulation_params, global_params, feature_params, 
-                              parcel_num_remaining, time_horizons, intervention_yrs){
+                              site_num_remaining, time_horizons, intervention_yrs){
   
   cfac_weights = lapply(seq(site_num), function(i) lapply(seq(global_params$feature_num), function(j) rep(1, time_horizons[[i]])))
   
@@ -2062,12 +2062,12 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
   if (include_potential_developments == TRUE){
     dev_probability_weights <- generate_weights(calc_type = 'development',
                                                 site_intervention_probability = dev_probability_list,
-                                                simulation_params$max_offset_parcel_num,
+                                                simulation_params$max_offset_site_num,
                                                 index_object$intervention_control,
                                                 intervention_yrs,
                                                 time_horizons,
                                                 site_num,
-                                                parcel_num_remaining,
+                                                site_num_remaining,
                                                 simulation_data_object$global_params$time_steps)
     
     cfac_weights <- lapply(seq_along(cfac_weights), 
@@ -2080,12 +2080,12 @@ calc_cfac_weights <- function(site_num, include_potential_developments, include_
     stop()
     offset_probability_weights <- generate_weights(calc_type = 'offset',
                                                    site_intervention_probability = offset_probability_list,
-                                                   simulation_params$max_offset_parcel_num,
+                                                   simulation_params$max_offset_site_num,
                                                    index_object$intervention_control,
                                                    intervention_yrs,
                                                    time_horizons,
                                                    site_num,
-                                                   parcel_num_remaining,
+                                                   site_num_remaining,
                                                    simulation_data_object$global_params$time_steps)
     
     cfac_weights <- lapply(seq_along(cfac_weights), 
@@ -2133,7 +2133,7 @@ remove_neg_probs <- function(weight_list, inds_to_accept){
 
 
 generate_weights <- function(calc_type, site_intervention_probability, offset_intervention_scale, intervention_control, intervention_yrs, time_horizons,
-                             site_num, parcel_num_remaining, time_steps){
+                             site_num, site_num_remaining, time_steps){
   
   if (calc_type == 'unregulated_loss'){
     weighted_probs <- lapply(seq_len(site_num), function(i) rep(site_intervention_probability, time_horizons[i]))    #runif(n = (time_horizon), min = 0, max = simulation_params$unregulated_loss_prob)
@@ -2145,7 +2145,7 @@ generate_weights <- function(calc_type, site_intervention_probability, offset_in
                                                     offset_intervention_scale,
                                                     time_horizons,
                                                     site_num,
-                                                    parcel_num_remaining,
+                                                    site_num_remaining,
                                                     time_steps)
   }
   
@@ -2158,18 +2158,18 @@ generate_weights <- function(calc_type, site_intervention_probability, offset_in
 
 calc_offset_projections <- function(dynamics_type, current_cfacs, offset_probs, restoration_rate, time_horizons, feature_num, min_eco_val, max_eco_val){
   
-  parcel_num = length(current_cfacs)
-  offset_projections = vector('list', parcel_num)
+  site_num = length(current_cfacs)
+  offset_projections = vector('list', site_num)
   
-  for (parcel_ind in seq_len(parcel_num)){
+  for (site_ind in seq_len(site_num)){
     
-    time_horizon = time_horizons[parcel_ind] + 1
-    current_offset_probs = offset_probs[[parcel_ind]]
+    time_horizon = time_horizons[site_ind] + 1
+    current_offset_probs = offset_probs[[site_ind]]
     current_offset_projections = generate_nested_list(outer_dim = feature_num, inner_dim = time_horizon)
     
     for (feature_ind in seq_len(feature_num)){
       
-      current_cfac = current_cfacs[[parcel_ind]][[feature_ind]]
+      current_cfac = current_cfacs[[site_ind]][[feature_ind]]
       
       for (proj_yr in seq_len(time_horizon)){
         current_offset_projections[[feature_ind]][[proj_yr]] = array(0, dim(current_cfac))
@@ -2192,7 +2192,7 @@ calc_offset_projections <- function(dynamics_type, current_cfacs, offset_probs, 
         }
       }
     }
-    offset_projections[[parcel_ind]] = current_offset_projections
+    offset_projections[[site_ind]] = current_offset_projections
   }
   
   return(offset_projections)
@@ -2201,20 +2201,20 @@ calc_offset_projections <- function(dynamics_type, current_cfacs, offset_probs, 
 
 # 
 # sum_offset_projs <- function(offset_projections, offset_probs, feature_num, time_horizons){
-#   parcel_num = length(offset_projections)
-#   summed_offset_projections = vector('list', parcel_num)
-#   for (parcel_ind in seq_len(parcel_num)){
+#   site_num = length(offset_projections)
+#   summed_offset_projections = vector('list', site_num)
+#   for (site_ind in seq_len(site_num)){
 #     
-#     summed_offset_projections[[parcel_ind]] = vector('list', feature_num)
-#     current_offset_prob = offset_probs[[parcel_ind]]
+#     summed_offset_projections[[site_ind]] = vector('list', feature_num)
+#     current_offset_prob = offset_probs[[site_ind]]
 #     current_offset_prob <- current_offset_prob*(current_offset_prob > 0)
 #     
-#     current_offset_proj = offset_projections[[parcel_ind]]
+#     current_offset_proj = offset_projections[[site_ind]]
 #     
 #     for (feature_ind in seq_len(feature_num)){
 #       current_offset_projections <- current_offset_proj[[feature_ind]]
 #       current_offset_projections <- lapply(seq_along(current_offset_projections), function(i) current_offset_projections[[i]]*current_offset_prob[i])
-#       summed_offset_projections[[parcel_ind]][[feature_ind]] = Reduce('+', current_offset_projections)
+#       summed_offset_projections[[site_ind]][[feature_ind]] = Reduce('+', current_offset_projections)
 #     }
 #   }
 #   
@@ -2224,17 +2224,17 @@ calc_offset_projections <- function(dynamics_type, current_cfacs, offset_probs, 
 
 
 sum_clearing_offsets <- function(cfacs_include_clearing, summed_offset_projections, feature_num){
-  parcel_num = length(cfacs_include_clearing)
-  cfacs_include_clearing_offsets = vector('list', parcel_num)
+  site_num = length(cfacs_include_clearing)
+  cfacs_include_clearing_offsets = vector('list', site_num)
   
-  for (parcel_ind in 1:parcel_num){
-    cfacs_include_clearing_offsets[[parcel_ind]] = vector('list', feature_num)
+  for (site_ind in 1:site_num){
+    cfacs_include_clearing_offsets[[site_ind]] = vector('list', feature_num)
   }
   
-  for (parcel_ind in seq_len(parcel_num)){
-    if (length(summed_offset_projections[[parcel_ind]]) > 0 ){
+  for (site_ind in seq_len(site_num)){
+    if (length(summed_offset_projections[[site_ind]]) > 0 ){
       for (feature_ind in seq_len(feature_num)){
-        cfacs_include_clearing_offsets[[parcel_ind]][[feature_ind]] = summed_offset_projections[[parcel_ind]][[feature_ind]] + cfacs_include_clearing[[parcel_ind]][[feature_ind]]
+        cfacs_include_clearing_offsets[[site_ind]][[feature_ind]] = summed_offset_projections[[site_ind]][[feature_ind]] + cfacs_include_clearing[[site_ind]][[feature_ind]]
       }
     }
   }

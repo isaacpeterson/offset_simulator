@@ -68,6 +68,7 @@ initialise_default_global_params <- function(){
   default_global_params$overwrite_condition_class_layers = FALSE
   default_global_params$save_feature_dynamics = FALSE
   default_global_params$save_management_dynamics = FALSE
+  
   default_global_params$overwrite_dev_probability_list = FALSE
   default_global_params$overwrite_offset_probability_list = FALSE
   default_global_params$overwrite_unregulated_probability_list = FALSE
@@ -101,13 +102,13 @@ initialise_default_simulation_params <- function(){
     # What features are affected by the offset intervention
     default_simulation_params$features_to_use_in_offset_intervention = list(default_simulation_params$features_to_use_in_offset_calc)
     
-    # The maxoimum number of parcels can be selected to offset a single development
-    default_simulation_params$max_offset_parcel_num = list(10)
+    # The maxoimum number of sites can be selected to offset a single development
+    default_simulation_params$max_offset_site_num = list(10)
     
     # Stops the offset from delivering any further gains once it has acheived the gains required
     default_simulation_params$limit_offset_restoration = list(TRUE)
     
-    # The probability per parcel of it being stochasticly cleared, every parcel gets set to this number - set to zero to turn off
+    # The probability per site of it being stochasticly cleared, every site gets set to this number - set to zero to turn off
     default_simulation_params$unregulated_loss_prob = list(0)
     
     # Lowest value that the logistic decline curve can reach. It will asypotote to this value
@@ -122,10 +123,10 @@ initialise_default_simulation_params <- function(){
     # ignore development sites with zero value
     default_simulation_params$screen_dev_zeros = list(TRUE)
     
-    # ignore parcels with size below this number of elements 
+    # ignore sites with size below this number of elements 
     default_simulation_params$min_site_screen_size = list(0) 
     
-    # ignore parcels with size below this number of elements 
+    # ignore sites with size below this number of elements 
     default_simulation_params$max_site_screen_size_quantile = list(1)
     
     default_simulation_params$match_threshold_ratio = list(0.01)
@@ -146,7 +147,7 @@ initialise_default_simulation_params <- function(){
   
   default_simulation_params$offset_action_params = list(c('net_gains', 'restore'))
   
-  # This is the equivalent of offset_calc_type for the dev parcel. Options
+  # This is the equivalent of offset_calc_type for the dev site. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
   # the site at the time of the intervention 
   # 'future_condition' - is the do nothing trjectory of the development site.
@@ -160,7 +161,7 @@ initialise_default_simulation_params <- function(){
   #use a specified offset metric in the site match calculation
   default_simulation_params$use_transform_metric = list(FALSE)
   
-  # How the development/offset parcels are selected options are 'stochastic',
+  # How the development/offset sites are selected options are 'stochastic',
   # 'weighted', or 'pre_determined'. Note that weighted requires an additonal weighting layer. If
   # you are running on your own data you need to specify the weights file in
   # initialise_routines.R  (or put the files in simulation_inputs)
@@ -174,9 +175,9 @@ initialise_default_simulation_params <- function(){
   # parameters
   default_simulation_params$use_uncoupled_offsets = list(FALSE)
 
-  # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
-  # gain that is subtracted as parcels are developed. 'parcel_set' one or more
-  # parcels in the bank are traded for one development site. If there is left
+  # Options are 'credit' or 'site_set'. 'credit' means there is accumulated
+  # gain that is subtracted as sites are developed. 'site_set' one or more
+  # sites in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$uncoupled_offset_type = list('credit')    
   default_simulation_params$uncoupled_offset_selection_type = list('stochastic')
@@ -274,7 +275,7 @@ initialise_default_feature_params <- function(){
   # Number of pixels in (y, x) for the feature layes 
   default_feature_params$feature_layer_size = c(300, 300)
   
-  # Numnber of parcels in x (but total size varies)
+  # Numnber of sites in x (but total size varies)
   default_feature_params$site_num_characteristics = c(30 , 30, 5)
 
   default_feature_params$feature_num_characteristics = c(20 , 10, 5)
@@ -286,11 +287,11 @@ initialise_default_feature_params <- function(){
   # value to sample from
   default_feature_params$max_initial_eco_val = 80
   
-  # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
+  # list of length equal to feature number defining proportion of sites occupied by the feature(s) 
   #TODO add error flag  when the length of this does not match feature_num
   default_feature_params$occupation_ratio = list(1)
   
-  # Mow much initial variation in pixels per land parcel (this is the width of
+  # Mow much initial variation in pixels per land site (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
   # of 35, a new value will be sampled from between 35-45
   default_feature_params$feature_value_distribution_width = 10

@@ -12,6 +12,7 @@ collate_simulation_outputs <- function(input_data_object, simulation_params, bac
                                       formatC(realisation_ind, width = input_data_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                       '_outputs.rds'))
   
+  browser()
   intervention_object <- run_pre_collate_routines(simulation_outputs, 
                                                   input_data_object, 
                                                   simulation_params, 
@@ -64,16 +65,15 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
   
   if (intervention_object$intervention_flag == TRUE){
 
-    intervention_object$summed_site_scale_features_at_intervention = vector('list', length(input_data_object$site_characteristics$land_parcels))
+    intervention_object$summed_site_scale_features_at_intervention = vector('list', length(input_data_object$site_characteristics$land_sites))
     intervention_object$summed_site_scale_features_at_intervention[intervention_object$intervention_pool] = sum_sites(intervention_object$site_scale_features_at_intervention_set[intervention_object$intervention_pool], 
-                                                                                                                      input_data_object$condition_class_modes[intervention_object$intervention_pool],
                                                                                                                       input_data_object$site_scale_condition_class_key[intervention_object$intervention_pool],
                                                                                                                       input_data_object$site_characteristics$site_lengths[intervention_object$intervention_pool], 
                                                                                                                       use_transform_metric, 
                                                                                                                       input_data_object$global_params$user_transform_function, 
                                                                                                                       simulation_params$transform_params)
     
-    intervention_object$site_scale_cfacs = vector('list', length(input_data_object$site_characteristics$land_parcels))
+    intervention_object$site_scale_cfacs = vector('list', length(input_data_object$site_characteristics$land_sites))
 
     intervention_object$site_scale_cfacs[intervention_object$intervention_pool] = collate_cfacs(intervention_object$site_scale_features_at_intervention_set[intervention_object$intervention_pool],
                                                                                                 simulation_params, 
@@ -97,7 +97,7 @@ run_collate_routines <- function(intervention_object, simulation_outputs, input_
   
 
   for (feature_ind in features_to_collate){
-    
+    browser()
     collated_object = list()
     
     if (use_transform_metric == FALSE){
@@ -204,6 +204,9 @@ run_site_scale_routines <- function(intervention_object, summed_site_scale_featu
   
   site_scale$impacts$net_impacts$nets <- calc_net_site_scale_impacts(site_scale$impacts$offset_object$summed_impacts$nets, site_scale$impacts$development_object$summed_impacts$nets)
   
+  site_scale$site_indexes_used = simulation_outputs$index_object$site_indexes_used
+  
+  browser()
   #additional list nesting is to maintain structure for collate routines
   site_scale$outcomes = list(site_scale_outcomes)
   site_scale$summed_site_scale_features_at_intervention = list(summed_site_scale_features_at_intervention)
@@ -244,7 +247,7 @@ run_program_scale_routines <- function(site_scale_impacts, site_scale_cfacs, sit
 run_pre_collate_routines <- function(simulation_outputs, input_data_object, simulation_params, current_data_dir, use_transform_metric){
   
   intervention_object = list()
-  
+  browser()
   intervention_object$grouped_intervention_pool = setNames(lapply(seq_along(simulation_outputs$interventions), 
                                                                   function(i) simulation_outputs$interventions[[i]]$site_indexes), names(simulation_outputs$interventions))
   intervention_object$intervention_yrs_pool = setNames(lapply(seq_along(simulation_outputs$interventions), 
@@ -271,7 +274,7 @@ run_pre_collate_routines <- function(simulation_outputs, input_data_object, simu
                                                                         )
                                                      )
     
-    intervention_object$site_scale_features_at_intervention_set = build_site_scale_features_at_intervention(length(input_data_object$site_characteristics$land_parcels), 
+    intervention_object$site_scale_features_at_intervention_set = build_site_scale_features_at_intervention(length(input_data_object$site_characteristics$land_sites), 
                                                                                                             current_data_dir, 
                                                                                                             intervention_object$intervention_pool, 
                                                                                                             unlist(intervention_object$intervention_yrs_pool), 
@@ -633,7 +636,7 @@ calc_intervention_impacts <- function(current_intervention_simulation_outputs, c
                                                                          function(j) Reduce('+', site_scale_impacts$grouped_impacts[[i]][[j]]))), 
                                                names(site_scale_impacts$grouped_impacts))
   
-  site_scale_impacts$site_indexes = current_intervention_site_sets
+#  site_scale_impacts$site_indexes = current_intervention_site_sets
   site_scale_impacts$intervention_yrs = current_intervention_simulation_outputs$intervention_yrs
 
   return(site_scale_impacts)
@@ -781,8 +784,8 @@ calc_site_scale_impacts <- function(current_intervention_site_scale_outcomes, cu
 
 
 
-# determine cumulative value of all sites within parcel feature_layers for multiple features
-sum_sites <- function(site_scale_features, condition_class_modes, site_scale_condition_class_key, site_lengths, use_transform_metric, user_transform_function, transform_params){
+# determine cumulative value of all sites within site feature_layers for multiple features
+sum_sites <- function(site_scale_features, site_scale_condition_class_key, site_lengths, use_transform_metric, user_transform_function, transform_params){
   
   summed_site_scale_features = vector('list', length(site_scale_features))
   
