@@ -15,87 +15,88 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     stop()
   } 
   
-  object_to_output = list()
-  object_to_output$output_params = overwrite_current_params(user_output_params, default_params = initialise_default_output_params())
+  output_objects = list()
+  output_objects$output_params = overwrite_current_params(user_output_params, default_params = initialise_default_output_params())
   
-  object_to_output$collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
-  object_to_output$simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
-  object_to_output$simulation_output_folder = paste0(simulation_folder, '/simulation_outputs/')
+  output_objects$collated_folder = paste0(simulation_folder, '/collated_outputs/')  # LOCATION OF COLLATED FILES
+  output_objects$simulation_params_folder = paste0(simulation_folder, '/simulation_params/')
+  output_objects$simulation_output_folder = paste0(simulation_folder, '/simulation_outputs/')
   
-  object_to_output$global_params = readRDS(paste0(object_to_output$simulation_params_folder, 'global_params.rds'))
-  object_to_output$feature_params = readRDS(paste0(object_to_output$simulation_params_folder, 'feature_params.rds'))
+  output_objects$global_params = readRDS(paste0(output_objects$simulation_params_folder, 'global_params.rds'))
+  output_objects$feature_params = readRDS(paste0(output_objects$simulation_params_folder, 'feature_params.rds'))
   
   
   # read in file with stored param settings to identify plots easier
-  param_variants_filename = paste0(object_to_output$simulation_params_folder, 'param_variants.rds')
+  param_variants_filename = paste0(output_objects$simulation_params_folder, 'param_variants.rds')
   if (file.exists(param_variants_filename)){
-    object_to_output$param_variants = readRDS(paste0(object_to_output$simulation_params_folder, 'param_variants.rds'))
+    output_objects$param_variants = readRDS(paste0(output_objects$simulation_params_folder, 'param_variants.rds'))
   }
   
   # get the names of all parameter files, separated into run scenarios
-  object_to_output$scenario_filenames <- list.files(path = object_to_output$simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
+  output_objects$scenario_filenames <- list.files(path = output_objects$simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
                                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                                     include.dirs = FALSE, no.. = FALSE)
   
-  if ( class(object_to_output$output_params$scenario_vec) == 'character'){
+  if ( class(output_objects$output_params$scenario_vec) == 'character'){
     
-    if (object_to_output$output_params$scenario_vec == 'all'){
-      scenario_vec = 1:length(object_to_output$scenario_filenames)
+    if (output_objects$output_params$scenario_vec == 'all'){
+      scenario_vec = 1:length(output_objects$scenario_filenames)
     }
 
   } else {
-    scenario_vec = object_to_output$output_params$scenario_vec
+    scenario_vec = output_objects$output_params$scenario_vec
   }
   
-  if (length(object_to_output$output_params$output_folder) == 0){
-    object_to_output$output_folder = object_to_output$collated_folder
+  if (length(output_objects$output_params$output_folder) == 0){
+    output_objects$output_folder = output_objects$collated_folder
   } else {
-    object_to_output$output_folder = object_to_output$output_params$output_folder
+    output_objects$output_folder = output_objects$output_params$output_folder
   }
   
-  if (!file.exists(object_to_output$output_folder)){
-    flog.info('creating output plot folder %s', object_to_output$output_folder)
-    dir.create(object_to_output$output_folder)
+  if (!file.exists(output_objects$output_folder)){
+    flog.info('creating output plot folder %s', output_objects$output_folder)
+    dir.create(output_objects$output_folder)
   }
   
-  if (object_to_output$output_params$output_type == 'plot'){
+  if (output_objects$output_params$output_type == 'plot'){
     # Set the output filename, and open the pdf file for reading
     
-    if (object_to_output$output_params$plot_type == 'impacts'){
-      pdf_to_output = paste0(object_to_output$output_folder, '/impacts.pdf')
-    } else if (object_to_output$output_params$plot_type == 'outcomes'){
-      pdf_to_output = paste0(object_to_output$output_folder, '/outcomes.pdf')
+    if (output_objects$output_params$plot_type == 'impacts'){
+      pdf_to_output = paste0(output_objects$output_folder, '/impacts.pdf')
+    } else if (output_objects$output_params$plot_type == 'outcomes'){
+      pdf_to_output = paste0(output_objects$output_folder, '/outcomes.pdf')
     }
     
-    if (object_to_output$output_params$write_pdf == TRUE){
+    if (output_objects$output_params$write_pdf == TRUE){
       
       flog.info('writing PDF to %s', pdf_to_output)
       pdf(pdf_to_output, width = 8.3, height = 11.7)
       
     }
-    setup_sub_plots(object_to_output$output_params$nx, object_to_output$output_params$ny, x_space = 5, y_space = 5)
+    setup_sub_plots(output_objects$output_params$nx, output_objects$output_params$ny, x_space = 5, y_space = 5)
     
-  } else if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
-    object_to_output$site_characteristics = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
-    object_to_output$site_scale_condition_class_key = readRDS(paste0(object_to_output$global_params$simulation_inputs_folder, 'site_scale_condition_class_key.rds'))
+  } else if ((output_objects$output_params$output_type == 'raster') || (output_objects$output_params$output_type == 'png')){
+    
+    output_objects$site_characteristics = readRDS(paste0(output_objects$global_params$simulation_inputs_folder, 'site_characteristics.rds'))
+    output_objects$site_scale_condition_class_key = readRDS(paste0(output_objects$global_params$simulation_inputs_folder, 'site_scale_condition_class_key.rds'))
 
-    if (object_to_output$output_params$output_type == 'raster'){
-      object_to_output$output_raster_folder = paste0(object_to_output$collated_folder, '/output_rasters/')
-      if (!dir.exists(object_to_output$output_raster_folder)){
-        dir.create(object_to_output$output_raster_folder)
+    if (output_objects$output_params$output_type == 'raster'){
+      output_objects$output_raster_folder = paste0(output_objects$collated_folder, '/output_rasters/')
+      if (!dir.exists(output_objects$output_raster_folder)){
+        dir.create(output_objects$output_raster_folder)
       }
-    } else if (object_to_output$output_params$output_type == 'png'){
+    } else if (output_objects$output_params$output_type == 'png'){
       
-      object_to_output$output_image_folder = paste0(object_to_output$collated_folder, '/output_image_layers/')
-      if (!dir.exists(object_to_output$output_image_folder)){
-        dir.create(object_to_output$output_image_folder)
+      output_objects$output_image_folder = paste0(output_objects$collated_folder, '/output_image_layers/')
+      if (!dir.exists(output_objects$output_image_folder)){
+        dir.create(output_objects$output_image_folder)
       }
     } 
   }
   
   for (scenario_ind in seq_along(scenario_vec)){
 
-    output_flag = check_output_flag(object_to_output$output_params, object_to_output$current_simulation_params)
+    output_flag = check_output_flag(output_objects$output_params, output_objects$current_simulation_params)
     
     current_scenario = scenario_vec[scenario_ind] 
     
@@ -104,14 +105,14 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     } else {
       
       flog.trace(' bulding outputs for scenario %d', current_scenario)
-      flog.info(rbind(names(object_to_output$param_variants[[ current_scenario ]]), as.vector(object_to_output$param_variants[[ current_scenario ]]))) 
-      object_to_output$current_simulation_params = readRDS(paste0(object_to_output$simulation_params_folder, '/', object_to_output$scenario_filenames[scenario_ind]))
-      output_scenario(object_to_output,  current_scenario, user_output_params)
+      flog.info(rbind(names(output_objects$param_variants[[ current_scenario ]]), as.vector(output_objects$param_variants[[ current_scenario ]]))) 
+      output_objects$current_simulation_params = readRDS(paste0(output_objects$simulation_params_folder, '/', output_objects$scenario_filenames[scenario_ind]))
+      output_scenario(output_objects,  current_scenario, user_output_params)
     }
     
   }
   
-  if (object_to_output$output_params$write_pdf == TRUE){
+  if (output_objects$output_params$write_pdf == TRUE){
     graphics.off()
     flog.info('closing PDF %s', pdf_to_output)
   }
@@ -182,40 +183,38 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL, numer
 }
 
 
-output_scenario <- function(object_to_output, scenario_ind, user_output_params, current_simulation_params){
+output_scenario <- function(output_objects, scenario_ind, user_output_params, current_simulation_params){
   
   flog.info('_________________________________')
-  current_data_dir = paste0(object_to_output$simulation_output_folder, '/scenario_', 
-                            formatC(scenario_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
-                            '/realisation_', formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
   
-  if ((object_to_output$output_params$output_type == 'raster') || (object_to_output$output_params$output_type == 'png')){
-
-    object_to_output$example_simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
-                                                                 formatC(object_to_output$output_params$example_realisation_to_output, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
+  current_data_dir = paste0(output_objects$simulation_output_folder, '/scenario_', 
+                            formatC(scenario_ind, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                            '/realisation_', formatC(output_objects$output_params$example_realisation_to_output, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
+  
+  output_objects$simulation_outputs = readRDS(paste0(current_data_dir,'realisation_', 
+                                                                 formatC(output_objects$output_params$example_realisation_to_output, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"), 
                                                                  '_outputs.rds'))
-  } 
-  
-  if (class(object_to_output$output_params$features_to_output) == 'character'){
-    if (object_to_output$output_params$features_to_output == 'all'){
-      features_to_output = object_to_output$global_params$features_to_use_in_simulation
+    
+  if (class(output_objects$output_params$features_to_output) == 'character'){
+    if (output_objects$output_params$features_to_output == 'all'){
+      features_to_output = output_objects$global_params$features_to_use_in_simulation
     } else {
       flog.error("features to plot parameter is poorly defined, assign vector of integers or 'all'")
     }
   }  else {
-    features_to_output = object_to_output$output_params$features_to_output
+    features_to_output = output_objects$output_params$features_to_output
   }
 
   if (sum(features_to_output) > 0){
-    output_collated_features(object_to_output,
+    output_collated_features(output_objects,
                              features_to_output, 
                              use_transform_metric = FALSE, 
                              scenario_ind, 
                              current_data_dir)
   }
   
-  if (object_to_output$output_params$plot_transform_metric == TRUE){
-    output_collated_features(object_to_output,
+  if (output_objects$output_params$plot_transform_metric == TRUE){
+    output_collated_features(output_objects,
                              features_to_output = 1, 
                              use_transform_metric = TRUE, 
                              scenario_ind, 
@@ -225,86 +224,86 @@ output_scenario <- function(object_to_output, scenario_ind, user_output_params, 
 } 
 
 
-output_collated_features <- function(object_to_output, features_to_output, use_transform_metric, scenario_ind, current_data_dir){
+output_collated_features <- function(output_objects, features_to_output, use_transform_metric, scenario_ind, current_data_dir){
   
   for (feature_ind in features_to_output){
     
     if (use_transform_metric == TRUE){
-      collated_filenames = paste0(object_to_output$collated_folder, list.files(path = object_to_output$collated_folder, all.files = FALSE,
+      collated_filenames = paste0(output_objects$collated_folder, list.files(path = output_objects$collated_folder, all.files = FALSE,
                                                                                full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                                                                include.dirs = FALSE, no.. = FALSE, pattern = '_metric'))
       
     }  else {
-      collated_filenames = find_collated_files(file_path = object_to_output$collated_folder,
-                                               scenario_string = formatC(scenario_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
-                                               feature_string = formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"),
-                                               object_to_output$output_params$realisation_num)
+      collated_filenames = find_collated_files(file_path = output_objects$collated_folder,
+                                               scenario_string = formatC(scenario_ind, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                                               feature_string = formatC(feature_ind, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                                               output_objects$output_params$realisation_num)
     }
     
     collated_realisations = run_bind_collated_realisations_routines(collated_filenames)
     
-    if (object_to_output$output_params$output_type == 'plot'){
+    if (output_objects$output_params$output_type == 'plot'){
       
-      if (object_to_output$output_params$print_dev_offset_sites == TRUE){
+      if (output_objects$output_params$print_dev_offset_sites == TRUE){
         sites_used = collated_realisations$program_scale$sites_used
         mean_sites_used = lapply(seq_along(sites_used), function(i) paste(names(sites_used)[[i]], round(mean(unlist( sites_used[[i]] )))))
         flog.info(paste(mean_sites_used))
       }
       
-      plot_outputs(object_to_output$output_params, feature_ind, scenario_ind, collated_realisations, object_to_output$current_simulation_params, object_to_output$global_params)
+      plot_outputs(collated_realisations, output_objects, feature_ind, scenario_ind)
       
-    } else if (object_to_output$output_params$output_type == 'csv'){
+    } else if (output_objects$output_params$output_type == 'csv'){
       flog.info('writing csv outputs')
       
       data_block = list()
       data_block$program_scale$outcomes = write_output_block(unlist(collated_realisations$program_scale$outcomes, recursive = FALSE),
-                         paste0(object_to_output$collated_folder, 'program_scale_outcomes.csv'))
+                         paste0(output_objects$collated_folder, 'program_scale_outcomes.csv'))
       
       block_to_use = which(names(collated_realisations$program_scale$impacts) %in% c("net_offset_gains", "net_dev_losses", "net_impacts"))
       data_block$program_scale$impacts = write_output_block(unlist(collated_realisations$program_scale$impacts[block_to_use], recursive = FALSE),
-                                                            paste0(object_to_output$collated_folder, 'program_scale_impacts.csv'))
+                                                            paste0(output_objects$collated_folder, 'program_scale_impacts.csv'))
       
       data_block$landscape_scale_scale$outcomes = write_output_block(unlist(collated_realisations$landscape_scale$outcomes, recursive = FALSE),
-                                                                    paste0(object_to_output$collated_folder, 'landscape_scale_outcomes.csv'))
+                                                                    paste0(output_objects$collated_folder, 'landscape_scale_outcomes.csv'))
       data_block$landcape_scale$impacts = write_output_block(unlist(collated_realisations$landscape_scale$impacts, recursive = FALSE),
-                                                            paste0(object_to_output$collated_folder, 'landscape_scale_impacts.csv'))
+                                                            paste0(output_objects$collated_folder, 'landscape_scale_impacts.csv'))
     } else {
       
       if (use_transform_metric == FALSE){
         
-        flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
-        object_to_output$current_site_scale_condition_class_key = lapply(seq_along(object_to_output$site_scale_condition_class_key), 
-                                                                                             function(i) object_to_output$site_scale_condition_class_key[[i]][[feature_ind]])
+        flog.info(paste0('writing ', output_objects$output_params$output_type, ' layer outputs for feature %s'), feature_ind)
+        output_objects$current_site_scale_condition_class_key = lapply(seq_along(output_objects$site_scale_condition_class_key), 
+                                                                                             function(i) output_objects$site_scale_condition_class_key[[i]][[feature_ind]])
         
-        if (object_to_output$output_params$output_type == 'raster'){
-          file_prefix = paste0(object_to_output$output_raster_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_') 
-        } else if (object_to_output$output_params$output_type == 'png'){
-          file_prefix = paste0(object_to_output$output_image_folder, 'feature_', formatC(feature_ind, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_')
+        if (output_objects$output_params$output_type == 'raster'){
+          file_prefix = paste0(output_objects$output_raster_folder, 'feature_', formatC(feature_ind, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_') 
+        } else if (output_objects$output_params$output_type == 'png'){
+          file_prefix = paste0(output_objects$output_image_folder, 'feature_', formatC(feature_ind, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"), '_yr_')
         } 
         
-        output_feature_layers(object_to_output, 
+        output_feature_layers(output_objects, 
                               feature_ind, 
                               current_data_dir, 
                               file_prefix,
                               use_transform_metric = FALSE, 
-                              scale_factor = max(unlist(object_to_output$feature_params$condition_class_bounds[[feature_ind]])))
+                              scale_factor = max(unlist(output_objects$feature_params$condition_class_bounds[[feature_ind]])))
         
       } else {
         
         flog.info('writing metric layer outputs')
         
         # get the largest value for each condition class
-        vals_to_transform = lapply(seq_along(object_to_output$feature_params$condition_class_bounds), function(i) max(unlist(object_to_output$feature_params$condition_class_bounds[[i]])))
+        vals_to_transform = lapply(seq_along(output_objects$feature_params$condition_class_bounds), function(i) max(unlist(output_objects$feature_params$condition_class_bounds[[i]])))
         #transform this set to user metric and use this to scale the colors
-        scale_factor = user_transform_function(vals_to_transform, transform_params = object_to_output$current_simulation_params$transform_params)
+        scale_factor = user_transform_function(vals_to_transform, transform_params = output_objects$current_simulation_params$transform_params)
         
-        if (object_to_output$output_params$output_type == 'raster'){
-          file_prefix = paste0(object_to_output$output_raster_folder, 'metric_yr_') 
+        if (output_objects$output_params$output_type == 'raster'){
+          file_prefix = paste0(output_objects$output_raster_folder, 'metric_yr_') 
         } else{
-          file_prefix = paste0(object_to_output$output_image_folder, 'metric_yr_')
+          file_prefix = paste0(output_objects$output_image_folder, 'metric_yr_')
         }
         
-        output_feature_layers(object_to_output, 
+        output_feature_layers(output_objects, 
                               feature_ind, 
                               current_data_dir, 
                               file_prefix,
@@ -316,33 +315,22 @@ output_collated_features <- function(object_to_output, features_to_output, use_t
   } 
 }
 
-plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_realisations, current_simulation_params, global_params){
+
+plot_outputs <- function(collated_realisations, output_objects, feature_ind, scenario_ind){
   
-  if (output_params$plot_type == 'impacts'){
+  if (output_objects$output_params$plot_type == 'impacts'){
 
     plot_impact_set(collated_realisations,
-                    current_simulation_params,
-                    global_params,
-                    output_params,
-                    realisation_num = collated_realisations$realisation_num,
-                    site_plot_lims = output_params$site_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
-                    program_plot_lims = output_params$program_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
-                    landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
-                    feature_ind,
-                    output_params$sets_to_plot)
+                    output_objects,
+                    scenario_ind, 
+                    feature_ind)
     
-  } else if (output_params$plot_type == 'outcomes'){
+  } else if (output_objects$output_params$plot_type == 'outcomes'){
     
     plot_outcome_set(collated_realisations,
-                     current_simulation_params,
-                     global_params,
-                     output_params,
-                     realisation_num = collated_realisations$realisation_num,
-                     site_plot_lims = output_params$site_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     program_plot_lims = output_params$program_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     feature_ind,
-                     output_params$sets_to_plot)
+                     output_objects, 
+                     scenario_ind, 
+                     feature_ind)
   }
   
 }
@@ -375,25 +363,25 @@ write_output_block <- function(block_to_output, filename){
   return(data_block)
 }
 
-output_feature_layers <- function(object_to_output, feature_ind, current_data_dir, file_prefix, use_transform_metric, scale_factor){
+output_feature_layers <- function(output_objects, feature_ind, current_data_dir, file_prefix, use_transform_metric, scale_factor){
   
-  intervention_pool = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), 
-                             function(i) object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes)
+  intervention_pool = lapply(seq_along(output_objects$simulation_outputs$interventions), 
+                             function(i) output_objects$simulation_outputs$interventions[[i]]$site_indexes)
   
-  if (object_to_output$output_params$output_type == 'png'){
+  if (output_objects$output_params$output_type == 'png'){
     
     graphics.off()
     
     image_filename = paste0(file_prefix, "%03d.", 'png', sep = '')
-    png(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
-  } else if (object_to_output$output_params$output_type == 'jpg'){
-    jpeg(image_filename, height = object_to_output$site_characteristics$landscape_dims[1], width = object_to_output$site_characteristics$landscape_dims[2])
+    png(image_filename, height = output_objects$site_characteristics$landscape_dims[1], width = output_objects$site_characteristics$landscape_dims[2])
+  } else if (output_objects$output_params$output_type == 'jpg'){
+    jpeg(image_filename, height = output_objects$site_characteristics$landscape_dims[1], width = output_objects$site_characteristics$landscape_dims[2])
   }
   
-  for (yr in 0:object_to_output$global_params$time_steps){
+  for (yr in 0:output_objects$global_params$time_steps){
     
-    flog.info(paste0('writing ', object_to_output$output_params$output_type, ' layer outputs for year %s'), yr)
-    feature_layer_to_output = matrix(0, nrow = object_to_output$site_characteristics$landscape_dims[1], ncol = object_to_output$site_characteristics$landscape_dims[2])
+    flog.info(paste0('writing ', output_objects$output_params$output_type, ' layer outputs for year %s'), yr)
+    feature_layer_to_output = matrix(0, nrow = output_objects$site_characteristics$landscape_dims[1], ncol = output_objects$site_characteristics$landscape_dims[2])
     
     feature_set_to_output = readRDS(paste0(current_data_dir, 'feature_outputs_yr_', formatC(yr, width = 3, format = "d", flag = "0"), '.rds'))
     
@@ -401,9 +389,9 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
 
       feature_set_to_output = lapply(seq_along(feature_set_to_output), function(i) feature_set_to_output[[i]][[feature_ind]])
       feature_set_to_output = lapply(seq_along(feature_set_to_output), 
-                                     function(i) unwrap_condition_classes(array(0, object_to_output$site_characteristics$site_lengths[[i]]), 
+                                     function(i) unwrap_condition_classes(array(0, output_objects$site_characteristics$site_lengths[[i]]), 
                                                                           feature_set_to_output[[i]], 
-                                                                          object_to_output$site_scale_condition_class_key[[i]][[feature_ind]]))
+                                                                          output_objects$site_scale_condition_class_key[[i]][[feature_ind]]))
       
     } else {
 
@@ -411,78 +399,78 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
       
 
           feature_set_to_output = lapply(seq_along(feature_set_to_output), 
-                                       function(i) object_to_output$global_params$user_transform_function(lapply(seq_along(feature_set_to_output[[i]]),
-                                                                                                                       function(j) unwrap_condition_classes(array(0, object_to_output$site_characteristics$site_lengths[[i]]), 
+                                       function(i) output_objects$global_params$user_transform_function(lapply(seq_along(feature_set_to_output[[i]]),
+                                                                                                                       function(j) unwrap_condition_classes(array(0, output_objects$site_characteristics$site_lengths[[i]]), 
                                                                                                                                                             feature_set_to_output[[i]][[j]], 
-                                                                                                                                                            object_to_output$site_scale_condition_class_key[[i]][[j]])), 
-                                                                                                                object_to_output$current_simulation_params$transform_params))
+                                                                                                                                                            output_objects$site_scale_condition_class_key[[i]][[j]])), 
+                                                                                                                output_objects$current_simulation_params$transform_params))
 
           
       
     }
     
     feature_set_to_output = lapply(seq_along(feature_set_to_output), function(i) as.matrix(feature_set_to_output[[i]]))
-    feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels)] = unlist(feature_set_to_output)
+    feature_layer_to_output[unlist(output_objects$site_characteristics$land_parcels)] = unlist(feature_set_to_output)
 
-    if (object_to_output$output_params$map_vals == TRUE){
+    if (output_objects$output_params$map_vals == TRUE){
       
-      feature_layer_to_output = feature_layer_to_output * (object_to_output$output_params$col_map_vector[1] - 1)/scale_factor #map to color vector 0:127
+      feature_layer_to_output = feature_layer_to_output * (output_objects$output_params$col_map_vector[1] - 1)/scale_factor #map to color vector 0:127
       
-      sets_to_use = lapply(seq_along(object_to_output$example_simulation_outputs$interventions), 
-                           function(i) which(unlist(object_to_output$example_simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
+      sets_to_use = lapply(seq_along(output_objects$simulation_outputs$interventions), 
+                           function(i) which(unlist(output_objects$simulation_outputs$interventions[[i]]$intervention_yrs) <= yr))
       
       # ignore empty intervention sets
       interventions_to_use = which(unlist(lapply(seq_along(sets_to_use), function(i) length(sets_to_use[[i]]) > 0)))
       
       if (length(interventions_to_use) > 0){
         
-        sites_to_use = lapply(interventions_to_use, function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
+        sites_to_use = lapply(interventions_to_use, function(i) unlist(output_objects$simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]]))
         
         if (use_transform_metric == FALSE){
           #sort to original raster pixel indices
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_site_scale_condition_class_key[sites_to_use[[i]]]))
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(output_objects$current_site_scale_condition_class_key[sites_to_use[[i]]]))
         } else {
           #sorting not necessary as order is preserved for metric calculations
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(output_objects$site_characteristics$land_parcels[sites_to_use[[i]]]))
         }
         
-        if (object_to_output$output_params$output_block_offsets == TRUE){
+        if (output_objects$output_params$output_block_offsets == TRUE){
 
           # if setting offsets to block of color 
           # 1) identify offset sites through example_simulation_outputs$interventions - named as dev_object, offset_object, unregulted_loss_object etc.
           # i.e. use example_simulation_outputs$interventions$offset_object$site_indexes to identify offset sites
           
           sites_to_use = setNames(lapply(interventions_to_use, 
-                                         function(i) unlist(object_to_output$example_simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
-                                  names(object_to_output$example_simulation_outputs$interventions[interventions_to_use])) 
+                                         function(i) unlist(output_objects$simulation_outputs$interventions[[i]]$site_indexes[sets_to_use[[i]]])), 
+                                  names(output_objects$simulation_outputs$interventions[interventions_to_use])) 
           
           # get site ids for offsets via something like sites_to_use$offset_object
           offsets_to_map = which(names(sites_to_use) %in% c("offset_object", "uncoupled_offset_object"))
           if (length(offsets_to_map) > 0){
-            feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use[offsets_to_map])])] = 127
+            feature_layer_to_output[unlist(output_objects$site_characteristics$land_parcels[unlist(sites_to_use[offsets_to_map])])] = 127
           }
           
         }
         
         #mapping step to determine new mapped values 
         
-        new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + object_to_output$output_params$col_map_vector[interventions_to_use[i]])
+        new_vals = lapply(seq_along(interventions_to_use), function(i) feature_layer_to_output[inds_to_update[[i]]] + output_objects$output_params$col_map_vector[interventions_to_use[i]])
         feature_layer_to_output[unlist(inds_to_update)] = unlist(new_vals)
         
       }
     }
     
-    if (object_to_output$output_params$output_type == 'raster'){
-      raster_filename = paste0(file_prefix, formatC(yr, width = object_to_output$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif')
+    if (output_objects$output_params$output_type == 'raster'){
+      raster_filename = paste0(file_prefix, formatC(yr, width = output_objects$global_params$numeric_placeholder_width, format = "d", flag = "0"), '.tif')
       current_feature_raster = raster(feature_layer_to_output)
       writeRaster(current_feature_raster, raster_filename, overwrite = TRUE)
       
-    } else if (object_to_output$output_params$output_type == 'png'){
+    } else if (output_objects$output_params$output_type == 'png'){
       
       # rotate image with t(...) to align with tiff output
       feature_layer_to_output = t(apply(feature_layer_to_output, 2, rev))
-      if (object_to_output$output_params$map_vals == TRUE){
-        image(feature_layer_to_output, zlim = c(0, max(object_to_output$output_params$col_map_vector)), col = object_to_output$output_params$col_vec)
+      if (output_objects$output_params$map_vals == TRUE){
+        image(feature_layer_to_output, zlim = c(0, max(output_objects$output_params$col_map_vector)), col = output_objects$output_params$col_vec)
       } else {
         image(feature_layer_to_output)
       }
@@ -490,158 +478,125 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
     
   }
   
-  if (object_to_output$output_params$output_type == 'png'){
+  if (output_objects$output_params$output_type == 'png'){
     dev.off()
   }
   
 }
 
 
-
-plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, 
-                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind,  set_to_plot){
+plot_outcome_set <- function(collated_realisations, output_objects, scenario_ind, feature_ind){
   
-  if (output_params$plot_site == TRUE){
-    browser()
+  if (output_objects$output_params$plot_site == TRUE){
+
     plot_site_outcomes(collated_realisations, 
-                       output_params$plot_site_offset, 
-                       output_params$plot_site_dev, 
-                       output_params$output_type, 
-                       current_simulation_params,
-                       set_to_plot, 
-                       site_plot_lims, 
-                       feature_ind,  
-                       realisation_ind = output_params$example_realisation_to_output,
-                       output_params$site_outcome_lwd_vec,
-                       global_params$time_steps)
+                       output_objects,
+                       output_objects$output_params$site_outcome_plot_lims_set[[scenario_ind]][[feature_ind]], 
+                       feature_ind)
     
   }
   
   
-  if (output_params$plot_program == TRUE){
-    browser()
+  if (output_objects$output_params$plot_program == TRUE){
+
     overlay_realisations(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
                                           unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
                                           unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
                          plot_title = 'Program Outcomes', 
                          x_lab = '',
                          collated_realisations$realisation_num,
-                         output_params$program_outcome_lwd_vec, 
-                         col_vec = output_params$program_col_vec, 
+                         output_objects$output_params$program_outcome_lwd_vec, 
+                         col_vec = output_objects$output_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = c('net', 'offsets', 'developments'), 
-                         plot_lims = program_plot_lims, 
-                         global_params$time_steps)
-    
-    #     plot_outcomes(plot_list = list(unlist(collated_realisations$program_scale$outcomes$net_outcome, recursive = FALSE), 
-    #                                    unlist(collated_realisations$program_scale$outcomes$net_offsets, recursive = FALSE),
-    #                                    unlist(collated_realisations$program_scale$outcomes$net_devs, recursive = FALSE)),
-    #                   plot_type = 'program', 
-    #                   include_legend = FALSE, 
-    #                   plot_lims = program_plot_lims,
-    #                   plot_title = 'Program Outcome', 
-    #                   loss_stats = collated_realisations$net_program_loss, 
-    #                   collated_realisations$realisation_num, 
-    #                   collated_realisations$program_scale_cfacs$program_cfac_sum,
-    #                   output_params$program_outcome_lwd_vec, 
-    #                   outcome_col = output_params$landscape_col, 
-    #                   cfac_col = output_params$cfac_col,
-    #                   legend_vec = c('Outcome', 'Counterfactual'), 
-    #                   global_params$time_steps)
+                         plot_lims = output_objects$output_params$program_outcome_plot_lims_set[[scenario_ind]][[feature_ind]], 
+                         output_objects$global_params$time_steps)
   }
   
-  if (output_params$plot_landscape == TRUE){ 
-    browser()
+  if (output_objects$output_params$plot_landscape == TRUE){ 
+
     plot_outcomes(unlist(collated_realisations$landscape_scale$outcomes$net_outcome, recursive = FALSE), 
                   plot_type = 'landscape', 
                   include_legend = FALSE, 
-                  plot_lims =landscape_plot_lims,
+                  plot_lims = output_objects$output_params$landscape_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
                   plot_title = 'Landscape Outcome', 
                   loss_stats = collated_realisations$landscape_loss, 
                   collated_realisations$realisation_num, 
                   collated_realisations$landscape_scale$net_landscape_cfac[[1]], 
-                  output_params$landscape_outcome_lwd_vec, 
-                  outcome_col = output_params$landscape_col, 
-                  cfac_col = output_params$cfac_col,
+                  output_objects$output_params$landscape_outcome_lwd_vec, 
+                  outcome_col = output_objects$output_params$landscape_col, 
+                  cfac_col = output_objects$output_params$cfac_col,
                   legend_vec = c('Outcome', 'Counterfactual'), 
-                  time_steps = global_params$time_steps)
+                  time_steps = output_objects$global_params$time_steps)
     
   }
 }
 
 
-plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
-                               output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind,realisation_ind, site_lwd, time_steps){
+
+plot_site_outcomes <- function(collated_realisations, output_objects, plot_lims, feature_ind){
   
-  browser()
-  
-  if (current_simulation_params$use_uncoupled_offsets == TRUE){
+  if (output_objects$current_simulation_params$use_uncoupled_offsets == TRUE){
     null_plot()
     return()
   }
-  if ( set_to_plot > length(collated_realisations$intervention_pool$dev_object[[realisation_ind]])){
-    stop ( paste('\nERROR: output_params$set_to_plot exceeds number of devs/offsets'))
+  
+  if ( output_objects$output_params$sets_to_plot > length(output_objects$simulation_outputs$index_object$site_indexes_used$development_object)){
+    stop ( paste('\nERROR: output_params$output_objects$output_params$sets_to_plot exceeds number of devs/offsets'))
   }
   
-  y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
+  y_lab = get_y_lab(output_objects$output_params$output_type, output_objects$current_simulation_params, feature_ind)
+  
+  dev_outcomes = collated_realisations$site_scale$outcomes$development_object[[output_objects$output_params$example_realisation_to_output]]$nets[output_objects$output_params$sets_to_plot]
+  offset_outcomes = collated_realisations$site_scale$outcomes$offset_object[[output_objects$output_params$example_realisation_to_output]]$nets[output_objects$output_params$sets_to_plot]
   
   if (length(plot_lims) == 0){
-    site_group = unlist(c(unlist(collated_realisations$intervention_pool$dev_object[[realisation_ind]][set_to_plot]), 
-                          collated_realisations$intervention_pool$offset_object[[realisation_ind]][set_to_plot]))
-    plot_lims = find_plot_lims(plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_group])
-  } 
-  graphics::plot(NULL, type = 'l', ylab = y_lab, main = 'Site Outcomes', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
+    plot_lims = find_plot_lims(plot_list = append(dev_outcomes, offset_outcomes))
+  }
+  graphics::plot(NULL, type = 'l', ylab = y_lab, main = 'Site Outcomes', xlab = '',  ylim = plot_lims, xlim = c(0, output_objects$global_params$time_steps))
   abline(h = 0, lty = 2)
   
-  if (plot_site_dev_outcome == TRUE){
-    site_indexes_to_use = collated_realisations$intervention_pool$dev_object[[realisation_ind]][[set_to_plot]]
-    plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]
-    overlay_plot_list(plot_list, col_vec = rep('red', length(plot_list)), lty_vec = rep(1, length(plot_list)), lwd_vec = rep(site_lwd, length(plot_list)))
+  if (output_objects$output_params$plot_site_dev == TRUE){
+
+    plot_list = collated_realisations$site_scale$outcomes$development_object[[output_objects$output_params$example_realisation_to_output]]$nets[output_objects$output_params$sets_to_plot]
+    overlay_plot_list(plot_list, 
+                      col_vec = rep('red', length(plot_list)), 
+                      lty_vec = rep(1, length(plot_list)), 
+                      lwd_vec = rep(output_objects$output_params$site_outcome_lwd_vec, length(plot_list)))
   }
   
-  if (plot_site_offset_outcome == TRUE){
+  if (output_objects$output_params$plot_site_offset == TRUE){
     
-    if (current_simulation_params$use_uncoupled_offsets == FALSE){
-      site_indexes_to_use = collated_realisations$intervention_pool$offset_object[[realisation_ind]][[set_to_plot]]
-      plot_list = collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]
+    if (output_objects$current_simulation_params$use_uncoupled_offsets == FALSE){
+      plot_list = collated_realisations$site_scale$outcomes$offset_object[[output_objects$output_params$example_realisation_to_output]]$nets[output_objects$output_params$sets_to_plot]
     } else {
-      site_indexes_to_use = collated_realisations$intervention_pool$offset_object[[realisation_ind]]
-      plot_list = list(Reduce('+', collated_realisations$site_scale$outcomes[[realisation_ind]][site_indexes_to_use]))
+      plot_list = list(Reduce('+', collated_realisations$site_scale$outcomes$uncoupled_offset_object[[output_objects$output_params$example_realisation_to_output]]$nets))
+      
     }
-    
+
     overlay_plot_list(plot_list, 
                       col_vec = rep('darkgreen', length(plot_list)), 
                       lty_vec = rep(1, length(plot_list)), 
-                      lwd_vec = rep(site_lwd, length(plot_list)))
+                      lwd_vec = rep(output_objects$output_params$site_outcome_lwd_vec, length(plot_list)))
   }
   
 }
 
 
-plot_impact_set <- function(collated_realisations, current_simulation_params, global_params, output_params, realisation_num, 
-                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, sets_to_plot){
-  
-# Plot the site scale impacts
-  if (output_params$plot_site == TRUE){
-    
-    overlay_site_impacts(collated_realisations,
-                         output_params$plot_site_offset, 
-                         output_params$plot_site_dev, 
-                         output_params$plot_site_net, 
-                         output_params$output_type,
-                         current_simulation_params,
-                         realisation_ind = output_params$example_realisation_to_output, 
-                         current_feature, 
-                         plot_from_impact_yr = FALSE, 
-                         sets_to_plot,
-                         plot_lims = site_plot_lims,
-                         global_params$time_steps, 
-                         output_params$site_impact_col_vec, 
-                         output_params$site_impact_lwd)
+plot_impact_set <- function(collated_realisations, output_objects, scenario_ind, feature_ind){
+
+
+  if (output_objects$output_params$plot_site == TRUE){
+    # Plot the site scale impacts
+    overlay_site_impacts(collated_realisations, 
+                         output_objects, 
+                         scenario_ind, 
+                         feature_ind)
   }
   
-  # Plot the program scale impacts
-  if (output_params$plot_program == TRUE){
+  
+  if (output_objects$output_params$plot_program == TRUE){
+    # Plot the program scale impacts
 
     NNL_object <- find_NNL_characteristics(unlist(collated_realisations$program_scale$loss_characteristics$NNL, recursive = FALSE),
                                            unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE))
@@ -652,12 +607,12 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
                          plot_title = 'Program Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
-                         output_params$program_lwd_vec, 
-                         col_vec = output_params$program_col_vec, 
+                         output_objects$output_params$program_lwd_vec, 
+                         col_vec = output_objects$output_params$program_col_vec, 
                          legend_loc = 'topleft',
                          legend_vec = c('Net Offset Impact', 'Net Development Impact', 'Net Impact'), 
-                         plot_lims = program_plot_lims, 
-                         global_params$time_steps)
+                         plot_lims = output_objects$output_params$program_impact_plot_lims_set[[scenario_ind]][[feature_ind]], 
+                         output_objects$global_params$time_steps)
     
     if (length(NNL_object$mean_NNL) >0){
       abline(v = NNL_object$mean_NNL, lty = 2)
@@ -686,7 +641,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   }
   
   # Plot the landscape scale impacts
-  if (output_params$plot_landscape == TRUE){
+  if (output_objects$output_params$plot_landscape == TRUE){
 
     NNL_object <- find_NNL_characteristics(unlist(collated_realisations$landscape_scale$loss_characteristics$NNL, recursive = FALSE),
                                            unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE))
@@ -695,12 +650,12 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
                          plot_title = 'Landscape Impact', 
                          x_lab = NNL_object$NNL_label,
                          collated_realisations$realisation_num,
-                         output_params$landscape_lwd_vec, 
-                         output_params$landscape_col,
+                         output_objects$output_params$landscape_lwd_vec, 
+                         output_objects$output_params$landscape_col,
                          legend_loc = 'topright',
                          legend_vec = 'NA', 
-                         landscape_plot_lims, 
-                         global_params$time_steps) 
+                         output_objects$output_params$landscape_impact_plot_lims_set[[scenario_ind]][[feature_ind]], 
+                         output_objects$global_params$time_steps) 
   }
 }
 
@@ -774,14 +729,13 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
 }
 
 
-overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, current_simulation_params, realisation_ind, 
-                                 feature_ind, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps, col_vec, plot_lwd){
+overlay_site_impacts <- function(collated_realisations, output_objects, scenario_ind, feature_ind){
   
-  y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
-  plot_lwd = 1
+  y_lab = get_y_lab(output_objects$output_params$output_type, output_objects$current_simulation_params, feature_ind)
+
   x_lab = ''
   
-  if (current_simulation_params$use_uncoupled_offsets == FALSE){
+  if (output_objects$current_simulation_params$use_uncoupled_offsets == FALSE){
     block_to_use = collated_realisations$site_scale$impacts
     # offset_set = unlist(collated_realisations$program_scale$impacts$offset_object, recursive = FALSE)
     # dev_set = unlist(collated_realisations$program_scale$impacts$development_object, recursive = FALSE)
@@ -793,32 +747,38 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     # net_plot_list = unlist(collated_realisations$program_scale$impacts$net_impacts, recursive = FALSE)
   }
   
+  plot_lims = output_objects$output_params$site_impact_plot_lims_set[[scenario_ind]][[feature_ind]]
+  
   if (length(plot_lims) == 0){
     plot_lims = find_plot_lims(plot_list = list(offset_set, dev_set))
   } 
   
-  graphics::plot(NULL, type = 'l', ylab = '', main = 'Site Impact', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
+  graphics::plot(NULL, type = 'l', ylab = '', main = 'Site Impact', xlab = '',  
+                 ylim = plot_lims, xlim = c(0, output_objects$global_params$time_steps))
+  
   abline(h = 0, lty = 2)
   
   plot_type = 'non-overlay'
   
-  for (plot_ind in seq_along(sets_to_plot)){
-    current_set_to_plot = sets_to_plot[plot_ind]
+  for (plot_ind in seq_along(output_objects$output_params$sets_to_plot)){
+    
+    current_set_to_plot = output_objects$output_params$sets_to_plot[plot_ind]
     # Plot the impact of the offset site(s) 
-    if (plot_site_offset_impact == TRUE){
+    if (output_objects$output_params$plot_site_offset == TRUE){
       
-      overlay_impact(block_to_use$offset_object[[realisation_ind]],
-                     current_simulation_params$use_uncoupled_offsets,
+      overlay_impact(block_to_use$offset_object[[output_objects$output_params$example_realisation_to_output]],
+                     output_objects$simulation_outputs$index_object$site_indexes_used$offset_object, 
+                     output_objects$current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'stacked', 
-                     plot_col = col_vec[1], 
-                     plot_lwd,
+                     plot_col = output_objects$output_params$site_impact_col_vec[1], 
+                     output_objects$output_params$site_impact_lwd,
                      plot_type,
                      y_lab,
                      x_lab,
-                     plot_from_impact_yr,
+                     output_objects$output_params$plot_from_impact_yr,
                      current_set_to_plot, 
                      site_plot_lims, 
-                     time_steps)
+                     output_objects$global_params$time_steps)
       
       plot_type = 'overlay'
     }
@@ -826,42 +786,44 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     
     # Overlay the impact of the development site 
     
-    if (plot_site_dev_impact == TRUE){
+    if (output_objects$output_params$plot_site_dev == TRUE){
 
-      overlay_impact(block_to_use$development_object[[realisation_ind]],
-                     current_simulation_params$use_uncoupled_offsets,
+      overlay_impact(block_to_use$development_object[[output_objects$output_params$example_realisation_to_output]],
+                     output_objects$simulation_outputs$index_object$site_indexes_used$development_object, 
+                     output_objects$current_simulation_params$use_uncoupled_offsets,
                      visualisation_type = 'non-stacked', 
-                     plot_col = col_vec[2],
-                     plot_lwd,
+                     plot_col = output_objects$output_params$site_impact_col_vec[2],
+                     output_objects$output_params$site_impact_lwd,
                      plot_type,
                      y_lab = '',
                      x_lab,
-                     plot_from_impact_yr,
+                     output_objects$output_params$plot_from_impact_yr,
                      current_set_to_plot, 
                      site_plot_lims, 
-                     time_steps)
+                     output_objects$global_params$time_steps)
     }
     
     # Overlay the net impact of the offset and development impact 
     
-    if (plot_site_net_impact == TRUE){
+    if (output_objects$output_params$plot_site_net == TRUE){
 
-      current_net_block = block_to_use$net_impacts[[realisation_ind]]$nets
+      current_net_block = block_to_use$net_impacts[[output_objects$output_params$example_realisation_to_output]]$nets
       
       if (length(current_net_block) >= current_set_to_plot){
         
         overlay_impact(current_net_block[[current_set_to_plot]],
+                       FALSE,
                        TRUE,
                        visualisation_type = 'non-stacked', 
-                       plot_col = col_vec[3],
-                       plot_lwd,
+                       plot_col = output_objects$output_params$site_impact_col_vec[3],
+                       output_objects$output_params$site_impact_lwd,
                        plot_type,
                        y_lab = '',
                        x_lab,
-                       plot_from_impact_yr,
+                       output_objects$output_params$plot_from_impact_yr,
                        current_set_to_plot, 
                        site_plot_lims, 
-                       time_steps)
+                       output_objects$global_params$time_steps)
       }
     }
     
@@ -870,13 +832,13 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
 }
 
 
-overlay_impact <- function(plot_list, use_uncoupled_offsets, visualisation_type, 
+overlay_impact <- function(plot_list, site_indexes, use_uncoupled_offsets, visualisation_type, 
                            plot_col, plot_lwd, plot_type, y_lab, x_lab, plot_from_impact_yr, 
                            current_set_to_plot, plot_lims, time_steps){
   
   if (use_uncoupled_offsets == FALSE){
     
-    inds_to_plot = which(unlist(plot_list$site_indexes) %in% unlist(plot_list$site_indexes[current_set_to_plot]))
+    inds_to_plot = which(unlist(site_indexes) %in% unlist(site_indexes[current_set_to_plot]))
     
     if (length(inds_to_plot) == 0){
       
@@ -1036,7 +998,7 @@ overlay_realisations <- function(plot_list, plot_title, x_lab, realisation_num, 
 
 plot_outcomes <- function(current_outcome_set, plot_type, include_legend, plot_lims, plot_title, 
                           loss_stats, realisation_num,  cfacs, lwd_vec, outcome_col, cfac_col, legend_vec, time_steps){
-  browser()
+
   if (length(unlist(current_outcome_set)) == 0){
     return()
   }
