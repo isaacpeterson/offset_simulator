@@ -380,20 +380,24 @@ build_global_params <- function(user_global_params, user_transform_function, sim
 }
 
 
-build_simulation_params_group <- function(user_simulation_params, features_to_use_in_simulation){
+build_simulation_params_group <- function(user_simulation_params, user_feature_params, features_to_use_in_simulation){
   
   default_simulation_params = initialise_default_simulation_params()
   if (!is.null(user_simulation_params) == TRUE){  
     simulation_params <- overwrite_current_params(user_params = user_simulation_params, default_params = default_simulation_params)
-    check_simulation_params(simulation_params)
+    #check_simulation_params(simulation_params)
   } else{
     simulation_params = default_simulation_params
   }
   
   simulation_params_object = build_simulation_variants(simulation_params)
   simulation_params_group <- lapply(seq_along(simulation_params_object$param_variants), 
-                                    function(i) process_current_simulation_params(simulation_params_object$param_variants[[i]], 
-                                                                                  simulation_params_object$common_params, features_to_use_in_simulation))
+                                    function(i) build_current_simulation_params(simulation_params_object$param_variants[[i]], 
+                                                                                simulation_params_object$common_params,
+                                                                                user_feature_params,
+                                                                                features_to_use_in_simulation
+                                                                                )
+                                    )
   
   return(simulation_params_group)
 }
@@ -692,32 +696,36 @@ split_vector <- function(N, M, sd, min_width) {               # make a vector of
 }
 
 
-check_simulation_params <- function(simulation_params){
-  
-  offset_action_set = simulation_params$offset_action_params
-  valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
-                             'protected_condition', 'current_condition', 'restored_condition')
-  
-  
-  for (offset_action_ind in seq_along(offset_action_set)){
-    current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
-    check_current_param(current_offset_calc_type, valid_offset_calc_type)
-    current_offset_action = offset_action_set[[offset_action_ind]][2]
-    if (current_offset_calc_type == 'avoided_condition_decline'){
-      valid_offset_action_type = 'maintain'
-    } else if (current_offset_calc_type %in% c('net_gains', 'restoration_gains', 'restored_condition')){
-      valid_offset_action_type = 'restore'
-    } else if (current_offset_calc_type %in% c('current_condition')){
-      valid_offset_action_type = c('protect', 'maintain')
-    } else if (current_offset_calc_type %in% c('avoided_loss')){
-      valid_offset_action_type = c('protect', 'maintain')
-    }
-    check_current_param(current_offset_action, valid_offset_action_type)
-  }
-  valid_dev_calc_type = c('future_condition', 'current_condition')
-  check_current_param(simulation_params$dev_calc_type, valid_dev_calc_type)
-  
-}
+# check_simulation_params <- function(simulation_params){
+#   
+#   offset_action_set = simulation_params$offset_action_params
+#   valid_offset_calc_type = c('net_gains', 'restoration_gains', 'avoided_condition_decline', 'avoided_loss',
+#                              'protected_condition', 'current_condition', 'restored_condition')
+#   
+#   
+#   for (offset_action_ind in seq_along(offset_action_set)){
+#     
+#     current_offset_calc_type = offset_action_set[[offset_action_ind]][1]
+#     
+#     check_current_param(current_offset_calc_type, valid_offset_calc_type)
+#     
+#     current_offset_action = offset_action_set[[offset_action_ind]][2]
+#     if (current_offset_calc_type == 'avoided_condition_decline'){
+#       valid_offset_action_type = 'maintain'
+#     } else if (current_offset_calc_type %in% c('net_gains', 'restoration_gains', 'restored_condition')){
+#       valid_offset_action_type = 'restore'
+#     } else if (current_offset_calc_type %in% c('current_condition')){
+#       valid_offset_action_type = c('protect', 'maintain')
+#     } else if (current_offset_calc_type %in% c('avoided_loss')){
+#       valid_offset_action_type = c('protect', 'maintain')
+#     }
+#     check_current_param(current_offset_action, valid_offset_action_type)
+#   }
+#   
+#   valid_dev_calc_type = c('future_condition', 'current_condition')
+#   check_current_param(simulation_params$dev_calc_type, valid_dev_calc_type)
+#   
+# }
 
 
 
@@ -803,7 +811,7 @@ generate_simulation_combs <- function(simulation_params_group){
 }
 
 
-process_current_simulation_params <- function(current_simulation_params, common_params, features_to_use_in_simulation){
+build_current_simulation_params <- function(current_simulation_params, common_params, user_feature_params, features_to_use_in_simulation){
   
   current_simulation_params = append(current_simulation_params, common_params)
   
@@ -815,9 +823,12 @@ process_current_simulation_params <- function(current_simulation_params, common_
   
   current_simulation_params$features_to_use_in_offset_calc = match(current_simulation_params$features_to_use_in_offset_calc, features_to_use_in_simulation)
   current_simulation_params$features_to_use_in_offset_intervention = match(current_simulation_params$features_to_use_in_offset_intervention, features_to_use_in_simulation)
+
   current_simulation_params$offset_calc_type = current_simulation_params$offset_action_params[1]
-  current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
   
+  current_simulation_params$offset_action_type = current_simulation_params$offset_action_params[2]
+    #lapply(current_simulation_params$features_to_use_in_offset_calc, function(i) sum(unlist(user_feature_params$management_dynamics_bounds[[i]])) == 0)
+
   current_simulation_params$use_site_sets = (current_simulation_params$uncoupled_offset_type == 'site_set') || (current_simulation_params$use_uncoupled_offsets == FALSE)
   if ((current_simulation_params$uncoupled_offset_type == 'site_set') || (current_simulation_params$use_uncoupled_offsets == FALSE)){
     current_simulation_params$match_type = 'site_set'

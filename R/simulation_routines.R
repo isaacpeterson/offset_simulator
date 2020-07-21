@@ -22,14 +22,23 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
   # run these. By default global_params$scenario_subset
   
   #load all necessary GIS layers, objects from files etc
-  simulation_params_group <- build_simulation_params_group(user_simulation_params, user_global_params$features_to_use_in_simulation)
-  global_input_data <- build_input_data(user_global_params, user_feature_params, user_transform_function, simulation_params_group)
+  simulation_params_group <- build_simulation_params_group(user_simulation_params, 
+                                                           user_feature_params,
+                                                           user_global_params$features_to_use_in_simulation
+                                                           )
+  
+  global_input_data <- build_input_data(user_global_params, 
+                                        user_feature_params, 
+                                        user_transform_function, 
+                                        simulation_params_group
+                                        )
   
   # Write initial logging info
   flog.info('Running %s scenarios with %s realisations on %s cores', 
             length(simulation_params_group),  
             global_input_data$global_params$realisation_num,
-            global_input_data$global_params$number_of_cores ) 
+            global_input_data$global_params$number_of_cores
+            ) 
   
   for (scenario_ind in global_input_data$global_params$scenario_subset){
     
@@ -45,9 +54,8 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
               length(simulation_params_group),
               global_input_data$global_params$time_steps)
     
-    flog.info('offsetting using %s impact calculation with %s management regime and %s year time horizon for gain/loss calculations',  
+    flog.info('offsetting using %s impact calculation with %s year time horizon for gain/loss calculations',  
               simulation_params_group[[scenario_ind]]$offset_calc_type, 
-              simulation_params_group[[scenario_ind]]$offset_action_type, 
               simulation_params_group[[scenario_ind]]$offset_time_horizon)
     
     flog.info('system composed of %s x %s elements and %s sites',
@@ -170,8 +178,6 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   
   global_input_data$credit_object <- build_initial_credit(simulation_params, global_input_data)
   simulation_outputs <- run_simulation(global_input_data, output_data, simulation_params, current_data_dir)
-  
-  # save raw simulation data
 
   saveRDS(simulation_outputs, paste0(current_data_dir, 'realisation_',
                                        formatC(realisation_ind, width = global_input_data$global_params$numeric_placeholder_width, format = "d", flag = "0"),
@@ -509,7 +515,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
                                                  calc_type = simulation_params$dev_calc_type,
                                                  cfacs_flag = simulation_params$dev_cfacs_flag,
                                                  adjust_cfacs_flag = simulation_params$adjust_dev_cfacs_flag,
-                                                 action_type = simulation_params$offset_action_type,
+                                                 offset_action_type = NULL,
                                                  include_potential_developments = simulation_params$include_potential_developments_in_dev_calc,
                                                  include_potential_offsets = simulation_params$include_potential_offsets_in_dev_calc,
                                                  include_unregulated_loss = simulation_params$include_unregulated_loss_in_dev_calc,
@@ -1016,7 +1022,7 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
                                      calc_type = simulation_params$offset_calc_type,
                                      cfacs_flag = simulation_params$offset_cfacs_flag,
                                      adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
-                                     action_type = simulation_params$offset_action_type,
+                                     offset_action_type = simulation_params$offset_action_type,
                                      include_potential_developments = simulation_params$include_potential_developments_in_offset_calc,
                                      include_potential_offsets = simulation_params$include_potential_offsets_in_offset_calc,
                                      include_unregulated_loss = simulation_params$include_unregulated_loss_in_offset_calc,
@@ -1640,7 +1646,8 @@ match_from_pool <- function(match_type, current_pool, pool_vals_to_use, current_
     
   }
   
-  #### TODO NOTE if running with transform_metric specified current credit is wrong as it copies all entries to the same value
+  #### TODO NOTE if running with transform_metric specified current credit is wrong as 
+  ## it copies all entries to the same value
   
   if (match_type == 'offset'){
     # switch sign for any additional credit from offset
@@ -1733,7 +1740,7 @@ generate_time_horizons <- function(project_type, yr, intervention_yrs, time_hori
 
 
 assess_current_pool <- function(pool_object, pool_type, features_to_use, site_scale_features_group, feature_dynamics, management_dynamics, 
-                                condition_class_modes, site_scale_condition_class_key, site_lengths, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
+                                condition_class_modes, site_scale_condition_class_key, site_lengths, calc_type, cfacs_flag, adjust_cfacs_flag, offset_action_type, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                 dev_probability_list, offset_probability_list, time_horizon_type, simulation_params, feature_params, time_horizon, yr, user_transform_function){
   
@@ -1744,6 +1751,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   feature_num = length(features_to_use)
   
   if (feature_num < length(site_scale_features_group[[1]])){
+    browser()
     site_scale_features_group = lapply(seq_along(site_scale_features_group), function(i) site_scale_features_group[[i]][features_to_use])
     feature_dynamics = lapply(seq_along(feature_dynamics), function(i) feature_dynamics[[i]][features_to_use])
     feature_dynamics = lapply(seq_along(condition_class_modes), function(i) condition_class_modes[[i]][features_to_use])
@@ -1821,17 +1829,14 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
       }
       
     } else if (calc_type == 'restoration_gains'){
-      
       cfac_vals = current_condition_vals
     } 
     
     if (pool_type == 'offsets') {
       
-      if (action_type == 'maintain'){
+      if (offset_action_type == 'maintain'){
         projected_feature_layers = pool_object$site_sums_at_offset
       } else {
-        
-        if (action_type == 'restore'){
           
           time_shifts = lapply(seq_along(site_scale_features_group), 
                                function(i) build_projection_yrs(perform_dynamics_time_shift = feature_params$perform_management_dynamics_time_shift, 
@@ -1857,10 +1862,8 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
                                                                    management_dynamics[[i]],  
                                                                    condition_class_modes[[i]], 
                                                                    feature_params$background_dynamics_type))
-          
-        }
         
-        projected_feature_layers = project_features(site_scale_features_group,
+          projected_feature_layers = project_features(site_scale_features_group,
                                                     dynamics_type = feature_params$management_dynamics_type,
                                                     feature_params$update_management_dynamics_by_differential, 
                                                     feature_dynamics,
@@ -1895,7 +1898,6 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   if (pool_type == 'developments') {
     pool_object$site_vals_used = mapply('-', cfac_vals, projected_vals, SIMPLIFY = FALSE)
   } else {
-    
     pool_object$site_vals_used = mapply('-', projected_vals, cfac_vals, SIMPLIFY = FALSE)
   }
   if (any(is.na(pool_object$site_vals_used))){

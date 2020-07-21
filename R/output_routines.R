@@ -113,8 +113,8 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   }
   
   if (output_objects$output_params$write_pdf == TRUE){
-    graphics.off()
     flog.info('closing PDF %s', pdf_to_output)
+    graphics.off()
   }
   
   flog.info('all done')
@@ -488,7 +488,7 @@ output_feature_layers <- function(output_objects, feature_ind, current_data_dir,
 plot_outcome_set <- function(collated_realisations, output_objects, scenario_ind, feature_ind){
   
   if (output_objects$output_params$plot_site == TRUE){
-
+    
     plot_site_outcomes(collated_realisations, 
                        output_objects,
                        output_objects$output_params$site_outcome_plot_lims_set[[scenario_ind]][[feature_ind]], 
