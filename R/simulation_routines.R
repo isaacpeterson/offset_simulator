@@ -1583,9 +1583,9 @@ select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh,
     zero_inds <- which(rowSums(current_match_pool_vals[, non_zero_discriminator, drop = FALSE]) == 0)
     
     if (length(zero_inds) > 0){
-      browser()
-      flog.info(cat('currently matching on features ', paste(which(non_zero_discriminator)), 
-                    ' removing ', length(zero_inds), 'sites with zero score for these features', '/n'))
+
+      flog.info(cat('matching on feature indicies ', paste(non_zero_discriminator), 
+                    ' removing ', length(zero_inds), 'sites with zero score for these features', '\n'))
       
       current_match_pool <- current_match_pool[-zero_inds, , drop = FALSE]
       current_match_pool_vals <- current_match_pool_vals[-zero_inds, , drop = FALSE]
