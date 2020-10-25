@@ -99,10 +99,13 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$features_to_use_in_offset_calc = list(1)
     
     # What features are affected by the offset intervention
-    default_simulation_params$features_to_use_in_offset_intervention = list(default_simulation_params$features_to_use_in_offset_calc)
+    default_simulation_params$features_to_offset = list(default_simulation_params$features_to_use_in_offset_calc)
+    
+    # What features are affected by the offset intervention
+    default_simulation_params$features_to_clear = list(default_simulation_params$features_to_use_in_offset_calc)
     
     # The maxoimum number of parcels can be selected to offset a single development
-    default_simulation_params$max_offset_parcel_num = list(10)
+    default_simulation_params$max_offset_site_num = list(10)
     
     # Stops the offset from delivering any further gains once it has acheived the gains required
     default_simulation_params$limit_offset_restoration = list(TRUE)
@@ -141,10 +144,9 @@ initialise_default_simulation_params <- function(){
   # 'current_condition_protect' is the present condition of the site assuming the site is protected
   # 'protected_condition' is the projected protected value of the site when protected i.e. the counterfactual.
   
-  # parameters to control the offset calculation and how the intervention is implemented
-  # later internally processed into two additional parameters as (offset_calc_type, offset_action_type)
+  # parameters to control the offset calculation as (offset_calc_type)
   
-  default_simulation_params$offset_action_params = list(c('net_gains', 'restore'))
+  default_simulation_params$offset_calc_type = list(c('net_gains'))
   
   # This is the equivalent of offset_calc_type for the dev parcel. Options
   # are: 'current_condition' - losses are calcuated relative to the value of
@@ -155,7 +157,9 @@ initialise_default_simulation_params <- function(){
   # Track accumulated credit from previous exchanges (eithger in current or
   # previous time step) and use them to allow developments to proceed if the
   # credit is large enough. FALSE means ignore any exces credit from offset exchanges
-  default_simulation_params$allow_developments_from_credit = list(TRUE)
+  default_simulation_params$develop_from_credit = list(TRUE)
+  
+  default_simulation_params$use_credit_in_offset = list(TRUE)
   
   #use a specified offset metric in the site match calculation
   default_simulation_params$use_offset_metric = list(FALSE)
@@ -174,8 +178,8 @@ initialise_default_simulation_params <- function(){
   # parameters
   default_simulation_params$use_uncoupled_offsets = list(FALSE)
 
-  # Options are 'credit' or 'parcel_set'. 'credit' means there is accumulated
-  # gain that is subtracted as parcels are developed. 'parcel_set' one or more
+  # Options are 'credit' or 'site_set'. 'credit' means there is accumulated
+  # gain that is subtracted as parcels are developed. 'site_set' one or more
   # parcels in the bank are traded for one development site. If there is left
   # over credit (and allow_developments_from_credit is set to TRUE) then this excess credit is used on subsequent developments
   default_simulation_params$uncoupled_offset_type = list('credit')    
@@ -269,7 +273,7 @@ initialise_default_feature_params <- function(){
   #set this parameter to zero to yield no noise
   default_feature_params$decline_rate_std = rep(list(1e-3), default_feature_params$simulated_feature_num)
   
-  default_feature_params$simulated_time_vec = 1:100
+  default_feature_params$dynamics_time = 1:100
   
   # Number of pixels in (y, x) for the feature layes 
   default_feature_params$feature_layer_size = c(300, 300)
@@ -312,7 +316,6 @@ initialise_default_feature_params <- function(){
   default_feature_params$dynamics_sample_type = vector()
   default_feature_params$management_dynamics_type = vector()
   default_feature_params$background_dynamics_type = vector()
-  
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
   default_feature_params$management_dynamics_sample_type = 'by_distribution'
   

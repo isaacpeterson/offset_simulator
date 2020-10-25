@@ -244,8 +244,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
         mean_sites_used = lapply(seq_along(sites_used), function(i) paste(names(sites_used)[[i]], round(mean(unlist( sites_used[[i]] )))))
         flog.info(paste(mean_sites_used))
       }
-      
-      user_output_params <- initialise_user_output_params()
+
       plot_outputs(object_to_output$output_params, feature_ind, scenario_ind, collated_realisations, object_to_output$current_simulation_params, object_to_output$global_params)
       
     } else if (object_to_output$output_params$output_type == 'csv'){
@@ -314,7 +313,7 @@ output_collated_features <- function(object_to_output, features_to_output, use_o
 plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_realisations, current_simulation_params, global_params){
   
   if (output_params$plot_type == 'impacts'){
-    
+
     plot_impact_set(collated_realisations,
                     current_simulation_params,
                     global_params,
@@ -417,7 +416,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
     }
     
     feature_set_to_output = lapply(seq_along(feature_set_to_output), function(i) as.matrix(feature_set_to_output[[i]]))
-    feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels)] = unlist(feature_set_to_output)
+    feature_layer_to_output[unlist(object_to_output$site_characteristics$cell_id_groups)] = unlist(feature_set_to_output)
 
     if (object_to_output$output_params$map_vals == TRUE){
       
@@ -438,7 +437,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
           inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$current_site_scale_condition_class_key[sites_to_use[[i]]]))
         } else {
           #sorting not necessary as order is preserved for metric calculations
-          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$land_parcels[sites_to_use[[i]]]))
+          inds_to_update = lapply(seq_along(interventions_to_use), function(i) unlist(object_to_output$site_characteristics$cell_id_groups[sites_to_use[[i]]]))
         }
         
         if (object_to_output$output_params$output_block_offsets == TRUE){
@@ -454,7 +453,7 @@ output_feature_layers <- function(object_to_output, feature_ind, current_data_di
           # get site ids for offsets via something like sites_to_use$offset_object
           offsets_to_map = which(names(sites_to_use) %in% c("offset_object", "uncoupled_offset_object"))
           if (length(offsets_to_map) > 0){
-            feature_layer_to_output[unlist(object_to_output$site_characteristics$land_parcels[unlist(sites_to_use[offsets_to_map])])] = 127
+            feature_layer_to_output[unlist(object_to_output$site_characteristics$cell_id_groups[unlist(sites_to_use[offsets_to_map])])] = 127
           }
           
         }
@@ -571,6 +570,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     null_plot()
     return()
   }
+  
   if ( set_to_plot > length(collated_realisations$intervention_pool$dev_object[[realisation_ind]])){
     stop ( paste('\nERROR: output_params$set_to_plot exceeds number of devs/offsets'))
   }
@@ -676,7 +676,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the landscape scale impacts
   if (output_params$plot_landscape == TRUE){
-    
+
     NNL_object <- find_NNL_characteristics(unlist(collated_realisations$landscape_scale$loss_characteristics$NNL, recursive = FALSE),
                                            unlist(collated_realisations$landscape_scale$impacts$net_impact, recursive = FALSE))
     
@@ -747,7 +747,7 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
     ylab = paste0(y_lab, 'T') 
   } 
   
-  if (feature_ind %in% current_simulation_params$features_to_use_in_offset_intervention){
+  if (feature_ind %in% current_simulation_params$features_to_offset){
     ylab = paste0(y_lab, 'O') 
   } 
   
@@ -1107,10 +1107,10 @@ overlay_plot_list <- function(plot_list, col_vec, lty_vec, lwd_vec){
   #   }
 }
 
-# write_site_mask <- function(output_filename, landscape_dims, land_parcels, current_site_indexes){ 
+# write_site_mask <- function(output_filename, landscape_dims, cell_id_groups, current_site_indexes){ 
 #   
 #   site_mask = array(0, landscape_dims)
-#   site_mask[ unlist(land_parcels[unlist(current_site_indexes)])] = 1
+#   site_mask[ unlist(cell_id_groups[unlist(current_site_indexes)])] = 1
 #   # rgb.palette <- colorRampPalette(color_vec, space = "rgb")
 #   png(filename = output_filename, height = dim(site_mask)[1], width = dim(site_mask)[2])
 #   image(site_mask, zlim = c(0,1), col = rgb.palette(512))
