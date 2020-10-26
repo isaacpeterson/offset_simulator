@@ -278,19 +278,21 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
               sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$developments))),
               sum(length(unlist(simulation_data_object$output_data$index_object$available_indexes$offsets))))
     
-    output_current_intervention_block_stats(simulation_data_object$output_data$interventions$uncoupled_development_object, 
-                                            'credit',
-                                            simulation_data_object$site_characteristics$site_IDs, 
-                                            yr)
+    
     output_current_intervention_block_stats(simulation_data_object$output_data$interventions$development_object, 
                                             'development',
                                             simulation_data_object$site_characteristics$site_IDs, 
                                             yr)
+    
     output_current_intervention_block_stats(simulation_data_object$output_data$interventions$offset_object, 
                                             'offset',
                                             simulation_data_object$site_characteristics$site_IDs, 
                                             yr)
     
+    output_current_intervention_block_stats(simulation_data_object$output_data$interventions$uncoupled_development_object, 
+                                            'credit',
+                                            simulation_data_object$site_characteristics$site_IDs, 
+                                            yr)
     # update sites in landscape (both inside and outside development/offset program)
     flog.info('updating sites...')
     
