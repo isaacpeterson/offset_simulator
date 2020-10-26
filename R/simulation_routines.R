@@ -203,7 +203,7 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     
-    flog.info('program composed of %s development and %s offset sites',
+    flog.info('program comprised of %s development and %s offset sites',
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$development_object)), 
                   length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$uncoupled_development_object))),
               sum(length(unlist(simulation_data_object$output_data$index_object$site_indexes_used$offset_object)), 
@@ -1149,7 +1149,7 @@ mcell <- function(x, vx, vy){
   cols = length(colsizes);
   
   a = 1
-  # make an array composed of lists with dimenisons that define the land parcels/regions.
+  # make an array comprised of lists with dimenisons that define the land parcels/regions.
   # The list format allows arrays of different sizes to be stored
   B = vector('list', rows*cols)
   colStart = 0
