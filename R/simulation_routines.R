@@ -344,7 +344,7 @@ output_current_intervention_block_stats <- function(current_intervention_object,
     } else if (intervention_type == 'development'){
       intervention_string = 'developed'
     } else if (intervention_type == 'credit'){
-      intervention_string = 'developed from credit'
+      intervention_string = 'credit used to develop'
     }
     
     if (length(current_block) >= 5 ){
