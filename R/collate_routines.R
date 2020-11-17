@@ -547,9 +547,9 @@ calc_intervention_impacts <- function(current_intervention_simulation_outputs, c
                                                       function(i) lapply(seq_along(site_scale_impacts$grouped_impacts[[i]]), 
                                                                          function(j) Reduce('+', site_scale_impacts$grouped_impacts[[i]][[j]]))), 
                                                names(site_scale_impacts$grouped_impacts))
-  
-  site_scale_impacts$site_indexes = list(current_intervention_site_sets)
-  site_scale_impacts$intervention_yrs = list(current_intervention_simulation_outputs$intervention_yrs)
+
+  site_scale_impacts$site_indexes$site_indexes = current_intervention_site_sets
+  site_scale_impacts$intervention_yrs$intervention_yrs = list(current_intervention_simulation_outputs$intervention_yrs)
 
   return(site_scale_impacts)
   
