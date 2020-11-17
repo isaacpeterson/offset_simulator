@@ -374,6 +374,7 @@ write_output_block <- function(block_to_output, filename){
 
 output_feature_layers <- function(output_object, feature_ind, current_data_dir, file_prefix, use_offset_metric, scale_factor){
   
+  browser()
   intervention_pool = lapply(seq_along(output_object$example_simulation_outputs$interventions), 
                              function(i) output_object$example_simulation_outputs$interventions[[i]]$site_indexes)
   
@@ -618,7 +619,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
   
   # Plot the site scale impacts
   if (output_params$plot_site == TRUE){
-
+    
     overlay_site_impacts(collated_realisations,
                          output_params$plot_site_offset, 
                          output_params$plot_site_dev, 
@@ -865,9 +866,8 @@ overlay_impact <- function(collated_object, use_uncoupled_offsets, visualisation
 
   if (use_uncoupled_offsets == FALSE){
     
-    collated_traj_set = collated_object[[realisation_ind]]$nets
-    site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes[set_to_plot])
-    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes) %in% site_indexes)
+    site_indexes = unlist(collated_object[[realisation_ind]]$site_indexes$site_indexes[set_to_plot])
+    inds_to_plot = which(unlist(collated_object[[realisation_ind]]$site_indexes$site_indexes) %in% site_indexes)
     
     if (plot_from_impact_yr){
       intervention_yrs = collated_object[[realisation_ind]]$intervention_yrs[inds_to_plot]
@@ -875,7 +875,7 @@ overlay_impact <- function(collated_object, use_uncoupled_offsets, visualisation
       intervention_yrs = rep(list(1), length(inds_to_plot))
     }
     
-    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_traj_set[[inds_to_plot[i]]][intervention_yrs[[i]]:time_steps])
+    plot_list = lapply(seq_along(inds_to_plot), function(i) collated_object[[realisation_ind]]$nets[[ inds_to_plot[i] ]][intervention_yrs[[i]]:time_steps])
     
     if (visualisation_type == 'stacked'){
       plot_list = lapply(seq_along(plot_list), function(i) Reduce('+', plot_list[1:i]))
