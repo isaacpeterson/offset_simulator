@@ -326,6 +326,7 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
                     program_plot_lims = output_params$program_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
                     landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
                     feature_ind,
+                    scenario_ind,
                     output_params$sets_to_plot)
     
   } else if (output_params$plot_type == 'outcomes'){
@@ -339,6 +340,7 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
                      program_plot_lims = output_params$program_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
                      landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
                      feature_ind,
+                     scenario_ind,
                      output_params$sets_to_plot)
   }
   
@@ -497,7 +499,7 @@ output_feature_layers <- function(output_object, feature_ind, current_data_dir, 
 
 
 plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, 
-                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind, set_to_plot){
+                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind, scenario_ind, set_to_plot){
   
   if (output_params$plot_site == TRUE){
 
@@ -508,7 +510,8 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
                        current_simulation_params,
                        set_to_plot, 
                        site_plot_lims, 
-                       feature_ind,  
+                       feature_ind,
+                       scenario_ind,
                        realisation_ind = output_params$example_realisation_to_output,
                        output_params$site_outcome_lwd_vec,
                        global_params$time_steps)
@@ -554,7 +557,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
 
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
-                               output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind,realisation_ind, site_lwd, time_steps){
+                               output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind, scenario_ind, realisation_ind, site_lwd, time_steps){
   
   if (current_simulation_params$use_uncoupled_offsets == TRUE){
     null_plot()
@@ -568,7 +571,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     stop ( paste('\nERROR: output_params$set_to_plot exceeds number of devs/offsets'))
   }
   
-  y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
+  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, scenario_ind)
   
   if (length(plot_lims) == 0){
     
@@ -615,7 +618,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 
 
 plot_impact_set <- function(collated_realisations, current_simulation_params, global_params, output_params, realisation_num, 
-                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, sets_to_plot){
+                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, scenario_ind, sets_to_plot){
   
   # Plot the site scale impacts
   if (output_params$plot_site == TRUE){
@@ -628,6 +631,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
                          current_simulation_params,
                          realisation_ind = output_params$example_realisation_to_output, 
                          current_feature, 
+                         scenario_ind,
                          plot_from_impact_yr = FALSE, 
                          sets_to_plot,
                          plot_lims = site_plot_lims,
@@ -745,8 +749,8 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
 
 
 
-get_y_lab <- function(output_type, current_simulation_params, feature_ind){
-  y_lab = paste('Feature', feature_ind)
+build_ylab <- function(output_type, current_simulation_params, feature_ind, scenario_ind){
+  y_lab = paste0('Scenario ', scenario_ind, '- Feature ', feature_ind)
   if (feature_ind %in% current_simulation_params$features_to_use_in_offset_calc){
     ylab = paste0(y_lab, 'T') 
   } 
@@ -768,10 +772,9 @@ get_y_lab <- function(output_type, current_simulation_params, feature_ind){
 
 
 overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, 
-                                 current_simulation_params, realisation_ind, 
-                                 feature_ind, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps, col_vec, plot_lwd){
+                                 current_simulation_params, realisation_ind, feature_ind, scenario_ind, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps, col_vec, plot_lwd){
   
-  y_lab = get_y_lab(output_type, current_simulation_params, feature_ind)
+  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, scenario_ind)
   plot_lwd = 1
   
   stats_to_use = unlist(collated_realisations$sites_used)
@@ -793,7 +796,7 @@ overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact,
     plot_lims = find_plot_lims(plot_list = list(offset_set, dev_set))
   } 
   
-  graphics::plot(NULL, type = 'l', ylab = '', main = 'Site Impact', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
+  graphics::plot(NULL, type = 'l', ylab = y_lab, main = 'Site Impact', xlab = '',  ylim = plot_lims, xlim = c(0, time_steps))
   abline(h = 0, lty = 2)
   
   plot_type = 'non-overlay'
