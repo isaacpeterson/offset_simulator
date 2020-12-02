@@ -617,7 +617,7 @@ shift_feature_dynamics <- function(current_feature_val, dynamics_to_update, feat
   
   shifted_dynamics <- shift_dynamics(current_feature_val, dynamics_to_update)
   
-  updated_feature_dynamics = Matrix(0, nrow = 1, ncol = length(dynamics_to_update), sparse = TRUE)
+  updated_feature_dynamics = matrix(0, nrow = 1, ncol = length(dynamics_to_update))
 
   if (length(shifted_dynamics) > 0){
     
@@ -2196,7 +2196,7 @@ run_projection_routines <- function(site_scale_features, feature_dynamics, featu
     
   } else {
     
-    current_feature_dynamics = Matrix(0, nrow = length(elements_to_project), ncol = length(time_horizon), sparse = TRUE)
+    current_feature_dynamics = matrix(0, nrow = length(elements_to_project), ncol = length(time_horizon))
     
     if (projection_yr <= length(feature_dynamics)){
       current_feature_dynamics[, 1:(ncol(feature_dynamics) - projection_yr + 1)] = feature_dynamics[, projection_yr:ncol(feature_dynamics), drop = FALSE]

@@ -65,7 +65,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
       pdf_to_output = paste0(output_object$output_folder, '/outcomes.pdf')
     }
     flog.info('writing PDF to %s', pdf_to_output)
-    #pdf(pdf_to_output, width = 8.3, height = 11.7)
+    pdf(pdf_to_output, width = 8.3, height = 11.7)
     
     setup_sub_plots(output_object$output_params$nx, output_object$output_params$ny, x_space = 5, y_space = 5)
     
@@ -104,7 +104,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   }
   
   if (output_object$output_params$output_type == 'plot'){
-    #graphics.off()
+    graphics.off()
     flog.info('closing PDF %s', pdf_to_output)
   }
   
