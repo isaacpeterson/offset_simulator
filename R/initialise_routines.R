@@ -1,6 +1,7 @@
 # set of initialisation routines that are called for every simulation
 
 build_input_data <- function(user_global_params, user_feature_params, user_transform_function, simulation_params_group){
+  
   # Undertake all the run intialization proceedures, including generating
   # simulated data if required or reading in previously generated input data
 
@@ -23,6 +24,7 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     input_data$global_params$overwrite_condition_classes = TRUE
     input_data$global_params$overwrite_feature_dynamics = TRUE
     input_data$global_params$overwrite_management_dynamics = TRUE
+    
   } 
   
   if (!file.exists(paste0(input_data$global_params$simulation_inputs_folder, 'site_characteristics.rds')) || 
@@ -118,11 +120,11 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   input_data$site_scale_features = lapply(seq_along(input_data$site_characteristics$cell_id_groups), 
                                           function(i) initial_features[input_data$site_characteristics$cell_id_groups[[i]], , drop= FALSE])
   
-  build_background_dynamics_flag = (!file.exists(paste0(input_data$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))) | (input_data$global_params$overwrite_feature_dynamics == TRUE)
+  build_background_dynamics_flag = !file.exists(paste0(input_data$global_params$simulation_inputs_folder, 'feature_dynamics.rds')) | (input_data$global_params$overwrite_feature_dynamics == TRUE)
     
-  build_management_dynamics_flag = (!file.exists(paste0(input_data$global_params$simulation_inputs_folder, 'management_dynamics.rds'))) | (input_data$global_params$overwrite_management_dynamics == TRUE)
+  build_management_dynamics_flag = !file.exists(paste0(input_data$global_params$simulation_inputs_folder, 'management_dynamics.rds')) | (input_data$global_params$overwrite_management_dynamics == TRUE)
   
-  input_data$background_mode_num_total = input_data$site_characteristics$max_cell_ID*sum(input_data$feature_params$background_condition_class_num)
+  input_data$background_mode_num = input_data$site_characteristics$max_cell_ID*sum(input_data$feature_params$background_condition_class_num)
 
   unique_feature_IDs = setdiff(unique(as.vector(input_data$feature_ID)), 0)
   input_data$feature_blocks = lapply(seq_along(unique_feature_IDs), function(i) which(input_data$feature_ID == unique_feature_IDs[i]))
@@ -155,12 +157,11 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
     initial_vals = unlist(lapply(seq_along(input_data$feature_blocks), function(i) mean(initial_features[input_data$feature_blocks[[i]] ])))
   }
   
-
   if (build_background_dynamics_flag == FALSE){
     input_data$feature_dynamics = readRDS(paste0(input_data$global_params$simulation_inputs_folder, 'feature_dynamics.rds'))
   } else {
     flog.info('building background dynamics')
-    mode_characteristics = input_data$mode_characteristics
+    
     input_data$feature_dynamics = build_dynamics(dynamics_type = 'background',
                                                  input_data$mode_characteristics,
                                                  initial_vals, 
@@ -171,7 +172,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
                                                  input_data$feature_params$background_dynamics_bounds, 
                                                  input_data$site_characteristics$max_cell_ID*length(input_data$global_params$features_to_use_in_simulation),
                                                  length(input_data$feature_params$dynamics_time))
-    
     # if (input_data$feature_params$dynamics_update_type == 'static'){
     #   input_data$feature_dynamics[input_data$mode_characteristics$ID, ] = t(apply(input_data$feature_dynamics[input_data$mode_characteristics$ID, , drop = FALSE], 1, cumsum))
     # }
@@ -189,9 +189,6 @@ build_input_data <- function(user_global_params, user_feature_params, user_trans
   
   input_data$mode_ID = Matrix(0, nrow = input_data$site_characteristics$max_cell_ID*length(input_data$global_params$features_to_use_in_simulation), 1)
   input_data$mode_ID[unlist(input_data$feature_blocks)] = unlist(input_data$mode_blocks)
-  
-  input_data$feature_dynamics = rbind(input_data$feature_dynamics, 
-                                      Matrix(0, nrow = input_data$background_mode_num_total, ncol = ncol(input_data$feature_dynamics), sparse = TRUE))
   
   mode_ID = input_data$mode_ID
   dim(mode_ID) = c(input_data$site_characteristics$max_cell_ID, length(input_data$global_params$features_to_use_in_simulation))
@@ -794,7 +791,7 @@ build_mode_mapping <- function(condition_classes, feature_groups, max_cell_ID, f
 build_dynamics <- function(dynamics_type, mode_characteristics, initial_vals, condition_class_characteristics, sample_dynamics, store_dynamics_as_differential,
                            dynamics_sample_type, feature_dynamics_bounds, mode_num, dynamics_length){
   
-  feature_dynamics = Matrix(0, mode_num, dynamics_length, sparse = TRUE)
+  feature_dynamics = matrix(0, nrow(mode_characteristics), dynamics_length)
   
   if (store_dynamics_as_differential == TRUE){
     dynamics_length = dynamics_length - 1
@@ -806,7 +803,7 @@ build_dynamics <- function(dynamics_type, mode_characteristics, initial_vals, co
   
   for (mode_ind in seq_len(nrow(mode_characteristics))){
     
-    feature_dynamics[mode_characteristics$ID[mode_ind], 1:dynamics_length] = sample_current_dynamics(mode_characteristics[mode_ind, ],
+    feature_dynamics[mode_ind, 1:dynamics_length] = sample_current_dynamics(mode_characteristics[mode_ind, ],
                                                                                                      condition_class_characteristics,
                                                                                                      initial_vals[mode_ind], 
                                                                                                      feature_dynamics_bounds, 

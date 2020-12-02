@@ -561,7 +561,9 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
                                                  site_scale_features = simulation_data_object$site_scale_features[current_pool],
                                                  feature_dynamics = simulation_data_object$feature_dynamics,
                                                  management_dynamics = simulation_data_object$management_dynamics,
-                                                 mode_characteristics = simulation_data_object$mode_charateristics, 
+                                                 mode_characteristics = simulation_data_object$mode_characteristics,
+                                                 background_mode_num = simulation_data_object$background_mode_num,
+                                                 site_characteristics = simulation_data_object$site_characteristics,
                                                  feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
                                                  cell_num = simulation_data_object$site_characteristics$cell_num[current_pool],
                                                  calc_type = simulation_params$dev_calc_type,
@@ -754,16 +756,19 @@ run_offset_routines <- function(simulation_data_object, simulation_params, curre
   
   updated_dynamics_object <- update_feature_dynamics(simulation_data_object$feature_dynamics,
                                                      simulation_data_object$management_dynamics,
-                                                     simulation_data_object$feature_dynamics_modes[current_pool], 
+                                                     simulation_data_object$feature_dynamics_modes[current_pool],
+                                                     simulation_data_object$mode_characteristics,
                                                      simulation_data_object$site_scale_features[current_pool],
+                                                     simulation_data_object$site_characteristics$cell_id_groups[current_pool],
                                                      simulation_params$features_to_offset,
                                                      action_type = 'offset', 
-                                                     simulation_data_object$background_mode_num_total,
+                                                     simulation_data_object$background_mode_num,
                                                      simulation_data_object$feature_params,
                                                      yr)
 
-  simulation_data_object$feature_dynamics[updated_dynamics_object$modes_to_update + simulation_data_object$background_mode_num_total, ] = updated_dynamics_object$feature_dynamics
   simulation_data_object$feature_dynamics_modes[current_pool] = updated_dynamics_object$feature_dynamics_modes
+  simulation_data_object$feature_dynamics = rbind(simulation_data_object$feature_dynamics, updated_dynamics_object$feature_dynamics)
+  simulation_data_object$mode_characteristics = rbind(simulation_data_object$mode_characteristics, updated_dynamics_object$mode_characteristics)
   
   #remove offset sites from available pool
   if (length(current_offset_object$site_indexes) > 0){
@@ -774,16 +779,13 @@ run_offset_routines <- function(simulation_data_object, simulation_params, curre
   return(simulation_data_object)
 }
 
-#simulation_data_object$feature_dynamics[modes_to_update[dynamic_modes] + simulation_data_object$background_mode_num_total, ]
-#simulation_data_object$background_mode_num_total
-
-update_feature_dynamics <- function(feature_dynamics, management_dynamics, feature_dynamics_modes, site_scale_features, features_to_update, 
-                                      action_type, background_mode_num, feature_params, yr){
+update_feature_dynamics <- function(feature_dynamics, management_dynamics, feature_dynamics_modes, mode_characteristics, site_scale_features, 
+                                    cell_id_groups, features_to_update, action_type, background_mode_num, feature_params, yr){
     
   output_dynamics_object = list()
   output_dynamics_object$feature_dynamics = vector('list', length(site_scale_features))
-  output_dynamics_object$modes_to_update = vector('list', length(site_scale_features))
   output_dynamics_object$feature_dynamics_modes <- feature_dynamics_modes
+  output_dynamics_object$mode_characteristics <- vector('list', length(site_scale_features))
   
   for (site_ind in seq_along(site_scale_features)){
     
@@ -796,17 +798,21 @@ update_feature_dynamics <- function(feature_dynamics, management_dynamics, featu
       updated_mode_block = as.matrix(feature_dynamics_modes[[ site_ind ]][, features_to_update, drop = FALSE])
       
       mode_IDs_to_update = updated_mode_block > 0
-      modes_to_update = unique(updated_mode_block[mode_IDs_to_update])
       
-      dynamics_to_update <- management_dynamics[modes_to_update, , drop = FALSE]
+      modes_to_update = unique(updated_mode_block[mode_IDs_to_update])
+
+      current_modes = match(modes_to_update, mode_characteristics$ID)
+      output_dynamics_object$mode_characteristics[[site_ind]] = mode_characteristics[current_modes, ]
+      
+      output_dynamics_object$feature_dynamics[[site_ind]] = matrix(0, nrow = length(modes_to_update), ncol = ncol(management_dynamics))
+      
+      dynamics_to_update <- management_dynamics[current_modes, , drop = FALSE]
       
       dynamics_set_to_update <- rowSums(dynamics_to_update) > 0
       
       dynamic_modes <- which(dynamics_set_to_update)
       
       if (length(dynamic_modes) > 0){
-        
-        output_dynamics_object$modes_to_update[[site_ind]] = modes_to_update[dynamic_modes]
         
         feature_block = as.vector(site_scale_features[[ site_ind ]][, features_to_update])
         
@@ -820,7 +826,7 @@ update_feature_dynamics <- function(feature_dynamics, management_dynamics, featu
                                                                       features_to_update, 
                                                                       yr))
         
-        output_dynamics_object$feature_dynamics[[site_ind]] = do.call(rbind, updated_dynamics)
+        output_dynamics_object$feature_dynamics[[site_ind]][dynamic_modes, ] = do.call(rbind, updated_dynamics)
         
         dynamic_mode_block <- updated_mode_block %in% modes_to_update[dynamic_modes]
         
@@ -831,19 +837,23 @@ update_feature_dynamics <- function(feature_dynamics, management_dynamics, featu
       static_modes <- which(!dynamics_set_to_update)
       
       if (length(static_modes) > 0){
-        browser()
         updated_mode_block[updated_mode_block %in% modes_to_update[static_modes]] <- 0
       }
 
     } 
     
     output_dynamics_object$feature_dynamics_modes[[site_ind]][, features_to_update] = updated_mode_block
+    
+    
   }
   
-  output_dynamics_object$modes_to_update <- do.call(c, output_dynamics_object$modes_to_update)
+  
   output_dynamics_object$feature_dynamics <- do.call(rbind, output_dynamics_object$feature_dynamics)
+  output_dynamics_object$mode_characteristics <- do.call(rbind, output_dynamics_object$mode_characteristics)
+  output_dynamics_object$mode_characteristics$ID = output_dynamics_object$mode_characteristics$ID + background_mode_num
   
   return(output_dynamics_object)
+  
 }
 
 
@@ -900,15 +910,19 @@ run_uncoupled_offset_routine <- function(simulation_data_object, simulation_para
   updated_dynamics_object <- update_feature_dynamics(simulation_data_object$feature_dynamics,
                                                     simulation_data_object$management_dynamics,
                                                     simulation_data_object$feature_dynamics_modes[current_pool], 
+                                                    simulation_data_object$mode_characteristics,
                                                     simulation_data_object$site_scale_features[current_pool],
+                                                    simulation_data_object$site_characteristics$cell_id_groups[current_pool],
                                                     simulation_params$features_to_offset,
                                                     action_type = 'offset', 
-                                                    simulation_data_object$background_mode_num_total,
+                                                    simulation_data_object$background_mode_num,
                                                     simulation_data_object$feature_params,
                                                     yr)
   
-  simulation_data_object$feature_dynamics[updated_dynamics_object$modes_to_update + simulation_data_object$background_mode_num_total, ] = updated_dynamics_object$feature_dynamics
   simulation_data_object$feature_dynamics_modes[current_pool] = updated_dynamics_object$feature_dynamics_modes
+  
+  simulation_data_object$feature_dynamics = rbind(simulation_data_object$feature_dynamics, updated_dynamics_object$feature_dynamics)
+  simulation_data_object$mode_characteristics = rbind(simulation_data_object$mode_characteristics, updated_dynamics_object$mode_characteristics)
   
   #simulation_data_object$background_mode_num_total
     
@@ -991,11 +1005,13 @@ run_clearing_routines <- function(simulation_data_object, simulation_params, cur
 
   updated_dynamics_object <- update_feature_dynamics(simulation_data_object$feature_dynamics,
                                                      simulation_data_object$management_dynamics,
-                                                     simulation_data_object$feature_dynamics_modes[current_pool], 
+                                                     simulation_data_object$feature_dynamics_modes[current_pool],
+                                                     simulation_data_object$mode_characteristics,
                                                      simulation_data_object$site_scale_features[current_pool],
+                                                     simulation_data_object$site_characteristics$cell_id_groups[current_pool],
                                                      simulation_params$features_to_clear,
                                                      action_type = 'development', 
-                                                     simulation_data_object$background_mode_num_total,
+                                                     simulation_data_object$background_mode_num,
                                                      simulation_data_object$feature_params,
                                                      yr)
   
@@ -1091,14 +1107,15 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
                                                yr)   #arrange available parcel pool into form to use in parcel set determination
   }
   
-  
   pool_object <- assess_current_pool(pool_object = pool_object,
                                      pool_type,
                                      features_to_use = simulation_params$features_to_use_in_offset_calc,
                                      site_scale_features = simulation_data_object$site_scale_features[current_pool],
                                      feature_dynamics = simulation_data_object$feature_dynamics,
                                      management_dynamics = simulation_data_object$management_dynamics,
-                                     mode_characteristics = simulation_data_object$mode_charateristics, 
+                                     mode_characteristics = simulation_data_object$mode_characteristics, 
+                                     background_mode_num = simulation_data_object$background_mode_num,
+                                     site_characteristics = simulation_data_object$site_characteristics,
                                      feature_dynamics_modes = simulation_data_object$feature_dynamics_modes[current_pool],
                                      cell_num = simulation_data_object$site_characteristics$cell_num[current_pool],
                                      calc_type = simulation_params$offset_calc_type,
@@ -1252,7 +1269,7 @@ project_features <- function(site_scale_features, current_feature_dynamics, feat
     current_condition_class_set = mode_characteristics$condition_class[current_mode_set]
     
     projected_elements = project_elements(site_scale_features[set_to_project], 
-                                          current_feature_dynamics[feature_dynamics_modes[set_to_project], , drop = FALSE], 
+                                          current_feature_dynamics[current_mode_set, , drop = FALSE], 
                                           condition_class_characteristics[current_condition_class_set, ], 
                                           time_horizon,
                                           t0_flag,
@@ -1392,7 +1409,7 @@ match_development_to_offset <- function(simulation_data_object, simulation_param
                           replace = TRUE)
     
     current_test_index = test_pool$site_indexes[current_site]
-    current_sample_vals = test_pool$vals[current_site, , drop = FALSE]
+    current_sample_pool_vals = test_pool$vals[current_site, , drop = FALSE]
     
     if (simulation_params$use_uncoupled_offsets == FALSE){
       current_match_pool <- remove_sites_from_pool(match_pool, test_pool$site_indexes[current_site])
@@ -1409,7 +1426,7 @@ match_development_to_offset <- function(simulation_data_object, simulation_param
                                              current_match_pool$vals,
                                              simulation_data_object$credit_object$current_credit,
                                              simulation_data_object$offset_probability_list,
-                                             current_sample_vals,
+                                             current_sample_pool_vals,
                                              simulation_params,
                                              yr) #perform matching routine
     
@@ -1418,7 +1435,7 @@ match_development_to_offset <- function(simulation_data_object, simulation_param
     } else if (output_match_object$match_flag == FALSE){
       
       # only try to match sites with smaller ecological value than current site
-      match_block = matrix(rep(current_sample_vals, nrow(simulation_data_object$dev_pool_object$site_score)), 
+      match_block = matrix(rep(current_sample_pool_vals, nrow(simulation_data_object$dev_pool_object$site_score)), 
                            nrow = nrow(simulation_data_object$dev_pool_object$site_score), byrow = TRUE)
       
       match_discriminator = rowSums(simulation_data_object$dev_pool_object$site_score - match_block < 0) == ncol(simulation_data_object$dev_pool_object$site_score)
@@ -1548,11 +1565,11 @@ find_intervention_probability <- function(intervention_control, site_interventio
 
 
 # test to determine nearest neighbour by Euclidean norm given a pool of potential candidates (site_vals_pool)
-# and the criterion to match to (current_sample_vals)
+# and the criterion to match to (current_sample_pool_vals)
 
-euclidean_norm_match <- function(site_vals_pool, current_sample_vals){
+euclidean_norm_match <- function(site_vals_pool, current_sample_pool_vals){
   
-  match_block = lapply(seq(nrow(site_vals_pool)), function(i) current_sample_vals)
+  match_block = lapply(seq(nrow(site_vals_pool)), function(i) current_sample_pool_vals)
   match_block = do.call(rbind, match_block)
   
   euclidean_norm = rowSums(site_vals_pool - match_block)^2
@@ -1571,7 +1588,7 @@ euclidean_norm_match <- function(site_vals_pool, current_sample_vals){
 }
 
 
-select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh, current_match_pool_vals, 
+select_pool_to_match <- function(current_sample_pool_vals, use_offset_metric, thresh, current_match_pool_vals, 
                                  current_match_pool, max_site_num, match_type, screen_site_zeros, non_zero_discriminator){
   
   pool_object = setNames(list(FALSE, FALSE), c('match_flag', 'zero_flag'))
@@ -1594,6 +1611,7 @@ select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh,
     }
     
     if (length(current_match_pool) == 0){
+      
       cat('all sites in', match_type, 'pool have zero value \n')
       pool_object$zero_flag = TRUE
       return(pool_object)
@@ -1605,7 +1623,7 @@ select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh,
     
     max_discriminator = unlist(lapply(non_zero_discriminator, function(i) sum(tail(sort(current_match_pool_vals[, i, drop = FALSE]), max_site_num))))
     
-    if ( any( (max_discriminator - current_sample_vals[, non_zero_discriminator] > thresh[non_zero_discriminator]) == FALSE)){
+    if ( any( (max_discriminator - current_sample_pool_vals[, non_zero_discriminator] > thresh[non_zero_discriminator]) == FALSE)){
       return(pool_object)
     } 
     
@@ -1614,10 +1632,10 @@ select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh,
     if (match_type == 'offset'){
       browser()
       match_discriminator = unlist(lapply(seq(nrow(current_match_pool_vals)), 
-                                          function(i) all( (current_sample_vals[, non_zero_discriminator, drop = FALSE] - current_match_pool_vals[i, non_zero_discriminator, drop = FALSE]) <= thresh[non_zero_discriminator])))
+                                          function(i) all( (current_sample_pool_vals[, non_zero_discriminator, drop = FALSE] - current_match_pool_vals[i, non_zero_discriminator, drop = FALSE]) <= thresh[non_zero_discriminator])))
     } else if (match_type == 'development'){
       match_discriminator = unlist(lapply(seq(nrow(current_match_pool_vals)), 
-                                          function(i) all( (current_sample_vals[, non_zero_discriminator, drop = FALSE] - current_match_pool_vals[i, non_zero_discriminator, drop = FALSE]) >= -thresh[non_zero_discriminator])))
+                                          function(i) all( (current_sample_pool_vals[, non_zero_discriminator, drop = FALSE] - current_match_pool_vals[i, non_zero_discriminator, drop = FALSE]) >= -thresh[non_zero_discriminator])))
     }
     
     if (all(match_discriminator == FALSE)){
@@ -1641,36 +1659,36 @@ select_pool_to_match <- function(current_sample_vals, use_offset_metric, thresh,
 
 
 run_match_routine <- function(match_type, current_match_pool, current_match_pool_vals, current_credit, current_probability_list, 
-                              current_sample_vals, simulation_params, yr){
+                              current_sample_pool_vals, simulation_params, yr){
   
   if (match_type == 'offset'){
-    non_zero_discriminator = which(current_sample_vals > 0)
+    non_zero_discriminator = which(current_sample_pool_vals > 0)
     max_site_num = simulation_params$max_offset_site_num
     match_procedure = simulation_params$offset_selection_type
     screen_site_zeros = simulation_params$screen_offset_zeros
     
-    current_sample_vals = simulation_params$offset_multiplier * current_sample_vals
+    current_sample_pool_vals = simulation_params$offset_multiplier * current_sample_pool_vals
     
     if ( simulation_params$use_credit_in_offset == TRUE){
-      current_sample_vals = current_sample_vals - current_credit
+      current_sample_pool_vals = current_sample_pool_vals - current_credit
     }
     
   } else if (match_type == 'development'){
     
     # force offset of all features
-    non_zero_discriminator = seq(ncol(current_sample_vals))
+    non_zero_discriminator = seq(ncol(current_sample_pool_vals))
     # force only single development for development routine
     max_site_num = 1
     match_procedure = simulation_params$development_selection_type
     # when developing from credit, use inverse offset multiplier
-    current_sample_vals = 1 / simulation_params$offset_multiplier * current_sample_vals
+    current_sample_pool_vals = 1 / simulation_params$offset_multiplier * current_sample_pool_vals
     screen_site_zeros = simulation_params$screen_dev_zeros
   }
   
   #create an array of threshold values defined by user based proportion 
-  thresh = simulation_params$match_threshold_ratio*current_sample_vals
+  thresh = simulation_params$match_threshold_ratio*current_sample_pool_vals
   
-  pool_object <- select_pool_to_match(current_sample_vals, 
+  pool_object <- select_pool_to_match(current_sample_pool_vals, 
                                       simulation_params$use_offset_metric, 
                                       thresh,
                                       current_match_pool_vals, 
@@ -1704,7 +1722,7 @@ run_match_routine <- function(match_type, current_match_pool, current_match_pool
       }
       
       current_output_match_object$match_ind = euclidean_norm_match(pool_object$current_match_pool$vals[ , non_zero_discriminator, drop = FALSE], 
-                                                                   current_sample_vals[ , non_zero_discriminator, drop = FALSE])
+                                                                   current_sample_pool_vals[ , non_zero_discriminator, drop = FALSE])
       
       current_output_match_object$match_vals = pool_object$current_match_pool$vals[current_output_match_object$match_ind, , drop = FALSE]
       
@@ -1744,11 +1762,11 @@ run_match_routine <- function(match_type, current_match_pool, current_match_pool
         break
       }
       
-      current_sample_vals = current_sample_vals - current_output_match_object$match_vals
+      current_sample_pool_vals = current_sample_pool_vals - current_output_match_object$match_vals
       if (match_type == 'offset'){
-        global_match_discriminator = current_sample_vals[, non_zero_discriminator, drop = FALSE] <= thresh[non_zero_discriminator]
+        global_match_discriminator = current_sample_pool_vals[, non_zero_discriminator, drop = FALSE] <= thresh[non_zero_discriminator]
       } else if (match_type == 'development'){
-        global_match_discriminator = current_sample_vals[, non_zero_discriminator, drop = FALSE] >= -thresh[non_zero_discriminator]
+        global_match_discriminator = current_sample_pool_vals[, non_zero_discriminator, drop = FALSE] >= -thresh[non_zero_discriminator]
       } 
       
       output_match_object$match_flag = all(global_match_discriminator)
@@ -1756,7 +1774,7 @@ run_match_routine <- function(match_type, current_match_pool, current_match_pool
       if ( (output_match_object$match_flag == FALSE) && any(global_match_discriminator)){
         
         non_zero_discriminator = non_zero_discriminator[!global_match_discriminator]
-        pool_object <- select_pool_to_match(current_sample_vals, 
+        pool_object <- select_pool_to_match(current_sample_pool_vals, 
                                             simulation_params$use_offset_metric, 
                                             thresh,
                                             pool_object$current_match_pool$vals, 
@@ -1771,7 +1789,7 @@ run_match_routine <- function(match_type, current_match_pool, current_match_pool
       output_match_object$match_flag = TRUE
       output_match_object$match_indexes = list(current_match_index)
       output_match_object$match_vals = list(current_output_match_object$match_vals)
-      current_sample_vals = current_sample_vals - current_output_match_object$match_vals
+      current_sample_pool_vals = current_sample_pool_vals - current_output_match_object$match_vals
     }
     
   }
@@ -1780,9 +1798,9 @@ run_match_routine <- function(match_type, current_match_pool, current_match_pool
   
   if (match_type == 'offset'){
     # switch sign for any additional credit from offset
-    output_match_object$current_credit = -current_sample_vals 
+    output_match_object$current_credit = -current_sample_pool_vals 
   } else if (match_type == 'development'){
-    output_match_object$current_credit = current_sample_vals
+    output_match_object$current_credit = current_sample_pool_vals
   }
   
   return(output_match_object)
@@ -1850,8 +1868,8 @@ generate_time_horizons <- function(project_type, yr, intervention_yrs, time_hori
 }
 
 
-assess_current_pool <- function(pool_object, pool_type, features_to_use, site_scale_features, feature_dynamics, management_dynamics, mode_characteristics, 
-                                feature_dynamics_modes, cell_num, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
+assess_current_pool <- function(pool_object, pool_type, features_to_use, site_scale_features, feature_dynamics, management_dynamics, mode_characteristics, background_mode_num, 
+                                site_characteristics, feature_dynamics_modes, cell_num, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                 dev_probability_list, offset_probability_list, time_horizon_type, simulation_params, feature_params, time_horizon, yr, user_transform_function){
   
@@ -1956,18 +1974,22 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
       #                                                yr){
       
       if (simulation_params$use_offset_metric == FALSE){
+
         
         updated_dynamics_object <- update_feature_dynamics(feature_dynamics,
-                                                                      management_dynamics,
-                                                                      feature_dynamics_modes, 
-                                                                      site_scale_features,
-                                                                      simulation_params$features_to_offset,
-                                                                      action_type = 'offset', 
-                                                                      0,
-                                                                      feature_params,
-                                                                      yr)
+                                                           management_dynamics,
+                                                           feature_dynamics_modes, 
+                                                           mode_characteristics,
+                                                           site_scale_features,
+                                                           site_characteristics$cell_id_groups,
+                                                           simulation_params$features_to_offset,
+                                                           action_type = 'offset', 
+                                                           background_mode_num,
+                                                           feature_params,
+                                                           yr)
         
-        feature_dynamics[updated_dynamics_object$modes_to_update, ] = updated_dynamics_object$feature_dynamics
+        feature_dynamics = rbind(feature_dynamics, updated_dynamics_object$feature_dynamics)
+        mode_characteristics = rbind(mode_characteristics, updated_dynamics_object$mode_characteristics)
         
         projected_site_scores = run_projection_routines(site_scale_features,
                                                         feature_dynamics,
@@ -2009,11 +2031,15 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
     
   }
   
+  
   if (pool_type == 'developments') {
     
     pool_object$site_score = cfac_vals - projected_site_scores
+    
   } else {
+    
     pool_object$site_score = projected_site_scores - cfac_vals
+    
   }
   
   # match_discriminator = table(pool_object$site_score)
@@ -2124,6 +2150,20 @@ build_projection_shifts <- function(perform_dynamics_time_shift, current_site_sc
   
 }
 
+
+# run_projection_routines(site_scale_features,
+#                         feature_dynamics,
+#                         feature_dynamics_modes,
+#                         mode_characteristics,
+#                         condition_class_characteristics = feature_params$condition_class_characteristics,
+#                         dynamics_update_type = 'static',
+#                         projection_yr = yr,
+#                         time_horizon,
+#                         collapse_features = TRUE,
+#                         adjust_cfacs_flag = FALSE,
+#                         cfac_weights,
+#                         cell_num,
+#                         break_flag = FALSE)
 
 run_projection_routines <- function(site_scale_features, feature_dynamics, feature_dynamics_modes, mode_characteristics, condition_class_characteristics, dynamics_update_type, projection_yr, time_horizon, 
                                     collapse_features, adjust_cfacs_flag, cfac_weights, cell_num, break_flag){
