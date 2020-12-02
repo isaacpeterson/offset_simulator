@@ -31,7 +31,12 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
             global_input_data$global_params$realisation_num,
             global_input_data$global_params$number_of_cores ) 
   
-  for (scenario_ind in global_input_data$global_params$scenario_subset){
+  if (length(global_input_data$global_params$scenario_subset) > 0){
+    scenarios_to_run = global_input_data$global_params$scenario_subset
+  } else {
+    scenarios_to_run = 1:length(simulation_params_group)
+  }
+  for (scenario_ind in scenarios_to_run){
     
     # Store the start time
     sim_time <- Sys.time()

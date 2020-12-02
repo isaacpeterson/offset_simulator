@@ -557,12 +557,12 @@ build_global_params <- function(user_global_params, user_transform_function, sim
     current_run = 1
   } 
   
-  if (class(global_params$scenario_subset) == 'character'){
-    if (global_params$scenario_subset == 'all'){
-      global_params$scenario_subset = seq_along(simulation_params_group)
-    } else {
-      flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
-    }
+  if (length(global_params$scenario_subset) > 0){
+      if (!(all(global_params$scenario_subset%%1 == 0)) & (all(global_params$scenario_subset < length(simulation_params_group)))){
+        flog.error('incorrect setting for scenario_subset - must be vector of natural numbers or "all"')
+      }
+  } else {
+    global_params$scenario_subset = seq_along(simulation_params_group)
   }
   
   global_params$run_folder = write_folder(paste0(base_run_folder, formatC(current_run, width = global_params$numeric_placeholder_width, format = "d", flag = "0"), '/'))

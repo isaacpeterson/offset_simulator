@@ -18,7 +18,7 @@ initialise_default_global_params <- function(){
   # run all scenarios.
   
   default_global_params$planning_units_raster = 'default'
-  default_global_params$scenario_subset = 'all'
+  default_global_params$scenario_subset = vector()
   
   default_global_params$raster_file_type = '.tif'
   default_global_params$output_raster_tiff = FALSE
