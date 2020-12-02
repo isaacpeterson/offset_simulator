@@ -167,17 +167,12 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   save_landscape_routine(global_input_data, simulation_params, current_data_dir, yr = 0)
   
   if (simulation_params$offset_calc_type == 'avoided_condition_decline'){
-    flog.info('running in avoided condition decline mode, enforcing static landscape dynamics..')
-    global_input_data$feature_dynamics = matrix(0, 
+    flog.info('running in avoided condition decline mode, enforcing static management dynamics..')
+
+    global_input_data$management_dynamics = matrix(0, 
                                                 ncol = ncol(global_input_data$feature_dynamics), 
                                                 nrow = nrow(global_input_data$feature_dynamics))
     
-    global_input_data$feature_dynamics_modes = lapply(seq_along(global_input_data$feature_dynamics_modes), 
-                                                      function(i) Matrix(0, 
-                                                                         ncol = ncol(global_input_data$feature_dynamics_modes[[i]]), 
-                                                                         nrow = nrow(global_input_data$feature_dynamics_modes[[i]]),
-                                                                         sparse = TRUE))
-                                                                         
   }
   
   flog.info('current data dir is %s', current_data_dir)
