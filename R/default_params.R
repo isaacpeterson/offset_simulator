@@ -314,8 +314,8 @@ initialise_default_feature_params <- function(){
   default_feature_params$management_condition_class_bounds = vector()
 
   default_feature_params$dynamics_sample_type = vector()
-  default_feature_params$management_dynamics_type = vector()
-  default_feature_params$background_dynamics_type = vector()
+  default_feature_params$management_dynamics_type = 'site_scale'
+  default_feature_params$background_dynamics_type = 'site_scale'
   default_feature_params$condition_class_bounds = list(list(c(0, 1)))
   default_feature_params$management_dynamics_sample_type = 'by_distribution'
   
@@ -326,7 +326,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$sample_background_dynamics = TRUE
   default_feature_params$update_management_dynamics_by_differential = TRUE
   default_feature_params$update_background_dynamics_by_differential = TRUE
-  default_feature_params$site_sample_type = 'uniform'
+  default_feature_params$site_sample_type = 'trunc_norm'
   default_feature_params$initial_site_sd = 1
   default_feature_params$project_by_mean = FALSE
   default_feature_params$initial_site_mean_sd = 1
