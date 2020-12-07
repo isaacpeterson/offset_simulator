@@ -181,7 +181,7 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   }
   
   flog.info('current data dir is %s', current_data_dir)
-  
+
   global_input_data$credit_object <- build_initial_credit(simulation_params, global_input_data)
   global_input_data$output_data <- output_data
   simulation_outputs <- run_simulation(global_input_data, simulation_params, current_data_dir)

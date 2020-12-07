@@ -673,6 +673,7 @@ build_output_data <- function(input_data, simulation_params){
 
 
 build_initial_credit <- function(simulation_params, input_data){
+
   if (simulation_params$transform_initial_credit == TRUE){
     if (length(input_data$global_params$user_transform_function) > 0){
       current_credit = input_data$global_params$user_transform_function(simulation_params$initial_credit, simulation_params$transform_params)
@@ -681,12 +682,12 @@ build_initial_credit <- function(simulation_params, input_data){
       stop()
     }
   } else {
+    
     if ((simulation_params$use_offset_metric == FALSE) &
         ( length(simulation_params$initial_credit) != length(simulation_params$features_to_use_in_offset_calc))){
-      flog.error('setting length of credit vector to match simulation_params$features_to_use_in_offset_calc')
-      current_credit = matrix(rep(simulation_params$initial_credit, 
-                                  length(simulation_params$features_to_use_in_offset_calc)), 
-                              ncol = length(simulation_params$features_to_use_in_offset_calc))
+      flog.info(cat('simulation_params$initial_credit length does not match simulation_params$features_to_use_in_offset_calc... \n running with zero initial credit'))
+      current_credit = rep(0, length(simulation_params$features_to_use_in_offset_calc))
+      
     } else{
       current_credit = simulation_params$initial_credit
     }
