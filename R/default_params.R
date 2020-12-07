@@ -328,7 +328,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$update_background_dynamics_by_differential = TRUE
   default_feature_params$site_sample_type = 'trunc_norm'
   default_feature_params$initial_site_sd = 1
-  default_feature_params$project_by_mean = FALSE
+  default_feature_params$project_by_mean = TRUE
   default_feature_params$initial_site_mean_sd = 1
   default_feature_params$management_condition_class = 'background'
   return(default_feature_params)
