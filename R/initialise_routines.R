@@ -601,6 +601,7 @@ build_simulation_params_group <- function(user_simulation_params, features_to_us
 
 
 build_feature_params <- function(user_feature_params, global_params){
+  
   default_feature_params = initialise_default_feature_params()
   
   if (!is.null(user_feature_params) == TRUE){  

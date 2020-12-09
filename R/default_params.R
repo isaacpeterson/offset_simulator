@@ -185,7 +185,7 @@ initialise_default_simulation_params <- function(){
   default_simulation_params$uncoupled_offset_type = list('credit')    
   default_simulation_params$uncoupled_offset_selection_type = list('stochastic')
   
-  default_simulation_params$uncoupled_offset_control = list(list())
+  default_simulation_params$uncoupled_offset_control = list(FALSE)
   
   # The time horizon in which the offset gains need to equal the devlopment impact
   default_simulation_params$offset_time_horizon = list(15)
@@ -242,8 +242,8 @@ initialise_default_simulation_params <- function(){
   # set to unregulated_stochastic_development' in conjunction with defining simulation_params$unregulated_intervention_vec to mirror development 
   # set to 'unregulated_directed_development' to perform directed development where specific vector of sites to be developed is specifed prior to simulation
   default_simulation_params$unregulated_loss_type = list('default')
-  default_simulation_params$unregulated_intervention_vec = list(vector())
-  default_simulation_params$directed_developments = list(vector())
+  default_simulation_params$unregulated_intervention_vec = list(FALSE)
+  default_simulation_params$directed_developments = list(FALSE)
   # set to false to stop initial credit being transformed - this has a big impact when using the BAM metric which 
   # transforms large values to ceiling defined by 100.68
   
@@ -254,7 +254,49 @@ initialise_default_simulation_params <- function(){
   return(default_simulation_params)
 }
 
+
+
+build_logistic_dynamics_set <- function(logistic_params_set, condition_class_bounds, time_vec){
+  
+  
+  # dynamics_set = lapply(seq_along(logistic_params_set), 
+  #                       function(i) lapply(1:nrow(logistic_params_set[[i]]),
+  #                                          function(j) lapply(1:ncol(logistic_params_set[[i]]),
+  #                                                             function(k) logistic_projection(site_vals = logistic_params_set[[i]][i, j], 
+  #                                                                                             x_min = condition_class_bounds[[i]][[j]][1], 
+  #                                                                                             x_max = condition_class_bounds[[i]][[j]][3], 
+  #                                                                                             current_dec_rate = logistic_params_set[[i]][[j]][[k]][2], 
+  #                                                                                             time_vec = time_vec))))
+  # 
+  
+  dynamics_set = lapply(seq_along(logistic_params_set), 
+                        function(i) lapply(seq_along(logistic_params_set[[i]]),
+                                           function(j) lapply(1:ncol(logistic_params_set[[i]][[j]]),
+                                                              function(k) logistic_projection(site_vals = logistic_params_set[[i]][[j]][[k]][1], 
+                                                                                              x_min = condition_class_bounds[[i]][j, names(condition_class_bounds[[i]]) == 'lower_bound'], 
+                                                                                              x_max = condition_class_bounds[[i]][j, names(condition_class_bounds[[i]]) == 'upper_bound'], 
+                                                                                              current_dec_rate = logistic_params_set[[i]][[j]][[k]][2], 
+                                                                                              time_vec = time_vec))))
+  dynamics_set = lapply(seq_along(logistic_params_set), 
+                        function(i) lapply(seq_along(logistic_params_set[[i]]),
+                                           function(j) as.data.frame(setNames(dynamics_set[[i]][[j]], c('lower_bound', 'best_estimate', 'upper_bound')))))
+  
+  return(dynamics_set)
+}
+
+
+logistic_projection <- function(site_vals, x_min, x_max, current_dec_rate, time_vec){
+  
+  t_sh = -1/current_dec_rate * log( ((site_vals - x_min)/(x_max - site_vals)))
+  
+  # define logistic curve given logistic parameter set.
+  eco_projected = x_min + (x_max - x_min)/(1 + exp(-current_dec_rate*(time_vec - t_sh)))
+  
+  return(eco_projected)
+}
+
 initialise_default_feature_params <- function(){
+  
   
   # Construct the static initial landscape 
   
@@ -268,31 +310,21 @@ initialise_default_feature_params <- function(){
   default_feature_params$simulated_feature_num = 1
   
   # logistic decline rate means across simulation features. Sample form a normal distribution with this mean and add noise using  default_simulation_params$decline_rate_std
-  default_feature_params$mean_decline_rates = rep(list(-1e-2), default_feature_params$simulated_feature_num)
-  
-  #set this parameter to zero to yield no noise
-  default_feature_params$decline_rate_std = rep(list(1e-3), default_feature_params$simulated_feature_num)
+  default_feature_params$decline_rate = rep(list(-1e-2), default_feature_params$simulated_feature_num)
   
   default_feature_params$dynamics_time = 1:100
   
   # Number of pixels in (y, x) for the feature layes 
-  default_feature_params$feature_layer_size = c(300, 300)
+  default_feature_params$feature_layer_size = c(1000, 1000)
   
   # Numnber of parcels in x (but total size varies)
-  default_feature_params$site_num_characteristics = c(30 , 30, 5)
+  default_feature_params$site_num_characteristics = c(100, 100, 5)
 
-  default_feature_params$feature_num_characteristics = c(20 , 10, 5)
-  # Minimum allowable initial ecological value of smallest ecological element
-  # (pixel) ie min value to sample from
-  default_feature_params$min_initial_eco_val = 20
-  
-  # Max allowable initial ecological value of largest element (pixel) ie max
-  # value to sample from
-  default_feature_params$max_initial_eco_val = 80
+  default_feature_params$feature_num_characteristics = c(100 , 100, 5)
   
   # list of length equal to feature number defining proportion of parcels occupied by the feature(s) 
   #TODO add error flag  when the length of this does not match feature_num
-  default_feature_params$occupation_ratio = list(1)
+  default_feature_params$occupation_ratio = rep(list(0.1), default_feature_params$simulated_feature_num) 
   
   # Mow much initial variation in pixels per land parcel (this is the width of
   # uniform dist) used to add noise to each pixel. Eg if the pixel has a vlaue
@@ -304,15 +336,41 @@ initialise_default_feature_params <- function(){
   
   # Defining multiple regions eg different states where different rules can apply 
   default_feature_params$region_num_y = 1
+
+  # Per feature per condition class decline rates for unmanaged vegetation. 
+  # This analysis is only using one feature and one conditoin class.
+  # The lower bound means constant zero. Upper bound is constant 1. 
+  # If don't have lower/upper 0/1 the for example, if you set lower bound to 0.3, ever cell with condition value 
+  # less than that 0.3 will have the same decline values. 
+  # Don't change lower and upper zero and 1.
+  background_logistic_params_set = rep(list(list(data.frame(lower_bound = c(0, unlist(default_feature_params$decline_rate)), 
+                                                            mean = c(0.5, unlist(default_feature_params$decline_rate)), 
+                                                            upper_bound = c(1, unlist(default_feature_params$decline_rate))))), 
+                                       default_feature_params$simulated_feature_num)
   
-  default_feature_params$simulated_time_vec = vector()
-  default_feature_params$background_dynamics_bounds = list()
-  default_feature_params$management_dynamics_bounds = list()
+  # Build 3 logistic curves and using the two params to improvement due to management. 
+  # The first param is starting value, the 2nd param is the shape variable which determines the improvement rate 
+  # Just change the rates here, don't change starting value, if make too small value takes ages to reach higher values
+  # Incease values of the second param to increase restoration rate. Make 2nd param of the lower and upper bound bigger to make more variation.
+  management_logistic_params_set = rep(list(list(data.frame(lower_bound = c(0.01, 0.04),
+                                                            mean = c(0.01, 0.05), 
+                                                            upper_bound = c(0.01, 0.06)))), 
+                                       default_feature_params$simulated_feature_num)  
+  
+  
+  default_feature_params$background_dynamics_bounds <- build_logistic_dynamics_set(background_logistic_params_set, 
+                                                                                   default_feature_params$condition_class_bounds,
+                                                                                   default_feature_params$dynamics_time)
+  
+  default_feature_params$management_dynamics_bounds <- build_logistic_dynamics_set(management_logistic_params_set, 
+                                                                                   default_feature_params$condition_class_bounds,
+                                                                                   default_feature_params$dynamics_time)
+  
   default_feature_params$background_mode_num = vector()
   default_feature_params$management_mode_num = vector()
   default_feature_params$initial_condition_class_bounds = vector()
   default_feature_params$management_condition_class_bounds = vector()
-
+    
   default_feature_params$dynamics_sample_type = 'by_initial_value'
   default_feature_params$management_dynamics_type = 'site_scale'
   default_feature_params$background_dynamics_type = 'site_scale'
@@ -320,8 +378,6 @@ initialise_default_feature_params <- function(){
   default_feature_params$management_dynamics_sample_type = 'by_distribution'
   
   default_feature_params$perform_management_dynamics_time_shift = TRUE
-
-  default_feature_params$perform_background_dynamics_time_shift = FALSE
   default_feature_params$sample_management_dynamics = TRUE 
   default_feature_params$sample_background_dynamics = TRUE
   default_feature_params$update_management_dynamics_by_differential = TRUE
@@ -331,6 +387,7 @@ initialise_default_feature_params <- function(){
   default_feature_params$project_by_mean = TRUE
   default_feature_params$initial_site_mean_sd = 1
   default_feature_params$management_condition_class = 'background'
+  
   return(default_feature_params)
 }
 
