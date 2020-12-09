@@ -255,9 +255,6 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
                                                                           yr)
       }
       
-      t2 = Sys.time()
-      print(paste('development pool in', t2 - t1))
-      t1 = t2
     }
     
     for (development_counter in seq_len(simulation_data_object$output_data$index_object$intervention_control[yr])){
