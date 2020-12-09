@@ -326,7 +326,7 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
                                                                          simulation_data_object$site_characteristics$cell_num,
                                                                          break_flag = FALSE)
     
-    flog.info(paste('landscape projection in', Sys.time() - t0))
+    flog.trace(paste('landscape projection in', Sys.time() - t0))
     
     save_landscape_routine(simulation_data_object, simulation_params, current_data_dir, yr)
     
@@ -364,11 +364,11 @@ output_current_intervention_block_stats <- function(current_intervention_object,
     }
     
     if (length(current_block) >= 5 ){
-      flog.info(cat(intervention_string, length(current_group), 
+      flog.trace(cat(intervention_string, length(current_group), 
                     'sites, net value =', intervention_sum, '\n'))
     } else {
       
-      flog.info(cat(intervention_string, length(current_group), 
+      flog.trace(cat(intervention_string, length(current_group), 
                     'sites, with IDs', paste(site_IDs[current_group]), 
                     ', net value =', intervention_sum, '\n'))
     }
@@ -468,7 +468,7 @@ run_development_offset_routines <- function(simulation_data_object, simulation_p
                                                     clearing_type = 'development',
                                                     yr)
     
-    flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[output_match_object$development_object$site_indexes]),
+    flog.trace(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[output_match_object$development_object$site_indexes]),
                   'with value', paste( round(colSums(output_match_object$development_object$site_score), 1)),
                   ', offset with sites', paste(simulation_data_object$site_characteristics$site_IDs[output_match_object$offset_object$site_indexes]), 
                   'with net value', paste(round(colSums(output_match_object$offset_object$site_score), 1)), '\n'))
@@ -484,7 +484,7 @@ run_development_offset_routines <- function(simulation_data_object, simulation_p
 
 develop_from_credit_routine <- function(simulation_data_object, simulation_params, yr){
   
-  flog.info(cat('remaining credit = ', as.vector(simulation_data_object$credit_object$current_credit), '\n'))
+  flog.trace(cat('remaining credit = ', as.vector(simulation_data_object$credit_object$current_credit), '\n'))
   
   if (all(simulation_data_object$credit_object$current_credit <= 0) | (length(simulation_data_object$dev_pool_object$site_indexes) == 0)){
     output_match_object = setNames(list(FALSE), 'match_flag')
@@ -511,7 +511,7 @@ develop_from_credit_routine <- function(simulation_data_object, simulation_param
                                                       clearing_type = 'develop_from_credit',
                                                       yr)
       
-      flog.info(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]),
+      flog.trace(cat('developed site', paste(simulation_data_object$site_characteristics$site_IDs[unlist(development_object$site_indexes)]),
                     'with value', paste(lapply(development_object$site_score, round, 2)), 'from credit,',
                     'remaining =', paste(lapply(output_match_object$current_credit, round, 2)), '\n'))
       
@@ -558,12 +558,12 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
                                                          yr)
   
   if (length(inds_to_clear) <= 5){
-    flog.info(cat('unregulated loss of ', length(inds_to_clear), ' sites ' ,
+    flog.trace(cat('unregulated loss of ', length(inds_to_clear), ' sites ' ,
                   ' with site IDs ', paste(simulation_data_object$site_characteristics$site_IDs[inds_to_clear]), 
                   ', net value ', apply(unregulated_loss_object$site_sums_at_offset, 2, 'sum'), '\n'))
     
   } else {
-    flog.info(cat('unregulated loss of ', length(inds_to_clear), ' sites ' ,
+    flog.trace(cat('unregulated loss of ', length(inds_to_clear), ' sites ' ,
                   ' with net value ', apply(unregulated_loss_object$site_sums_at_offset, 2, 'sum'), '\n'))
   }
   
@@ -957,8 +957,8 @@ run_uncoupled_offset_routine <- function(simulation_data_object, simulation_para
   
   
   
-  flog.info('added %s uncoupled offset sites to program with site IDs', length(current_pool))
-  flog.info(cat(paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n'))
+  flog.trace('added %s uncoupled offset sites to program with site IDs', length(current_pool))
+  flog.trace(cat(paste(simulation_data_object$site_characteristics$site_IDs[current_pool]), '\n'))
   
   return(simulation_data_object)
 }
@@ -1097,7 +1097,7 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
   # if pool is empty return null object and print error
   
   if (length(current_pool) == 0){
-    flog.info(paste0('empty ', pool_type, ' pool'))
+    flog.trace(paste0('empty ', pool_type, ' pool'))
     pool_object = list()
     return(pool_object)
   }
@@ -1148,7 +1148,7 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
                                      yr, 
                                      simulation_data_object$global_params$user_transform_function)      
   
-  flog.info(paste(pool_type, ' pool in', Sys.time() - t0))
+  flog.trace(paste(pool_type, ' pool in', Sys.time() - t0))
   
   return(pool_object)
 }
@@ -1617,7 +1617,7 @@ select_pool_to_match <- function(current_sample_pool_vals, use_offset_metric, th
     
     if (length(zero_inds) > 0){
 
-      flog.info(cat('matching on feature indicies ', paste(non_zero_discriminator), 
+      flog.trace(cat('matching on feature indicies ', paste(non_zero_discriminator), 
                     ' removing ', length(zero_inds), 'sites with zero score for these features', '\n'))
       
       current_match_pool <- current_match_pool[-zero_inds, , drop = FALSE]

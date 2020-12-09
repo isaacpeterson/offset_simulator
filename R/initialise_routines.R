@@ -1074,12 +1074,12 @@ overwrite_current_params <- function(user_params, default_params){
   default_param_matches = names(default_params) %in% names(user_params)
   default_params_used = lapply(which(!(default_param_matches)), function(i) paste0('(', names(default_params)[i], ',', default_params[[i]], ')'))
   
-  flog.info(paste0('default param (characteristic, value), enforced for ', default_params_used))
+  flog.trace(paste0('default param (characteristic, value), enforced for ', default_params_used))
   
   if (length(user_param_matches) > length(overwrite_params)){
-    flog.info(cat('obsolete user params: \n', names(user_params[is.na(user_param_matches)]), '\n'))
+    flog.trace(cat('obsolete user params: \n', names(user_params[is.na(user_param_matches)]), '\n'))
   } else{
-    flog.info(cat('all user params match default params \n'))
+    flog.trace(cat('all user params match default params \n'))
   }
   
   updated_params = default_params
