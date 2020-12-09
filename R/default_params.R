@@ -117,7 +117,7 @@ initialise_default_simulation_params <- function(){
     default_simulation_params$min_eco_val = list(0)
     
     # Max value that the logistic decline curve can reach. It will asypotote to this value
-    default_simulation_params$max_eco_val = list(100)
+    default_simulation_params$max_eco_val = list(1)
     
     #ignore offset sites with zero value
     default_simulation_params$screen_offset_zeros = list(TRUE)

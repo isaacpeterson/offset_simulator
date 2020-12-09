@@ -1069,16 +1069,22 @@ check_current_param <- function(current_calc_type, valid_offset_calc_type){
 
 overwrite_current_params <- function(user_params, default_params){
   
-  param_matches = match(names(user_params), names(default_params))
-  obsolete_param_inds = which(is.na(param_matches))
+  user_param_matches = match(names(user_params), names(default_params))
+  overwrite_params = user_params[which(!(is.na(user_param_matches)))]
+  default_param_matches = names(default_params) %in% names(user_params)
+  default_params_used = lapply(which(!(default_param_matches)), function(i) paste0('(', names(default_params)[i], ',', default_params[[i]], ')'))
   
-  if (length(obsolete_param_inds) > 0){
-    flog.error(cat('remove or rename in user params file: \n', names(user_params[obsolete_param_inds]), '\n'))
-    stop()
+  flog.info(paste0('default param (characteristic, value), enforced for ', default_params_used))
+  
+  if (length(user_param_matches) > length(overwrite_params)){
+    flog.info(cat('obsolete user params: \n', names(user_params[is.na(user_param_matches)]), '\n'))
+  } else{
+    flog.info(cat('all user params match default params \n'))
   }
+  
   updated_params = default_params
-  param_inds_to_use = seq_along(updated_params)
-  updated_params[param_matches] = user_params
+
+  updated_params[user_param_matches[!is.na(user_param_matches)]] = overwrite_params
   
   return(updated_params)
 }
@@ -1182,9 +1188,8 @@ process_current_simulation_params <- function(current_simulation_params, common_
     current_simulation_params$include_potential_developments_in_dev_calc = current_simulation_params$include_potential_developments_in_offset_calc
     current_simulation_params$include_potential_offsets_in_dev_calc = current_simulation_params$include_potential_offsets_in_offset_calc
     current_simulation_params$include_unregulated_loss_in_dev_calc = current_simulation_params$include_unregulated_loss_in_offset_calc
-  } else {
-    flog.info('using independent adjustment of cfacs in development impact calculation')
-  }
+  } 
+  
   current_simulation_params$adjust_offset_cfacs_flag = any(c(current_simulation_params$include_potential_developments_in_offset_calc,
                                                              current_simulation_params$include_potential_offsets_in_offset_calc,
                                                              current_simulation_params$include_unregulated_loss_in_offset_calc) == TRUE)
