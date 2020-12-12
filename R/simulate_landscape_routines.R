@@ -90,8 +90,8 @@ simulate_feature_layers <- function(feature_params, simulation_inputs_folder){
     
     current_file_name = paste0(simulation_inputs_folder, 'feature_IDs_', 
                                formatC(feature_ind, width = 3, format = "d", flag = "0"), '.tif')
-    
-    feature_ID_raster[which(getValues(current_feature_raster == 0))] = 0
+ 
+    feature_ID_raster[which(getValues(current_feature_raster) == 0)] = 0
     writeRaster(feature_ID_raster, current_file_name, overwrite = TRUE)
     
   }
