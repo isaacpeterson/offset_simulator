@@ -276,10 +276,6 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
       }
     }
     
-    t2 = Sys.time()
-    print(paste('development routine in', t2 - t1))
-    t2 = t1
-    
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
