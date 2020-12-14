@@ -402,7 +402,7 @@ initialise_default_output_params <- function(base_folder){
 
   
   default_output_params$sets_to_plot = 1 # example site to plot
-  default_output_params$scenario_vec = 'all' #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
+  default_output_params$variants_to_output = 'all' #c(1,4,7,10, 8, 2,3,5,6,9,11,12 ) #1:12
   default_output_params$site_impact_col_vec = c('darkgreen', 'red', 'black')
   default_output_params$program_col_vec = c('darkgreen', 'red', 'black') 
   default_output_params$cfac_col = 'blue' 

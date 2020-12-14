@@ -37,12 +37,12 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
                                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
                                                     include.dirs = FALSE, no.. = FALSE)
   
-  if ( (class(output_object$output_params$scenario_vec) == 'character')){
-    if (output_object$output_params$scenario_vec == 'all'){
-      scenario_vec = 1:length(output_object$scenario_filenames)
+  if ( (class(output_object$output_params$variants_to_output) == 'character')){
+    if (output_object$output_params$variants_to_output == 'all'){
+      variants_to_output = 1:length(output_object$scenario_filenames)
     }
   } else {
-    scenario_vec = output_object$output_params$scenario_vec
+    variants_to_output = output_object$output_params$variants_to_output
   }
   
   if (length(output_object$output_params$output_folder) == 0){
@@ -90,15 +90,16 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     } 
   }
   
-  for (scenario_ind in scenario_vec){
+  browser()
+  for (current_variant in variants_to_output){
     
     output_flag = check_output_flag(output_object$output_params, output_object$current_simulation_params)
     
     if (output_flag == FALSE){
-      flog.trace(' skipping scenario %d', scenario_ind )
+      flog.trace(' skipping scenario %d', current_variant )
     } else {
-      flog.info(rbind(names(output_object$param_variants[[scenario_ind]]), as.vector(output_object$param_variants[[scenario_ind]]))) 
-      output_scenario(output_object,  scenario_ind)
+      flog.info(rbind(names(output_object$param_variants[[current_variant]]), as.vector(output_object$param_variants[[current_variant]]))) 
+      output_scenario(output_object,  current_variant)
     }
     
   }
@@ -113,8 +114,9 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
 
 
 check_output_flag <- function(output_params, current_simulation_params){
-  param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
   
+  param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
+  browser()
   if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
     output_flag = TRUE 
   } else {
@@ -174,16 +176,17 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL, numer
 }
 
 
-output_scenario <- function(output_object, scenario_ind){
+output_scenario <- function(output_object, current_variant){
   
   flog.info('_________________________________')
   
-  file_to_Read = paste0(output_object$simulation_params_folder, '/', output_object$scenario_filenames[scenario_ind])
+  browser()
+  file_to_Read = paste0(output_object$simulation_params_folder, '/', output_object$scenario_filenames[current_variant])
   flog.trace('reading %s', file_to_Read)
   output_object$current_simulation_params = readRDS(file_to_Read)
   
   current_data_dir = paste0(output_object$simulation_output_folder, '/scenario_', 
-                            formatC(scenario_ind, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                            formatC(current_variant, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                             '/realisation_', formatC(output_object$output_params$example_realisation_to_output, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"), '/') 
   
   if ((output_object$output_params$output_type == 'raster') || (output_object$output_params$output_type == 'png')){
@@ -207,7 +210,7 @@ output_scenario <- function(output_object, scenario_ind){
     output_collated_features(output_object,
                              features_to_output, 
                              use_offset_metric = FALSE, 
-                             scenario_ind, 
+                             current_variant, 
                              current_data_dir)
   }
   
@@ -215,14 +218,14 @@ output_scenario <- function(output_object, scenario_ind){
     output_collated_features(output_object,
                              features_to_output = 1, 
                              use_offset_metric = TRUE, 
-                             scenario_ind, 
+                             current_variant, 
                              current_data_dir)
   }
   
 } 
 
 
-output_collated_features <- function(output_object, features_to_output, use_offset_metric, scenario_ind, current_data_dir){
+output_collated_features <- function(output_object, features_to_output, use_offset_metric, current_variant, current_data_dir){
   
   for (feature_ind in features_to_output){
     
@@ -233,7 +236,7 @@ output_collated_features <- function(output_object, features_to_output, use_offs
       
     }  else {
       collated_filenames = find_collated_files(file_path = output_object$collated_folder,
-                                               scenario_string = formatC(scenario_ind, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
+                                               scenario_string = formatC(current_variant, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                                feature_string = formatC(feature_ind, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
                                                output_object$output_params$realisation_num)
     }
@@ -248,7 +251,7 @@ output_collated_features <- function(output_object, features_to_output, use_offs
         flog.info(paste(mean_sites_used))
       }
 
-      plot_outputs(output_object$output_params, feature_ind, scenario_ind, collated_realisations, output_object$current_simulation_params, output_object$global_params)
+      plot_outputs(output_object$output_params, feature_ind, current_variant, collated_realisations, output_object$current_simulation_params, output_object$global_params)
       
     } else if (output_object$output_params$output_type == 'csv'){
       flog.info('writing csv outputs')
@@ -313,7 +316,7 @@ output_collated_features <- function(output_object, features_to_output, use_offs
   } 
 }
 
-plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_realisations, current_simulation_params, global_params){
+plot_outputs <- function(output_params, feature_ind, current_variant, collated_realisations, current_simulation_params, global_params){
   
   if (output_params$plot_type == 'impacts'){
 
@@ -322,11 +325,11 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
                     global_params,
                     output_params,
                     realisation_num = collated_realisations$realisation_num,
-                    site_plot_lims = output_params$site_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
-                    program_plot_lims = output_params$program_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
-                    landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[scenario_ind]][[feature_ind]],
+                    site_plot_lims = output_params$site_impact_plot_lims_set[[current_variant]][[feature_ind]],
+                    program_plot_lims = output_params$program_impact_plot_lims_set[[current_variant]][[feature_ind]],
+                    landscape_plot_lims = output_params$landscape_impact_plot_lims_set[[current_variant]][[feature_ind]],
                     feature_ind,
-                    scenario_ind,
+                    current_variant,
                     output_params$sets_to_plot)
     
   } else if (output_params$plot_type == 'outcomes'){
@@ -336,11 +339,11 @@ plot_outputs <- function(output_params, feature_ind, scenario_ind, collated_real
                      global_params,
                      output_params,
                      realisation_num = collated_realisations$realisation_num,
-                     site_plot_lims = output_params$site_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     program_plot_lims = output_params$program_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
-                     landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[scenario_ind]][[feature_ind]],
+                     site_plot_lims = output_params$site_outcome_plot_lims_set[[current_variant]][[feature_ind]],
+                     program_plot_lims = output_params$program_outcome_plot_lims_set[[current_variant]][[feature_ind]],
+                     landscape_plot_lims = output_params$landscape_outcome_plot_lims_set[[current_variant]][[feature_ind]],
                      feature_ind,
-                     scenario_ind,
+                     current_variant,
                      output_params$sets_to_plot)
   }
   
@@ -499,7 +502,7 @@ output_feature_layers <- function(output_object, feature_ind, current_data_dir, 
 
 
 plot_outcome_set <- function(collated_realisations, current_simulation_params, global_params, output_params, 
-                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind, scenario_ind, set_to_plot){
+                             realisation_num, site_plot_lims, program_plot_lims, landscape_plot_lims, feature_ind, current_variant, set_to_plot){
   
   if (output_params$plot_site == TRUE){
 
@@ -511,7 +514,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
                        set_to_plot, 
                        site_plot_lims, 
                        feature_ind,
-                       scenario_ind,
+                       current_variant,
                        realisation_ind = output_params$example_realisation_to_output,
                        output_params$site_outcome_lwd_vec,
                        global_params$time_steps)
@@ -557,7 +560,7 @@ plot_outcome_set <- function(collated_realisations, current_simulation_params, g
 
 
 plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, plot_site_dev_outcome, 
-                               output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind, scenario_ind, realisation_ind, site_lwd, time_steps){
+                               output_type, current_simulation_params, set_to_plot, plot_lims, feature_ind, current_variant, realisation_ind, site_lwd, time_steps){
   
   if (current_simulation_params$use_uncoupled_offsets == TRUE){
     null_plot()
@@ -571,7 +574,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
     stop ( paste('\nERROR: output_params$set_to_plot exceeds number of devs/offsets'))
   }
   
-  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, scenario_ind)
+  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, current_variant)
   
   if (length(plot_lims) == 0){
     
@@ -618,7 +621,7 @@ plot_site_outcomes <- function(collated_realisations, plot_site_offset_outcome, 
 
 
 plot_impact_set <- function(collated_realisations, current_simulation_params, global_params, output_params, realisation_num, 
-                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, scenario_ind, sets_to_plot){
+                            site_plot_lims, program_plot_lims, landscape_plot_lims, current_feature, current_variant, sets_to_plot){
   
   # Plot the site scale impacts
   if (output_params$plot_site == TRUE){
@@ -631,7 +634,7 @@ plot_impact_set <- function(collated_realisations, current_simulation_params, gl
                          current_simulation_params,
                          realisation_ind = output_params$example_realisation_to_output, 
                          current_feature, 
-                         scenario_ind,
+                         current_variant,
                          plot_from_impact_yr = FALSE, 
                          sets_to_plot,
                          plot_lims = site_plot_lims,
@@ -749,8 +752,8 @@ find_NNL_characteristics <- function(NNL_set, collated_impacts){
 
 
 
-build_ylab <- function(output_type, current_simulation_params, feature_ind, scenario_ind){
-  y_lab = paste0('Scenario ', scenario_ind, '- Feature ', feature_ind)
+build_ylab <- function(output_type, current_simulation_params, feature_ind, current_variant){
+  y_lab = paste0('Scenario ', current_variant, '- Feature ', feature_ind)
   if (feature_ind %in% current_simulation_params$features_to_use_in_offset_calc){
     ylab = paste0(y_lab, 'T') 
   } 
@@ -772,9 +775,9 @@ build_ylab <- function(output_type, current_simulation_params, feature_ind, scen
 
 
 overlay_site_impacts <- function(collated_realisations, plot_site_offset_impact, plot_site_dev_impact, plot_site_net_impact, output_type, 
-                                 current_simulation_params, realisation_ind, feature_ind, scenario_ind, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps, col_vec, plot_lwd){
+                                 current_simulation_params, realisation_ind, feature_ind, current_variant, plot_from_impact_yr, sets_to_plot, plot_lims, time_steps, col_vec, plot_lwd){
   
-  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, scenario_ind)
+  y_lab = build_ylab(output_type, current_simulation_params, feature_ind, current_variant)
   plot_lwd = 1
   
   stats_to_use = unlist(collated_realisations$sites_used)
