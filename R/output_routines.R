@@ -10,6 +10,7 @@
 osim.output <- function(user_output_params = NULL, simulation_folder = NULL, output_type = NULL, loglevel = INFO){
   
   flog.threshold(loglevel)
+  
   if (is.null(user_output_params)) {
     flog.error('provide plot params file')
     stop()
@@ -25,13 +26,6 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   output_object$global_params = readRDS(paste0(output_object$simulation_params_folder, 'global_params.rds'))
   output_object$feature_params = readRDS(paste0(output_object$simulation_params_folder, 'feature_params.rds'))
   
-  
-  # read in file with stored param settings to identify plots easier
-  param_variants_filename = paste0(output_object$simulation_params_folder, 'param_variants.rds')
-  if (file.exists(param_variants_filename)){
-    output_object$param_variants = readRDS(paste0(output_object$simulation_params_folder, 'param_variants.rds'))
-  }
-  
   # get the names of all parameter files, separated into run scenarios
   output_object$scenario_filenames <- list.files(path = output_object$simulation_params_folder, pattern = '_simulation_params.rds', all.files = FALSE,
                                                     full.names = FALSE, recursive = FALSE, ignore.case = FALSE,
@@ -44,6 +38,7 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
   } else {
     variants_to_output = output_object$output_params$variants_to_output
   }
+  
   
   if (length(output_object$output_params$output_folder) == 0){
     output_object$output_folder = output_object$collated_folder
@@ -90,19 +85,13 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
     } 
   }
   
-  browser()
-  for (current_variant in variants_to_output){
-    
-    output_flag = check_output_flag(output_object$output_params, output_object$current_simulation_params)
-    
-    if (output_flag == FALSE){
-      flog.trace(' skipping scenario %d', current_variant )
-    } else {
-      flog.info(rbind(names(output_object$param_variants[[current_variant]]), as.vector(output_object$param_variants[[current_variant]]))) 
-      output_scenario(output_object,  current_variant)
-    }
-    
+  # read in file with stored param settings to identify plots easier
+  param_variants_filename = paste0(output_object$simulation_params_folder, 'param_variants.rds')
+  if (file.exists(param_variants_filename)){
+    output_object$param_variants = readRDS(paste0(output_object$simulation_params_folder, 'param_variants.rds'))
   }
+  
+  lapply(variants_to_output, function(i) output_scenario(output_object, variants_to_output[i]))
   
   if (output_object$output_params$output_type == 'plot'){
     graphics.off()
@@ -114,22 +103,16 @@ osim.output <- function(user_output_params = NULL, simulation_folder = NULL, out
 
 
 check_output_flag <- function(output_params, current_simulation_params){
-  
+
   param_inds_to_subset = match(output_params$plot_subset_type, names(current_simulation_params))
+
   browser()
-  if (any(!is.na(param_inds_to_subset)) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
+  if (length(!is.na(param_inds_to_subset) > 0) & all(current_simulation_params[param_inds_to_subset] == output_params$plot_subset_param)) {
     output_flag = TRUE 
   } else {
-    if (length(output_params$plot_subset_type) > 1){
-      output_flag = FALSE
-    } else {
-      if (output_params$plot_subset_type == 'all'){
-        output_flag = TRUE
-      } else {
-        output_flag = FALSE
-      }
-    }
+    output_flag = FALSE
   } 
+  
   return(output_flag)
 }
 
@@ -179,11 +162,25 @@ find_current_run_folder <- function(base_folder = NULL, run_number = NULL, numer
 output_scenario <- function(output_object, current_variant){
   
   flog.info('_________________________________')
+
+  current_variant_file = paste0(output_object$simulation_params_folder, '/', output_object$scenario_filenames[current_variant])
   
-  browser()
-  file_to_Read = paste0(output_object$simulation_params_folder, '/', output_object$scenario_filenames[current_variant])
-  flog.trace('reading %s', file_to_Read)
-  output_object$current_simulation_params = readRDS(file_to_Read)
+  flog.info('reading %s', current_variant_file)
+  
+  output_object$current_simulation_params = readRDS(current_variant_file)
+  
+  if (output_object$output_params$plot_subset_type == 'all'){
+    output_flag = TRUE
+  } else {
+    output_flag = check_output_flag(output_object$output_params, output_object$current_simulation_params)
+  }
+  
+  if (output_flag == FALSE){
+    flog.info(' skipping scenario %d', current_variant )
+    return(NULL)
+  } else {
+    flog.info(rbind(names(output_object$param_variants[[current_variant]]), as.vector(output_object$param_variants[[current_variant]]))) 
+  }
   
   current_data_dir = paste0(output_object$simulation_output_folder, '/scenario_', 
                             formatC(current_variant, width = output_object$global_params$numeric_placeholder_width, format = "d", flag = "0"),
