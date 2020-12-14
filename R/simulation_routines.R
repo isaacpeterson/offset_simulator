@@ -211,8 +211,6 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
   #run through main time loop
   for (yr in seq_len(simulation_data_object$global_params$time_steps)){
     
-    t1 = Sys.time()
-    
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     flog.info('t = %s', yr) 
     flog.info('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
