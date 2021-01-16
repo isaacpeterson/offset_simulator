@@ -52,7 +52,6 @@ osim.run <- function(user_global_params = NULL, user_simulation_params = NULL, u
     
     flog.info('offsetting using %s impact calculation and %s year time horizon for gain/loss calculations',  
               simulation_params_group[[scenario_ind]]$offset_calc_type, 
-              simulation_params_group[[scenario_ind]]$offset_action_type, 
               simulation_params_group[[scenario_ind]]$offset_time_horizon)
     
     flog.info('system comprised of %s x %s elements and %s sites',
@@ -172,11 +171,12 @@ run_offset_simulation_routines <- function(global_input_data, simulation_params,
   save_landscape_routine(global_input_data, simulation_params, current_data_dir, yr = 0)
   
   if (simulation_params$offset_calc_type == 'avoided_condition_decline'){
+    
     flog.info('running in avoided condition decline mode, enforcing static management dynamics..')
 
     global_input_data$management_dynamics = matrix(0, 
-                                                ncol = ncol(global_input_data$feature_dynamics), 
-                                                nrow = nrow(global_input_data$feature_dynamics))
+                                                   ncol = ncol(global_input_data$feature_dynamics), 
+                                                   nrow = nrow(global_input_data$feature_dynamics))
     
   }
   
@@ -276,6 +276,7 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
     
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
+      browser()
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
     
@@ -560,6 +561,7 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
   
   current_pool = unlist(unregulated_loss_object$site_indexes)
   # record characteristics of cleared site
+
   unregulated_loss_object <- assess_current_pool(pool_object = unregulated_loss_object,
                                                  pool_type = 'developments',
                                                  features_to_use = seq_along(simulation_data_object$global_params$features_to_use_in_simulation),
@@ -574,7 +576,6 @@ run_unregulated_loss_routine <- function(simulation_data_object, simulation_para
                                                  calc_type = simulation_params$dev_calc_type,
                                                  cfacs_flag = simulation_params$dev_cfacs_flag,
                                                  adjust_cfacs_flag = simulation_params$adjust_dev_cfacs_flag,
-                                                 action_type = simulation_params$offset_action_type,
                                                  include_potential_developments = simulation_params$include_potential_developments_in_dev_calc,
                                                  include_potential_offsets = simulation_params$include_potential_offsets_in_dev_calc,
                                                  include_unregulated_loss = simulation_params$include_unregulated_loss_in_dev_calc,
@@ -1126,7 +1127,6 @@ build_intervention_pool <- function(simulation_data_object, simulation_params, p
                                      calc_type = simulation_params$offset_calc_type,
                                      cfacs_flag = simulation_params$offset_cfacs_flag,
                                      adjust_cfacs_flag = simulation_params$adjust_offset_cfacs_flag,
-                                     action_type = simulation_params$offset_action_type,
                                      include_potential_developments = simulation_params$include_potential_developments_in_offset_calc,
                                      include_potential_offsets = simulation_params$include_potential_offsets_in_offset_calc,
                                      include_unregulated_loss = simulation_params$include_unregulated_loss_in_offset_calc,
@@ -1874,7 +1874,7 @@ generate_time_horizons <- function(project_type, yr, intervention_yrs, time_hori
 
 
 assess_current_pool <- function(pool_object, pool_type, features_to_use, site_scale_features, feature_dynamics, management_dynamics, mode_characteristics, background_mode_num, 
-                                site_characteristics, feature_dynamics_modes, cell_num, calc_type, cfacs_flag, adjust_cfacs_flag, action_type, 
+                                site_characteristics, feature_dynamics_modes, cell_num, calc_type, cfacs_flag, adjust_cfacs_flag, 
                                 include_potential_developments, include_potential_offsets, include_unregulated_loss,
                                 dev_probability_list, offset_probability_list, time_horizon_type, simulation_params, feature_params, time_horizon, yr, user_transform_function){
   
@@ -1888,9 +1888,8 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   }
   
   if (calc_type == 'current_condition') {
-    current_condition_vals = pool_object$site_sums_at_offset[, features_to_use, drop = FALSE]
     
-    projected_vals = current_condition_vals
+    projected_site_scores = pool_object$site_sums_at_offset[, features_to_use, drop = FALSE]
     cfac_vals = rep(list(0), length(site_scale_features))
     
   } else {
