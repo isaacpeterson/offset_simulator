@@ -276,7 +276,6 @@ run_simulation <- function(simulation_data_object, simulation_params, current_da
     
     
     if (!( (simulation_params$unregulated_loss_type == 'default') & (simulation_params$unregulated_loss_prob == 0) ) ){
-      browser()
       simulation_data_object <- run_unregulated_loss_routine(simulation_data_object, simulation_params, yr)
     }
     
