@@ -1889,7 +1889,7 @@ assess_current_pool <- function(pool_object, pool_type, features_to_use, site_sc
   if (calc_type == 'current_condition') {
 
     projected_site_scores = pool_object$site_sums_at_offset[, features_to_use, drop = FALSE]
-    matrix(0, nrow = length(site_scale_features), ncol = 1)
+    cfac_vals = matrix(0, nrow = length(site_scale_features), ncol = 1)
     
   } else {
     time_horizons <- generate_time_horizons(project_type = 'future', yr, unlist(pool_object$intervention_yrs), time_horizon, length(site_scale_features))
